@@ -33,8 +33,6 @@ class GetClusterTopologyTest extends RemoteTestBase
         /** @var ClusterTopology $topology */
         $topology = $result->getTopology();
 
-        print_r($topology);
-
         $this->assertNotNull($topology);
 
         $this->assertNotNull($topology->getTopologyId());

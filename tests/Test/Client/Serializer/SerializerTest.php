@@ -14,7 +14,6 @@ class SerializerTest extends TestCase
 {
     public function testCanConvertJsonToObject(): void
     {
-
         $content = file_get_contents(__DIR__ . '/Data/order.json');
 
         $mapper = JsonExtensions::getDefaultEntityMapper();
@@ -30,13 +29,8 @@ class SerializerTest extends TestCase
         $this->assertInstanceOf(OrderLine::class, $order->singleItem);
         $this->assertEquals("aaa", $order->singleItem->id);
 
-
         $this->assertInstanceOf(OrderLine::class, $order->itemsArray[0]);
-
         $this->assertInstanceOf(DateTimeInterface::class, $order->orderDate);
-
         $this->assertInstanceOf(OrderLine::class, $order->itemsAsMap['F1']);
-
-        print_r($order);
     }
 }
