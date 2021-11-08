@@ -2,8 +2,8 @@
 
 namespace RavenDB\Documents\Commands;
 
+use InvalidArgumentException;
 use RavenDB\Documents\Commands\batches\PutResult;
-use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Http\HttpRequest;
 use RavenDB\Http\HttpRequestInterface;
 use RavenDB\Http\RavenCommand;
@@ -18,18 +18,18 @@ class PutDocumentCommand extends RavenCommand
     private array $document;
 
     /**
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      */
     public function __construct(string $id, ?string $changeVector, array $document)
     {
         parent::__construct(PutResult::class);
 
         if ($id == null) {
-            throw new IllegalArgumentException("Id cannot be null");
+            throw new InvalidArgumentException("Id cannot be null");
         }
 
         if (($document == null) || empty($document)) {
-            throw new IllegalArgumentException("Document cannot be null");
+            throw new InvalidArgumentException("Document cannot be null");
         }
 
         $this->id = $id;

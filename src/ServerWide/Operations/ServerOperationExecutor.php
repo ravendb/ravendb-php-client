@@ -2,8 +2,8 @@
 
 namespace RavenDB\ServerWide\Operations;
 
+use InvalidArgumentException;
 use RavenDB\Documents\DocumentStore;
-use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Http\ClusterRequestExecutor;
 use RavenDB\primitives\CleanCloseable;
 
@@ -16,7 +16,7 @@ class ServerOperationExecutor implements CleanCloseable
     private ?string $nodeTag;
 
     /**
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      */
     public function __construct(
         ?DocumentStore $store = null,
@@ -26,10 +26,10 @@ class ServerOperationExecutor implements CleanCloseable
         ?string $nodeTag = null
     ) {
         if (empty($store)) {
-            throw new IllegalArgumentException("Store cannot be null");
+            throw new InvalidArgumentException("Store cannot be null");
         }
         if (empty($requestExecutor)) {
-            throw new IllegalArgumentException("RequestExecutor cannot be null");
+            throw new InvalidArgumentException("RequestExecutor cannot be null");
         }
         $this->store = $store;
 

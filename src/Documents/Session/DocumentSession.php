@@ -2,14 +2,12 @@
 
 namespace RavenDB\Documents\Session;
 
-use phpDocumentor\Reflection\Types\Callable_;
-use phpDocumentor\Reflection\Types\Mixed_;
+use InvalidArgumentException;
 use Ramsey\Uuid\UuidInterface;
 use RavenDB\Documents\Commands\GetDocumentsResult;
 use RavenDB\Documents\DocumentStore;
 use RavenDB\Documents\Linq\DocumentQueryGeneratorInterface;
 use RavenDB\Documents\Session\Operations\LoadOperation;
-use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 
 class DocumentSession extends InMemoryDocumentSessionOperations implements
@@ -29,7 +27,7 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 
     /**
      * @throws IllegalStateException
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      */
     public function load(string $className, string $id)
     {

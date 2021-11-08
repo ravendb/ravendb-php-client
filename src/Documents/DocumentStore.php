@@ -2,12 +2,12 @@
 
 namespace RavenDB\Documents;
 
+use InvalidArgumentException;
 use Ramsey\Uuid\Uuid;
 use RavenDB\Documents\Operations\MaintenanceOperationExecutor;
 use RavenDB\Documents\Session\DocumentSession;
 use RavenDB\Documents\Session\DocumentSessionInterface;
 use RavenDB\Documents\Session\SessionOptions;
-use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Http\RequestExecutor;
 
@@ -22,7 +22,7 @@ class DocumentStore extends DocumentStoreBase
     }
 
     /**
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      */
     public function initialize(): DocumentStoreInterface
     {
@@ -98,7 +98,7 @@ class DocumentStore extends DocumentStoreBase
     }
 
     /**
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      * @throws IllegalStateException
      */
     public function getRequestExecutor(string $databaseName = null): RequestExecutor
@@ -111,7 +111,7 @@ class DocumentStore extends DocumentStoreBase
 
     /**
      * @throws IllegalStateException
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      */
     public function openSession(string $database = ''): DocumentSessionInterface
     {
@@ -128,7 +128,7 @@ class DocumentStore extends DocumentStoreBase
 
     /**
      * @throws IllegalStateException
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      */
     public function openSessionWithOptions(SessionOptions $sessionOptions): DocumentSessionInterface
     {
@@ -145,12 +145,12 @@ class DocumentStore extends DocumentStoreBase
     }
 
     /**
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      */
     private function assertValidConfiguration()
     {
         if ($this->urls == null || $this->urls->count() == 0) {
-            throw new IllegalArgumentException("Document store URLs cannot be empty");
+            throw new InvalidArgumentException("Document store URLs cannot be empty");
         }
     }
 

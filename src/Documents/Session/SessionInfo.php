@@ -2,8 +2,8 @@
 
 namespace RavenDB\Documents\Session;
 
+use InvalidArgumentException;
 use RavenDB\Documents\DocumentStoreBase;
-use RavenDB\Exceptions\IllegalArgumentException;
 
 class SessionInfo
 {
@@ -16,7 +16,7 @@ class SessionInfo
 
 
     /**
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      */
     public function __construct(
         ?InMemoryDocumentSessionOperations $session,
@@ -24,10 +24,10 @@ class SessionInfo
         ?DocumentStoreBase $documentStore
     ) {
         if ($documentStore === null) {
-            throw new IllegalArgumentException("DocumentStore cannot be null");
+            throw new InvalidArgumentException("DocumentStore cannot be null");
         }
         if ($session == null) {
-            throw new IllegalArgumentException("Session cannot be null");
+            throw new InvalidArgumentException("Session cannot be null");
         }
 
         $this->session = $session;
@@ -67,7 +67,7 @@ class SessionInfo
 
 //    public void setContext(String sessionKey) {
 //        if (StringUtils.isBlank(sessionKey)) {
-//            throw new IllegalArgumentException("Session key cannot be null or whitespace.");
+//            throw new InvalidArgumentException("Session key cannot be null or whitespace.");
 //        }
 //
 //      setContextInternal(sessionKey);
@@ -124,7 +124,7 @@ class SessionInfo
 //                result = requestExecutor.getFastestNode();
 //                break;
 //            default:
-//                throw new IllegalArgumentException(
+//                throw new InvalidArgumentException(
 //                    requestExecutor.getConventions().getReadBalanceBehavior().toString()
 //                );
 //        }

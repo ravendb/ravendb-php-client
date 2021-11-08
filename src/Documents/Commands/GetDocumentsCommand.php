@@ -2,7 +2,7 @@
 
 namespace RavenDB\Documents\Commands;
 
-use RavenDB\Exceptions\IllegalArgumentException;
+use InvalidArgumentException;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ServerNode;
 
@@ -20,14 +20,14 @@ class GetDocumentsCommand extends RavenCommand
     private ?string $startAfter = null;
 
     /**
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      */
     public function __construct(array $ids, array $includes, bool $metadataOnly)
     {
         parent::__construct(GetDocumentsResult::class);
 
         if (empty($ids)) {
-            throw new IllegalArgumentException("Please supply at least one id");
+            throw new InvalidArgumentException("Please supply at least one id");
         }
 
         $this->ids = $ids;
@@ -119,7 +119,7 @@ class GetDocumentsCommand extends RavenCommand
 //                            .append("&countValue=")
 //                            .append(countRange.getCount());
 //                } else {
-//                    throw new IllegalArgumentException("Unexpected TimeSeries range " + tsInclude.getClass());
+//                    throw new InvalidArgumentException("Unexpected TimeSeries range " + tsInclude.getClass());
 //                }
 //            }
 //        }

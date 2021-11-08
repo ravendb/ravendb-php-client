@@ -2,9 +2,9 @@
 
 namespace RavenDB\Documents;
 
+use InvalidArgumentException;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
-use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Http\RequestExecutor;
 use RavenDB\Type\UrlArray;
@@ -67,7 +67,7 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
     }
 
     /**
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      */
     public function getEffectiveDatabase(?string $database = null): string
     {
@@ -75,7 +75,7 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
     }
 
     /**
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      */
     public function getEffectiveDatabaseForStore(DocumentStoreInterface $store, ?string $database = null): string
     {
@@ -87,7 +87,7 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
             return $database;
         }
 
-        throw new IllegalArgumentException("Cannot determine database to operate on. " .
+        throw new InvalidArgumentException("Cannot determine database to operate on. " .
             "Please either specify 'database' directly as an action parameter " .
             "or set the default database to operate on using 'DocumentStore->setDatabaseName' method. " .
             "Did you forget to pass 'databaseName' parameter?");

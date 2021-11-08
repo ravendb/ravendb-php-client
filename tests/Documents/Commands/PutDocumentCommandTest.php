@@ -2,10 +2,10 @@
 
 namespace tests\RavenDB\Documents\Commands;
 
+use InvalidArgumentException;
 use RavenDB\Documents\Commands\batches\PutResult;
 use RavenDB\Documents\Commands\PutDocumentCommand;
 use RavenDB\Documents\DocumentStore;
-use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use tests\RavenDB\Infrastructure\Entity\User;
@@ -14,7 +14,7 @@ use tests\RavenDB\RemoteTestBase;
 class PutDocumentCommandTest extends RemoteTestBase
 {
     /**
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      * @throws IllegalStateException
      * @throws ExceptionInterface
      */

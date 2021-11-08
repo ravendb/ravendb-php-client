@@ -2,11 +2,11 @@
 
 namespace RavenDB\Documents\Session\Operations;
 
+use InvalidArgumentException;
 use RavenDB\Documents\Commands\GetDocumentsCommand;
 use RavenDB\Documents\Commands\GetDocumentsResult;
 use RavenDB\Documents\Session\DocumentInfo;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
-use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 
@@ -29,7 +29,7 @@ class LoadOperation
 
     /**
      * @throws IllegalStateException
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      */
     public function createRequest(): ?GetDocumentsCommand
     {

@@ -2,7 +2,7 @@
 
 namespace RavenDB\Documents\Conventions;
 
-use RavenDB\Exceptions\IllegalArgumentException;
+use InvalidArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Http\LoadBalanceBehavior;
@@ -237,14 +237,14 @@ class DocumentConventions
 
     /**
      * @throws IllegalStateException
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      */
     public function setIdentityPartsSeparator(string $identityPartsSeparator): void
     {
         $this->assertNotFrozen();
 
         if ($identityPartsSeparator == '|') {
-            throw new IllegalArgumentException("Cannot set identity parts separator to '|'");
+            throw new InvalidArgumentException("Cannot set identity parts separator to '|'");
         }
 
         $this->identityPartsSeparator = $identityPartsSeparator;

@@ -2,8 +2,8 @@
 
 namespace RavenDB\Documents\Operations;
 
+use InvalidArgumentException;
 use RavenDB\Documents\DocumentStore;
-use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Http\RequestExecutor;
 use RavenDB\ServerWide\Operations\ServerOperationExecutor;
@@ -22,7 +22,7 @@ class MaintenanceOperationExecutor
     }
 
     /**
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      * @throws IllegalStateException
      */
     private function getRequestExecutor(): ?RequestExecutor
@@ -37,7 +37,7 @@ class MaintenanceOperationExecutor
     }
 
     /**
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      */
     public function server(): ServerOperationExecutor
     {

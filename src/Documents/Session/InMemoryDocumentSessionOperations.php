@@ -2,7 +2,7 @@
 
 namespace RavenDB\Documents\Session;
 
-use _PHPStan_76800bfb5\Nette\NotImplementedException;
+use InvalidArgumentException;
 use Ramsey\Uuid\UuidInterface;
 use RavenDB\Constants\Metadata;
 use RavenDB\Documents\Conventions\DocumentConventions;
@@ -10,14 +10,12 @@ use RavenDB\Documents\DocumentStoreBase;
 use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Documents\Identity\GenerateEntityIdOnTheClient;
 use RavenDB\Exceptions\Documents\Session\NonUniqueObjectException;
-use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Http\RequestExecutor;
 use RavenDB\Json\JsonOperation;
 use RavenDB\Json\MetadataAsDictionary;
 use RavenDB\primitives\CleanCloseable;
-use RavenDB\Utils\StringUtils;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use function PHPUnit\Framework\isEmpty;
 
@@ -59,7 +57,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     /**
      * @throws IllegalStateException
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      */
     public function __construct(DocumentStoreBase $documentStore, UuidInterface $id, SessionOptions $options)
     {
@@ -401,7 +399,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     /**
      * @throws IllegalStateException
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      * @throws NonUniqueObjectException
      */
     public function store(?object $entity, ?string $id = null, ?string $changeVector = null): void
@@ -419,7 +417,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     /**
      * @throws IllegalStateException
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      * @throws NonUniqueObjectException
      */
     private function storeInternal(
@@ -435,7 +433,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
 
         if ($entity == null) {
-            throw new IllegalArgumentException("Entity cannot be null");
+            throw new InvalidArgumentException("Entity cannot be null");
         }
 
         $value = $this->documentsByEntity->get($entity);

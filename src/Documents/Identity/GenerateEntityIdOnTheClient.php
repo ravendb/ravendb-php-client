@@ -2,12 +2,13 @@
 
 namespace RavenDB\Documents\Identity;
 
+use Throwable;
+use InvalidArgumentException;
+
 use RavenDB\Documents\Conventions\DocumentConventions;
-use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Exceptions\RavenException;
 use RavenDB\Utils\StringUtils;
-use Throwable;
 
 class GenerateEntityIdOnTheClient
 {
@@ -34,12 +35,12 @@ class GenerateEntityIdOnTheClient
      *
      * @return null|string      Return id that was read from entity, otherwise null
      *
-     * @throws IllegalArgumentException|IllegalStateException
+     * @throws InvalidArgumentException|IllegalStateException
      */
     public function tryGetIdFromInstance(?Object $entity): ?string
     {
         if ($entity == null) {
-            throw new IllegalArgumentException("Entity cannot be null");
+            throw new InvalidArgumentException("Entity cannot be null");
         }
 
         try {
@@ -67,7 +68,7 @@ class GenerateEntityIdOnTheClient
 
     /**
      * @throws IllegalStateException
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      */
     public function entityHasId(object $entity): bool
     {
@@ -78,7 +79,7 @@ class GenerateEntityIdOnTheClient
      * Tries to get the identity.
      *
      * @throws IllegalStateException
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      */
     public function getOrGenerateDocumentId(object $entity): string
     {
@@ -100,7 +101,7 @@ class GenerateEntityIdOnTheClient
 
     /**
      * @throws IllegalStateException
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      */
     public function generateDocumentKeyForStorage(object $entity): string
     {
@@ -154,7 +155,7 @@ class GenerateEntityIdOnTheClient
             if ($propertyOrFieldType == 'string') {
                 $entity->$field = $id;
             } else {
-                throw new IllegalArgumentException("Cannot set identity value '" . $id .
+                throw new InvalidArgumentException("Cannot set identity value '" . $id .
                     "' on field " . $propertyOrFieldType . " because field type is not string.");
             }
         } catch (Throwable $e) {
