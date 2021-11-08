@@ -45,7 +45,7 @@ class ServerOperationExecutor implements CleanCloseable
 //        }
     }
 
-    function close(): void
+    public function close(): void
     {
         // TODO: Implement close() method.
     }

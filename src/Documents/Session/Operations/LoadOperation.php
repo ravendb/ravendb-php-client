@@ -8,6 +8,7 @@ use RavenDB\Documents\Session\DocumentInfo;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
+use Symfony\Component\Serializer\Exception\ExceptionInterface;
 
 class LoadOperation
 {
@@ -39,15 +40,21 @@ class LoadOperation
         $this->session->incrementRequestCount();
 
 //        if (logger.isInfoEnabled()) {
-//            logger.info("Requesting the following ids " + String.join(",", _ids) + " from " + _session.storeIdentifier());
+//            logger.info(
+//              "Requesting the following ids " + String.join(",", _ids) + " from " + _session.storeIdentifier()
+//            );
 //        }
 
         if ($this->includeAllCounters) {
-//            return new GetDocumentsCommand(_ids, _includes, true, _timeSeriesToInclude, _compareExchangeValuesToInclude, false);
+//            return new GetDocumentsCommand(
+//                _ids, _includes, true, _timeSeriesToInclude, _compareExchangeValuesToInclude, false
+//            );
             return new GetDocumentsCommand($this->ids, $this->includes, true);
         }
 
-//        return new GetDocumentsCommand(_ids, _includes, _countersToInclude, _timeSeriesToInclude, _compareExchangeValuesToInclude, false);
+//        return new GetDocumentsCommand(
+//            _ids, _includes, _countersToInclude, _timeSeriesToInclude, _compareExchangeValuesToInclude, false
+//        );
         return new GetDocumentsCommand($this->ids, $this->includes, false);
     }
 
@@ -96,7 +103,8 @@ class LoadOperation
 
             // JsonNode document
         foreach ($result->getResults() as $document) {
-            if (empty($document)) { //  $document == null || $document->isNull()  todo: check what is this isNull in java
+            // todo: check what is this isNull in java
+            if (empty($document)) { //  $document == null || $document->isNull()
                 continue;
             }
 
@@ -122,6 +130,10 @@ class LoadOperation
         return $this;
     }
 
+    /**
+     * @throws ExceptionInterface
+     * @throws IllegalStateException
+     */
     public function getDocument(string $className)
     {
 //        if (_session.noTracking) {
@@ -142,13 +154,14 @@ class LoadOperation
 //            return _session.trackEntity(clazz, documentInfo);
 //        }
 
-        return $this->_getDocument($className, $this->ids[0]);
+        return $this->getDocumentWithId($className, $this->ids[0]);
     }
 
     /**
      * @throws IllegalStateException
+     * @throws ExceptionInterface
      */
-    private function _getDocument(string $className, string $id)
+    private function getDocumentWithId(string $className, ?string $id = null)
     {
         if (empty($id)) {
             return new $className();

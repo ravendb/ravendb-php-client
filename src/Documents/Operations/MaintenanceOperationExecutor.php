@@ -31,7 +31,8 @@ class MaintenanceOperationExecutor
             return $this->requestExecutor;
         }
 
-        $this->requestExecutor = $this->databaseName !== null ? $this->store->getRequestExecutor($this->databaseName) : null;
+        $this->requestExecutor =
+            $this->databaseName !== null ? $this->store->getRequestExecutor($this->databaseName) : null;
         return $this->requestExecutor;
     }
 
@@ -74,7 +75,8 @@ class MaintenanceOperationExecutor
 //        RavenCommand<OperationIdResult> command = operation.getCommand(getRequestExecutor().getConventions());
 //
 //        getRequestExecutor().execute(command);
-//        String node = ObjectUtils.firstNonNull(command.getSelectedNodeTag(), command.getResult().getOperationNodeTag());
+//        String node =
+//              ObjectUtils.firstNonNull(command.getSelectedNodeTag(), command.getResult().getOperationNodeTag());
 //        return new Operation(getRequestExecutor(),
 //                () -> store.changes(databaseName, node), getRequestExecutor().getConventions(),
 //                command.getResult().getOperationId(),
@@ -83,7 +85,9 @@ class MaintenanceOperationExecutor
 //
 //    private void assertDatabaseNameSet() {
 //        if (databaseName == null) {
-//            throw new IllegalStateException("Cannot use maintenance without a database defined, did you forget to call forDatabase?");
+//            throw new IllegalStateException(
+//              "Cannot use maintenance without a database defined, did you forget to call forDatabase?"
+//            );
 //        }
 //    }
 }

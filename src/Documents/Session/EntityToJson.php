@@ -46,8 +46,12 @@ class EntityToJson
         return $document;
     }
 
-    private function convertEntityToJsonInternal(object $entity, DocumentConventions $conventions, DocumentInfo $documentInfo, bool $removeIdentityProperty = true): array
-    {
+    private function convertEntityToJsonInternal(
+        object $entity,
+        DocumentConventions $conventions,
+        DocumentInfo $documentInfo,
+        bool $removeIdentityProperty = true
+    ): array {
         $mapper = $conventions->getEntityMapper();
 
         $jsonNode = $mapper->normalize($entity);
@@ -91,7 +95,7 @@ class EntityToJson
             foreach ($documentInfo->getMetadata() as $key => $value) {
                 $metadataNode[$key] = $value;
             }
-        } else if ($documentInfo->getMetadataInstance() != null) {
+        } elseif ($documentInfo->getMetadataInstance() != null) {
             $setMetadata = true;
             foreach ($documentInfo->getMetadataInstance() as $key => $value) {
                 $metadataNode[$key] = $mapper->normalize($value);

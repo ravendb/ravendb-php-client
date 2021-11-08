@@ -20,7 +20,15 @@ class RequestExecutorTest extends RemoteTestBase
         $store = $this->getDocumentStore();
 
         try {
-//            executor = RequestExecutor.create(store.getUrls(), store.getDatabase(), null, null, null, store.getExecutorService(), conventions)
+//            executor = RequestExecutor.create(
+//                  store.getUrls(),
+//                  store.getDatabase(),
+//                  null,
+//                  null,
+//                  null,
+//                  store.getExecutorService(),
+//                  conventions
+//            );
             $executor = RequestExecutor::create($store->getUrls(), $store->getDatabase(), $conventions);
 
             $databaseNamesOperation = new GetDatabaseNamesOperation(0, 20);

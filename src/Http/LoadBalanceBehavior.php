@@ -6,8 +6,8 @@ use RavenDB\Exceptions\InvalidValueException;
 
 class LoadBalanceBehavior
 {
-    const None = 'NONE';
-    const UseSessionContext = 'USE_SESSION_CONTEXT';
+    const NONE = 'NONE';
+    const USE_SESSION_CONTEXT = 'USE_SESSION_CONTEXT';
 
     const NAME = 'LoadBalanceBehavior';
 
@@ -48,29 +48,29 @@ class LoadBalanceBehavior
 
     public function isUseSessionContext(): bool
     {
-        return $this->value == self::UseSessionContext;
+        return $this->value == self::USE_SESSION_CONTEXT;
     }
 
     public function isNone(): bool
     {
-        return $this->value == self::None;
+        return $this->value == self::NONE;
     }
 
     public static function allValues(): array
     {
         return [
-            self::None,
-            self::UseSessionContext
+            self::NONE,
+            self::USE_SESSION_CONTEXT
         ];
     }
 
     public static function none(): LoadBalanceBehavior
     {
-        return new LoadBalanceBehavior(LoadBalanceBehavior::None);
+        return new LoadBalanceBehavior(LoadBalanceBehavior::NONE);
     }
 
     public static function useSessionContext(): LoadBalanceBehavior
     {
-        return new LoadBalanceBehavior(LoadBalanceBehavior::UseSessionContext);
+        return new LoadBalanceBehavior(LoadBalanceBehavior::USE_SESSION_CONTEXT);
     }
 }

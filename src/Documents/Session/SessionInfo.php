@@ -18,8 +18,11 @@ class SessionInfo
     /**
      * @throws IllegalArgumentException
      */
-    public function __construct(?InMemoryDocumentSessionOperations $session, SessionOptions $options, ?DocumentStoreBase $documentStore)
-    {
+    public function __construct(
+        ?InMemoryDocumentSessionOperations $session,
+        SessionOptions $options,
+        ?DocumentStoreBase $documentStore
+    ) {
         if ($documentStore === null) {
             throw new IllegalArgumentException("DocumentStore cannot be null");
         }
@@ -69,12 +72,17 @@ class SessionInfo
 //
 //      setContextInternal(sessionKey);
 //
-//      _canUseLoadBalanceBehavior = _canUseLoadBalanceBehavior || _session.getConventions().getLoadBalanceBehavior() == LoadBalanceBehavior.USE_SESSION_CONTEXT;
+//      _canUseLoadBalanceBehavior =
+//          _canUseLoadBalanceBehavior ||
+//          _session.getConventions().getLoadBalanceBehavior() == LoadBalanceBehavior.USE_SESSION_CONTEXT;
 //  }
 //
 //private void setContextInternal(String sessionKey) {
 //    if (_sessionIdUsed) {
-//        throw new IllegalStateException("Unable to set the session context after it has already been used. The session context can only be modified before it is utilized.");
+//        throw new IllegalStateException(
+//              "Unable to set the session context after it has already been used. " .
+//              "The session context can only be modified before it is utilized."
+//        );
 //    }
 //
 //    if (sessionKey == null) {
@@ -116,7 +124,9 @@ class SessionInfo
 //                result = requestExecutor.getFastestNode();
 //                break;
 //            default:
-//                throw new IllegalArgumentException(requestExecutor.getConventions().getReadBalanceBehavior().toString());
+//                throw new IllegalArgumentException(
+//                    requestExecutor.getConventions().getReadBalanceBehavior().toString()
+//                );
 //        }
 //
 //        return result.currentNode;

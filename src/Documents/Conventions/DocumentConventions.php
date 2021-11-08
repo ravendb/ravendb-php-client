@@ -60,7 +60,8 @@ class DocumentConventions
 //                throw new RavenException("Unable to find class by name = " + name, e);
 //            }
 //        };
-//        _transformClassCollectionNameToDocumentIdPrefix = collectionName -> defaultTransformCollectionNameToDocumentIdPrefix(collectionName);
+//        _transformClassCollectionNameToDocumentIdPrefix =
+//          collectionName -> defaultTransformCollectionNameToDocumentIdPrefix(collectionName);
 //
 //        _findCollectionName = type -> defaultGetCollectionName(type);
 //
@@ -162,7 +163,10 @@ class DocumentConventions
     private function assertNotFrozen(): void
     {
         if ($this->frozen) {
-            throw new IllegalStateException("Conventions has been frozen after documentStore.initialize() and no changes can be applied to them");
+            throw new IllegalStateException(
+                "Conventions has been frozen after documentStore.initialize() " .
+                "and no changes can be applied to them."
+            );
         }
     }
 
@@ -264,12 +268,19 @@ class DocumentConventions
         // want to use them for polymorphic queries, and that require the conventions to be
         // applied properly, so we reject the behavior and hint to the user explicitly
         if (StringUtils::endsWith('Interface', $className)) {
-            throw new IllegalStateException("Cannot find collection name for interface " . $className . ", only concrete classes are supported. Did you forget to customize conventions.findCollectionName?");
+            throw new IllegalStateException(
+                "Cannot find collection name for interface " . $className .
+                ", only concrete classes are supported. Did you forget to customize conventions.findCollectionName?"
+            );
         }
 
-        // @todo: implement following code. This was skipped because I don't know how to test is class abstract or not, I'm just passing className here.
+        // @todo: implement following code.
+        // This was skipped because I don't know how to test is class abstract or not, I'm just passing className here.
 //        if (Modifier.isAbstract(clazz.getModifiers())) {
-//            throw new IllegalStateException("Cannot find collection name for abstract class " + clazz.getName() + ", only concrete class are supported. Did you forget to customize conventions.findCollectionName?");
+//            throw new IllegalStateException(
+//              "Cannot find collection name for abstract class " + clazz.getName() +
+//              ", only concrete class are supported. Did you forget to customize conventions.findCollectionName?"
+//            );
 //        }
 
         $result = StringUtils::pluralize(ClassUtils::getSimpleClassName($className));

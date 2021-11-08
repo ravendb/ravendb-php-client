@@ -114,7 +114,10 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
     public function assertInitialized(): void
     {
         if (!$this->initialized) {
-            throw new IllegalStateException('You cannot open a session or access the database commands before initializing the document store. Did you forget calling initialize()?');
+            throw new IllegalStateException(
+                'You cannot open a session or access the database commands before initializing ' .
+                'the document store. Did you forget calling initialize()?'
+            );
         }
     }
 
@@ -124,7 +127,9 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
     public function assertNotInitialized(string $property): void
     {
         if ($this->initialized) {
-            throw new IllegalStateException('You cannot set ' . $property . ' after the document store has been initialized.');
+            throw new IllegalStateException(
+                'You cannot set ' . $property . ' after the document store has been initialized.'
+            );
         }
     }
 

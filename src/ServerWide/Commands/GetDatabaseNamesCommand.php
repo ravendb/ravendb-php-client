@@ -22,6 +22,9 @@ class GetDatabaseNamesCommand extends RavenCommand
 
     protected function createUrl(ServerNode $serverNode): string
     {
-        return $serverNode->getUrl() . '/databases?start=' . $this->start . '&pageSize=' . $this->pageSize . '&namesOnly=true';
+        return $serverNode->getUrl() .
+            '/databases?start=' . $this->start .
+            '&pageSize=' . $this->pageSize .
+            '&namesOnly=true';
     }
 }

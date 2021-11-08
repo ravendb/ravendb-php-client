@@ -77,7 +77,8 @@ class RemoteTestBase extends RavenTestDriver
             $databaseName = 'test_db';
         }
 
-        $databaseName .= '_' . 1; // todo: change this to use increment database name  // from Java: index.incrementAndGet()
+        // todo: change this to use increment database name  // from Java: index.incrementAndGet()
+        $databaseName .= '_' . 1;
 
         return $databaseName;
     }

@@ -90,7 +90,9 @@ class GenerateEntityIdOnTheClient
         }
 
         if ($id != null && StringUtils::startsWith("/", $id)) {
-            throw new IllegalStateException("Cannot use value '" . $id . "' as a document id because it begins with a '/'");
+            throw new IllegalStateException(
+                "Cannot use value '" . $id . "' as a document id because it begins with a '/'"
+            );
         }
 
         return $id;

@@ -4,5 +4,5 @@ namespace RavenDB\primitives;
 
 interface CleanCloseable
 {
-    function close(): void;
+    public function close(): void;
 }

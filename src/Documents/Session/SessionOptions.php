@@ -73,9 +73,11 @@ class SessionOptions
         return $this->disableAtomicDocumentWritesInClusterWideTransaction;
     }
 
-    public function setDisableAtomicDocumentWritesInClusterWideTransaction(bool $disableAtomicDocumentWritesInClusterWideTransaction): void
-    {
-        $this->disableAtomicDocumentWritesInClusterWideTransaction = $disableAtomicDocumentWritesInClusterWideTransaction;
+    public function setDisableAtomicDocumentWritesInClusterWideTransaction(
+        bool $disableAtomicDocumentWritesInClusterWideTransaction
+    ): void {
+        $this->disableAtomicDocumentWritesInClusterWideTransaction =
+            $disableAtomicDocumentWritesInClusterWideTransaction;
     }
 
     public function getDisableAtomicDocumentWritesInClusterWideTransaction(): bool

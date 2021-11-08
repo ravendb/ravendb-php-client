@@ -22,5 +22,5 @@ interface DocumentStoreInterface
 
     /** Opens the session */
     public function openSession(string $database = ''): DocumentSessionInterface;
-    function _openSession(SessionOptions $sessionOptions): DocumentSessionInterface;
+    public function openSessionWithOptions(SessionOptions $sessionOptions): DocumentSessionInterface;
 }

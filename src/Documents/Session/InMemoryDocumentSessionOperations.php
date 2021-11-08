@@ -81,24 +81,28 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
 
         $this->documentStore = $documentStore;
-        $this->requestExecutor = $options->getRequestExecutor() ?? $documentStore->getRequestExecutor($this->databaseName);
+        $this->requestExecutor =
+            $options->getRequestExecutor() ?? $documentStore->getRequestExecutor($this->databaseName);
 
         $this->noTracking = $options->isNoTracking();
 
 //
 //        this.useOptimisticConcurrency = _requestExecutor.getConventions().isUseOptimisticConcurrency();
-        $this->maxNumberOfRequestsPerSession = $this->requestExecutor->getConventions()->getMaxNumberOfRequestsPerSession();
+        $this->maxNumberOfRequestsPerSession =
+            $this->requestExecutor->getConventions()->getMaxNumberOfRequestsPerSession();
 
         $genFunction = function (?object $entity) {
             return $this->generateId($entity);
         };
-        $this->generateEntityIdOnTheClient = new GenerateEntityIdOnTheClient($this->requestExecutor->getConventions(), $genFunction);
+        $this->generateEntityIdOnTheClient =
+            new GenerateEntityIdOnTheClient($this->requestExecutor->getConventions(), $genFunction);
         $this->entityToJson = new EntityToJson($this);
 
         $this->sessionInfo = new SessionInfo($this, $options, $this->documentStore);
         $this->transactionMode = $options->getTransactionMode();
 
-        $this->disableAtomicDocumentWritesInClusterWideTransaction = $options->getDisableAtomicDocumentWritesInClusterWideTransaction();
+        $this->disableAtomicDocumentWritesInClusterWideTransaction =
+            $options->getDisableAtomicDocumentWritesInClusterWideTransaction();
     }
 
     public function getId(): UuidInterface
@@ -241,12 +245,17 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     {
         $this->numberOfRequests += 1;
         if ($this->numberOfRequests > $this->maxNumberOfRequestsPerSession) {
-            throw new IllegalStateException(sprintf("The maximum number of requests (%d) allowed for this session has been reached." .
-                "Raven limits the number of remote calls that a session is allowed to make as an early warning system. Sessions are expected to be short lived, and " .
-                "Raven provides facilities like load(String[] keys) to load multiple documents at once and batch saves (call SaveChanges() only once)." .
-                "You can increase the limit by setting DocumentConvention.MaxNumberOfRequestsPerSession or MaxNumberOfRequestsPerSession, but it is" .
-                "advisable that you'll look into reducing the number of remote calls first, since that will speed up your application significantly and result in a" .
-                "more responsive application.", $this->maxNumberOfRequestsPerSession));
+            throw new IllegalStateException(sprintf(
+                "The maximum number of requests (%d) allowed for this session has been reached. Raven limits " .
+                "the number of remote calls that a session is allowed to make as an early warning system.".
+                "Sessions are expected to be short lived, and Raven provides facilities like load(String[] keys) to " .
+                "load multiple documents at once and batch saves (call SaveChanges() only once)." .
+                "You can increase the limit by setting DocumentConvention.MaxNumberOfRequestsPerSession " .
+                "or MaxNumberOfRequestsPerSession, but it is advisable that you'll look into reducing the " .
+                "number of remote calls first, since that will speed up your application significantly " .
+                "and result in a more responsive application.",
+                $this->maxNumberOfRequestsPerSession
+            ));
         }
     }
 
@@ -298,16 +307,28 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
      */
     public function trackEntity(string $className, DocumentInfo $doc): ?object
     {
-        return $this->_trackEntity($className, $doc->getId(), $doc->getDocument(), $doc->getMetadata(), $this->noTracking);
+        return $this->trackEntityInternal(
+            $className,
+            $doc->getId(),
+            $doc->getDocument(),
+            $doc->getMetadata(),
+            $this->noTracking
+        );
     }
 
     /**
      * @throws ExceptionInterface
      * @throws IllegalStateException
      */
-    public function _trackEntity(string $entityType, string $id, array $document, array $metadata, bool $noTracking): ?object
-    {
-        $noTracking = $this->noTracking || $noTracking;  // if noTracking is session-wide then we want to override the passed argument
+    public function trackEntityInternal(
+        string $entityType,
+        string $id,
+        array $document,
+        array $metadata,
+        bool $noTracking
+    ): ?object {
+        // if noTracking is session-wide then we want to override the passed argument
+        $noTracking = $this->noTracking || $noTracking;
 
         if (empty($id)) {
             return $this->deserializeFromTransformer($entityType, null, $document, false);
@@ -401,10 +422,16 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
      * @throws IllegalArgumentException
      * @throws NonUniqueObjectException
      */
-    private function storeInternal(?object $entity, ?string $id, ?string $changeVector, ConcurrencyCheckMode $forceConcurrencyCheck): void
-    {
+    private function storeInternal(
+        ?object $entity,
+        ?string $id,
+        ?string $changeVector,
+        ConcurrencyCheckMode $forceConcurrencyCheck
+    ): void {
         if ($this->noTracking) {
-            throw new IllegalStateException("Cannot store entity. Entity tracking is disabled in this session.");
+            throw new IllegalStateException(
+                "Cannot store entity. Entity tracking is disabled in this session."
+            );
         }
 
         if ($entity == null) {
@@ -432,11 +459,16 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
 
 //        if (deferredCommandsMap.containsKey(IdTypeAndName.create(id, CommandType.CLIENT_ANY_COMMAND, null))) {
-//            throw new IllegalStateException("Can't store document, there is a deferred command registered for this document in the session. Document id: " + id);
+//            throw new IllegalStateException(
+//              "Can't store document, there is a deferred command registered for this document in the session." .
+//              " Document id: " + id
+//            );
 //        }
 //
 //        if (deletedEntities.contains(entity)) {
-//            throw new IllegalStateException("Can't store object, it was already deleted in this session. Document id: " + id);
+//            throw new IllegalStateException(
+//              "Can't store object, it was already deleted in this session. Document id: " + id
+//            );
 //        }
 
 
@@ -470,7 +502,10 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     private function rememberEntityForDocumentIdGeneration(object $entity)
     {
-        throw new NotImplementedException("You cannot set GenerateDocumentIdsOnStore to false without implementing RememberEntityForDocumentIdGeneration");
+        throw new NotImplementedException(
+            "You cannot set GenerateDocumentIdsOnStore to false " .
+            "without implementing RememberEntityForDocumentIdGeneration"
+        );
     }
 
     private function removeIdFromKnownMissingIds(string $id): void
@@ -480,8 +515,13 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
     }
 
-    protected function storeEntityInUnitOfWork(?string $id, ?object $entity, ?string $changeVector, array $metadata, ConcurrencyCheckMode $forceConcurrencyCheck): void
-    {
+    protected function storeEntityInUnitOfWork(
+        ?string $id,
+        ?object $entity,
+        ?string $changeVector,
+        array $metadata,
+        ConcurrencyCheckMode $forceConcurrencyCheck
+    ): void {
         if ($id != null) {
             $this->removeIdFromKnownMissingIds($id);
         }
@@ -489,7 +529,10 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $documentInfo = new DocumentInfo();
         $documentInfo->setId($id);
         $documentInfo->setMetadata($metadata);
-        $documentInfo->setChangeVector($changeVector ?? ''); // @todo: remove this: ?? '' | I've added this because change vector must be string, but it's never set on crudTest...
+
+        // I've added this because change vector must be string, but it's never set on crudTest...
+        $documentInfo->setChangeVector($changeVector ?? ''); // @todo: remove this: ?? ''
+        //
         $documentInfo->setConcurrencyCheckMode($forceConcurrencyCheck);
         $documentInfo->setEntity($entity);
         $documentInfo->setNewDocument(true);
@@ -569,7 +612,11 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //                    docChanges.add(change);
 //                    changes.put(documentInfo.getId(), docChanges);
 //                } else {
-//    ICommandData command = result.getDeferredCommandsMap().get(IdTypeAndName.create(documentInfo.getId(), CommandType.CLIENT_ANY_COMMAND, null));
+//    ICommandData command =
+//          result.getDeferredCommandsMap().get(IdTypeAndName.create(
+//                          documentInfo.getId(),
+//                          CommandType.CLIENT_ANY_COMMAND, null
+//                      ));
 //                    if (command != null) {
 //                        throwInvalidDeletedDocumentWithDeferredCommand(command);
 //                    }
@@ -592,8 +639,11 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //                        changeVector = null;
 //                    }
 //
-//                    onBeforeDeleteInvoke(new BeforeDeleteEventArgs(this, documentInfo.getId(), documentInfo.getEntity()));
-//                    DeleteCommandData deleteCommandData = new DeleteCommandData(documentInfo.getId(), changeVector, documentInfo.getChangeVector());
+//                    onBeforeDeleteInvoke(
+//                        new BeforeDeleteEventArgs(this, documentInfo.getId(), documentInfo.getEntity())
+//                    );
+//                    DeleteCommandData deleteCommandData =
+//                          new DeleteCommandData(documentInfo.getId(), changeVector, documentInfo.getChangeVector());
 //                    result.getSessionCommands().add(deleteCommandData);
 //                }
 //

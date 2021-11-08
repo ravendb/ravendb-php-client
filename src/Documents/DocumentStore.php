@@ -116,19 +116,21 @@ class DocumentStore extends DocumentStoreBase
     public function openSession(string $database = ''): DocumentSessionInterface
     {
         $sessionOptions = new SessionOptions();
-        $sessionOptions->setDisableAtomicDocumentWritesInClusterWideTransaction($this->getConventions()->getDisableAtomicDocumentWritesInClusterWideTransaction());
+        $sessionOptions->setDisableAtomicDocumentWritesInClusterWideTransaction(
+            $this->getConventions()->getDisableAtomicDocumentWritesInClusterWideTransaction()
+        );
         if ($database) {
             $sessionOptions->setDatabase($database);
         }
 
-        return $this->_openSession($sessionOptions);
+        return $this->openSessionWithOptions($sessionOptions);
     }
 
     /**
      * @throws IllegalStateException
      * @throws IllegalArgumentException
      */
-    public function _openSession(SessionOptions $sessionOptions): DocumentSessionInterface
+    public function openSessionWithOptions(SessionOptions $sessionOptions): DocumentSessionInterface
     {
         $this->assertInitialized();
         $this->ensureNotClosed();

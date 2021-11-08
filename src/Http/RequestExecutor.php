@@ -22,9 +22,14 @@ class RequestExecutor
     }
 
 
-    public static function create(UrlArray $initialUrls, string $databaseName, DocumentConventions $conventions): RequestExecutor
-    {
-//        RequestExecutor executor = new RequestExecutor(databaseName, certificate, keyPassword, trustStore, conventions, executorService, initialUrls);
+    public static function create(
+        UrlArray $initialUrls,
+        string $databaseName,
+        DocumentConventions $conventions
+    ): RequestExecutor {
+//        RequestExecutor executor = new RequestExecutor(
+//              databaseName, certificate, keyPassword, trustStore, conventions, executorService, initialUrls
+//        );
 //        executor._firstTopologyUpdate = executor.firstTopologyUpdate(initialUrls, GLOBAL_APPLICATION_IDENTIFIER);
 //        return executor;
 
@@ -42,8 +47,11 @@ class RequestExecutor
         return $executor;
     }
 
-    public function execute(RavenCommand $command, ?SessionInfo $sessionInfo = null, ?ExecuteOptions $options = null): void
-    {
+    public function execute(
+        RavenCommand $command,
+        ?SessionInfo $sessionInfo = null,
+        ?ExecuteOptions $options = null
+    ): void {
         if ($options) {
             $this->executeOnSpecificNode($command, $sessionInfo, $options);
         }
@@ -58,28 +66,48 @@ class RequestExecutor
         $this->executeOnSpecificNode($command, $sessionInfo, $executeOptions);
     }
 
-    private function executeOnSpecificNode(RavenCommand $command, ?SessionInfo $sessionInfo, ExecuteOptions $options)
-    {
+    private function executeOnSpecificNode(
+        RavenCommand $command,
+        ?SessionInfo $sessionInfo,
+        ExecuteOptions $options
+    ): void {
         $request = $command->createRequest($options->getChosenNode());
 
         if ($request == null) {
             return;
         }
 
-        $response = $this->sendRequestToServer($options->getChosenNode(), $options->getNodeIndex(), $command, true, $sessionInfo, $request);
+        $response = $this->sendRequestToServer(
+            $options->getChosenNode(),
+            $options->getNodeIndex(),
+            $command,
+            true,
+            $sessionInfo,
+            $request
+        );
 
         if ($response == null) {
             return ;
         }
     }
 
-    private function sendRequestToServer(ServerNode $chosenNode, int $nodeIndex, RavenCommand $command, bool $shouldRetry, ?SessionInfo $sessionInfo, HttpRequestInterface $request): HttpResponseInterface
-    {
+    private function sendRequestToServer(
+        ServerNode $chosenNode,
+        int $nodeIndex,
+        RavenCommand $command,
+        bool $shouldRetry,
+        ?SessionInfo $sessionInfo,
+        HttpRequestInterface $request
+    ): HttpResponseInterface {
         return $this->send($chosenNode, $command, $sessionInfo, $request);
     }
 
-    private function send(ServerNode $chosenNode, RavenCommand $command, ?SessionInfo $sessionInfo, HttpRequestInterface $request): HttpResponseInterface
-    {
+    private function send(
+        ServerNode $chosenNode,
+        RavenCommand $command,
+        ?SessionInfo $sessionInfo,
+        HttpRequestInterface $request
+    ): HttpResponseInterface {
         $response = $command->send($this->getHttpClient(), $request);
 
         return $response;

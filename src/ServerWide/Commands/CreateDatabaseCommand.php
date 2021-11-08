@@ -20,8 +20,12 @@ class CreateDatabaseCommand extends RavenCommand
     private ?int $eTag;
     private string $databaseName;
 
-    public function __construct(DocumentConventions $conventions, DatabaseRecord $databaseRecord, int $replicationFactor, ?int $eTag = null)
-    {
+    public function __construct(
+        DocumentConventions $conventions,
+        DatabaseRecord $databaseRecord,
+        int $replicationFactor,
+        ?int $eTag = null
+    ) {
         $this->conventions = $conventions;
         $this->databaseRecord = $databaseRecord;
         $this->replicationFactor = $replicationFactor;
