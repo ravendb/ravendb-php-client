@@ -27,5 +27,4 @@ class Order
      * @SerializedName("ItemsAsMap")
      */
     public ?OrderLineMap $itemsAsMap = null;
-
 }

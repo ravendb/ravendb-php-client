@@ -38,6 +38,5 @@ class SerializerTest extends TestCase
         $this->assertInstanceOf(OrderLine::class, $order->itemsAsMap['F1']);
 
         print_r($order);
-
     }
 }

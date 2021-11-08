@@ -10,6 +10,4 @@ class OrderLineArray extends TypedArray
     {
         parent::__construct(OrderLine::class);
     }
-
-
 }

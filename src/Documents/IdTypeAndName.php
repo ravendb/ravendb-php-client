@@ -43,18 +43,28 @@ class IdTypeAndName
 
     public function equals(?object $o): bool
     {
-        if ($this == $o) return true;
+        if ($this == $o) {
+            return true;
+        }
 
-        if ($o == null) return false;
+        if ($o == null) {
+            return false;
+        }
 
-        if (self::class != get_class($o)) return false;
+        if (self::class != get_class($o)) {
+            return false;
+        }
 
         /** @var IdTypeAndName $that */
         $that = $o;
 
-        if ($this->id !== $that->getId()) return false;
+        if ($this->id !== $that->getId()) {
+            return false;
+        }
 
-        if (!$this->type->equals($that->getType())) return false;
+        if (!$this->type->equals($that->getType())) {
+            return false;
+        }
 
         return $this->name == $that->getName();
     }
@@ -92,5 +102,4 @@ class IdTypeAndName
         $idTypeAndName->setName($name);
         return $idTypeAndName;
     }
-
 }

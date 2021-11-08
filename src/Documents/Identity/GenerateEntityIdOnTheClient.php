@@ -60,7 +60,6 @@ class GenerateEntityIdOnTheClient
             }
 
             return $value;
-
         } catch (Throwable $e) {
             throw new IllegalStateException($e->getMessage());
         }

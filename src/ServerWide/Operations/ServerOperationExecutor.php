@@ -24,8 +24,7 @@ class ServerOperationExecutor implements CleanCloseable
         ?ClusterRequestExecutor $initialRequestExecutor = null,
         ?ServerOperationExecutorArray $cache = null,
         ?string $nodeTag = null
-    )
-    {
+    ) {
         if (empty($store)) {
             throw new IllegalArgumentException("Store cannot be null");
         }

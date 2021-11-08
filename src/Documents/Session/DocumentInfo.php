@@ -17,7 +17,7 @@ class DocumentInfo
     private array $metadata;
     private array $document;
 
-//    private IMetadataDictionary metadataInstance;
+    private ?MetadataDictionaryInterface $metadataInstance = null;
 
     private ?object $entity;
     private bool $newDocument;
@@ -142,5 +142,15 @@ class DocumentInfo
     public function setEntity(?object $entity): void
     {
         $this->entity = $entity;
+    }
+
+    public function getMetadataInstance(): ?MetadataDictionaryInterface
+    {
+        return $this->metadataInstance;
+    }
+
+    public function setMetadataInstance(?MetadataDictionaryInterface $metadataInstance): void
+    {
+        $this->metadataInstance = $metadataInstance;
     }
 }

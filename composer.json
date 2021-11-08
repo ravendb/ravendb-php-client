@@ -46,7 +46,7 @@
         "test": "phpunit",
         "check-style": "phpcs src tests",
         "fix-style": "phpcbf src tests",
-        "stan": "phpstan analyse src tests --level=4",
+        "stan": "phpstan analyse src tests",
         "psalm": "psalm"
     },
     "extra": {

@@ -155,7 +155,8 @@ class DocumentStore extends DocumentStoreBase
     /**
      * @throws IllegalStateException
      */
-    public function maintenance(): MaintenanceOperationExecutor {
+    public function maintenance(): MaintenanceOperationExecutor
+    {
         $this->assertInitialized();
 
         if ($this->maintenanceOperationExecutor == null) {

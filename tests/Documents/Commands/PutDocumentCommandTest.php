@@ -49,8 +49,6 @@ class PutDocumentCommandTest extends RemoteTestBase
             } finally {
 //                $session->dispose();
             }
-
-
         } finally {
             $this->cleanUp($store);
         }

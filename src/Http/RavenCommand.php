@@ -82,6 +82,4 @@ abstract class RavenCommand
     {
         return $this->resultClass;
     }
-
-
 }

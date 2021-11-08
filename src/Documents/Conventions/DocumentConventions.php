@@ -208,22 +208,22 @@ class DocumentConventions
         }
 
 
-      try {
+        try {
             $idField = '';
 
             // todo: Implement this!!!!
-//          Field idField = Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
-//                    .filter(x -> _findIdentityProperty.apply(x))
-//                    .findFirst()
-//                    .map(x -> getField(clazz, x.getName()))
-//                    .orElse(null);
+  //          Field idField = Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
+  //                    .filter(x -> _findIdentityProperty.apply(x))
+  //                    .findFirst()
+  //                    .map(x -> getField(clazz, x.getName()))
+  //                    .orElse(null);
 
-          $this->idPropertyCache[$className] = $idField;
+            $this->idPropertyCache[$className] = $idField;
 
-          return $idField;
-      } catch (Throwable $e) {
-          throw new RuntimeException($e->getMessage());
-      }
+            return $idField;
+        } catch (Throwable $e) {
+            throw new RuntimeException($e->getMessage());
+        }
     }
 
     public function getIdentityPartsSeparator(): string
@@ -305,8 +305,4 @@ class DocumentConventions
 
         return $this->getCollectionNameForClass(get_class($entity));
     }
-
-
-
-
 }

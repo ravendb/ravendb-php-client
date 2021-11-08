@@ -14,6 +14,8 @@ use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Http\RequestExecutor;
+use RavenDB\Json\JsonOperation;
+use RavenDB\Json\MetadataAsDictionary;
 use RavenDB\primitives\CleanCloseable;
 use RavenDB\Utils\StringUtils;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
@@ -51,7 +53,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     public DocumentsByEntityHolder $documentsByEntity;
 
-    protected abstract function generateId(?object $entity): string;
+    abstract protected function generateId(?object $entity): string;
 
     protected array $deferredCommandsMap = [];
 
@@ -446,7 +448,6 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $collectionName = $this->requestExecutor->getConventions()->getCollectionName($entity);
 
         $mapper = JsonExtensions::getDefaultMapper();
-//        ObjectNode metadata = mapper.createObjectNode();
         $metadata = [];
 
         if ($collectionName != null) {
@@ -531,6 +532,12 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     private function getAllEntitiesChanges(): array
     {
         // @todo: implement this
+        foreach ($this->documentsById as $id => $documentInfo) {
+            $this->updateMetadataModifications($documentInfo);
+            $newObj = $this->entityToJson->convertEntityToJson($documentInfo->getEntity(), $documentInfo);
+            $this->entityChanged($newObj, $documentInfo, $changes);
+        }
+
 //        for (Map.Entry<String, DocumentInfo> pair : documentsById) {
 //            updateMetadataModifications(pair.getValue());
 //            ObjectNode newObj = entityToJson.convertEntityToJson(pair.getValue().getEntity(), pair.getValue());
@@ -597,4 +604,30 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //}
     }
 
+    /**
+     * @throws ExceptionInterface
+     */
+    private function updateMetadataModifications(DocumentInfo $documentInfo): bool
+    {
+        $dirty = false;
+        $mapper = JsonExtensions::getDefaultMapper();
+        if ($documentInfo->getMetadataInstance() != null) {
+            if ($documentInfo->getMetadataInstance()->isDirty()) {
+                $dirty = true;
+            }
+            foreach ($documentInfo->getMetadataInstance() as $key => $value) {
+                if (($value == null) || (($value instanceof MetadataAsDictionary) && ($value->isDirty()))) {
+                    $dirty = true;
+                }
+
+                $documentInfo->getMetadata()[$key] = $mapper->normalize($value);
+            }
+        }
+        return $dirty;
+    }
+
+    protected function entityChanged(array $newObject, DocumentInfo $documentInfo, array $changes): bool
+    {
+        return JsonOperation::entityChanged($newObject, $documentInfo, $changes);
+    }
 }
