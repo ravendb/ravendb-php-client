@@ -5,7 +5,9 @@ namespace RavenDB\Documents\Commands;
 use InvalidArgumentException;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ServerNode;
+use RavenDB\Utils\UrlUtils;
 
+// @todo: implement GetDocumentCommnad class
 class GetDocumentsCommand extends RavenCommand
 {
     protected array $ids = [];
@@ -55,10 +57,8 @@ class GetDocumentsCommand extends RavenCommand
         }
 
         if ($this->startWith != null) {
-            // todo: find php alternative for escapeDataString
-//            pathBuilder.append("&startsWith=");
-//            pathBuilder.append(UrlUtils.escapeDataString(_startWith));
-//
+            $path .= '&startsWith=' . UrlUtils::escapeDataString($this->startWith);
+
             if ($this->matches != null) {
                 $path .= '&matches=' . urlEncode($this->matches);
             }
@@ -78,6 +78,7 @@ class GetDocumentsCommand extends RavenCommand
             }
         }
 
+        // @todo: complete implementation createUrl method
 //        if (_includeAllCounters) {
 //            pathBuilder
 //                    .append("&counter=")
