@@ -529,10 +529,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $documentInfo = new DocumentInfo();
         $documentInfo->setId($id);
         $documentInfo->setMetadata($metadata);
-
-        // I've added this because change vector must be string, but it's never set on crudTest...
-        $documentInfo->setChangeVector($changeVector ?? ''); // @todo: remove this: ?? ''
-        //
+        $documentInfo->setChangeVector($changeVector);
         $documentInfo->setConcurrencyCheckMode($forceConcurrencyCheck);
         $documentInfo->setEntity($entity);
         $documentInfo->setNewDocument(true);
@@ -565,6 +562,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     public function whatChanged(): array
     {
+        // @todo: implement this method
         $changes = $this->getAllEntitiesChanges();
 
 //        prepareForEntitiesDeletion(null, $changes);

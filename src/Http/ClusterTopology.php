@@ -8,67 +8,42 @@ class ClusterTopology
     private string $topologyId;
     private int $etag;
 
-    // sve sto je zakomentarisano treba implementirati i kad se implementira potrebno je ukloniti iz komentara
-
     private array $members = [];
     private array $promotables = [];
     private array $watchers = [];
 
+    public function contains(string $node): bool
+    {
+        if (in_array($node, $this->members)) {
+            return true;
+        }
+        if (in_array($node, $this->promotables)) {
+            return true;
+        }
+        return in_array($node, $this->watchers);
+    }
 
-//    public boolean contains(String node) {
-//        if (members != null && members.containsKey(node)) {
-//            return true;
-//        }
-//if (promotables != null && promotables.containsKey(node)) {
-//    return true;
-//}
-//
-//return watchers != null && watchers.containsKey(node);
-//}
-//
-//public String getUrlFromTag(String tag) {
-//    if (tag == null) {
-//        return null;
-//    }
-//
-//    if (members != null && members.containsKey(tag)) {
-//        return members.get(tag);
-//    }
-//
-//    if (promotables != null && promotables.containsKey(tag)) {
-//        return promotables.get(tag);
-//    }
-//
-//    if (watchers != null && watchers.containsKey(tag)) {
-//        return watchers.get(tag);
-//    }
-//
-//    return null;
-//}
-//
-//    public Map<String, String> getAllNodes() {
-//Map<String, String> result = new HashMap<>();
-//        if (members != null) {
-//            for (Map.Entry<String, String> entry : members.entrySet()) {
-//                result.put(entry.getKey(), entry.getValue());
-//            }
-//        }
-//
-//        if (promotables != null) {
-//            for (Map.Entry<String, String> entry : promotables.entrySet()) {
-//                result.put(entry.getKey(), entry.getValue());
-//            }
-//        }
-//
-//        if (watchers != null) {
-//            for (Map.Entry<String, String> entry : watchers.entrySet()) {
-//                result.put(entry.getKey(), entry.getValue());
-//            }
-//        }
-//
-//        return result;
-//    }
-//
+    public function getUrlFromTag(string $tag): ?string
+    {
+        if ($tag == null) {
+            return null;
+        }
+        if (array_key_exists($tag, $this->members)) {
+            return $this->members[$tag];
+        }
+        if (array_key_exists($tag, $this->promotables)) {
+            return $this->promotables[$tag];
+        }
+        if (array_key_exists($tag, $this->watchers)) {
+            return $this->watchers[$tag];
+        }
+        return null;
+    }
+
+    public function getAllNodes(): array
+    {
+        return array_merge($this->members, $this->promotables, $this->watchers);
+    }
 
     public function getMembers(): array
     {

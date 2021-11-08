@@ -9,7 +9,7 @@ class DocumentInfo
 {
     private string $id;
 
-    private string $changeVector;
+    private ?string $changeVector;
     private ConcurrencyCheckMode $concurrencyCheckMode;
 
     private bool $ignoreChanges;
@@ -64,12 +64,12 @@ class DocumentInfo
         $this->id = $id;
     }
 
-    public function getChangeVector(): string
+    public function getChangeVector(): ?string
     {
         return $this->changeVector;
     }
 
-    public function setChangeVector(string $changeVector): void
+    public function setChangeVector(?string $changeVector): void
     {
         $this->changeVector = $changeVector;
     }
