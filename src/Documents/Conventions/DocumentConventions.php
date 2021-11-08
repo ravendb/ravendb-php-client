@@ -12,6 +12,7 @@ use RuntimeException;
 use Symfony\Component\Serializer\Serializer;
 use Throwable;
 
+// @todo: Implement all methods in class
 class DocumentConventions
 {
     protected bool $topologyUpdatesEnabled = false;
@@ -36,6 +37,8 @@ class DocumentConventions
     public function __construct()
     {
         $this->loadBalanceBehavior = LoadBalanceBehavior::none();
+
+        // @todo: implement this constructor
 
 //        _readBalanceBehavior = ReadBalanceBehavior.NONE;
 //        _findIdentityProperty = q -> q.getName().equals("id");

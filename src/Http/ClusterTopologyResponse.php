@@ -2,8 +2,6 @@
 
 namespace RavenDB\Http;
 
-use Symfony\Component\Serializer\Annotation\SerializedName;
-
 class ClusterTopologyResponse implements ResultInterface
 {
     private ?string $leader = null;
@@ -14,35 +12,22 @@ class ClusterTopologyResponse implements ResultInterface
 
     private int $etag;
 
-    /**
-     * @SerializedName("CurrentState")
-     */
-    private ?string $trenutnoStanje = null;
+    private NodeStatusMap $status;
 
-    public function getTrenutnoStanje(): ?string
+    public function __construct()
     {
-        return $this->trenutnoStanje;
+        $this->status = new NodeStatusMap();
     }
 
-    public function setTrenutnoStanje(?string $trenutnoStanje): void
+    public function getStatus(): NodeStatusMap
     {
-        $this->trenutnoStanje = $trenutnoStanje;
+        return $this->status;
     }
 
-    // ??? ovo dalje nemam pojma sta treba ovaj setStatus da predstavlja
-    // tako da cemo za sada to da zakomentarisemo
-
-//    private Map<String, NodeStatus> status;
-
-
-//    public Map<String, NodeStatus> getStatus() {
-//        return status;
-//    }
-//
-//    public void setStatus(Map<String, NodeStatus> status) {
-//this.status = status;
-//    }
-//
+    public function setStatus(NodeStatusMap $status): void
+    {
+        $this->status = $status;
+    }
 
     public function getLeader(): ?string
     {

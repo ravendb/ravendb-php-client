@@ -8,6 +8,8 @@ class GetDocumentsResult implements ResultInterface
 {
     private array $includes = [];
     private array $results = [];
+
+    // @todo: implement this properties with getter and setters in tGetDocumentsResult
 //    private ObjectNode $counterIncludes;
 //    private ObjectNode $timeSeriesIncludes;
 //    private ObjectNode $compareExchangeValueIncludes;
