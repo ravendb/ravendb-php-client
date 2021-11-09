@@ -46,7 +46,6 @@ class GetClusterTopologyTest extends RemoteTestBase
 
             $this->assertIsArray($topology->getPromotables());
             $this->assertEquals(0, count($topology->getPromotables()));
-
         } finally {
             $store->close();
         }
