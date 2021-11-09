@@ -2,9 +2,7 @@
 
 namespace RavenDB\Exceptions;
 
-use Exception;
-
-class IllegalStateException extends Exception
+class IllegalStateException extends RavenException
 {
     public function __construct($message = "")
     {

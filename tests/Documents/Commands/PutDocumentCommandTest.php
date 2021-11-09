@@ -47,10 +47,10 @@ class PutDocumentCommandTest extends RemoteTestBase
                 $loadedUser = $session->load(User::class, "users/1");
                 $this->assertEquals('Aleksandar', $loadedUser->getName());
             } finally {
-//                $session->dispose();
+//                $session->close();
             }
         } finally {
-            $this->cleanUp($store);
+            $store->close();
         }
     }
 }

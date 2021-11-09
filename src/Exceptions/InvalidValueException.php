@@ -2,9 +2,7 @@
 
 namespace RavenDB\Exceptions;
 
-use Exception;
-
-class InvalidValueException extends Exception
+class InvalidValueException extends RavenException
 {
     const MESSAGE = '%s invalid value: %s';
 

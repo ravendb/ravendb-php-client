@@ -41,7 +41,7 @@ class RequestExecutorTest extends RemoteTestBase
 
             $this->assertContains($store->getDatabase(), $dbNames->toArray());
         } finally {
-            $this->cleanUp($store);
+            $store->close();
         }
     }
 }

@@ -2,15 +2,17 @@
 
 namespace tests\RavenDB\Test\Client\Crud;
 
-use RavenDB\Exceptions\IllegalArgumentException;
+use InvalidArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use tests\RavenDB\RemoteTestBase;
 use tests\RavenDB\Test\Client\Crud\Entities\Family;
 
 class CrudTest extends RemoteTestBase
 {
+    private string $var;
+
     /**
-     * @throws IllegalArgumentException
+     * @throws InvalidArgumentException
      * @throws IllegalStateException
      */
     public function testCrudOperationsWithArrayInObject()
@@ -43,7 +45,7 @@ class CrudTest extends RemoteTestBase
 
                 // @continue on JsonOperation::entityChanged method
 
-                print_r($newSession->advanced()->whatChanged());
+//                print_r($newSession->advanced()->whatChanged()); // work in progress
 //                $this->assertEquals(1, count($newSession->advanced()->whatChanged()));
                 $this->assertTrue(true);
 
@@ -52,7 +54,7 @@ class CrudTest extends RemoteTestBase
 //                $newSession->close();  // @todo: check do we need this line here. I think we don't need it.
             }
         } finally {
-            $this->cleanUp($store);
+            $store->close();
         }
     }
 }

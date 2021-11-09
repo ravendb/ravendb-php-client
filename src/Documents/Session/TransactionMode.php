@@ -13,6 +13,9 @@ class TransactionMode
 
     private string $value;
 
+    /**
+     * @throws InvalidValueException
+     */
     public function __construct(string $value)
     {
         $this->setValue($value);

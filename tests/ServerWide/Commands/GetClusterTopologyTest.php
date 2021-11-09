@@ -16,34 +16,39 @@ class GetClusterTopologyTest extends RemoteTestBase
     {
         $store = $this->getDocumentStore();
 
-        $command = new GetClusterTopologyCommand();
+        try {
+            $command = new GetClusterTopologyCommand();
 
-        $store->getRequestExecutor()
-            ->execute($command);
+            $store->getRequestExecutor()
+                ->execute($command);
 
-        /** @var ClusterTopologyResponse $result */
-        $result = $command->getResult();
+            /** @var ClusterTopologyResponse $result */
+            $result = $command->getResult();
 
-        $this->assertNotNull($result);
+            $this->assertNotNull($result);
 
-        $this->assertNotNull($result->getLeader());
+            $this->assertNotNull($result->getLeader());
 
-        $this->assertNotNull($result->getNodeTag());
+            $this->assertNotNull($result->getNodeTag());
 
-        /** @var ClusterTopology $topology */
-        $topology = $result->getTopology();
+            /** @var ClusterTopology $topology */
+            $topology = $result->getTopology();
 
-        $this->assertNotNull($topology);
+            $this->assertNotNull($topology);
 
-        $this->assertNotNull($topology->getTopologyId());
+            $this->assertNotNull($topology->getTopologyId());
 
-        $this->assertIsArray($topology->getMembers());
-        $this->assertEquals(1, count($topology->getMembers()));
+            $this->assertIsArray($topology->getMembers());
+            $this->assertEquals(1, count($topology->getMembers()));
 
-        $this->assertIsArray($topology->getWatchers());
-        $this->assertEquals(0, count($topology->getWatchers()));
+            $this->assertIsArray($topology->getWatchers());
+            $this->assertEquals(0, count($topology->getWatchers()));
 
-        $this->assertIsArray($topology->getPromotables());
-        $this->assertEquals(0, count($topology->getPromotables()));
+            $this->assertIsArray($topology->getPromotables());
+            $this->assertEquals(0, count($topology->getPromotables()));
+
+        } finally {
+            $store->close();
+        }
     }
 }
