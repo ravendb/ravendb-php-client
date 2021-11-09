@@ -1,0 +1,24 @@
+{
+    "OrderDate": "2021-03-19T16:17:52.4486295Z",
+    "Id": 7,
+    "Name": "test",
+    "SingleItem": {
+        "Id": "aaa"
+    },
+    "ItemsArray": [
+        {
+            "Id": "bbb"
+        },
+        {
+            "Id": "ccc"
+        }
+    ],
+    "ItemsAsMap": {
+        "F1": {
+            "Id": "ddd"
+        },
+        "F2": {
+            "Id": "eee"
+        }
+    }
+}
