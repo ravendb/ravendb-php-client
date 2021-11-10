@@ -2,10 +2,6 @@
 
 namespace RavenDB\Type;
 
-use RavenDB\Extensions\JsonExtensions;
-use Symfony\Component\Serializer\Exception\ExceptionInterface;
-use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
-
 class TypedArray extends \ArrayObject implements \JsonSerializable
 {
     protected string $type;
@@ -13,6 +9,11 @@ class TypedArray extends \ArrayObject implements \JsonSerializable
     public static function forType(string $type): self
     {
         return new self($type);
+    }
+
+    public function getType(): string
+    {
+        return $this->type;
     }
 
     protected function __construct(string $type)
@@ -26,32 +27,6 @@ class TypedArray extends \ArrayObject implements \JsonSerializable
         }
 
         parent::__construct();
-    }
-
-    /**
-     * @throws ExceptionInterface
-     */
-    public function addItemFromData(array $data): void
-    {
-        $serializer = JsonExtensions::getDefaultEntityMapper();
-
-        $object = $serializer->denormalize($data, $this->type);
-        parent::append($object);
-    }
-
-    /**
-     * @throws ExceptionInterface
-     */
-    public function addItemsFromData(array $items): void
-    {
-        foreach ($items as $data) {
-            $this->addItemFromData($data);
-        }
-    }
-
-    public function denormalize(DenormalizerInterface $denormalizer, $data, string $format = null, array $context = [])
-    {
-        $this->addItemsFromData($data);
     }
 
     public function offsetSet($key, $value)
