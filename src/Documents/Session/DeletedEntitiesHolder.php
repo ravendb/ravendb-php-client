@@ -5,20 +5,14 @@ namespace RavenDB\Documents\Session;
 use RavenDB\Type\TypedArray;
 
 //@todo: implement this
-class DocumentsByEntityHolder extends TypedArray
+class DeletedEntitiesHolder extends TypedArray
 {
     public function __construct()
     {
-        parent::__construct(DocumentsByEntityEnumeratorResult::class);
+        parent::__construct(DeletedEntitiesEnumeratorResult::class);
     }
 
-    public function get(object $entity): ?DocumentInfo
-    {
-        //@todo: implement this
-        return null;
-    }
-
-    public function put(?object $entity, DocumentInfo $documentInfo): void
+    public function add(?object $entity): void
     {
         //@todo: implement this
     }

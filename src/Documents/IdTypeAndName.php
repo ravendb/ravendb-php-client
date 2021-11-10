@@ -2,7 +2,7 @@
 
 namespace RavenDB\Documents;
 
-use RavenDB\Documents\Commands\batches\CommandType;
+use RavenDB\Documents\Commands\Batches\CommandType;
 use RavenDB\Utils\StringUtils;
 
 class IdTypeAndName

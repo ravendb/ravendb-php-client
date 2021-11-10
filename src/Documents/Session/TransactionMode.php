@@ -78,4 +78,9 @@ class TransactionMode
             throw new InvalidValueException(self::NAME, $value);
         }
     }
+
+    public function isEqual(TransactionMode $mode): bool
+    {
+        return $this->value == $mode->value;
+    }
 }

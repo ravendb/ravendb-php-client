@@ -171,7 +171,7 @@ class LoadOperation
             return new $className();
         }
 
-        $doc = $this->session->documentsById->getValue($id);
+        $doc = $this->session->documentsById[$id];
         if ($doc != null) {
             return $this->session->trackEntity($className, $doc);
         }

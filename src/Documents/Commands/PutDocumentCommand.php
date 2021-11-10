@@ -3,7 +3,7 @@
 namespace RavenDB\Documents\Commands;
 
 use InvalidArgumentException;
-use RavenDB\Documents\Commands\batches\PutResult;
+use RavenDB\Documents\Commands\Batches\PutResult;
 use RavenDB\Http\HttpRequest;
 use RavenDB\Http\HttpRequestInterface;
 use RavenDB\Http\RavenCommand;

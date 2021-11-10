@@ -98,7 +98,8 @@ class RemoteTestBase extends RavenTestDriver
     private function runServer(bool $secured): void
     {
         $urls = new UrlArray();
-        $urls->append(new Url('http://live-test.ravendb.net'));
+//        $urls->append(new Url('http://live-test.ravendb.net'));
+        $urls->append(new Url('http://127.0.0.1:8080'));
 
         $store = new DocumentStore('test.manager');
         $store->setUrls($urls);

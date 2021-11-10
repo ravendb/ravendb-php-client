@@ -137,6 +137,7 @@ class DocumentStore extends DocumentStoreBase
 
         $sessionId = Uuid::uuid4();
         $session = new DocumentSession($this, $sessionId, $sessionOptions);
+        $session->deferredCommands = [];
 
         $this->registerEvents($session);
         $this->afterSessionCreated($session);
