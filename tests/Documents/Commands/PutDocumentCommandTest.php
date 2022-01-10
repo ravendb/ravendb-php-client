@@ -3,7 +3,7 @@
 namespace tests\RavenDB\Documents\Commands;
 
 use InvalidArgumentException;
-use RavenDB\Documents\Commands\batches\PutResult;
+use RavenDB\Documents\Commands\Batches\PutResult;
 use RavenDB\Documents\Commands\PutDocumentCommand;
 use RavenDB\Documents\DocumentStore;
 use RavenDB\Exceptions\IllegalStateException;

@@ -20,8 +20,8 @@ class DocumentInfo
     private ?MetadataDictionaryInterface $metadataInstance = null;
 
     private ?object $entity;
-    private bool $newDocument;
-    private string $collection;
+    private bool $newDocument = false;
+    private string $collection = '';
 
     /**
      * @throws IllegalStateException

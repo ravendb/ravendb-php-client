@@ -1,6 +1,6 @@
 <?php
 
-namespace RavenDB\Documents\Commands\batches;
+namespace RavenDB\Documents\Commands\Batches;
 
 class CommandType
 {
