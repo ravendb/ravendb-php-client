@@ -7,7 +7,7 @@ use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ServerNode;
 use RavenDB\Utils\UrlUtils;
 
-// @todo: implement GetDocumentCommnad class
+// @todo: implement GetDocumentCommand class
 class GetDocumentsCommand extends RavenCommand
 {
     protected array $ids = [];

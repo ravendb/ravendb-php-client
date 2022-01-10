@@ -112,9 +112,6 @@ class RemoteTestBase extends RavenTestDriver
         }
     }
 
-    /**
-     * @throws IllegalStateException
-     */
     public function cleanUp(DocumentStore $store): void
     {
         if (!in_array($store, $this->documentStores->getArrayCopy())) {

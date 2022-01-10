@@ -102,6 +102,9 @@ class RequestExecutor
         return $this->send($chosenNode, $command, $sessionInfo, $request);
     }
 
+    /**
+     * @throws \RavenDB\Exceptions\InvalidResultAssignedToCommandException
+     */
     private function send(
         ServerNode $chosenNode,
         RavenCommand $command,

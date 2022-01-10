@@ -13,12 +13,22 @@ class DocumentsById extends TypedMap
 
     public function add(DocumentInfo $documentInfo)
     {
+        if ($this->offsetExists($documentInfo->getId())) {
+            return;
+        }
         $this[$documentInfo->getId()] = $documentInfo;
     }
 
     public function getValue($id): DocumentInfo
     {
         return $this[$id];
+    }
+
+    public function remove(string $id): void
+    {
+        if ($this->offsetExists($id)) {
+            $this->remove($id);
+        }
     }
 
     public function clear(): void

@@ -57,7 +57,7 @@ class JsonOperation
         DocumentInfo $documentInfo
     ): DocumentsChangesArray {
 
-        if (!$documentInfo->isNewDocument() && $documentInfo->getDocument() != null) {
+        if ($documentInfo->isNewDocument() && $documentInfo->getDocument() != null) {
             return self::extractChangesFromJson(
                 "",
                 $documentInfo->getDocument(),

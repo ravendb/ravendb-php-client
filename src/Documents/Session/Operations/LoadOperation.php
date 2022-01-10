@@ -9,18 +9,26 @@ use RavenDB\Documents\Session\DocumentInfo;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Exceptions\IllegalStateException;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
+use function PHPUnit\Framework\isEmpty;
 
 class LoadOperation
 {
     private InMemoryDocumentSessionOperations $session;
 
+//    private static final Log logger = LogFactory.getLog(LoadOperation.class);
+
     private array $ids = [];
     private array $includes = [];
 
-    private bool $resultsSet = false;
+    private array $countersToInclude = [];
+    private array $compareExchangeValuesToInclude = [];
     private bool $includeAllCounters = false;
+    private array $timeSeriesToInclude = [];
 
+
+    private bool $resultsSet = false;
     private GetDocumentsResult $results;
+
 
     public function __construct(InMemoryDocumentSessionOperations $session)
     {
@@ -33,9 +41,9 @@ class LoadOperation
      */
     public function createRequest(): ?GetDocumentsCommand
     {
-//        if ($this->session->checkIfIdAlreadyIncluded($this->ids, $this->includes)) {
-//            return null;
-//        }
+        if ($this->session->checkIfIdAlreadyIncluded($this->ids, $this->includes)) {
+            return null;
+        }
 
         $this->session->incrementRequestCount();
 
@@ -71,64 +79,56 @@ class LoadOperation
         return $this;
     }
 
-    public function setResult(?GetDocumentsResult $result)
+    public function withIncludes(array $includes): LoadOperation
     {
-        $this->resultsSet = true;
+        $this->includes = $includes;
+        return $this;
+    }
 
+    public function withCompareExchange(array $compareExchangeValues): LoadOperation
+    {
+        $this->compareExchangeValuesToInclude = $compareExchangeValues;
+        return $this;
+    }
 
-//        if ($this->session->noTracking) {
-//            $this->results = $result;
-//            return;
-//        }
-
-        if ($result == null) {
-            $this->session->registerMissing($this->ids);
-            return;
+    public function withCounters(?array $counters): LoadOperation
+    {
+        if ($counters != null) {
+            $this->countersToInclude = $counters;
         }
-
-        $this->session->registerIncludes($result->getIncludes());
-
-//        if (_includeAllCounters || _countersToInclude != null) {
-//            _session.registerCounters(result.getCounterIncludes(), _ids, _countersToInclude, _includeAllCounters);
-//        }
-//
-//        if (_timeSeriesToInclude != null) {
-//            _session.registerTimeSeries(result.getTimeSeriesIncludes());
-//        }
-//
-//        if (_compareExchangeValuesToInclude != null) {
-//            _session.getClusterSession().registerCompareExchangeValues(result.getCompareExchangeValueIncludes());
-//        }
-
-
-            // JsonNode document
-        foreach ($result->getResults() as $document) {
-            // todo: check what is this isNull in java
-            if (empty($document)) { //  $document == null || $document->isNull()
-                continue;
-            }
-
-            $newDocumentInfo = DocumentInfo::getNewDocumentInfo($document);
-            $this->session->documentsById->add($newDocumentInfo);
-        }
-//
-
-//
-//        for (String id : _ids) {
-//            DocumentInfo value = _session.documentsById.getValue(id);
-//            if (value == null) {
-//                _session.registerMissing(id);
-//            }
-//        }
-//
-//        _session.registerMissingIncludes(result.getResults(), result.getIncludes(), _includes);
+        return $this;
     }
 
     public function withAllCounters(): LoadOperation
     {
-        $$this->includeAllCounters = true;
+        $this->includeAllCounters = true;
         return $this;
     }
+
+    public function withTimeSeries(?array $timeSeries): LoadOperation
+    {
+        if ($timeSeries != null) {
+            $this->timeSeriesToInclude = $timeSeries;
+        }
+        return $this;
+    }
+
+    public function byIds(array $ids): LoadOperation
+    {
+        // @todo: check this TreeSet or we can leave array
+        $distinct = []; //new TreeSet<>(String::compareToIgnoreCase);
+
+        foreach($ids as $id) {
+            if (!empty($id)) {
+                $distinct[] = $id;
+            }
+        }
+
+        $this->ids = $distinct;
+
+        return $this;
+    }
+
 
     /**
      * @throws ExceptionInterface
@@ -136,23 +136,27 @@ class LoadOperation
      */
     public function getDocument(string $className)
     {
-//        if (_session.noTracking) {
-//            if (!_resultsSet && _ids.length > 0) {
-//                throw new IllegalStateException("Cannot execute getDocument before operation execution.");
-//            }
-//
-//            if (_results == null || _results.getResults() == null || _results.getResults().size() == 0) {
-//                return null;
-//            }
-//
-//            ObjectNode document = (ObjectNode) _results.getResults().get(0);
-//            if (document == null) {
-//                return null;
-//            }
-//
-//            DocumentInfo documentInfo = DocumentInfo.getNewDocumentInfo(document);
-//            return _session.trackEntity(clazz, documentInfo);
-//        }
+        if ($this->session->noTracking) {
+            if (!$this->resultsSet && count($this->ids)) {
+                throw new IllegalStateException('Cannot execute getDocument before operation execution.');
+            }
+
+            if (
+                ($this->results != null) ||
+                $this->results->getResults() == null ||
+                (count($this->results->getResults()) == 0))
+            {
+                return null;
+            }
+
+            $document = $this->results->getResults()[0];
+            if ($document == null) {
+                return null;
+            }
+
+            $documentInfo = DocumentInfo::getNewDocumentInfo($document);
+            return $this->session->trackEntity($className, $documentInfo);
+        }
 
         return $this->getDocumentWithId($className, $this->ids[0]);
     }
@@ -182,5 +186,106 @@ class LoadOperation
         }
 
         return new $className();
+    }
+
+    /**
+     * @throws ExceptionInterface
+     * @throws IllegalStateException
+     */
+    public function getDocuments($className): array
+    {
+        $finalResults = []; // new TreeMap<>(String::compareToIgnoreCase);
+
+        if ($this->session->noTracking) {
+            if (!$this->resultsSet && count($this->ids)) {
+                throw new IllegalStateException("Cannot execute 'getDocuments' before operation execution.");
+            }
+
+            foreach ($this->ids as $id) {
+                if (empty($id)) {
+                    continue;
+                }
+
+                $finalResults[$id] = null;
+            }
+
+            if (($this->results == null) || $this->results->getResults() == null || !count($this->results->getResults())) {
+                return $finalResults;
+            }
+
+            foreach ($this->results->getResults() as $document) {
+                if ($document == null) { // @todo check this: if (document == null || document.isNull()) {
+                    continue;
+                }
+
+                $newDocumentInfo = DocumentInfo::getNewDocumentInfo($document);
+                $finalResults[$newDocumentInfo->getId()] = $this->session->trackEntity($className, $newDocumentInfo);
+            }
+
+            return $finalResults;
+        }
+
+        foreach ($this->ids as $id) {
+            if ($id == null) {
+                continue;
+            }
+
+            $finalResults[$id] = $this->getDocumentWithId($className, $id);
+        }
+
+        return $finalResults;
+    }
+
+    /**
+     * @throws IllegalStateException
+     */
+    public function setResult(?GetDocumentsResult $result)
+    {
+        $this->resultsSet = true;
+
+        if ($this->session->noTracking) {
+            $this->results = $result;
+            return;
+        }
+
+        if ($result == null) {
+            $this->session->registerMissing($this->ids);
+            return;
+        }
+
+        $this->session->registerIncludes($result->getIncludes());
+
+        if ($this->includeAllCounters || $this->countersToInclude) {
+//            $this->session->registerCounters($result->getCounterIncludes(), $this->ids, $this->countersToInclude, $this->includeAllCounters);
+        }
+
+        if ($this->timeSeriesToInclude != null) {
+//            $this->session->registerTimeSeries($result->getTimeSeriesIncludes());
+        }
+
+        if ($this->compareExchangeValuesToInclude != null) {
+//            $this->session->getClusterSession()->registerCompareExchangeValues($result->getCompareExchangeValueIncludes());
+        }
+
+
+        // JsonNode document
+        foreach ($result->getResults() as $document) {
+            // todo: check what is this isNull in java
+            if (empty($document)) { //  $document == null || $document->isNull()
+                continue;
+            }
+
+            $newDocumentInfo = DocumentInfo::getNewDocumentInfo($document);
+            $this->session->documentsById->add($newDocumentInfo);
+        }
+
+        foreach ($this->ids as $id) {
+            $value = $this->session->documentsById->getValue($id);
+            if ($value == null) {
+                $this->session->registerMissing([$id]);
+            }
+        }
+
+        $this->session->registerMissingIncludes($result->getResults(), $result->getIncludes(), $this->includes);
     }
 }

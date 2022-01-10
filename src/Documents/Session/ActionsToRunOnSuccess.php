@@ -33,6 +33,8 @@ class ActionsToRunOnSuccess
 
     public function clearSessionStateAfterSuccessfulSaveChanges(): void
     {
+        echo "OVO SE TERA@!!!!";
+
         /** @var string $id */
         foreach ($this->documentsByIdToRemove as $id) {
             unset($this->session->documentsById[$id]);

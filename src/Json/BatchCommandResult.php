@@ -2,7 +2,9 @@
 
 namespace RavenDB\Json;
 
-class BatchCommandResult
+use RavenDB\Http\ResultInterface;
+
+class BatchCommandResult implements ResultInterface
 {
     private array $result;
     private int $transactionIndex;

@@ -94,7 +94,7 @@ class IdTypeAndName
         return $result;
     }
 
-    public static function create(string $id, CommandType $type, string $name): IdTypeAndName
+    public static function create(string $id, CommandType $type, ?string $name): IdTypeAndName
     {
         $idTypeAndName = new IdTypeAndName();
         $idTypeAndName->setId($id);

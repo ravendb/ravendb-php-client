@@ -21,6 +21,8 @@ class DocumentConventions
     protected int $loadBalancerContextSeed = 0;
     protected bool $frozen = false;
 
+    private bool $useOptimisticConcurrency = false;
+    private bool $throwIfQueryPageSizeIsNotSet = false;
     protected int $maxNumberOfRequestsPerSession;
     protected int $maxHttpCacheSize;
 
@@ -31,8 +33,9 @@ class DocumentConventions
 
     protected LoadBalanceBehavior $loadBalanceBehavior;
 
-
     protected Serializer $entityMapper;
+
+    private ?ShouldIgnoreEntityChangesInterface $shouldIgnoreEntityChanges = null;
 
     public function __construct()
     {
@@ -319,4 +322,69 @@ class DocumentConventions
 
         return $this->getCollectionNameForClass(get_class($entity));
     }
+
+    public function getShouldIgnoreEntityChanges(): ?ShouldIgnoreEntityChangesInterface
+    {
+        return $this->shouldIgnoreEntityChanges;
+    }
+
+    /**
+     * @throws IllegalStateException
+     */
+    public function setShouldIgnoreEntityChanges(ShouldIgnoreEntityChangesInterface $shouldIgnoreEntityChanges): void
+    {
+        $this->assertNotFrozen();
+        $this->shouldIgnoreEntityChanges = $shouldIgnoreEntityChanges;
+    }
+
+    /**
+     * Whether UseOptimisticConcurrency is set to true by default for all opened sessions
+     * @return bool - true if optimistic concurrency is enabled
+     */
+    public function isUseOptimisticConcurrency(): bool
+    {
+        return $this->useOptimisticConcurrency;
+    }
+
+    /**
+     * Whether UseOptimisticConcurrency is set to true by default for all opened sessions
+     *
+     * @param bool $useOptimisticConcurrency value to set
+     *
+     * @throws IllegalStateException
+     */
+    public function setUseOptimisticConcurrency(bool $useOptimisticConcurrency): void
+    {
+        $this->assertNotFrozen();
+        $this->useOptimisticConcurrency = $useOptimisticConcurrency;
+    }
+
+    /**
+     * If set to 'true' then it will throw an exception when any query is performed (in session)
+     * without explicit page size set.
+     * This can be useful for development purposes to pinpoint all the possible performance bottlenecks
+     * since from 4.0 there is no limitation for number of results returned from server.
+     *
+     * @return bool - true if should we throw if page size is not set
+     */
+    public function isThrowIfQueryPageSizeIsNotSet(): bool {
+        return $this->throwIfQueryPageSizeIsNotSet;
+    }
+
+    /**
+     * If set to 'true' then it will throw an exception when any query is performed (in session)
+     * without explicit page size set.
+     * This can be useful for development purposes to pinpoint all the possible performance bottlenecks
+     * since from 4.0 there is no limitation for number of results returned from server.
+     *
+     * @param bool $throwIfQueryPageSizeIsNotSet value to set
+     *
+     * @throws IllegalStateException
+     */
+    public function setThrowIfQueryPageSizeIsNotSet(bool $throwIfQueryPageSizeIsNotSet): void
+    {
+        $this->assertNotFrozen();
+        $this->throwIfQueryPageSizeIsNotSet = $throwIfQueryPageSizeIsNotSet;
+    }
+
 }

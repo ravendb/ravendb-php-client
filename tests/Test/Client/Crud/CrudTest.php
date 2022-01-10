@@ -16,11 +16,8 @@ use tests\RavenDB\Test\Client\Crud\Entities\MemberArray;
 
 class CrudTest extends RemoteTestBase
 {
-    private string $var;
-
     /**
      * @throws InvalidArgumentException
-     * @throws IllegalStateException
      */
     public function testCrudOperationsWithArrayInObject(): void
     {
@@ -40,6 +37,9 @@ class CrudTest extends RemoteTestBase
 
                 $newSession->store($family, 'family/1');
                 $newSession->saveChanges();
+
+                // !!! Here, this document must be written to database !!!
+                $this->assertEquals(0, count($newSession->advanced()->whatChanged()));
 
                 /** @var Family $newFamily */
                 $newFamily = $newSession->load(Family::class, 'family/1');

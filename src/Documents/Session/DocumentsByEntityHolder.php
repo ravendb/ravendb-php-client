@@ -6,7 +6,7 @@ use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\primitives\CleanCloseable;
 
 use DS\Map as DSMap;
-// @todo: implement iterator in this class
+
 class DocumentsByEntityHolder implements CleanCloseable
 {
     private ?DSMap $documentsByEntity = null;
@@ -79,12 +79,15 @@ class DocumentsByEntityHolder implements CleanCloseable
 
     public function get(object $entity): ?DocumentInfo
     {
-        $documentInfo = $this->documentsByEntity->get($entity);
-        if ($documentInfo != null) {
-            return $documentInfo;
+        if ($this->documentsByEntity->hasKey($entity)) {
+            return $this->documentsByEntity->get($entity);
         }
 
-        if ($this->onBeforeStoreDocumentsByEntity != null) {
+        if ($this->onBeforeStoreDocumentsByEntity == null) {
+            return null;
+        }
+
+        if ($this->onBeforeStoreDocumentsByEntity->hasKey($entity)) {
             return $this->onBeforeStoreDocumentsByEntity->get($entity);
         }
 
@@ -101,5 +104,26 @@ class DocumentsByEntityHolder implements CleanCloseable
         $this->prepareEntitiesPuts = true;
 
         return $this;
+    }
+
+    public function getDocumentsByEntityEnumeratorResults(): \Generator
+    {
+        foreach ($this->documentsByEntity->keys() as $entity) {
+            yield new DocumentsByEntityEnumeratorResult(
+                $entity,
+                $this->documentsByEntity->get($entity),
+                true
+            );
+        }
+
+        if ($this->onBeforeStoreDocumentsByEntity != null) {
+            foreach ($this->onBeforeStoreDocumentsByEntity->keys() as $entity) {
+                yield new DocumentsByEntityEnumeratorResult(
+                    $entity,
+                    $this->onBeforeStoreDocumentsByEntity->get($entity),
+                    false
+                );
+            }
+        }
     }
 }

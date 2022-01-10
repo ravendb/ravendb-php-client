@@ -10,6 +10,7 @@ use RavenDB\Documents\Linq\DocumentQueryGeneratorInterface;
 use RavenDB\Documents\Session\Operations\BatchOperation;
 use RavenDB\Documents\Session\Operations\LoadOperation;
 use RavenDB\Exceptions\IllegalStateException;
+use Symfony\Component\Serializer\Exception\ExceptionInterface;
 
 class DocumentSession extends InMemoryDocumentSessionOperations implements
     AdvancedSessionOperationsInterface,
@@ -31,8 +32,9 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
     /**
      * @throws IllegalStateException
      * @throws InvalidArgumentException
+     * @throws ExceptionInterface
      */
-    public function load(string $className, string $id)
+    public function load(string $className, string $id): object
     {
         if (empty($id)) {
             return new $className();
@@ -55,6 +57,10 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         return $loadOperation->getDocument($className);
     }
 
+    /**
+     * @throws IllegalStateException
+     * @throws \RavenDB\Exceptions\IllegalArgumentException
+     */
     public function saveChanges(): void
     {
         $saveChangeOperation = new BatchOperation($this);
@@ -64,20 +70,18 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         if ($command == null) {
             return;
         }
+
         if ($this->noTracking) {
             throw new IllegalStateException("Cannot execute saveChanges when entity tracking is disabled in session.");
         }
 
         try {
             $this->requestExecutor->execute($command, $this->sessionInfo);
-            // @todo uncomment this and implement this methods
-//            $this->updateSessionAfterSaveChanges($command->getResult());
-//            $this->saveChangeOperation->setResult($command->getResult());
+            $this->updateSessionAfterSaveChanges($command->getResult());
+            $saveChangeOperation->setResult($command->getResult());
         } finally {
             $command->close();
         }
-
-        $saveChangeOperation->setResult($command->getResult());
     }
 
     protected function generateId(?object $entity): string

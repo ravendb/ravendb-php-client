@@ -19,6 +19,8 @@ class BatchOperation
     private int $allCommandsCount;
     private ActionsToRunOnSuccess $onSuccessfulRequest;
 
+    private array $modifications = [];
+
     public function __construct(InMemoryDocumentSessionOperations $session)
     {
         $this->session = $session;
@@ -30,9 +32,7 @@ class BatchOperation
     public function createRequest(): ?SingleNodeBatchCommand
     {
         $result = $this->session->prepareForSaveChanges();
-
         $this->onSuccessfulRequest = $result->getOnSuccess();
-
         $this->sessionCommandsCount = count($result->getSessionCommands());
 
         foreach ($result->getDeferredCommands() as $deferredCommand) {

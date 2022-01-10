@@ -5,11 +5,13 @@ namespace RavenDB\Documents\Session;
 use RavenDB\Documents\Commands\Batches\BatchOptions;
 use RavenDB\Documents\Commands\Batches\CommandDataInterface;
 
+use Ds\Map as DSMap;
+
 class SaveChangesData
 {
     /** @var array<CommandDataInterface> $deferredCommands */
     private array $deferredCommands = [];
-    private array $deferredCommandsMap = [];
+    private DSMap $deferredCommandsMap;
     private array $sessionCommands = [];
     private array $entities = [];
     private ?BatchOptions $options;
@@ -18,7 +20,8 @@ class SaveChangesData
     public function __construct(InMemoryDocumentSessionOperations $session)
     {
         $this->deferredCommands = $session->deferredCommands;
-        $this->deferredCommandsMap = $session->deferredCommandsMap;
+        $this->deferredCommandsMap = new DSMap($session->deferredCommandsMap);
+
         $this->options = $session->saveChangesOptions;
         $this->onSuccess = new ActionsToRunOnSuccess($session);
     }
@@ -33,7 +36,12 @@ class SaveChangesData
         return $this->deferredCommands;
     }
 
-    public function getDeferredCommandsMap(): array
+    public function addDeferredCommand($command): void
+    {
+        $this->deferredCommands[] = $command;
+    }
+
+    public function getDeferredCommandsMap(): DSMap
     {
         return $this->deferredCommandsMap;
     }
@@ -43,13 +51,28 @@ class SaveChangesData
         return $this->sessionCommands;
     }
 
+    public function addSessionCommand($command): void
+    {
+        $this->sessionCommands[] = $command;
+    }
+
     public function getEntities(): array
     {
         return $this->entities;
     }
 
+    public function addEntity($entity): void
+    {
+        $this->entities[] = $entity;
+    }
+
     public function getOptions(): ?BatchOptions
     {
         return $this->options;
+    }
+
+    public function addOption($option): void
+    {
+        $this->options[] = $option;
     }
 }

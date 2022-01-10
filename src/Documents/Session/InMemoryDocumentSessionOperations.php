@@ -2,27 +2,36 @@
 
 namespace RavenDB\Documents\Session;
 
+use _PHPStan_76800bfb5\Nette\NotImplementedException;
 use InvalidArgumentException;
-use phpDocumentor\Reflection\Types\Boolean;
+use PHPUnit\Framework\PHPTAssertionFailedError;
 use Ramsey\Uuid\UuidInterface;
 use RavenDB\Constants\Metadata;
 use RavenDB\Documents\Commands\Batches\BatchOptions;
 use RavenDB\Documents\Commands\Batches\CommandDataInterface;
+use RavenDB\Documents\Commands\Batches\CommandType;
+use RavenDB\Documents\Commands\Batches\DeleteCommandData;
 use RavenDB\Documents\Commands\Batches\ForceRevisionCommandData;
+use RavenDB\Documents\Commands\Batches\PutCommandDataWithJson;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\DocumentStoreBase;
 use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Documents\Identity\GenerateEntityIdOnTheClient;
+use RavenDB\Documents\IdTypeAndName;
 use RavenDB\Exceptions\Documents\Session\NonUniqueObjectException;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Http\RequestExecutor;
+use RavenDB\Json\BatchCommandResult;
 use RavenDB\Json\JsonOperation;
 use RavenDB\Json\MetadataAsDictionary;
 use RavenDB\primitives\CleanCloseable;
+use RavenDB\primitives\EventHelper;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use function PHPUnit\Framework\isEmpty;
+
+use DS\Map as DSMap;
 
 abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 {
@@ -42,7 +51,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     protected int $numberOfRequests = 0;
     protected int $maxNumberOfRequestsPerSession;
-    protected bool $useOptimisticConcurrency;
+    protected bool $useOptimisticConcurrency = false;
 
     protected array $knownMissingIds = [];
 
@@ -61,11 +70,23 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     abstract protected function generateId(?object $entity): string;
 
-    public array $deferredCommandsMap = [];
-
     public array $deferredCommands = [];
+    public ?DSMap $deferredCommandsMap = null;
 
     public array $idsForCreatingForcedRevisions = [];
+
+    private array $countersByDocId = [];
+    private array $timeSeriesByDocId = [];
+
+    private array $onBeforeStore = [];
+    private array $onAfterSaveChanges = [];
+    private array $onBeforeDelete = [];
+    private array $onBeforeQuery = [];
+
+    private array $onBeforeConversionToDocument = [];
+    private array $onAfterConversionToDocument = [];
+    private array $onBeforeConversionToEntity = [];
+    private array $onAfterConversionToEntity = [];
 
     /**
      * @throws IllegalStateException
@@ -97,8 +118,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
         $this->noTracking = $options->isNoTracking();
 
-//
-//        this.useOptimisticConcurrency = _requestExecutor.getConventions().isUseOptimisticConcurrency();
+
+        $this->useOptimisticConcurrency = $this->requestExecutor->getConventions()->isUseOptimisticConcurrency();
         $this->maxNumberOfRequestsPerSession =
             $this->requestExecutor->getConventions()->getMaxNumberOfRequestsPerSession();
 
@@ -116,7 +137,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             $options->getDisableAtomicDocumentWritesInClusterWideTransaction();
 
         $this->deferredCommands = [];
-        $this->deferredCommandsMap = [];
+        $this->deferredCommandsMap = new DSMap();
     }
 
     public function getId(): UuidInterface
@@ -310,6 +331,50 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //        }
     }
 
+    public function registerMissingIncludes(array $results, array $includes, array $includePaths): void
+    {
+
+    }
+//    public void registerMissingIncludes(ArrayNode results, ObjectNode includes, String[] includePaths) {
+//
+//        if (noTracking) {
+//            return;
+//        }
+//
+//        if (includePaths == null || includePaths.length == 0) {
+//            return;
+//        }
+//
+//        for (JsonNode result : results) {
+//            for (String include : includePaths) {
+//                if (Constants.Documents.Indexing.Fields.DOCUMENT_ID_FIELD_NAME.equals(include)) {
+//                    continue;
+//                }
+//
+//                IncludesUtil.include((ObjectNode) result, include, id -> {
+//                    if (id == null) {
+//                        return;
+//                    }
+//
+//                    if (isLoaded(id)) {
+//                        return;
+//                    }
+//
+//                    JsonNode document = includes.get(id);
+//                    if (document != null) {
+//                        JsonNode metadata = document.get(Constants.Documents.Metadata.KEY);
+//
+//                        if (JsonExtensions.tryGetConflict(metadata)) {
+//                            return;
+//                        }
+//                    }
+//
+//                    registerMissing(id);
+//                });
+//            }
+//        }
+//    }
+
     public function isDeleted(string $id): bool
     {
         return in_array($id, $this->knownMissingIds);
@@ -423,7 +488,13 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $concurrencyCheckMode = ConcurrencyCheckMode::auto();
 
         if ($id == null) {
-            if ($this->generateEntityIdOnTheClient->entityHasId($entity)) {
+            if (!$this->generateEntityIdOnTheClient->entityHasId($entity)) {
+                $concurrencyCheckMode = ConcurrencyCheckMode::forced();
+            }
+        } else {
+            if ($changeVector == null) {
+                $concurrencyCheckMode = ConcurrencyCheckMode::disabled();
+            } else {
                 $concurrencyCheckMode = ConcurrencyCheckMode::forced();
             }
         }
@@ -435,6 +506,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
      * @throws IllegalStateException
      * @throws InvalidArgumentException
      * @throws NonUniqueObjectException
+     * @throws ExceptionInterface
      */
     private function storeInternal(
         ?object $entity,
@@ -447,7 +519,6 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
                 "Cannot store entity. Entity tracking is disabled in this session."
             );
         }
-
         if ($entity == null) {
             throw new InvalidArgumentException("Entity cannot be null");
         }
@@ -472,18 +543,19 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             $this->generateEntityIdOnTheClient->trySetIdentity($entity, $id);
         }
 
-//        if (deferredCommandsMap.containsKey(IdTypeAndName.create(id, CommandType.CLIENT_ANY_COMMAND, null))) {
-//            throw new IllegalStateException(
-//              "Can't store document, there is a deferred command registered for this document in the session." .
-//              " Document id: " + id
-//            );
-//        }
-//
-//        if (deletedEntities.contains(entity)) {
-//            throw new IllegalStateException(
-//              "Can't store object, it was already deleted in this session. Document id: " + id
-//            );
-//        }
+        $key = IdTypeAndName::create($id, CommandType::clientAnyCommand(), null);
+        if ($this->deferredCommandsMap->hasKey($key)) {
+            throw new IllegalStateException(
+              "Can't store document, there is a deferred command registered for this document in the session."
+              . " Document id: " . $id
+            );
+        }
+
+        if ($this->deletedEntities->contains($entity)) {
+            throw new IllegalStateException(
+              "Can't store object, it was already deleted in this session. Document id: " . $id
+            );
+        }
 
 
         // we make the check here even if we just generated the ID
@@ -499,7 +571,6 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         if ($collectionName != null) {
             $metadata[Metadata::COLLECTION] = $mapper->normalize($collectionName, 'json');
         }
-
 
         // @todo: Check why do we need this for
 //        String javaType = _requestExecutor.getConventions().getJavaClassName(entity.getClass());
@@ -580,10 +651,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
      */
     public function whatChanged(): array
     {
-        // @todo: implement this method
         $changes = $this->getAllEntitiesChanges();
-
-//        prepareForEntitiesDeletion(null, $changes);
+        $this->prepareForEntitiesDeletion(null, $changes);
 
         return $changes;
     }
@@ -609,22 +678,26 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     /**
      * Evicts the specified entity from the session.
      * Remove the entity from the delete queue and stops tracking changes for this entity.
+     *
+     * @throws IllegalStateException
      */
-    public function evict($entity): void
+    public function evict(object $entity): void
     {
-//        $documentInfo = $this->documentsByEntity->get($entity);
-//        if ($documentInfo != null) {
-//            $this->documentsByEntity->evict($entity);
-//            $this->documentsById->remove($documentInfo->getId());
-//            if ($countersByDocId != null) {
-//                $countersByDocId->remove($documentInfo->getId());
-//            }
-//            if ($timeSeriesByDocId != null) {
-//                $timeSeriesByDocId->remove($documentInfo->getId());
-//            }
-//        }
-//        $deletedEntities->evict($entity);
-//        $entityToJson->removeFromMissing($entity);
+        $documentInfo = $this->documentsByEntity->get($entity);
+        if ($documentInfo != null) {
+            $this->documentsByEntity->evict($entity);
+            $this->documentsById->remove($documentInfo->getId());
+
+            if (array_key_exists($documentInfo->getId(), $this->countersByDocId)) {
+                unset($this->countersByDocId[$documentInfo->getId()]);
+            }
+            if (array_key_exists($documentInfo->getId(), $this->timeSeriesByDocId)) {
+                unset($this->timeSeriesByDocId[$documentInfo->getId()]);
+            }
+        }
+        $this->deletedEntities->evict($entity);
+        $this->entityToJson->removeFromMissing($entity);
+
     }
 
         /**
@@ -642,7 +715,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //            $this->countersByDocId->clear();
 //        }
         $this->deferredCommands = [];
-        $this->deferredCommandsMap = [];
+        $this->deferredCommandsMap->clear();
 //        $this->clearClusterSession();
 //        $this->pendingLazyOperations->clear();
 //        $this->entityToJson->clear();
@@ -653,22 +726,26 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $result = new SaveChangesData($this);
         $deferredCommandsCount = count($this->deferredCommands);
 
-        // @todo: implement following lines
+        echo 'BEFORE | DEFERED COMMANDS COUNT: ' . (count($this->deferredCommands)) . PHP_EOL;
+
+        // @todo: CONTINUE HERE !!!! implement following lines
 //        $this->prepareForEntitiesDeletion($result, null);
         $this->prepareForEntitiesPuts($result);
-        $this->prepareForCreatingRevisionsFromIds($result);
-        $this->prepareCompareExchangeEntities($result);
+//        $this->prepareForCreatingRevisionsFromIds($result);
+//        $this->prepareCompareExchangeEntities($result);
+
+        echo 'AFTER | DEFERED COMMANDS COUNT: ' . (count($this->deferredCommands)) . PHP_EOL;
 
         if (count($this->deferredCommands) > $deferredCommandsCount) {
             // this allow OnBeforeStore to call Defer during the call to include
             // additional values during the same SaveChanges call
 
-            for ($i=$deferredCommandsCount; i < count($this->deferredCommands); $i++) {
+            for ($i=$deferredCommandsCount; $i < count($this->deferredCommands); $i++) {
                 $result->getDeferredCommands()[] = $this->deferredCommands[$i];
             }
 
             foreach ($this->deferredCommandsMap as $key => $value) {
-                $result->getDeferredCommandsMap()[$key] = $value;
+                $result->getDeferredCommandsMap()->put($key, $value);
             }
         }
 
@@ -680,165 +757,223 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         return $result;
     }
 
+    /**
+     * @throws NonUniqueObjectException
+     * @throws IllegalArgumentException
+     * @throws IllegalStateException
+     */
+    private function getDocumentInfo(object $instance): DocumentInfo
+    {
+        $documentInfo = $this->documentsByEntity->get($instance);
+
+        if ($documentInfo != null) {
+            return $documentInfo;
+        }
+
+        $id = $this->generateEntityIdOnTheClient->tryGetIdFromInstance($instance);
+        if ($id == null) {
+            throw new IllegalStateException("Could not find the document id for " . $instance);
+        }
+
+        $this->assertNoNonUniqueInstance($instance, $id);
+
+        throw new IllegalArgumentException("Document " . $id . " doesn't exist in the session");
+    }
+
+    public function getMetadataFor(?object $instance): MetadataDictionaryInterface
+    {
+        if ($instance == null) {
+            throw new IllegalArgumentException('Instance cannot be null');
+        }
+
+        $documentInfo = $this->getDocumentInfo($instance);
+        if ($documentInfo->getMetadataInstance() != null) {
+            return $documentInfo->getMetadataInstance();
+        }
+
+        $metadataAsJson = $documentInfo->getMetadata();
+        $metadata = new MetadataAsDictionary($metadataAsJson);
+
+        $documentInfo->setMetadataInstance($metadata);
+        return $metadata;
+    }
+
+    /**
+     * @throws IllegalStateException
+     * @throws IllegalArgumentException
+     */
     private function prepareForEntitiesDeletion(?SaveChangesData $result, ?array $changes): void
     {
-        // @todo: implement this
+        $deletes = $this->deletedEntities->prepareEntitiesDeletes();
+        try {
+            /** @var DeletedEntitiesEnumeratorResult $deletedEntity */
+            foreach ($this->deletedEntities->getDeletedEntitiesEnumeratorResults() as $deletedEntity) {
+                $documentInfo = $this->documentsByEntity->get($deletedEntity->getEntity());
+                if ($documentInfo == null) {
+                    continue;
+                }
 
-//        try (CleanCloseable deletes = deletedEntities.prepareEntitiesDeletes()) {
-//
-//            for (DeletedEntitiesHolder.DeletedEntitiesEnumeratorResult deletedEntity : deletedEntities) {
-//                DocumentInfo documentInfo = documentsByEntity.get(deletedEntity.entity);
-//                if (documentInfo == null) {
-//                    continue;
-//                }
-//
-//if (changes != null) {
-//    List<DocumentsChanges> docChanges = new ArrayList<>();
-//                    DocumentsChanges change = new DocumentsChanges();
-//                    change.setFieldNewValue("");
-//                    change.setFieldOldValue("");
-//                    change.setChange(DocumentsChanges.ChangeType.DOCUMENT_DELETED);
-//
-//                    docChanges.add(change);
-//                    changes.put(documentInfo.getId(), docChanges);
-//                } else {
-//    ICommandData command =
-//          result.getDeferredCommandsMap().get(IdTypeAndName.create(
-//                          documentInfo.getId(),
-//                          CommandType.CLIENT_ANY_COMMAND, null
-//                      ));
-//                    if (command != null) {
-//                        throwInvalidDeletedDocumentWithDeferredCommand(command);
-//                    }
-//
-//                    String changeVector = null;
-//                    documentInfo = documentsById.getValue(documentInfo.getId());
-//
-//                    if (documentInfo != null) {
-//                        changeVector = documentInfo.getChangeVector();
-//
-//                        if (documentInfo.getEntity() != null) {
-//                            result.onSuccess.removeDocumentByEntity(documentInfo.getEntity());
-//                            result.getEntities().add(documentInfo.getEntity());
-//                        }
-//
-//                        result.onSuccess.removeDocumentByEntity(documentInfo.getId());
-//                    }
-//
-//                    if (!useOptimisticConcurrency) {
-//                        changeVector = null;
-//                    }
-//
-//                    onBeforeDeleteInvoke(
-//                        new BeforeDeleteEventArgs(this, documentInfo.getId(), documentInfo.getEntity())
-//                    );
-//                    DeleteCommandData deleteCommandData =
-//                          new DeleteCommandData(documentInfo.getId(), changeVector, documentInfo.getChangeVector());
-//                    result.getSessionCommands().add(deleteCommandData);
-//                }
-//
-//if (changes == null) {
-//    result.onSuccess.clearDeletedEntities();
-//}
-//}
-//}
+                if ($changes != null) {
+                    $docChanges = [];
+
+                    $change = new DocumentsChanges();
+                    $change->setFieldNewValue([]);
+                    $change->setFieldOldValue([]);
+                    $change->setChange(ChangeType::documentDeleted());
+
+                    $docChanges[] = $change;
+                    $changes[$documentInfo->getId()] = $docChanges;
+                } else {
+                    $command = $result->getDeferredCommandsMap()->get(IdTypeAndName::create($documentInfo->getId(), CommandType::clientAnyCommand(), null));
+
+                    if ($command != null) {
+                        $this->throwInvalidDeletedDocumentWithDeferredCommand($command);
+                    }
+
+                    $changeVector = null;
+                    $documentInfo = $this->documentsById->getValue($documentInfo->getId());
+
+                    if ($documentInfo != null) {
+                        $changeVector = $documentInfo->getChangeVector();
+
+                        if ($documentInfo->getEntity() != null) {
+                            $result->getOnSuccess()->removeDocumentByEntity($documentInfo->getEntity());
+                            $result->getEntities()[] = $documentInfo->getEntity();
+                        }
+
+                        $result->getOnSuccess()->removeDocumentById($documentInfo->getId());
+                    }
+
+                    if (!$this->useOptimisticConcurrency) {
+                        $changeVector = null;
+                    }
+
+                    $this->onBeforeDeleteInvoke(new BeforeDeleteEventArgs($this, $documentInfo->getId(), $documentInfo->getEntity()));
+                    $deleteCommandData = new DeleteCommandData($documentInfo->getId(), $changeVector, $documentInfo->getChangeVector());
+                    $result->getSessionCommands()[] = $deleteCommandData;
+                }
+
+                if ($changes == null) {
+                    $result->getOnSuccess()->clearDeletedEntities();
+                }
+            }
+
+        } finally {
+            $deletes->close();
+        }
     }
 
     // @todo: implement this method
     private function prepareForEntitiesPuts(?SaveChangesData $result): void
     {
         $putsContext = $this->documentsByEntity->prepareEntitiesPuts();
-        // @todo: continue from here
 
-       //       try (CleanCloseable putsContext = documentsByEntity.prepareEntitiesPuts()) {
-        //
-        //            IShouldIgnoreEntityChanges shouldIgnoreEntityChanges = getConventions().getShouldIgnoreEntityChanges();
-        //
-        //            for (DocumentsByEntityHolder.DocumentsByEntityEnumeratorResult entity : documentsByEntity) {
-        //
-        //                if (entity.getValue().isIgnoreChanges())
-        //                    continue;
-        //
-        //                if (shouldIgnoreEntityChanges != null) {
-        //                    if (shouldIgnoreEntityChanges.check(
-        //                            this,
-        //                            entity.getValue().getEntity(),
-        //                            entity.getValue().getId())) {
-        //                        continue;
-        //                    }
-        //                }
-        //
-        //                if (isDeleted(entity.getValue().getId())) {
-        //                    continue;
-        //                }
-        //
-        //                boolean dirtyMetadata = updateMetadataModifications(entity.getValue());
-        //
-        //                ObjectNode document = entityToJson.convertEntityToJson(entity.getKey(), entity.getValue());
-        //
-        //                if ((!entityChanged(document, entity.getValue(), null)) && !dirtyMetadata) {
-        //                    continue;
-        //                }
-        //
-        //                ICommandData command = result.deferredCommandsMap.get(IdTypeAndName.create(entity.getValue().getId(), CommandType.CLIENT_MODIFY_DOCUMENT_COMMAND, null));
-        //                if (command != null) {
-        //                    throwInvalidModifiedDocumentWithDeferredCommand(command);
-        //                }
-        //
-        //                List<EventHandler<BeforeStoreEventArgs>> onBeforeStore = this.onBeforeStore;
-        //                if (onBeforeStore != null && !onBeforeStore.isEmpty() && entity.executeOnBeforeStore) {
-        //                    BeforeStoreEventArgs beforeStoreEventArgs = new BeforeStoreEventArgs(this, entity.getValue().getId(), entity.getKey());
-        //                    EventHelper.invoke(onBeforeStore, this, beforeStoreEventArgs);
-        //
-        //                    if (beforeStoreEventArgs.isMetadataAccessed()) {
-        //                        updateMetadataModifications(entity.getValue());
-        //                    }
-        //
-        //                    if (beforeStoreEventArgs.isMetadataAccessed() || entityChanged(document, entity.getValue(), null)) {
-        //                        document = entityToJson.convertEntityToJson(entity.getKey(), entity.getValue());
-        //                    }
-        //                }
-        //
-        //                result.getEntities().add(entity.getKey());
-        //
-        //                if (entity.getValue().getId() != null) {
-        //                    result.onSuccess.removeDocumentById(entity.getValue().getId());
-        //                }
-        //
-        //                result.onSuccess.updateEntityDocumentInfo(entity.getValue(), document);
-        //
-        //                String changeVector;
-        //                if (useOptimisticConcurrency) {
-        //                    if (entity.getValue().getConcurrencyCheckMode() != ConcurrencyCheckMode.DISABLED) {
-        //                        // if the user didn't provide a change vector, we'll test for an empty one
-        //                        changeVector = ObjectUtils.firstNonNull(entity.getValue().getChangeVector(), "");
-        //                    } else {
-        //                        changeVector = null;
-        //                    }
-        //                } else if (entity.getValue().getConcurrencyCheckMode() == ConcurrencyCheckMode.FORCED) {
-        //                    changeVector = entity.getValue().getChangeVector();
-        //                } else {
-        //                    changeVector = null;
-        //                }
-        //
-        //                ForceRevisionStrategy forceRevisionCreationStrategy = ForceRevisionStrategy.NONE;
-        //
-        //                if (entity.getValue().getId() != null) {
-        //                    // Check if user wants to Force a Revision
-        //                    ForceRevisionStrategy creationStrategy = idsForCreatingForcedRevisions.get(entity.getValue().getId());
-        //                    if (creationStrategy != null) {
-        //                        idsForCreatingForcedRevisions.remove(entity.getValue().getId());
-        //                        forceRevisionCreationStrategy = creationStrategy;
-        //                    }
-        //                }
-        //
-        //                result.getSessionCommands().add(new PutCommandDataWithJson(entity.getValue().getId(),
-        //                        changeVector,
-        //                        entity.getValue().getChangeVector(),
-        //                        document,
-        //                        forceRevisionCreationStrategy));
-        //            }
-        //        }
+        try {
+            $shouldIgnoreEntityChanges = $this->getConventions()->getShouldIgnoreEntityChanges();
+
+            /** @var DocumentsByEntityEnumeratorResult $entity */
+            foreach($this->documentsByEntity->getDocumentsByEntityEnumeratorResults() as $entity) {
+
+                if ($entity->getValue()->isIgnoreChanges()) {
+                    continue;
+                }
+
+                if ($shouldIgnoreEntityChanges != null) {
+                    if ($shouldIgnoreEntityChanges->check(
+                            $this,
+                            $entity->getValue()->getEntity(),
+                            $entity->getValue()->getId())) {
+                        continue;
+                    }
+                }
+
+                if ($this->isDeleted($entity->getValue()->getId())) {
+                    continue;
+                }
+
+                $dirtyMetadata = $this->updateMetadataModifications($entity->getValue());
+
+                $document = $this->entityToJson->convertEntityToJson($entity->getKey(), $entity->getValue());
+
+                if (!$this->isEntityChanged($document, $entity->getValue()) && !$dirtyMetadata) {
+                    continue;
+                }
+
+                $command = null;
+                $idTypeAndName = IdTypeAndName::create($entity->getValue()->getId(), CommandType::clientModifyDocumentCommand(), null);
+                if ($result->getDeferredCommandsMap()->hasKey($idTypeAndName)) {
+                    $command = $result->getDeferredCommandsMap()->get($idTypeAndName);
+                }
+                if ($command != null) {
+                    $this->throwInvalidModifiedDocumentWithDefferedCommand($command);
+                }
+
+                $onBeforeStore = $this->onBeforeStore;
+
+                if (count($onBeforeStore) && $entity->isExecuteOnBeforeStore()) {
+                    $beforeStoreEventArgs = new BeforeStoreEventArgs($this, $entity->getValue()->getId(), $entity->getKey());
+
+                    EventHelper::invoke($onBeforeStore, $this, $beforeStoreEventArgs);
+
+
+                    if ($beforeStoreEventArgs->isMetadataAccessed()) {
+                        $this->updateMetadataModifications($entity->getValue());
+                    }
+
+                    if ($beforeStoreEventArgs->isMetadataAccessed() || $this->isEntityChanged($document, $entity->getValue())) {
+                        $document = $this->entityToJson->convertEntityToJson($entity->getKey(), $entity->getValue());
+                    }
+                }
+
+                $result->addEntity($entity->getKey());
+
+                if ($entity->getValue()->getId() != null) {
+                    $result->getOnSuccess()->removeDocumentById($entity->getValue()->getId());
+                }
+
+                $result->getOnSuccess()->updateEntityDocumentInfo($entity->getValue(), $document);
+
+                $changeVector = null;
+                if ($this->useOptimisticConcurrency) {
+                    if ($entity->getValue()->getConcurrencyCheckMode()->isDisabled()) {
+                        // if the user didn't provide a change vector, we'll test for an empty one
+                        $changeVector = $entity->getValue()->getChangeVector() ?? "";
+                    } else {
+                        $changeVector = null;
+                    }
+                } else if ($entity->getValue()->getConcurrencyCheckMode()->isForced()) {
+                    $changeVector = $entity->getValue()->getChangeVector();
+                } else {
+                    $changeVector = null;
+                }
+
+                $forceRevisionCreationStrategy = ForceRevisionStrategy::none();
+
+                if ($entity->getValue()->getId() != null) {
+                    if (array_key_exists($entity->getValue()->getId(), $this->idsForCreatingForcedRevisions)) {
+                        // Check if user wants to Force a Revision
+                        $creationStrategy = $this->idsForCreatingForcedRevisions[$entity->getValue()->getId()];
+                        if ($creationStrategy != null) {
+                            unset($this->idsForCreatingForcedRevisions[$entity->getValue()->getId()]);
+                            $forceRevisionCreationStrategy = $creationStrategy;
+                        }
+                    }
+                }
+
+                $result->addSessionCommand(
+                    new PutCommandDataWithJson(
+                        $entity->getValue()->getId(),
+                        $changeVector,
+                        $entity->getValue()->getChangeVector(),
+                        $document,
+                        $forceRevisionCreationStrategy
+                    )
+                );
+            }
+
+        } finally {
+            $putsContext->close();
+        }
     }
 
     private function prepareForCreatingRevisionsFromIds(SaveChangesData $result): void
@@ -892,6 +1027,13 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         return $dirty;
     }
 
+    protected function updateSessionAfterSaveChanges(BatchCommandResult $result): void
+    {
+        $returnedTransactionIndex = $result->getTransactionIndex();
+        $this->documentStore->setLastTransactionIndex($this->getDatabaseName(), $returnedTransactionIndex);
+        $this->sessionInfo->setLastClusterTransactionIndex($returnedTransactionIndex);
+    }
+
     /**
      * @deprecated
      *
@@ -923,4 +1065,95 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     protected abstract function clearClusterSession(): void;
 
     public abstract function getClusterSession(): ClusterTransactionOperationsBase;
+
+    private static function throwInvalidModifiedDocumentWithDefferedCommand(CommandDataInterface $resultCommand)
+    {
+        throw new IllegalStateException("Cannot perform save because document "
+            . $resultCommand->getId()
+            . " has been modified by the session and is also taking part in deferred "
+            . $resultCommand->getType()
+            . " command");
+    }
+
+    private static function throwInvalidModifiedDocumentWithDeferredCommand(CommandDataInterface $resultCommand): void
+    {
+        throw new IllegalStateException(
+            "Cannot perform save because document "
+            . $resultCommand->getId()
+            . " has been modified by the session and is also taking part in deferred "
+            . $resultCommand->getType()
+            . " command"
+        );
+    }
+
+    private static function throwInvalidDeletedDocumentWithDeferredCommand(CommandDataInterface $resultCommand): void
+    {
+        throw new IllegalStateException(
+            "Cannot perform save because document "
+            . $resultCommand->getId()
+            . " has been deleted by the session and is also taking part in deferred "
+            . $resultCommand->getType()
+            . " command"
+        );
+}
+
+    private static function throwNoDatabase(): void
+    {
+        throw new IllegalStateException(
+            "Cannot open a Session without specifying a name of a database "
+            . "to operate on. Database name can be passed as an argument when Session is"
+            . " being opened or default database can be defined using 'DocumentStore.setDatabase()' method"
+        );
+    }
+
+    public function onAfterSaveChangesInvoke(AfterSaveChangesEventArgs $eventArgs): void
+    {
+        EventHelper::invoke($this->onAfterSaveChanges, $this, $eventArgs);
+    }
+
+    public function onBeforeDeleteInvoke(BeforeDeleteEventArgs $eventArgs): void {
+        EventHelper::invoke($this->onBeforeDelete, $this, $eventArgs);
+    }
+
+    public function onBeforeQueryInvoke(BeforeQueryEventArgs $eventArgs): void {
+        EventHelper::invoke($this->onBeforeQuery, $this, $eventArgs);
+    }
+
+    public function onBeforeConversionToDocumentInvoke(string $id, object $entity): void
+    {
+        EventHelper::invoke(
+            $this->onBeforeConversionToDocument,
+            $this,
+            new BeforeConversionToDocumentEventArgs($this, $id, $entity)
+        );
+    }
+
+//    public function onAfterConversionToDocumentInvoke(string $id, object $entity, Reference<ObjectNode> $document): void
+//    {
+//        if (!onAfterConversionToDocument.isEmpty()) {
+//            AfterConversionToDocumentEventArgs eventArgs = new AfterConversionToDocumentEventArgs(this, id, entity, document);
+//            EventHelper.invoke(onAfterConversionToDocument, this, eventArgs);
+//
+//            if (eventArgs.getDocument().value != null && eventArgs.getDocument().value != document.value) {
+//                document.value = eventArgs.getDocument().value;
+//            }
+//        }
+//    }
+//
+//
+//      public void onBeforeConversionToEntityInvoke(String id, Class clazz, Reference<ObjectNode> document) {
+//        if (!onBeforeConversionToEntity.isEmpty()) {
+//            BeforeConversionToEntityEventArgs eventArgs = new BeforeConversionToEntityEventArgs(this, id, clazz, document);
+//            EventHelper.invoke(onBeforeConversionToEntity, this, eventArgs);
+//
+//            if (eventArgs.getDocument() != null && eventArgs.getDocument().value != document.value) {
+//                document.value = eventArgs.getDocument().value;
+//            }
+//        }
+//    }
+//
+//    public void onAfterConversionToEntityInvoke(String id, ObjectNode document, Object entity) {
+//        AfterConversionToEntityEventArgs eventArgs = new AfterConversionToEntityEventArgs(this, id, document, entity);
+//        EventHelper.invoke(onAfterConversionToEntity, this, eventArgs);
+//    }
 }
