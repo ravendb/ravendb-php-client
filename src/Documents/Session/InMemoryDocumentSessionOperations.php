@@ -655,7 +655,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
         // @todo: implement following lines
 //        $this->prepareForEntitiesDeletion($result, null);
-//        $this->prepareForEntitiesPuts($result);
+        $this->prepareForEntitiesPuts($result);
         $this->prepareForCreatingRevisionsFromIds($result);
         $this->prepareCompareExchangeEntities($result);
 
@@ -744,15 +744,17 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //}
     }
 
+    // @todo: implement this method
     private function prepareForEntitiesPuts(?SaveChangesData $result): void
     {
-       //$putsContext = $this->documentsByEntity->prepareEntitiesPuts();
+        $putsContext = $this->documentsByEntity->prepareEntitiesPuts();
+        // @todo: continue from here
 
-        //        try (CleanCloseable putsContext = documentsByEntity.prepareEntitiesPuts()) {
+       //       try (CleanCloseable putsContext = documentsByEntity.prepareEntitiesPuts()) {
         //
         //            IShouldIgnoreEntityChanges shouldIgnoreEntityChanges = getConventions().getShouldIgnoreEntityChanges();
         //
-        foreach ($this->documentsByEntity as $entity) {
+        //            for (DocumentsByEntityHolder.DocumentsByEntityEnumeratorResult entity : documentsByEntity) {
         //
         //                if (entity.getValue().isIgnoreChanges())
         //                    continue;
@@ -799,9 +801,9 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         //
         //                result.getEntities().add(entity.getKey());
         //
-            if ($entity->getValue()->getId() != null) {
-                $result->getOnSuccess()->removeDocumentById($entity->getValue()->getId());
-            }
+        //                if (entity.getValue().getId() != null) {
+        //                    result.onSuccess.removeDocumentById(entity.getValue().getId());
+        //                }
         //
         //                result.onSuccess.updateEntityDocumentInfo(entity.getValue(), document);
         //
@@ -835,7 +837,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         //                        entity.getValue().getChangeVector(),
         //                        document,
         //                        forceRevisionCreationStrategy));
-        }
+        //            }
         //        }
     }
 
@@ -917,4 +919,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     }
 
     protected abstract function hasClusterSession(): bool;
+
+    protected abstract function clearClusterSession(): void;
+
+    public abstract function getClusterSession(): ClusterTransactionOperationsBase;
 }

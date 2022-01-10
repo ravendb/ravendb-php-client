@@ -29,12 +29,9 @@ class BatchOperation
      */
     public function createRequest(): ?SingleNodeBatchCommand
     {
-        // @todo: following line is not implemented fully
         $result = $this->session->prepareForSaveChanges();
 
         $this->onSuccessfulRequest = $result->getOnSuccess();
-
-        // @todo: uncoment and change following code to php from java
 
         $this->sessionCommandsCount = count($result->getSessionCommands());
 
@@ -67,7 +64,6 @@ class BatchOperation
         return new SingleNodeBatchCommand(
             $this->session->getConventions(),
             $result->getSessionCommands(),
-            null,
             $result->getOptions()
         );
     }

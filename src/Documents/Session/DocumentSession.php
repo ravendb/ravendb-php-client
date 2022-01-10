@@ -77,23 +77,7 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
             $command->close();
         }
 
-
-        //        BatchOperation saveChangeOperation = new BatchOperation(this);
-        //
-        //        try (SingleNodeBatchCommand command = saveChangeOperation.createRequest()) {
-        //            if (command == null) {
-        //                return;
-        //            }
-        //
-        //            if (noTracking) {
-        //                throw new IllegalStateException("Cannot execute saveChanges when entity tracking is disabled in session.");
-        //            }
-        //
-        //            _requestExecutor.execute(command, sessionInfo);
-        //            updateSessionAfterSaveChanges(command.getResult());
-        //            saveChangeOperation.setResult(command.getResult());
-        //        }
-//        $saveChangeOperation->setResult($command->getResult());
+        $saveChangeOperation->setResult($command->getResult());
     }
 
     protected function generateId(?object $entity): string
