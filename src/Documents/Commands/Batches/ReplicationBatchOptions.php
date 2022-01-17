@@ -4,11 +4,16 @@ namespace RavenDB\Documents\Commands\Batches;
 
 class ReplicationBatchOptions
 {
-    private bool $waitForReplicas;
-    private int $numberOfReplicasToWaitFor;
-    private float $waitForReplicasTimeout;
-    private bool $majority;
+    private bool $waitForReplicas = false;
+    private int $numberOfReplicasToWaitFor = 0;
+    private \DateInterval $waitForReplicasTimeout;
+    private bool $majority = false;
     private bool $throwOnTimeoutInWaitForReplicas = true;
+
+    public function __construct()
+    {
+        $this->waitForReplicasTimeout = new \DateInterval("P0");
+    }
 
     public function isWaitForReplicas(): bool
     {
@@ -30,12 +35,12 @@ class ReplicationBatchOptions
         $this->numberOfReplicasToWaitFor = $numberOfReplicasToWaitFor;
     }
 
-    public function getWaitForReplicasTimeout(): float
+    public function getWaitForReplicasTimeout(): \DateInterval
     {
         return $this->waitForReplicasTimeout;
     }
 
-    public function setWaitForReplicasTimeout(float $waitForReplicasTimeout): void
+    public function setWaitForReplicasTimeout(\DateInterval $waitForReplicasTimeout): void
     {
         $this->waitForReplicasTimeout = $waitForReplicasTimeout;
     }

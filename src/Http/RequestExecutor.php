@@ -73,6 +73,9 @@ class RequestExecutor
     ): void {
         $request = $command->createRequest($options->getChosenNode());
 
+        echo 'REQUEST: ' . $request->getUrl() . PHP_EOL;
+        print_r($request);
+
         if ($request == null) {
             return;
         }

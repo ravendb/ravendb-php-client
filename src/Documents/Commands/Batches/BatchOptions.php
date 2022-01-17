@@ -4,10 +4,10 @@ namespace RavenDB\Documents\Commands\Batches;
 
 class BatchOptions
 {
-    private ReplicationBatchOptions $replicationOptions;
-    private IndexBatchOptions $indexOptions;
+    private ?ReplicationBatchOptions $replicationOptions = null;
+    private ?IndexBatchOptions $indexOptions = null;
 
-    public function getReplicationOptions(): ReplicationBatchOptions
+    public function getReplicationOptions(): ?ReplicationBatchOptions
     {
         return $this->replicationOptions;
     }
@@ -17,7 +17,7 @@ class BatchOptions
         $this->replicationOptions = $replicationOptions;
     }
 
-    public function getIndexOptions(): IndexBatchOptions
+    public function getIndexOptions(): ?IndexBatchOptions
     {
         return $this->indexOptions;
     }

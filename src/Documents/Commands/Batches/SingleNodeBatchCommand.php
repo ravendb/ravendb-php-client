@@ -5,11 +5,15 @@ namespace RavenDB\Documents\Commands\Batches;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Session\TransactionMode;
 use RavenDB\Exceptions\IllegalArgumentException;
+use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Http\HttpRequest;
+use RavenDB\Http\HttpRequestInterface;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ResultInterface;
 use RavenDB\Http\ServerNode;
 use RavenDB\Json\BatchCommandResult;
 use RavenDB\primitives\CleanCloseable;
+use RavenDB\Utils\TimeUtils;
 
 // @todo: implement this
 class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
@@ -66,10 +70,10 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
         }
     }
 
-//          @Override
-//    public HttpRequestBase createRequest(ServerNode node, Reference<String> url) {
-//        HttpPost request = new HttpPost();
-//
+    public function createRequest(ServerNode $serverNode): HttpRequestInterface
+    {
+        $request = new HttpRequest($this->createUrl($serverNode), 'POST');
+
 //        request.setEntity(new ContentProviderHttpEntity(outputStream -> {
 //            try (JsonGenerator generator = mapper.getFactory().createGenerator(outputStream)) {
 //                if (_supportsAtomicWrites == null || node.isSupportsAtomicClusterWrites() != _supportsAtomicWrites) {
@@ -135,71 +139,65 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
 //            }
 //            request.setEntity(entityBuilder.build());
 //        }
-//
-//        StringBuilder sb = new StringBuilder(node.getUrl() + "/databases/" + node.getDatabase() + "/bulk_docs?");
-//        appendOptions(sb);
-//
-//        url.value = sb.toString();
-//        return request;
-//    }
+
+        return $request;
+    }
 
     protected function createUrl(ServerNode $serverNode): string
     {
-        // TODO: Implement createUrl() method.
-        return "";
+        $path = $serverNode->getUrl();
+        $path .= '/databases/';
+        $path .= $serverNode->getDatabase();
+        $path .= '/bulk_docs?';
+
+        $path .= $this->appendOptions();
+
+        return $path;
     }
 
-//          @Override
-//    public void setResponse(String response, boolean fromCache) throws IOException {
-//        if (response == null) {
-//            throw new IllegalStateException("Got null response from the server after doing a batch, something is very wrong. Probably a garbled response.");
-//        }
-//
-//        result = mapper.readValue(response, BatchCommandResult.class);
-//    }
-//
-//    protected void appendOptions(StringBuilder sb) {
-//        if (_options == null) {
-//            return;
-//        }
-//
-//        ReplicationBatchOptions replicationOptions = _options.getReplicationOptions();
-//        if (replicationOptions != null) {
-//            sb.append("&waitForReplicasTimeout=")
-//                    .append(TimeUtils.durationToTimeSpan(replicationOptions.getWaitForReplicasTimeout()));
-//
-//            sb.append("&throwOnTimeoutInWaitForReplicas=")
-//                    .append(replicationOptions.isThrowOnTimeoutInWaitForReplicas() ? "true" : "false");
-//
-//            sb.append("&numberOfReplicasToWaitFor=");
-//            sb.append(replicationOptions.isMajority() ? "majority" : replicationOptions.getNumberOfReplicasToWaitFor());
-//        }
-//
-//        IndexBatchOptions indexOptions = _options.getIndexOptions();
-//        if (indexOptions != null) {
-//            sb.append("&waitForIndexesTimeout=")
-//                    .append(TimeUtils.durationToTimeSpan(indexOptions.getWaitForIndexesTimeout()));
-//
-//            if (indexOptions.isThrowOnTimeoutInWaitForIndexes()) {
-//                sb.append("&waitForIndexThrow=true");
-//            } else {
-//                sb.append("&waitForIndexThrow=false");
-//            }
-//
-//            if (indexOptions.getWaitForSpecificIndexes() != null) {
-//                for (String specificIndex : indexOptions.getWaitForSpecificIndexes()) {
-//                    sb.append("&waitForSpecificIndex=").append(urlEncode(specificIndex));
-//                }
-//            }
-//        }
-//    }
-
-    public function getResult(): BatchCommandResult
+    protected function appendOptions(): string
     {
-        /** @var BatchCommandResult $result */
-        $result = parent::getResult();
+        $options = "";
 
-        return $result;
+        if ($this->options == null) {
+            return $options;
+        }
+
+        $replicationOptions = $this->options->getReplicationOptions();
+        if ($replicationOptions != null) {
+            $options .= '&waitForReplicasTimeout=';
+            $options .= TimeUtils::durationToTimeSpan($replicationOptions->getWaitForReplicasTimeout());
+
+            $options .= '&throwOnTimeoutInWaitForReplicas=';
+            $options .= $replicationOptions->isThrowOnTimeoutInWaitForReplicas() ? 'true' : 'false';
+
+            $options .= '&numberOfReplicasToWaitFor=';
+            $options .= $replicationOptions->isMajority() ? "majority" : $replicationOptions->getNumberOfReplicasToWaitFor();
+        }
+
+        $indexOptions = $this->options->getIndexOptions();
+        if ($indexOptions != null) {
+            $options .= '&waitForIndexesTimeout=';
+            $options .= TimeUtils::durationToTimeSpan($indexOptions->getWaitForIndexesTimeout());
+
+            $options .= '&waitForIndexThrow=';
+            $options .= $indexOptions->isThrowOnTimeoutInWaitForIndexes() ? 'true' : 'false';
+
+            foreach ($indexOptions->getWaitForSpecificIndexes() as $specificIndex) {
+                $options .= '&waitForSpecificIndex=' . urlEncode($specificIndex);
+            }
+        }
+
+        return $options;
+    }
+
+    public function setResponse(string $response, bool $fromCache): void
+    {
+        if (empty($response)) {
+            throw new IllegalStateException('Got null response from the server after doing a batch, something is very wrong. Probably a garbled response.');
+        }
+
+        $this->result = $this->getMapper()->denormalize($response, BatchCommandResult::class);
     }
 
     public function isReadRequest(): bool

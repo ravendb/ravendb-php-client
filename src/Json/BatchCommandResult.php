@@ -6,17 +6,17 @@ use RavenDB\Http\ResultInterface;
 
 class BatchCommandResult implements ResultInterface
 {
-    private array $result;
-    private int $transactionIndex;
+    private array $results = [];
+    private int $transactionIndex = 0;
 
-    public function getResult(): array
+    public function getResults(): array
     {
-        return $this->result;
+        return $this->results;
     }
 
-    public function setResult(array $result): void
+    public function setResults(array $results): void
     {
-        $this->result = $result;
+        $this->results = $results;
     }
 
     public function getTransactionIndex(): int
