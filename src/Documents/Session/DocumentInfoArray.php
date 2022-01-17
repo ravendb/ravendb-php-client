@@ -10,4 +10,13 @@ class DocumentInfoArray extends TypedArray
     {
         parent::__construct(DocumentInfo::class);
     }
+
+    public function getValue($id): ?DocumentInfo
+    {
+        if (!$this->offsetExists($id)) {
+            return null;
+        }
+
+        return $this->offsetGet($id);
+    }
 }

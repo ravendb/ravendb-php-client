@@ -22,7 +22,7 @@ class LoadOperation
 
     private array $countersToInclude = [];
     private array $compareExchangeValuesToInclude = [];
-    private bool $includeAllCounters = false;
+    private bool  $includeAllCounters = false;
     private array $timeSeriesToInclude = [];
 
 
@@ -175,12 +175,12 @@ class LoadOperation
             return new $className();
         }
 
-        $doc = $this->session->documentsById[$id];
+        $doc = $this->session->documentsById->getValue($id);
         if ($doc != null) {
             return $this->session->trackEntity($className, $doc);
         }
 
-        $doc = $this->session->includedDocumentsById->offsetGet($id);
+        $doc = $this->session->includedDocumentsById->getValue($id);
         if ($doc != null) {
             return $this->session->trackEntity($className, $doc);
         }

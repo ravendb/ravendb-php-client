@@ -241,20 +241,19 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
                 continue;
             }
 
+            $documentInfo = $this->documentsById->getValue($id);
+            if ($documentInfo == null) {
+                $documentInfo = $this->includedDocumentsById->getValue($id);
+                if ($documentInfo == null) {
+                    return false;
+                }
+            }
 
-//
-//            // Check if document was already loaded, the check if we've received it through include
-//            DocumentInfo documentInfo = documentsById.getValue(id);
-//            if (documentInfo == null) {
-//                documentInfo = includedDocumentsById.get(id);
-//                if (documentInfo == null) {
-//                    return false;
-//                }
-//            }
-//
-//            if (documentInfo.getEntity() == null && documentInfo.getDocument() == null) {
-//                return false;
-//            }
+            if ($documentInfo->getEntity() == null && $documentInfo->getDocument() == null) {
+                return false;
+            }
+
+//          @todo: check this code - it doesnt do anything so it's commented out
 //
 //            if (includes == null) {
 //                continue;
@@ -726,15 +725,11 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $result = new SaveChangesData($this);
         $deferredCommandsCount = count($this->deferredCommands);
 
-        echo 'BEFORE | DEFERED COMMANDS COUNT: ' . (count($this->deferredCommands)) . PHP_EOL;
-
         // @todo: CONTINUE HERE !!!! implement following lines
 //        $this->prepareForEntitiesDeletion($result, null);
         $this->prepareForEntitiesPuts($result);
 //        $this->prepareForCreatingRevisionsFromIds($result);
 //        $this->prepareCompareExchangeEntities($result);
-
-        echo 'AFTER | DEFERED COMMANDS COUNT: ' . (count($this->deferredCommands)) . PHP_EOL;
 
         if (count($this->deferredCommands) > $deferredCommandsCount) {
             // this allow OnBeforeStore to call Defer during the call to include

@@ -90,9 +90,25 @@ class PutCommandDataBase implements CommandDataInterface
 //        generator.writeEndObject();
 //    }
 
-    public function serialize(DocumentConventions $conventions): void
+    public function serialize(DocumentConventions $conventions): array
     {
-        // TODO: Implement serialize() method.
+        $data = [
+            'Id' => $this->id,
+            'ChangeVector' => $this->changeVector,
+            'Type' => 'PUT'
+        ];
+
+        if (!empty($this->originalChangeVector)) {
+            $data['OriginalChangeVector'] = $this->originalChangeVector;
+        }
+
+        if (!$this->forceRevisionCreationStrategy->isNone()) {
+            $data['ForceRevisionCreationStrategy'] = $this->forceRevisionCreationStrategy->getValue();
+        }
+
+        $data['Document'] = $this->document;
+
+        return $data;
     }
 
     public function onBeforeSaveChanges(InMemoryDocumentSessionOperations $session): void

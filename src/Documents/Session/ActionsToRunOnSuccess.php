@@ -33,8 +33,6 @@ class ActionsToRunOnSuccess
 
     public function clearSessionStateAfterSuccessfulSaveChanges(): void
     {
-        echo "OVO SE TERA@!!!!";
-
         /** @var string $id */
         foreach ($this->documentsByIdToRemove as $id) {
             unset($this->session->documentsById[$id]);
@@ -52,11 +50,11 @@ class ActionsToRunOnSuccess
         }
 
         if ($this->clearDeletedEntities) {
-            unset($this->session->deletedEntities);
+            $this->session->deletedEntities->clear();
         }
 
-        unset($this->session->deferredCommands);
-        unset($this->session->deferredCommandsMap);
+        $this->session->deferredCommands = [];
+        $this->session->deferredCommandsMap->clear();
     }
 
     public function clearDeletedEntities(): void

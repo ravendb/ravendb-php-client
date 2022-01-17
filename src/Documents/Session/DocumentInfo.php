@@ -23,6 +23,11 @@ class DocumentInfo
     private bool $newDocument = false;
     private string $collection = '';
 
+    public function __construct()
+    {
+        $this->concurrencyCheckMode = ConcurrencyCheckMode::auto();
+    }
+
     /**
      * @throws IllegalStateException
      */

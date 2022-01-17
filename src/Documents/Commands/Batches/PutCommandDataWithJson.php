@@ -6,6 +6,9 @@ use RavenDB\Documents\Session\ForceRevisionStrategy;
 
 class PutCommandDataWithJson extends PutCommandDataBase
 {
+    /**
+     * @throws \RavenDB\Exceptions\IllegalArgumentException
+     */
     public function __construct(
         string $id,
         ?string $changeVector,

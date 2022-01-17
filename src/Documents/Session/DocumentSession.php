@@ -12,6 +12,8 @@ use RavenDB\Documents\Session\Operations\LoadOperation;
 use RavenDB\Exceptions\IllegalStateException;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 
+use DS\Map as DSMap;
+
 class DocumentSession extends InMemoryDocumentSessionOperations implements
     AdvancedSessionOperationsInterface,
     DocumentSessionImplementationInterface,

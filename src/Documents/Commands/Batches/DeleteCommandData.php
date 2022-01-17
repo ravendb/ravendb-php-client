@@ -62,7 +62,7 @@ class DeleteCommandData implements CommandDataInterface
         $this->document = $document;
     }
 
-    public function serialize(DocumentConventions $conventions): void
+    public function serialize(DocumentConventions $conventions): array
     {
         // @todo: implement this serialize
     }

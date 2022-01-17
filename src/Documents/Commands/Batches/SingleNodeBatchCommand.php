@@ -72,7 +72,23 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
 
     public function createRequest(ServerNode $serverNode): HttpRequestInterface
     {
-        $request = new HttpRequest($this->createUrl($serverNode), 'POST');
+        $request = new HttpRequest($this->createUrl($serverNode), HttpRequest::POST);
+
+        $commands = [];
+        /** @var CommandDataInterface $command */
+        foreach ($this->commands as $command) {
+            $commands[] = $command->serialize($this->conventions);
+        }
+
+        $request->setOptions([
+            'headers' => [
+                'Accept' => 'application/json',
+            ],
+            'json' => [
+                'Commands' => $commands
+            ]
+        ]);
+
 
 //        request.setEntity(new ContentProviderHttpEntity(outputStream -> {
 //            try (JsonGenerator generator = mapper.getFactory().createGenerator(outputStream)) {

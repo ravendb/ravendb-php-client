@@ -5,6 +5,7 @@ namespace RavenDB\Http;
 class HttpRequest implements HttpRequestInterface
 {
     public const PUT = 'PUT';
+    public const POST = 'POST';
 
     private string $url;
     private string $method;

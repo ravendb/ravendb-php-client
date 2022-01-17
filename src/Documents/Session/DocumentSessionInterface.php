@@ -160,4 +160,6 @@ interface DocumentSessionInterface
 //    <T> ISessionDocumentRollupTypedTimeSeries<T> timeSeriesRollupFor(Class<T> clazz, String documentId, String policy);
 //
 //    <T> ISessionDocumentRollupTypedTimeSeries<T> timeSeriesRollupFor(Class<T> clazz, String documentId, String policy, String raw);
+
+    public function close(): void;
 }

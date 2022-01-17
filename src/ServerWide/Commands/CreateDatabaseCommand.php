@@ -7,12 +7,15 @@ use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\HeadersConstants;
 use RavenDB\Http\HttpRequest;
 use RavenDB\Http\HttpRequestInterface;
+use RavenDB\Http\RaftCommandInterface;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ServerNode;
+use RavenDB\Http\VoidRavenCommand;
 use RavenDB\ServerWide\DatabaseRecord;
 use RavenDB\ServerWide\Operations\DatabasePutResult;
+use RavenDB\Utils\RaftIdGenerator;
 
-class CreateDatabaseCommand extends RavenCommand
+class CreateDatabaseCommand extends RavenCommand implements RaftCommandInterface
 {
     private DocumentConventions $conventions;
     private DatabaseRecord $databaseRecord;
@@ -49,6 +52,8 @@ class CreateDatabaseCommand extends RavenCommand
 
     public function createRequest(ServerNode $serverNode): HttpRequestInterface
     {
+        //@todo: validate this method is correct and working and we can say this class is DONE
+
         $databaseDocument = $this->getMapper()->serialize($this->databaseRecord, 'json');
 
         $options = [
@@ -59,14 +64,32 @@ class CreateDatabaseCommand extends RavenCommand
         ];
 
         if ($this->eTag != null) {
-            $options['headers'][HeadersConstants::ETAG] = $this->eTag;
+            $options['headers'][HeadersConstants::ETAG] = "\"" . $this->eTag . "\"";
         }
 
         return new HttpRequest($this->createUrl($serverNode), HttpRequest::PUT, $options);
     }
 
+    /**
+     * @throws \Symfony\Component\Serializer\Exception\ExceptionInterface
+     * @throws \RavenDB\Exceptions\IllegalStateException
+     */
+    public function setResponse(string $response, bool $fromCache): void
+    {
+        if (empty($response)) {
+            $this->throwInvalidResponse();
+        }
+
+        $this->result = $this->getMapper()->denormalize($response, DatabasePutResult::class);
+    }
+
     public function isReadRequest(): bool
     {
         return false;
+    }
+
+    public function getRaftUniqueRequestId(): string
+    {
+        return RaftIdGenerator::newId();
     }
 }

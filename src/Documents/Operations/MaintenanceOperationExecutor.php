@@ -8,6 +8,7 @@ use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Http\RequestExecutor;
 use RavenDB\ServerWide\Operations\ServerOperationExecutor;
 
+// !status: IN PROGRESS
 class MaintenanceOperationExecutor
 {
     private DocumentStore $store;
@@ -33,6 +34,7 @@ class MaintenanceOperationExecutor
 
         $this->requestExecutor =
             $this->databaseName !== null ? $this->store->getRequestExecutor($this->databaseName) : null;
+
         return $this->requestExecutor;
     }
 
@@ -45,7 +47,7 @@ class MaintenanceOperationExecutor
             return $this->serverOperationExecutor;
         }
 
-        $this->serverOperationExecutor = new ServerOperationExecutor($this->store);
+        $this->serverOperationExecutor = ServerOperationExecutor::forStore($this->store);
         return $this->serverOperationExecutor;
     }
 

@@ -11,6 +11,6 @@ interface CommandDataInterface
     public function getName(): string;
     public function getChangeVector(): string;
     public function getType(): CommandType;
-    public function serialize(DocumentConventions $conventions): void;
+    public function serialize(DocumentConventions $conventions): array;
     public function onBeforeSaveChanges(InMemoryDocumentSessionOperations $session): void;
 }
