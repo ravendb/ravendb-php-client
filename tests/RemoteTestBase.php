@@ -13,6 +13,7 @@ use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\primitives\CleanCloseable;
 use RavenDB\ServerWide\DatabaseRecord;
 use RavenDB\ServerWide\Operations\CreateDatabaseOperation;
+use RavenDB\ServerWide\Operations\DeleteDatabasesOperation;
 use RavenDB\Type\Url;
 use RavenDB\Type\UrlArray;
 
@@ -321,6 +322,9 @@ class RemoteTestBase extends RavenTestDriver implements CleanCloseable
         return false;
     }
 
+    /**
+     * @throws IllegalStateException
+     */
     public function cleanUp(DocumentStore $store): void
     {
         if (!in_array($store, $this->documentStores->getArrayCopy())) {
@@ -328,8 +332,7 @@ class RemoteTestBase extends RavenTestDriver implements CleanCloseable
         }
 
         try {
-            // todo: implement this
-//            $store->maintenance()->server()->send(new DeleteDatabasesOperation($store->getDatabase(), true));
+            $store->maintenance()->server()->send(new DeleteDatabasesOperation($store->getDatabase(), true));
         } catch (DatabaseDoesNotExistException | NoLeaderException $exception) {
             // ignore
         }

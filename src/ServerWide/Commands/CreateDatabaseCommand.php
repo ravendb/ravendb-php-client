@@ -15,6 +15,7 @@ use RavenDB\ServerWide\DatabaseRecord;
 use RavenDB\ServerWide\Operations\DatabasePutResult;
 use RavenDB\Utils\RaftIdGenerator;
 
+// !status: DONE - not validated that working yet
 class CreateDatabaseCommand extends RavenCommand implements RaftCommandInterface
 {
     private DocumentConventions $conventions;
@@ -52,9 +53,7 @@ class CreateDatabaseCommand extends RavenCommand implements RaftCommandInterface
 
     public function createRequest(ServerNode $serverNode): HttpRequestInterface
     {
-        //@todo: validate this method is correct and working and we can say this class is DONE
-
-        $databaseDocument = $this->getMapper()->serialize($this->databaseRecord, 'json');
+        $databaseDocument = $this->getMapper()->normalize($this->databaseRecord, 'json');
 
         $options = [
             'json' => $databaseDocument,
@@ -80,7 +79,7 @@ class CreateDatabaseCommand extends RavenCommand implements RaftCommandInterface
             $this->throwInvalidResponse();
         }
 
-        $this->result = $this->getMapper()->denormalize($response, DatabasePutResult::class);
+        $this->result = $this->getMapper()->deserialize($response, $this->getResultClass(), 'json');
     }
 
     public function isReadRequest(): bool
