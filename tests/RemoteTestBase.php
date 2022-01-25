@@ -217,7 +217,6 @@ class RemoteTestBase extends RavenTestDriver implements CleanCloseable
 
         $this->customizeDbRecord($databaseRecord);
 
-
         $createDatabaseOperation = new CreateDatabaseOperation($databaseRecord);
         $documentStore->maintenance()->server()->send($createDatabaseOperation);
 

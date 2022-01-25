@@ -15,7 +15,7 @@ use RavenDB\ServerWide\DatabaseRecord;
 use RavenDB\ServerWide\Operations\DatabasePutResult;
 use RavenDB\Utils\RaftIdGenerator;
 
-// !status: DONE - not validated that working yet
+// !status: DONE
 class CreateDatabaseCommand extends RavenCommand implements RaftCommandInterface
 {
     private DocumentConventions $conventions;

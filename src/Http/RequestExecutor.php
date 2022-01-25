@@ -269,7 +269,7 @@ class RequestExecutor implements CleanCloseable
     ) {
 //        cache = new HttpCache(conventions.getMaxHttpCacheSize());
 //        _executorService = executorService;
-        $this->databaseName = $databaseName;
+        $this->databaseName = $databaseName ?? '';
 //        this.certificate = certificate;
 //        this.keyPassword = keyPassword;
 //        this.trustStore = trustStore;
@@ -301,7 +301,7 @@ class RequestExecutor implements CleanCloseable
 //              $initialUrls
         );
 //        $executor->firstTopologyUpdate = executor.firstTopologyUpdate(initialUrls, GLOBAL_APPLICATION_IDENTIFIER);
-        return $executor;
+//        return $executor;
 
         // @todo: check why I added this lines and probably it wont be needed so we can delete it
         // or we need this for SingleNode!!!!
@@ -313,7 +313,7 @@ class RequestExecutor implements CleanCloseable
         $topology->setEtag(-1);
         $topology->getServerNodes()->append($serverNode);
 
-        $executor = new RequestExecutor($databaseName, $conventions);
+//        $executor = new RequestExecutor($databaseName, $conventions);
         $executor->setNodeSelector(new NodeSelector($topology));
 
         return $executor;
@@ -464,8 +464,6 @@ class RequestExecutor implements CleanCloseable
             $this->executeOnSpecificNode($command, $sessionInfo, $options);
         }
 
-//        echo 'NODE SELECTOR:' . PHP_EOL;
-//        print_r($this->nodeSelector);
         $nodeResolver = new NodeResolver($command, $sessionInfo, $this->nodeSelector);
 
         $executeOptions = new ExecuteOptions();
@@ -970,6 +968,12 @@ class RequestExecutor implements CleanCloseable
         HttpRequestInterface $request
     ): HttpResponseInterface {
         $response = $command->send($this->getHttpClient(), $request);
+
+        // TESTING:
+//        echo 'REQUEST: ' . PHP_EOL;
+//        print_r($request);
+//        echo 'RESPONSE: ' . PHP_EOL;
+//        print_r($response);
 
         return $response;
     }

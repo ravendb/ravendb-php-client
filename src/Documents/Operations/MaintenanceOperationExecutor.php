@@ -26,14 +26,12 @@ class MaintenanceOperationExecutor
      * @throws InvalidArgumentException
      * @throws IllegalStateException
      */
-    private function getRequestExecutor(): ?RequestExecutor
+    private function getRequestExecutor(): RequestExecutor
     {
-        if ($this->requestExecutor != null) {
-            return $this->requestExecutor;
+        if ($this->requestExecutor == null) {
+            return $this->requestExecutor =
+                ($this->databaseName !== null) ? $this->store->getRequestExecutor($this->databaseName) : null;
         }
-
-        $this->requestExecutor =
-            $this->databaseName !== null ? $this->store->getRequestExecutor($this->databaseName) : null;
 
         return $this->requestExecutor;
     }
@@ -43,11 +41,10 @@ class MaintenanceOperationExecutor
      */
     public function server(): ServerOperationExecutor
     {
-        if ($this->serverOperationExecutor != null) {
-            return $this->serverOperationExecutor;
+        if ($this->serverOperationExecutor == null) {
+            $this->serverOperationExecutor = ServerOperationExecutor::forStore($this->store);
         }
 
-        $this->serverOperationExecutor = ServerOperationExecutor::forStore($this->store);
         return $this->serverOperationExecutor;
     }
 

@@ -47,7 +47,8 @@ class JsonExtensions
         $metadataAwareNameConverter = new MetadataAwareNameConverter($classMetadataFactory);
 
         $normalizers = [
-            new TypedArrayDenormalizer(),
+            new TypedArrayNormalizer(),
+            new StringArrayNormalizer(),
             new ObjectNormalizer(
                 $classMetadataFactory,
                 $metadataAwareNameConverter,

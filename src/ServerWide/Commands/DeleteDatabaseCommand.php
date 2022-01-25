@@ -14,7 +14,7 @@ use RavenDB\Utils\RaftIdGenerator;
 
 class DeleteDatabaseCommand extends RavenCommand implements RaftCommandInterface
 {
-    private string $parameters = '';
+    private array $parameters = [];
 
     public function __construct(?DocumentConventions $conventions = null, ?DeleteDatabaseCommandParameters $parameters = null)
     {
@@ -32,7 +32,7 @@ class DeleteDatabaseCommand extends RavenCommand implements RaftCommandInterface
         try {
             $this->parameters = $this->getMapper()->normalize($parameters, 'json');
         } catch (\Throwable $e) {
-
+//            echo 'ERROR: ' . $e->getMessage() . PHP_EOL;
         }
 //        } catch (JsonProcessingException $e) {
 //            throw ExceptionsUtils::unwrapException($e);

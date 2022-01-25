@@ -2,52 +2,44 @@
 
 namespace RavenDB\ServerWide;
 
+use RavenDB\Documents\Indexes\RollingIndex;
+use RavenDB\Documents\Indexes\RollingIndexArray;
+use RavenDB\Documents\Operations\Revisions\RevisionsCollectionConfiguration;
+use RavenDB\Documents\Operations\Revisions\RevisionsConfiguration;
+use RavenDB\Documents\Operations\TimeSeries\TimeSeriesConfiguration;
+
+use Symfony\Component\Serializer\Annotation\SerializedName;
+
+// @todo: Add serialized names to properties
+
+// !status: IN PROGRESS
 class DatabaseRecord
 {
-    private string $databaseName;
+    /** @SerializedName("DatabaseName") */
+    private string $databaseName = '';
+
+    /** @SerializedName("Disabled") */
+    private bool $disabled = false;
+
+    /** @SerializedName("Encrypted") */
+    private bool $encrypted = false;
+    private int $etagForBackup = 0;
+    private DeletionInProgressStatusArray $deletionInProgress;
+    private RollingIndexArray $rollingIndexes;
+    private DatabaseStateStatus $databaseState;
+    private DatabaseLockMode $lockMode;
     private ?DatabaseTopology $topology = null;
-
-    public function getDatabaseName(): string
-    {
-        return $this->databaseName;
-    }
-
-    public function setDatabaseName(string $databaseName): void
-    {
-        $this->databaseName = $databaseName;
-    }
-
-    public function getTopology(): ?DatabaseTopology
-    {
-        return $this->topology;
-    }
-
-    public function setTopology(?DatabaseTopology $topology): void
-    {
-        $this->topology = $topology;
-    }
-
-
-//    private String databaseName;
-//    private boolean disabled;
-//    private boolean encrypted;
-//    private long etagForBackup;
-//    private Map<String, DeletionInProgressStatus> deletionInProgress;
-//    private Map<String, RollingIndex> rollingIndexes;
-//    private DatabaseStateStatus databaseState;
-//    private DatabaseLockMode lockMode;
-//    private DatabaseTopology topology;
-//    private ConflictSolver conflictSolverConfig;
-//    private DocumentsCompressionConfiguration documentsCompression;
+    private ConflictSolver $conflictSolverConfig;
+    private DocumentsCompressionConfiguration $documentsCompression;
 //    private Map<String, SorterDefinition> sorters = new HashMap<>();
 //    private Map<String, AnalyzerDefinition> analyzers = new HashMap<>();
 //    private Map<String, IndexDefinition> indexes;
 //    private Map<String, List<IndexHistoryEntry>> indexesHistory;
 //    private Map<String, AutoIndexDefinition> autoIndexes;
 //    private Map<String, String> settings = new HashMap<>();
-//    private RevisionsConfiguration revisions;
-//    private TimeSeriesConfiguration timeSeries;
-//    private RevisionsCollectionConfiguration revisionsForConflicts;
+    private RevisionsConfiguration $revisions;
+    private TimeSeriesConfiguration $timeSeries;
+    private RevisionsCollectionConfiguration $revisionsForConflicts;
 //    private ExpirationConfiguration expiration;
 //    private RefreshConfiguration refresh;
 //    private List<PeriodicBackupConfiguration> periodicBackups = new ArrayList<>();
@@ -64,30 +56,37 @@ class DatabaseRecord
 //    private StudioConfiguration studio;
 //    private long truncatedClusterTransactionCommandsCount;
 //    private Set<String> unusedDatabaseIds = new HashSet<>();
-//
-//    public DatabaseRecord() {
-//    }
-//
-//    public DatabaseRecord(String databaseName) {
-//        this.databaseName = databaseName;
-//    }
-//
-//    public String getDatabaseName() {
-//        return databaseName;
-//    }
-//
-//    public void setDatabaseName(String databaseName) {
-//        this.databaseName = databaseName;
-//    }
-//
-//    public boolean isDisabled() {
-//        return disabled;
-//    }
-//
-//    public void setDisabled(boolean disabled) {
-//        this.disabled = disabled;
-//    }
-//
+
+
+    public function __construct(string $databaseName = '')
+    {
+        $this->databaseName = $databaseName;
+
+        $this->deletionInProgress = new DeletionInProgressStatusArray();
+        $this->lockMode = DatabaseLockMode::none();
+        $this->databaseState = DatabaseStateStatus::normal();
+    }
+
+    public function getDatabaseName(): string
+    {
+        return $this->databaseName;
+    }
+
+    public function setDatabaseName(string $databaseName): void
+    {
+        $this->databaseName = $databaseName;
+    }
+
+    public function isDisabled(): bool
+    {
+        return $this->disabled;
+    }
+
+    public function setDisabled(bool $disabled): void
+    {
+        $this->disabled = $disabled;
+    }
+
 //    public Map<String, String> getSettings() {
 //        return settings;
 //    }
@@ -96,62 +95,86 @@ class DatabaseRecord
 //        this.settings = settings;
 //    }
 //
-//    public ConflictSolver getConflictSolverConfig() {
-//        return conflictSolverConfig;
-//    }
-//
-//    public void setConflictSolverConfig(ConflictSolver conflictSolverConfig) {
-//        this.conflictSolverConfig = conflictSolverConfig;
-//    }
-//
-//    public DocumentsCompressionConfiguration getDocumentsCompression() {
-//        return documentsCompression;
-//    }
-//
-//    public void setDocumentsCompression(DocumentsCompressionConfiguration documentsCompression) {
-//        this.documentsCompression = documentsCompression;
-//    }
-//
-//    public boolean isEncrypted() {
-//        return encrypted;
-//    }
-//
-//    public void setEncrypted(boolean encrypted) {
-//        this.encrypted = encrypted;
-//    }
-//
-//    public long getEtagForBackup() {
-//        return etagForBackup;
-//    }
-//
-//    public void setEtagForBackup(long etagForBackup) {
-//        this.etagForBackup = etagForBackup;
-//    }
-//
-//    public Map<String, DeletionInProgressStatus> getDeletionInProgress() {
-//        return deletionInProgress;
-//    }
-//
-//    public void setDeletionInProgress(Map<String, DeletionInProgressStatus> deletionInProgress) {
-//        this.deletionInProgress = deletionInProgress;
-//    }
-//
-//    public Map<String, RollingIndex> getRollingIndexes() {
-//        return rollingIndexes;
-//    }
-//
-//    public void setRollingIndexes(Map<String, RollingIndex> rollingIndexes) {
-//        this.rollingIndexes = rollingIndexes;
-//    }
-//
-//    public DatabaseTopology getTopology() {
-//        return topology;
-//    }
-//
-//    public void setTopology(DatabaseTopology topology) {
-//        this.topology = topology;
-//    }
-//
+    public function getConflictSolverConfig(): ConflictSolver
+    {
+        return $this->conflictSolverConfig;
+    }
+
+    public function setConflictSolverConfig(ConflictSolver $conflictSolverConfig): void
+    {
+        $this->conflictSolverConfig = $conflictSolverConfig;
+    }
+
+    public function getDocumentsCompression(): DocumentsCompressionConfiguration
+    {
+        return $this->documentsCompression;
+    }
+
+    public function setDocumentsCompression(DocumentsCompressionConfiguration $documentsCompression): void
+    {
+        $this->documentsCompression = $documentsCompression;
+    }
+
+    public function isEncrypted(): bool
+    {
+        return $this->encrypted;
+    }
+
+    public function setEncrypted(bool $encrypted): void
+    {
+        $this->encrypted = $encrypted;
+    }
+
+    public function getEtagForBackup(): int
+    {
+        return $this->etagForBackup;
+    }
+
+    public function setEtagForBackup(int $etagForBackup): void
+    {
+        $this->etagForBackup = $etagForBackup;
+    }
+
+    public function getDeletionInProgress(): DeletionInProgressStatusArray
+    {
+        return $this->deletionInProgress;
+    }
+
+    public function addDeletionInProgress(string $key, DeletionInProgressStatus $status): void
+    {
+        $this->deletionInProgress[$key] = $status;
+    }
+
+    public function setDeletionInProgress(DeletionInProgressStatusArray $deletionInProgress): void
+    {
+        $this->deletionInProgress = $deletionInProgress;
+    }
+
+    public function getRollingIndexes(): RollingIndexArray
+    {
+        return $this->rollingIndexes;
+    }
+
+    public function setRollingIndexes(RollingIndexArray $rollingIndexes): void
+    {
+        $this->rollingIndexes = $rollingIndexes;
+    }
+
+    public function addRollingIndex(string $key, RollingIndex $rollingIndex): void
+    {
+        $this->rollingIndexes[$key] = $rollingIndex;
+    }
+
+    public function getTopology(): ?DatabaseTopology
+    {
+        return $this->topology;
+    }
+
+    public function setTopology(?DatabaseTopology $topology): void
+    {
+        $this->topology = $topology;
+    }
+
 //    public Map<String, SorterDefinition> getSorters() {
 //        return sorters;
 //    }
@@ -183,23 +206,26 @@ class DatabaseRecord
 //    public void setAutoIndexes(Map<String, AutoIndexDefinition> autoIndexes) {
 //        this.autoIndexes = autoIndexes;
 //    }
-//
-//    public RevisionsConfiguration getRevisions() {
-//        return revisions;
-//    }
-//
-//    public void setRevisions(RevisionsConfiguration revisions) {
-//        this.revisions = revisions;
-//    }
-//
-//    public TimeSeriesConfiguration getTimeSeries() {
-//        return timeSeries;
-//    }
-//
-//    public void setTimeSeries(TimeSeriesConfiguration timeSeries) {
-//        this.timeSeries = timeSeries;
-//    }
-//
+
+    public function getRevisions(): RevisionsConfiguration
+    {
+        return $this->revisions;
+    }
+
+    public function setRevisions(RevisionsConfiguration $revisions): void {
+        $this->revisions = $revisions;
+    }
+
+    public function getTimeSeries(): TimeSeriesConfiguration
+    {
+        return $this->timeSeries;
+    }
+
+    public function setTimeSeries(TimeSeriesConfiguration $timeSeries): void
+    {
+        $this->timeSeries = $timeSeries;
+    }
+
 //    public ExpirationConfiguration getExpiration() {
 //        return expiration;
 //    }
@@ -311,23 +337,27 @@ class DatabaseRecord
 //    public void setTruncatedClusterTransactionCommandsCount(long truncatedClusterTransactionCommandsCount) {
 //        this.truncatedClusterTransactionCommandsCount = truncatedClusterTransactionCommandsCount;
 //    }
-//
-//    public DatabaseStateStatus getDatabaseState() {
-//        return databaseState;
-//    }
-//
-//    public void setDatabaseState(DatabaseStateStatus databaseState) {
-//        this.databaseState = databaseState;
-//    }
-//
-//    public DatabaseLockMode getLockMode() {
-//        return lockMode;
-//    }
-//
-//    public void setLockMode(DatabaseLockMode lockMode) {
-//        this.lockMode = lockMode;
-//    }
-//
+
+    public function getDatabaseState(): DatabaseStateStatus
+    {
+        return $this->databaseState;
+    }
+
+    public function setDatabaseState(DatabaseStateStatus $databaseState): void
+    {
+        $this->databaseState = $databaseState;
+    }
+
+    public function getLockMode(): DatabaseLockMode
+    {
+        return $this->lockMode;
+    }
+
+    public function setLockMode(DatabaseLockMode $lockMode): void
+    {
+        $this->lockMode = $lockMode;
+    }
+
 //    public Map<String, List<IndexHistoryEntry>> getIndexesHistory() {
 //        return indexesHistory;
 //    }
@@ -335,15 +365,15 @@ class DatabaseRecord
 //    public void setIndexesHistory(Map<String, List<IndexHistoryEntry>> indexesHistory) {
 //        this.indexesHistory = indexesHistory;
 //    }
-//
-//    public RevisionsCollectionConfiguration getRevisionsForConflicts() {
-//        return revisionsForConflicts;
-//    }
-//
-//    public void setRevisionsForConflicts(RevisionsCollectionConfiguration revisionsForConflicts) {
-//        this.revisionsForConflicts = revisionsForConflicts;
-//    }
-//
+
+    public function getRevisionsForConflicts(): RevisionsCollectionConfiguration {
+        return $this->revisionsForConflicts;
+    }
+
+    public function setRevisionsForConflicts(RevisionsCollectionConfiguration $revisionsForConflicts): void {
+        $this->revisionsForConflicts = $revisionsForConflicts;
+    }
+
 //    public RefreshConfiguration getRefresh() {
 //        return refresh;
 //    }
@@ -397,18 +427,5 @@ class DatabaseRecord
 //        public void setRollingDeployment(Map<String, RollingIndexDeployment> rollingDeployment) {
 //            this.rollingDeployment = rollingDeployment;
 //        }
-//    }
-//
-//    @UseSharpEnum
-//    public enum DatabaseLockMode {
-//        UNLOCK,
-//        PREVENT_DELETES_IGNORE,
-//        PREVENT_DELETES_ERROR
-//    }
-//
-//    @UseSharpEnum
-//    public enum DatabaseStateStatus {
-//        NORMAL,
-//        RESTORE_IN_PROGRESS
 //    }
 }

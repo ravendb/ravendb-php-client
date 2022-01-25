@@ -37,7 +37,7 @@ class CrudTest extends RemoteTestBase
                 $family->setNames($names);
 
                 $newSession->store($family, 'family/1');
-//                $newSession->saveChanges();
+                $newSession->saveChanges();
 
                 $this->assertEquals(0, count($newSession->advanced()->whatChanged()));
 
@@ -58,7 +58,7 @@ class CrudTest extends RemoteTestBase
             }
         } finally {
             $store->close();
-//            $this->cleanUp($store);
+            $this->cleanUp($store);
         }
     }
 

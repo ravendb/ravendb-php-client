@@ -6,11 +6,20 @@ use RavenDB\Http\ResultInterface;
 use RavenDB\ServerWide\DatabaseTopology;
 use RavenDB\Type\StringArray;
 
+use Symfony\Component\Serializer\Annotation\SerializedName;
+
 class DatabasePutResult implements ResultInterface
 {
+    /** @SerializedName("RaftCommandIndex") */
     private int $raftCommandIndex;
+
+    /** @SerializedName("Name") */
     private string $name;
+
+    /** @SerializedName("Topology") */
     private DatabaseTopology $topology;
+
+    /** @SerializedName("NodesAddedTo") */
     private StringArray $nodesAddedTo;
 
     public function __construct()

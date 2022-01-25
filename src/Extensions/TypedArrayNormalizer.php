@@ -7,7 +7,7 @@ use RavenDB\Type\TypedMap;
 use Symfony\Component\Serializer\Normalizer\DenormalizerAwareInterface;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
-class TypedArrayDenormalizer implements DenormalizerInterface, DenormalizerAwareInterface
+class TypedArrayNormalizer implements DenormalizerInterface, DenormalizerAwareInterface
 {
     private ?DenormalizerInterface $denormalizer;
 

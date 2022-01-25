@@ -10,7 +10,7 @@ use RavenDB\Utils\StringUtils;
 class ServerNode
 {
     private Url $url;
-    private string $database;
+    private ?string $database = null;
     private string $clusterTag;
     private ServerNodeRole $serverRole;
 
@@ -29,12 +29,12 @@ class ServerNode
         $this->url = $url;
     }
 
-    public function getDatabase(): string
+    public function getDatabase(): ?string
     {
         return $this->database;
     }
 
-    public function setDatabase(string $database): void
+    public function setDatabase(?string $database): void
     {
         $this->database = $database;
     }

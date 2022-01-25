@@ -4,13 +4,28 @@ namespace RavenDB\ServerWide\Operations;
 
 use RavenDB\Type\StringArray;
 
+use Symfony\Component\Serializer\Annotation\SerializedName;
+
 // !status: DONE
 class DeleteDatabaseCommandParameters
 {
+        /** @SerializedName("DatabaseNames") */
         private StringArray $databaseNames;
-        private bool $hardDelete;
+
+        /** @SerializedName("HardDelete") */
+        private bool $hardDelete = false;
+
+        /** @SerializedName("FromNodes") */
         private StringArray $fromNodes;
-        private \DateInterval $timeToWaitForConfirmation;
+
+        /** @SerializedName("TimeToWaitForConfirmation") */
+        private ?\DateInterval $timeToWaitForConfirmation = null;
+
+        public function __construct()
+        {
+            $this->databaseNames = new StringArray();
+            $this->fromNodes = new StringArray();
+        }
 
         public function getDatabaseNames(): StringArray {
             return $this->databaseNames;
@@ -41,11 +56,12 @@ class DeleteDatabaseCommandParameters
             $this->fromNodes = $fromNodes;
         }
 
-        public function getTimeToWaitForConfirmation(): \DateInterval {
+        public function getTimeToWaitForConfirmation(): ?\DateInterval
+        {
             return $this->timeToWaitForConfirmation;
         }
 
-        public function setTimeToWaitForConfirmation(\DateInterval $timeToWaitForConfirmation): void {
+        public function setTimeToWaitForConfirmation(?\DateInterval $timeToWaitForConfirmation): void {
             $this->timeToWaitForConfirmation = $timeToWaitForConfirmation;
         }
 }

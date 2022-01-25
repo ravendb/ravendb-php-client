@@ -54,6 +54,20 @@ class ClusterRequestExecutor extends RequestExecutor
 
 //        $executor->_disableClientConfigurationUpdates = true;
 //        $executor->_firstTopologyUpdate = $executor->firstTopologyUpdate($initialUrls, null);
+
+
+        // @todo: remove following lines
+        $serverNode = new ServerNode();
+        $serverNode->setDatabase($databaseName);
+        $serverNode->setUrl($initialUrls[0]);
+
+        $topology = new Topology();
+        $topology->setEtag(-1);
+        $topology->getServerNodes()->append($serverNode);
+
+        $executor->setNodeSelector(new NodeSelector($topology));
+        //-- until here
+
         return $executor;
     }
 
