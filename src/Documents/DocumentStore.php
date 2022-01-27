@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents;
 
+use Closure;
 use InvalidArgumentException;
 use Ramsey\Uuid\Uuid;
 use RavenDB\Documents\Operations\MaintenanceOperationExecutor;
@@ -10,6 +11,9 @@ use RavenDB\Documents\Session\DocumentSessionInterface;
 use RavenDB\Documents\Session\SessionOptions;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Http\RequestExecutor;
+use RavenDB\Primitives\ClosureArray;
+use RavenDB\Primitives\EventArgs;
+use RavenDB\Primitives\EventHelper;
 use RavenDB\Type\UrlArray;
 
 // !status: IN PROGRESS
@@ -44,6 +48,9 @@ class DocumentStore extends DocumentStoreBase
         }
 
         $this->setDatabase($database);
+
+        $this->beforeClose = new ClosureArray();
+        $this->afterClose = new ClosureArray();
     }
 
 
@@ -79,6 +86,7 @@ class DocumentStore extends DocumentStoreBase
 
     public function close(): void
     {
+        EventHelper::invoke($this->beforeClose, $this, EventArgs::$EMPTY);
 //        EventHelper.invoke(beforeClose, this, EventArgs.EMPTY);
 //
 //        for (Lazy<EvictItemsFromCacheBasedOnChanges> value : _aggressiveCacheChanges.values()) {
@@ -109,8 +117,8 @@ class DocumentStore extends DocumentStoreBase
 //
 //        disposed = true;
 //
-//        EventHelper.invoke(new ArrayList<>(afterClose), this, EventArgs.EMPTY);
-//
+        EventHelper::invoke($this->afterClose, $this, EventArgs::$EMPTY);
+
 //        for (Map.Entry<String, Lazy<RequestExecutor>> kvp : requestExecutors.entrySet()) {
 //            if (!kvp.getValue().isValueCreated()) {
 //                continue;
@@ -391,28 +399,34 @@ class DocumentStore extends DocumentStoreBase
 //        lazy.getValue(); // force evaluation
 //    }
 //
-//    private final List<EventHandler<VoidArgs>> afterClose = new ArrayList<>();
-//
-//    private final List<EventHandler<VoidArgs>> beforeClose = new ArrayList<>();
-//
-//    public void addBeforeCloseListener(EventHandler<VoidArgs> event) {
-//        this.beforeClose.add(event);
-//    }
-//
-//    @Override
-//    public void removeBeforeCloseListener(EventHandler<VoidArgs> event) {
-//        this.beforeClose.remove(event);
-//    }
-//
-//    public void addAfterCloseListener(EventHandler<VoidArgs> event) {
-//        this.afterClose.add(event);
-//    }
-//
-//    @Override
-//    public void removeAfterCloseListener(EventHandler<VoidArgs> event) {
-//        this.afterClose.remove(event);
-//    }
-//
+
+    private ClosureArray $afterClose;
+    private ClosureArray $beforeClose;
+
+    public function addBeforeCloseListener(Closure $event): void
+    {
+        $this->beforeClose->append($event);
+    }
+
+    public function removeBeforeCloseListener(Closure $event): void
+    {
+        if(($key = array_search($event, $this->beforeClose->getArrayCopy())) !== FALSE) {
+            $this->beforeClose->offsetUnset($key);
+        }
+    }
+
+    public function addAfterCloseListener(Closure $event): void
+    {
+        $this->afterClose->append($event);
+    }
+
+    public function removeAfterCloseListener(Closure $event): void
+    {
+        if(($key = array_search($event, $this->afterClose->getArrayCopy())) !== FALSE) {
+            $this->afterClose->offsetUnset($key);
+        }
+    }
+
 //    @Override
 //    public DatabaseSmuggler smuggler() {
 //        if (_smuggler == null) {

@@ -1,6 +1,6 @@
 <?php
 
-namespace RavenDB\primitives;
+namespace RavenDB\Primitives;
 
 // @todo: implement this class - currently it cant be simply copied from java
 // note: maybe the function declaration is not right at all
@@ -8,15 +8,18 @@ class EventHelper
 {
     /**
      * Helper used for invoking event on list of delegates
-     * @param array $delegates      Event delegates
+     *
+     * @param ClosureArray $delegates      Event delegates
      * @param object $sender        Event sender
-     * @param EventArgs $eventArgs  Event to send
+     * @param EventArgs $event      Event to send
+     *
      */
-    public static function invoke(array $delegates, object $sender, EventArgs $eventArgs): void
+    public static function invoke(ClosureArray $delegates, object $sender, EventArgs $event): void
     {
-//        for (EventHandler<T> delegate : delegates) {
-//            delegate.handle(sender, event);
-//        }
+        /* * @var Closure $delegate */
+        foreach ($delegates as $delegate) {
+            $delegate($sender, $event);
+        }
     }
 
     public static function invokeActions(array $actions, object $argument): void

@@ -5,7 +5,7 @@ namespace RavenDB\Http;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Session\SessionInfo;
 use RavenDB\Http\Adapter\HttpClient;
-use RavenDB\primitives\CleanCloseable;
+use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Type\UrlArray;
 
 // !status: IN PROGRESS

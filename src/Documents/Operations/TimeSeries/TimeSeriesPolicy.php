@@ -3,7 +3,7 @@
 namespace RavenDB\Documents\Operations\TimeSeries;
 
 use RavenDB\Exceptions\IllegalArgumentException;
-use RavenDB\primitives\TimeValue;
+use RavenDB\Primitives\TimeValue;
 
 // !status: DONE
 class TimeSeriesPolicy

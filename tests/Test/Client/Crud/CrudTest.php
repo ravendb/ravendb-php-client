@@ -58,7 +58,6 @@ class CrudTest extends RemoteTestBase
             }
         } finally {
             $store->close();
-            $this->cleanUp($store);
         }
     }
 

@@ -5,7 +5,7 @@ namespace RavenDB\ServerWide\Operations;
 use InvalidArgumentException;
 use RavenDB\Documents\DocumentStore;
 use RavenDB\Http\ClusterRequestExecutor;
-use RavenDB\primitives\CleanCloseable;
+use RavenDB\Primitives\CleanCloseable;
 
 // !status: IN PROGRESS
 class ServerOperationExecutor implements CleanCloseable

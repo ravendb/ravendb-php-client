@@ -1,6 +1,6 @@
 <?php
 
-namespace RavenDB\primitives;
+namespace RavenDB\Primitives;
 
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;

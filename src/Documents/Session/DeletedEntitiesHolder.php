@@ -3,7 +3,7 @@
 namespace RavenDB\Documents\Session;
 
 use RavenDB\Exceptions\IllegalStateException;
-use RavenDB\primitives\CleanCloseable;
+use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Type\TypedArray;
 
 //@todo: implement this

@@ -2,7 +2,7 @@
 
 namespace RavenDB\Documents\Session;
 
-use RavenDB\primitives\EventArgs;
+use RavenDB\Primitives\EventArgs;
 
 class BeforeConversionToDocumentEventArgs extends EventArgs
 {

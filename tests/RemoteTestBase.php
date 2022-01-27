@@ -10,7 +10,7 @@ use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Exceptions\Cluster\NoLeaderException;
 use RavenDB\Exceptions\Database\DatabaseDoesNotExistException;
 use RavenDB\Exceptions\IllegalStateException;
-use RavenDB\primitives\CleanCloseable;
+use RavenDB\Primitives\CleanCloseable;
 use RavenDB\ServerWide\DatabaseRecord;
 use RavenDB\ServerWide\Operations\CreateDatabaseOperation;
 use RavenDB\ServerWide\Operations\DeleteDatabasesOperation;
@@ -234,18 +234,21 @@ class RemoteTestBase extends RavenTestDriver implements CleanCloseable
 
         $store->initialize();
 
-//        store.addAfterCloseListener(((sender, event) -> {
-//            if (!documentStores.contains(store)) {
-//                return;
-//            }
-//
-//            try {
-//                store.maintenance().server().send(new DeleteDatabasesOperation(store.getDatabase(), true));
-//            } catch (DatabaseDoesNotExistException | NoLeaderException e) {
-//                // ignore
-//            }
-//        }));
+        $documentStores = $this->documentStores;
 
+        $store->addAfterCloseListener(function($sender, $event) use (&$documentStores) {
+            /** @var DocumentStore $store */
+            $store = $sender;
+            if (!in_array($store, $documentStores->getArrayCopy())) {
+                return;
+            }
+
+            try {
+                $store->maintenance()->server()->send(new DeleteDatabasesOperation($store->getDatabase(), true));
+            } catch (DatabaseDoesNotExistException | NoLeaderException $exception) {
+                // ignore
+            }
+        });
 
         $this->setupDatabase($store);
 
@@ -326,15 +329,7 @@ class RemoteTestBase extends RavenTestDriver implements CleanCloseable
      */
     public function cleanUp(DocumentStore $store): void
     {
-        if (!in_array($store, $this->documentStores->getArrayCopy())) {
-            return;
-        }
 
-        try {
-            $store->maintenance()->server()->send(new DeleteDatabasesOperation($store->getDatabase(), true));
-        } catch (DatabaseDoesNotExistException | NoLeaderException $exception) {
-            // ignore
-        }
     }
 
 

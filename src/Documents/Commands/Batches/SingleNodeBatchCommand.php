@@ -12,7 +12,7 @@ use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ResultInterface;
 use RavenDB\Http\ServerNode;
 use RavenDB\Json\BatchCommandResult;
-use RavenDB\primitives\CleanCloseable;
+use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Utils\TimeUtils;
 
 // @todo: implement this

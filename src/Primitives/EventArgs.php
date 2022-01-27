@@ -1,6 +1,6 @@
 <?php
 
-namespace RavenDB\primitives;
+namespace RavenDB\Primitives;
 
 /**
  * Parent class for all EventArgs

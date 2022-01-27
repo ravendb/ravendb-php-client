@@ -26,8 +26,9 @@ use RavenDB\Http\RequestExecutor;
 use RavenDB\Json\BatchCommandResult;
 use RavenDB\Json\JsonOperation;
 use RavenDB\Json\MetadataAsDictionary;
-use RavenDB\primitives\CleanCloseable;
-use RavenDB\primitives\EventHelper;
+use RavenDB\Primitives\CleanCloseable;
+use RavenDB\Primitives\ClosureArray;
+use RavenDB\Primitives\EventHelper;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use function PHPUnit\Framework\isEmpty;
 
@@ -78,15 +79,15 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     private array $countersByDocId = [];
     private array $timeSeriesByDocId = [];
 
-    private array $onBeforeStore = [];
-    private array $onAfterSaveChanges = [];
-    private array $onBeforeDelete = [];
-    private array $onBeforeQuery = [];
+    private ClosureArray $onBeforeStore;
+    private ClosureArray $onAfterSaveChanges;
+    private ClosureArray $onBeforeDelete;
+    private ClosureArray $onBeforeQuery;
 
-    private array $onBeforeConversionToDocument = [];
-    private array $onAfterConversionToDocument = [];
-    private array $onBeforeConversionToEntity = [];
-    private array $onAfterConversionToEntity = [];
+    private ClosureArray $onBeforeConversionToDocument;
+    private ClosureArray $onAfterConversionToDocument;
+    private ClosureArray $onBeforeConversionToEntity;
+    private ClosureArray $onAfterConversionToEntity;
 
     /**
      * @throws IllegalStateException
@@ -94,6 +95,16 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
      */
     public function __construct(DocumentStoreBase $documentStore, UuidInterface $id, SessionOptions $options)
     {
+        $this->onBeforeStore = new ClosureArray();
+        $this->onAfterSaveChanges = new ClosureArray();
+        $this->onBeforeDelete = new ClosureArray();
+        $this->onBeforeQuery = new ClosureArray();
+
+        $this->onBeforeConversionToDocument = new ClosureArray();
+        $this->onAfterConversionToDocument = new ClosureArray();
+        $this->onBeforeConversionToEntity = new ClosureArray();
+        $this->onAfterConversionToEntity = new ClosureArray();
+
         $this->documentsByEntity = new DocumentsByEntityHolder();
         $this->deletedEntities = new DeletedEntitiesHolder();
 
