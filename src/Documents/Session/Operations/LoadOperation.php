@@ -247,7 +247,6 @@ class LoadOperation
             $this->results = $result;
             return;
         }
-
         if ($result == null) {
             $this->session->registerMissing($this->ids);
             return;
@@ -255,7 +254,7 @@ class LoadOperation
 
         $this->session->registerIncludes($result->getIncludes());
 
-        if ($this->includeAllCounters || $this->countersToInclude) {
+        if ($this->includeAllCounters || count($this->countersToInclude)) {
 //            $this->session->registerCounters($result->getCounterIncludes(), $this->ids, $this->countersToInclude, $this->includeAllCounters);
         }
 
@@ -267,11 +266,9 @@ class LoadOperation
 //            $this->session->getClusterSession()->registerCompareExchangeValues($result->getCompareExchangeValueIncludes());
         }
 
-
         // JsonNode document
         foreach ($result->getResults() as $document) {
-            // todo: check what is this isNull in java
-            if (empty($document)) { //  $document == null || $document->isNull()
+            if (empty($document)) {
                 continue;
             }
 

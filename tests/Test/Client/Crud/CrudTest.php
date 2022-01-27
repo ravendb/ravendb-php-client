@@ -20,7 +20,7 @@ class CrudTest extends RemoteTestBase
      * @throws InvalidArgumentException
      * @throws IllegalStateException
      */
-    public function testCrudOperationsWithArrayInObject(): void
+    public function AtestCrudOperationsWithArrayInObject(): void
     {
         $store = $this->getDocumentStore();
 
@@ -65,7 +65,7 @@ class CrudTest extends RemoteTestBase
      * @throws InvalidArgumentException
      * @throws IllegalStateException
      */
-    public function AtestCrudOperationsWithArrayInObject2(): void
+    public function testCrudOperationsWithArrayInObject2(): void
     {
         $store = $this->getDocumentStore();
 
@@ -84,8 +84,12 @@ class CrudTest extends RemoteTestBase
                 $newSession->store($family, 'family/1');
                 $newSession->saveChanges();
 
+
                 /** @var Family $newFamily */
                 $newFamily = $newSession->load(Family::class, 'family/1');
+
+                echo 'NULTA PROVERA PROVERA 0: ' . PHP_EOL;
+                $this->assertCount(0, $newSession->advanced()->whatChanged());
 
                 $names1 = [
                     "Hibernating Rhinos",
@@ -93,7 +97,8 @@ class CrudTest extends RemoteTestBase
                 ];
                 $newFamily->setNames($names1);
 
-                $this->assertCount(0, $newSession->advanced()->whatChanged());
+                echo 'PRVA PROVERA 0: ' . PHP_EOL;
+                $this->assertCount(1, $newSession->advanced()->whatChanged());
 
 
                 $names2 = [
@@ -101,6 +106,8 @@ class CrudTest extends RemoteTestBase
                     "Hibernating Rhinos",
                 ];
                 $newFamily->setNames($names2);
+
+                echo 'DRUGA PROVERA 1: ' . PHP_EOL;
                 $this->assertCount(1, $newSession->advanced()->whatChanged());
 
                 $newSession->saveChanges();

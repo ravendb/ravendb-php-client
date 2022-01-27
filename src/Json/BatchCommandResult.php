@@ -4,6 +4,7 @@ namespace RavenDB\Json;
 
 use RavenDB\Http\ResultInterface;
 
+// !status: DONE
 class BatchCommandResult implements ResultInterface
 {
     private array $results = [];

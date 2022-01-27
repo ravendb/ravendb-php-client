@@ -662,6 +662,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     public function whatChanged(): array
     {
         $changes = $this->getAllEntitiesChanges();
+
         $this->prepareForEntitiesDeletion(null, $changes);
 
         return $changes;
@@ -1132,6 +1133,11 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             $this,
             new BeforeConversionToDocumentEventArgs($this, $id, $entity)
         );
+    }
+
+    public function validateClusterTransaction(SaveChangesData $result): void
+    {
+        // @todo: implement this
     }
 
 //    public function onAfterConversionToDocumentInvoke(string $id, object $entity, Reference<ObjectNode> $document): void
