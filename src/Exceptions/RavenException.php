@@ -8,7 +8,7 @@ class RavenException extends Exception
 {
     private bool $reachedLeader = false;
 
-    public function __construct(string $message, \Throwable $cause = '')
+    public function __construct(string $message, ?\Throwable $cause = null)
     {
         parent::__construct($message);
     }

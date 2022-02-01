@@ -20,7 +20,7 @@ class CrudTest extends RemoteTestBase
      * @throws InvalidArgumentException
      * @throws IllegalStateException
      */
-    public function AtestCrudOperationsWithArrayInObject(): void
+    public function testCrudOperationsWithArrayInObject(): void
     {
         $store = $this->getDocumentStore();
 
@@ -99,7 +99,6 @@ class CrudTest extends RemoteTestBase
 
                 echo 'SECOND CHECK 0: ' . PHP_EOL;
                 $this->assertCount(1, $newSession->advanced()->whatChanged());
-
 
                 $names2 = [
                     "RavenDB",

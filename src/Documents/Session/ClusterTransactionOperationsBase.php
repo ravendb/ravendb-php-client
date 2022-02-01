@@ -207,6 +207,11 @@ class ClusterTransactionOperationsBase
 //        return value;
 //    }
 //
+
+    public function registerCompareExchangeValues(array $values): void
+    {
+
+    }
 //    public void registerCompareExchangeValues(ObjectNode values) {
 //        if (session.noTracking) {
 //            return;
@@ -264,7 +269,7 @@ class ClusterTransactionOperationsBase
                 continue;
             }
 
-            $result->getSessionCommands()[] = $command;
+            $result->addSessionCommand($command);
         }
     }
 

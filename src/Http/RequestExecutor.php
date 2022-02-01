@@ -114,17 +114,18 @@ class RequestExecutor implements CleanCloseable
 //    private Duration _defaultTimeout;
 //
 //    public final AtomicLong numberOfServerRequests = new AtomicLong(0);
-//
-//    public String getUrl() {
-//        if (_nodeSelector == null) {
-//            return null;
-//        }
-//
-//        CurrentIndexAndNode preferredNode = _nodeSelector.getPreferredNode();
-//
-//        return preferredNode != null ? preferredNode.currentNode.getUrl() : null;
-//    }
-//
+
+    public function getUrl(): ?string
+    {
+        if ($this->nodeSelector == null) {
+            return null;
+        }
+
+        $preferredNode = $this->nodeSelector->getPreferredNode();
+
+        return $preferredNode != null ? $preferredNode->getUrl() : null;
+    }
+
 //    protected long topologyEtag;
 //
 //    public long getTopologyEtag() {
@@ -968,12 +969,6 @@ class RequestExecutor implements CleanCloseable
         HttpRequestInterface $request
     ): HttpResponseInterface {
         $response = $command->send($this->getHttpClient(), $request);
-
-        // TESTING:
-//        echo 'REQUEST: ' . PHP_EOL;
-//        print_r($request);
-//        echo 'RESPONSE: ' . PHP_EOL;
-//        print_r($response);
 
         return $response;
     }

@@ -26,7 +26,7 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
     private TransactionMode $mode;
 
     /**
-     * @throws IllegalArgumentException
+     * @throws IllegalArgumentException|IllegalStateException
      */
     public function __construct(
         ?DocumentConventions $conventions,

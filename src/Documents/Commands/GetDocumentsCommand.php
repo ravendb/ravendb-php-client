@@ -9,6 +9,7 @@ use RavenDB\Documents\Operations\TimeSeries\TimeSeriesCountRange;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRange;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesTimeRange;
 use RavenDB\Documents\Queries\HashCalculator;
+use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Http\HttpRequestInterface;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ServerNode;
@@ -17,17 +18,18 @@ use RavenDB\Type\StringArray;
 use RavenDB\Utils\UrlUtils;
 
 // !status: IN PROGRESS
+// only prepareRequestWithMultipleIds is left to be implemented in this class
 class GetDocumentsCommand extends RavenCommand
 {
     private string $id = '';
 
-    private StringArray $ids;
-    private StringArray $includes;
-    private StringArray $counters;
+    private ?StringArray $ids = null;
+    private ?StringArray $includes = null;
+    private ?StringArray $counters = null;
     private bool $includeAllCounters = false;
 
-    private AbstractTimeSeriesRangeArray $timeSeriesIncludes;
-    private StringArray $compareExchangeValueIncludes;
+    private ?AbstractTimeSeriesRangeArray $timeSeriesIncludes = null;
+    private ?StringArray $compareExchangeValueIncludes = null;
 
     private bool $metadataOnly = false;
 
@@ -38,75 +40,107 @@ class GetDocumentsCommand extends RavenCommand
     private ?string $exclude = null;
     private ?string $startAfter = null;
 
-    /**
-     * @throws InvalidArgumentException
-     */
-    public function __construct(StringArray $ids, StringArray $includes, bool $metadataOnly)
+    protected function __construct()
     {
         parent::__construct(GetDocumentsResult::class);
+    }
 
+    public static function forMultipleDocuments(StringArray $ids, StringArray $includes, bool $metadataOnly = false): GetDocumentsCommand
+    {
         if (empty($ids)) {
             throw new InvalidArgumentException("Please supply at least one id");
         }
+        $command = new GetDocumentsCommand();
 
-        $this->ids = $ids;
-        $this->includes = $includes;
-        $this->metadataOnly = $metadataOnly;
+        $command->ids = $ids;
+        $command->includes = $includes;
+        $command->metadataOnly = $metadataOnly;
 
-        $this->counters = new StringArray();
-
-        $this->timeSeriesIncludes = new AbstractTimeSeriesRangeArray();
-        $this->compareExchangeValueIncludes = new StringArray();
+        return $command;
     }
 
-//    public GetDocumentsCommand(int start, int pageSize) {
-//        super(GetDocumentsResult.class);
-//        _start = start;
-//        _pageSize = pageSize;
-//    }
-//
-//    public GetDocumentsCommand(String id, String[] includes, boolean metadataOnly) {
-//        super(GetDocumentsResult.class);
-//        if (id == null) {
-//            throw new IllegalArgumentException("id cannot be null");
-//        }
-//        _id = id;
-//        _includes = includes;
-//        _metadataOnly = metadataOnly;
-//    }
-//    public GetDocumentsCommand(String[] ids, String[] includes, String[] counterIncludes,
-//                               List<AbstractTimeSeriesRange> timeSeriesIncludes, String[] compareExchangeValueIncludes,
-//                               boolean metadataOnly) {
-//        this(ids, includes, metadataOnly);
-//
-//        _counters = counterIncludes;
-//        _timeSeriesIncludes = timeSeriesIncludes;
-//        _compareExchangeValueIncludes = compareExchangeValueIncludes;
-//    }
-//
-//    public GetDocumentsCommand(String[] ids, String[] includes, boolean includeAllCounters,
-//                               List<AbstractTimeSeriesRange> timeSeriesIncludes, String[] compareExchangeValueIncludes,
-//                               boolean metadataOnly) {
-//        this(ids, includes, metadataOnly);
-//
-//        _includeAllCounters = includeAllCounters;
-//        _timeSeriesIncludes = timeSeriesIncludes;
-//        _compareExchangeValueIncludes = compareExchangeValueIncludes;
-//    }
-//
-//    public GetDocumentsCommand(String startWith, String startAfter, String matches, String exclude, int start, int pageSize, boolean metadataOnly) {
-//        super(GetDocumentsResult.class);
-//        if (startWith == null) {
-//            throw new IllegalArgumentException("startWith cannot be null");
-//        }
-//        _startWith = startWith;
-//        _startAfter = startAfter;
-//        _matches = matches;
-//        _exclude = exclude;
-//        _start = start;
-//        _pageSize = pageSize;
-//        _metadataOnly = metadataOnly;
-//    }
+    public static function forSingleDocument(string $id, StringArray $includes, bool $metadataOnly = false): GetDocumentsCommand
+    {
+        if (empty($id)) {
+            throw new IllegalArgumentException("id cannot be null");
+        }
+
+        $command = new GetDocumentsCommand(null);
+        $command->id = $id;
+        $command->includes = $includes;
+        $command->metadataOnly = $metadataOnly;
+
+        return $command;
+    }
+
+    public static function withStartAndPageSize(int $start, int $pageSize): GetDocumentsCommand
+    {
+        $command = new GetDocumentsCommand();
+        $command->start = $start;
+        $command->pageSize = $pageSize;
+
+        return $command;
+    }
+
+    public static function withCounters(
+        StringArray $ids,
+        StringArray $includes,
+        StringArray $counterIncludes,
+        AbstractTimeSeriesRangeArray $timeSeriesIncludes,
+        StringArray $compareExchangeValueIncludes,
+        bool $metadata
+    ): GetDocumentsCommand {
+        $command = GetDocumentsCommand::forMultipleDocuments($ids, $includes, $metadata);
+
+        $command->counters = $counterIncludes;
+        $command->timeSeriesIncludes = $timeSeriesIncludes;
+        $command->compareExchangeValueIncludes = $compareExchangeValueIncludes;
+
+        return $command;
+    }
+
+    public static function withAllCounters(
+        StringArray $ids,
+        StringArray $includes,
+        bool $includeAllCounters,
+        AbstractTimeSeriesRangeArray $timeSeriesIncludes,
+        StringArray $compareExchangeValueIncludes,
+        bool $metadataOnly
+    ): GetDocumentsCommand {
+        $command = GetDocumentsCommand::forMultipleDocuments($ids, $includes, $metadataOnly);
+
+        $command->includeAllCounters = $includeAllCounters;
+        $command->timeSeriesIncludes = $timeSeriesIncludes;
+        $command->compareExchangeValueIncludes = $compareExchangeValueIncludes;
+
+        return $command;
+    }
+
+    public static function withStartWith(
+        ?string $startWith,
+        ?string $startAfter,
+        ?string $matches,
+        ?string $exclude,
+        int $start,
+        int $pageSize,
+        bool $metadataOnly
+    ): GetDocumentsCommand {
+        if (empty($startWith)) {
+            throw new IllegalArgumentException("startWith cannot be null");
+        }
+
+        $command = new GetDocumentsCommand();
+
+        $command->startWith = $startWith;
+        $command->startAfter = $startAfter;
+        $command->matches = $matches;
+        $command->exclude = $exclude;
+        $command->start = $start;
+        $command->pageSize = $pageSize;
+        $command->metadataOnly = $metadataOnly;
+
+        return $command;
+    }
 
     protected function createUrl(ServerNode $serverNode): string
     {
@@ -157,7 +191,6 @@ class GetDocumentsCommand extends RavenCommand
             }
         }
 
-        // @todo: complete implementation createUrl method
         if (!empty($this->timeSeriesIncludes)) {
             foreach ($this->timeSeriesIncludes as $tsInclude) {
                 if ($tsInclude instanceof TimeSeriesRange) {

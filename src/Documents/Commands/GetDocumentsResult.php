@@ -4,16 +4,16 @@ namespace RavenDB\Documents\Commands;
 
 use RavenDB\Http\ResultInterface;
 
+// !status: DONE
 class GetDocumentsResult implements ResultInterface
 {
     private array $includes = [];
     private array $results = [];
 
-    // @todo: implement this properties with getter and setters in tGetDocumentsResult
-//    private ObjectNode $counterIncludes;
-//    private ObjectNode $timeSeriesIncludes;
-//    private ObjectNode $compareExchangeValueIncludes;
-//    private int $nextPageStart;
+    private array $counterIncludes = [];
+    private array $timeSeriesIncludes = [];
+    private array $compareExchangeValueIncludes = [];
+    private int $nextPageStart = 0;
 
     public function getResults(): array
     {
@@ -33,5 +33,45 @@ class GetDocumentsResult implements ResultInterface
     public function setIncludes(array $includes): void
     {
         $this->includes = $includes;
+    }
+
+    public function getCounterIncludes(): array
+    {
+        return $this->counterIncludes;
+    }
+
+    public function setCounterIncludes(array $counterIncludes): void
+    {
+        $this->counterIncludes = $counterIncludes;
+    }
+
+    public function getTimeSeriesIncludes(): array
+    {
+        return $this->timeSeriesIncludes;
+    }
+
+    public function setTimeSeriesIncludes(array $timeSeriesIncludes): void
+    {
+        $this->timeSeriesIncludes = $timeSeriesIncludes;
+    }
+
+    public function getCompareExchangeValueIncludes(): array
+    {
+        return $this->compareExchangeValueIncludes;
+    }
+
+    public function setCompareExchangeValueIncludes(array $compareExchangeValueIncludes): void
+    {
+        $this->compareExchangeValueIncludes = $compareExchangeValueIncludes;
+    }
+
+    public function getNextPageStart(): int
+    {
+        return $this->nextPageStart;
+    }
+
+    public function setNextPageStart(int $nextPageStart): void
+    {
+        $this->nextPageStart = $nextPageStart;
     }
 }

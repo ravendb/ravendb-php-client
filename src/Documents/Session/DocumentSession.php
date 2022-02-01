@@ -121,6 +121,9 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         if ($this->clusterTransaction == null) {
             $this->clusterTransaction = new ClusterTransactionOperations($this);
         }
-        return $this->clusterTransaction;
+
+        /** @var ClusterTransactionOperationsBase  $clusterTransaction */
+        $clusterTransaction = $this->clusterTransaction;
+        return $clusterTransaction;
     }
 }

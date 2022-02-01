@@ -12,9 +12,10 @@ use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Type\StringArray;
 use RavenDB\Utils\Logger;
 use RavenDB\Utils\LoggerFactory;
+use RavenDB\Utils\StringUtils;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
-use function PHPUnit\Framework\isEmpty;
 
+// !status: DONE
 class LoadOperation
 {
     private InMemoryDocumentSessionOperations $session;
@@ -67,16 +68,24 @@ class LoadOperation
         }
 
         if ($this->includeAllCounters) {
-//            return new GetDocumentsCommand(
-//                _ids, _includes, true, _timeSeriesToInclude, _compareExchangeValuesToInclude, false
-//            );
-            return new GetDocumentsCommand($this->ids, $this->includes, true);
+            return GetDocumentsCommand::withAllCounters(
+                $this->ids,
+                $this->includes,
+                true,
+                $this->timeSeriesToInclude,
+                $this->compareExchangeValuesToInclude,
+                false
+            );
         }
 
-//        return new GetDocumentsCommand(
-//            _ids, _includes, _countersToInclude, _timeSeriesToInclude, _compareExchangeValuesToInclude, false
-//        );
-        return new GetDocumentsCommand($this->ids, $this->includes, false);
+        return GetDocumentsCommand::withCounters(
+            $this->ids,
+            $this->includes,
+            $this->countersToInclude,
+            $this->timeSeriesToInclude,
+            $this->compareExchangeValuesToInclude,
+            false
+        );
     }
 
     public function byId(string $id): LoadOperation
@@ -85,26 +94,26 @@ class LoadOperation
             return $this;
         }
 
-        if (count($this->ids) == 0) {
-            $this->ids[] = $id;
+        if ($this->ids->count() == 0) {
+            $this->ids->append($id);
         }
 
         return $this;
     }
 
-    public function withIncludes(array $includes): LoadOperation
+    public function withIncludes(StringArray $includes): LoadOperation
     {
         $this->includes = $includes;
         return $this;
     }
 
-    public function withCompareExchange(array $compareExchangeValues): LoadOperation
+    public function withCompareExchange(StringArray $compareExchangeValues): LoadOperation
     {
         $this->compareExchangeValuesToInclude = $compareExchangeValues;
         return $this;
     }
 
-    public function withCounters(?array $counters): LoadOperation
+    public function withCounters(?StringArray $counters): LoadOperation
     {
         if ($counters != null) {
             $this->countersToInclude = $counters;
@@ -118,7 +127,7 @@ class LoadOperation
         return $this;
     }
 
-    public function withTimeSeries(?array $timeSeries): LoadOperation
+    public function withTimeSeries(?AbstractTimeSeriesRangeArray $timeSeries): LoadOperation
     {
         if ($timeSeries != null) {
             $this->timeSeriesToInclude = $timeSeries;
@@ -126,13 +135,13 @@ class LoadOperation
         return $this;
     }
 
-    public function byIds(array $ids): LoadOperation
+    public function byIds(StringArray $ids): LoadOperation
     {
-        // @todo: check this TreeSet or we can leave array
-        $distinct = []; //new TreeSet<>(String::compareToIgnoreCase);
+        // @todo: check this TreeSet or we can leave array for now
+        $distinct = new StringArray(); //new TreeSet<>(String::compareToIgnoreCase);
 
         foreach($ids as $id) {
-            if (!empty($id)) {
+            if (!StringUtils::isBlank($id)) {
                 $distinct[] = $id;
             }
         }
@@ -155,7 +164,7 @@ class LoadOperation
             }
 
             if (
-                ($this->results != null) ||
+                ($this->results == null) ||
                 $this->results->getResults() == null ||
                 (count($this->results->getResults()) == 0))
             {
@@ -268,11 +277,16 @@ class LoadOperation
         $this->session->registerIncludes($result->getIncludes());
 
         if ($this->includeAllCounters || count($this->countersToInclude)) {
-//            $this->session->registerCounters($result->getCounterIncludes(), $this->ids, $this->countersToInclude, $this->includeAllCounters);
+            $this->session->registerCounters(
+                $result->getCounterIncludes(),
+                $this->ids,
+                $this->countersToInclude,
+                $this->includeAllCounters
+            );
         }
 
         if ($this->timeSeriesToInclude != null) {
-//            $this->session->registerTimeSeries($result->getTimeSeriesIncludes());
+            $this->session->registerTimeSeries($result->getTimeSeriesIncludes());
         }
 
         if ($this->compareExchangeValuesToInclude != null) {
@@ -292,7 +306,7 @@ class LoadOperation
         foreach ($this->ids as $id) {
             $value = $this->session->documentsById->getValue($id);
             if ($value == null) {
-                $this->session->registerMissing([$id]);
+                $this->session->registerMissing(StringArray::withValue($id));
             }
         }
 

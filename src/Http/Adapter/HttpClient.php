@@ -15,6 +15,10 @@ class HttpClient implements HttpClientInterface
 {
     private SymfonyHttpClientInterface $client;
 
+    // @todo: load this from environment variable
+    // We added this proxy in order to send traffic through Fiddler, so we can spy requests
+    private $proxy = 'http://127.0.0.1:8866';
+
     public function __construct()
     {
         $this->client = SymfonyHttpClient::create();
@@ -26,7 +30,13 @@ class HttpClient implements HttpClientInterface
      */
     public function execute(HttpRequestInterface $request): HttpResponseInterface
     {
-        $symfonyResponse =  $this->client->request($request->getMethod(), $request->getUrl(), $request->getOptions());
+        $options = $request->getOptions();
+
+        if (!empty($this->proxy) && !key_exists('proxy', $options)) {
+            $options['proxy'] = $this->proxy;
+        }
+
+        $symfonyResponse =  $this->client->request($request->getMethod(), $request->getUrl(), $options);
 
         return HttpResponseTransformer::fromHttpClientResponse($symfonyResponse);
     }

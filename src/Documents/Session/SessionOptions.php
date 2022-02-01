@@ -4,14 +4,15 @@ namespace RavenDB\Documents\Session;
 
 use RavenDB\Http\RequestExecutor;
 
+// !status: DONE
 class SessionOptions
 {
     private ?string $database = null;
-    private bool $noTracking = false; // true; // todo: [Marcin] check default value for this
-    private bool $noCaching = false; // true; // todo: [Marcin] check default value for this
+    private bool $noTracking = false;
+    private bool $noCaching = false;
     private ?RequestExecutor $requestExecutor = null;
     private TransactionMode $transactionMode;
-    private bool $disableAtomicDocumentWritesInClusterWideTransaction = true; // todo [MARCIN] check default value
+    private bool $disableAtomicDocumentWritesInClusterWideTransaction = false;
 
     public function __construct()
     {
@@ -73,6 +74,11 @@ class SessionOptions
         return $this->disableAtomicDocumentWritesInClusterWideTransaction;
     }
 
+    /**
+     * EXPERT: Disable automatic atomic writes with cluster write transactions. If set to 'true',
+     * will only consider explicitly added compare exchange values to validate cluster wide transactions.
+     * @param bool $disableAtomicDocumentWritesInClusterWideTransaction disable atomic writes
+     */
     public function setDisableAtomicDocumentWritesInClusterWideTransaction(
         bool $disableAtomicDocumentWritesInClusterWideTransaction
     ): void {
@@ -80,6 +86,11 @@ class SessionOptions
             $disableAtomicDocumentWritesInClusterWideTransaction;
     }
 
+    /**
+     * EXPERT: Disable automatic atomic writes with cluster write transactions. If set to 'true',
+     * will only consider explicitly added compare exchange values to validate cluster wide transactions.
+     * @return bool disable atomic writes
+     */
     public function getDisableAtomicDocumentWritesInClusterWideTransaction(): bool
     {
         return $this->disableAtomicDocumentWritesInClusterWideTransaction;

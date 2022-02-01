@@ -11,10 +11,10 @@ class PutCommandDataBase implements CommandDataInterface
 {
     private string $id;
     private ?string $name = null;
-    private string $changeVector;
-    private string $originalChangeVector;
+    private ?string $changeVector = null;
+    private ?string $originalChangeVector = null;
     private array $document;
-    private CommandType $type;// = CommandType.PUT;
+    private CommandType $type;
     private ForceRevisionStrategy $forceRevisionCreationStrategy;
 
     protected function __construct(
@@ -29,8 +29,8 @@ class PutCommandDataBase implements CommandDataInterface
         }
 
         $this->id = $id;
-        $this->changeVector = $changeVector ?? "";
-        $this->originalChangeVector = $originalChangeVector ?? "";
+        $this->changeVector = $changeVector;
+        $this->originalChangeVector = $originalChangeVector;
         $this->document = $document;
         $this->forceRevisionCreationStrategy = $strategy ?? ForceRevisionStrategy::None();
 
@@ -47,12 +47,12 @@ class PutCommandDataBase implements CommandDataInterface
         return $this->name;
     }
 
-    public function getChangeVector(): string
+    public function getChangeVector(): ?string
     {
         return $this->changeVector;
     }
 
-    public function getOriginalChangeVector(): string
+    public function getOriginalChangeVector(): ?string
     {
         return $this->originalChangeVector;
     }

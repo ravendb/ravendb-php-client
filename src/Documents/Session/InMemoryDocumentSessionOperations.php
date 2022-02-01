@@ -305,13 +305,13 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
     }
 
-    public function registerMissing(array $ids): void
+    public function registerMissing(StringArray $ids): void
     {
         if ($this->noTracking) {
             return;
         }
 
-        $this->knownMissingIds = array_merge($this->knownMissingIds, $ids);
+        $this->knownMissingIds = array_merge($this->knownMissingIds, $ids->getArrayCopy());
     }
 
     public function registerIncludes(array $includes): void
@@ -385,6 +385,21 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //            }
 //        }
 //    }
+
+    public function registerCounters(
+        array $resultCounters,
+        StringArray $ids,
+        StringArray $countersToInclude,
+        bool $gotAll
+    ): void {
+        // @todo: implement this
+    }
+
+
+    public function registerTimeSeries(array $resultTimeSeries): void
+    {
+        // @todo: implement this
+    }
 
     public function isDeleted(string $id): bool
     {
@@ -858,7 +873,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
                     $this->onBeforeDeleteInvoke(new BeforeDeleteEventArgs($this, $documentInfo->getId(), $documentInfo->getEntity()));
                     $deleteCommandData = new DeleteCommandData($documentInfo->getId(), $changeVector, $documentInfo->getChangeVector());
-                    $result->getSessionCommands()[] = $deleteCommandData;
+                    $result->addSessionCommand($deleteCommandData);
                 }
 
                 if ($changes == null) {
@@ -989,7 +1004,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         // Note: here there is no point checking 'Before' or 'After' because if there were changes then forced revision is done from the PUT command....
 
         foreach (array_keys($this->idsForCreatingForcedRevisions) as $idEntry) {
-            $result->getSessionCommands()[] = new ForceRevisionCommandData($idEntry);
+            $result->addSessionCommand(new ForceRevisionCommandData($idEntry));
         }
 
         $this->idsForCreatingForcedRevisions = [];

@@ -41,7 +41,7 @@ class BatchOperation
         $this->sessionCommandsCount = count($result->getSessionCommands());
 
         foreach ($result->getDeferredCommands() as $deferredCommand) {
-            $result->getSessionCommands()[] = $deferredCommand;
+            $result->addSessionCommand($deferredCommand);
         }
 
         $this->session->validateClusterTransaction($result);
