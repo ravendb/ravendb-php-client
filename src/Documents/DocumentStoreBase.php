@@ -80,7 +80,7 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //    @Override
 //    public abstract CleanCloseable disableAggressiveCaching(String database);
 //
-//    public abstract String getIdentifier();
+    public abstract function getIdentifier(): ?string;
 //
 //    public abstract void setIdentifier(String identifier);
 

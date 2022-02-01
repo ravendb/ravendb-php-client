@@ -29,6 +29,7 @@ use RavenDB\Json\MetadataAsDictionary;
 use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Primitives\ClosureArray;
 use RavenDB\Primitives\EventHelper;
+use RavenDB\Type\StringArray;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use function PHPUnit\Framework\isEmpty;
 
@@ -245,7 +246,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         // nothing more to do for now
     }
 
-    public function checkIfIdAlreadyIncluded(array $ids, array $includes): bool
+    public function checkIfIdAlreadyIncluded(StringArray $ids, StringArray $includes): bool
     {
         foreach ($ids as $id) {
             if (in_array($id, $this->knownMissingIds)) {
@@ -341,7 +342,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //        }
     }
 
-    public function registerMissingIncludes(array $results, array $includes, array $includePaths): void
+    public function registerMissingIncludes(array $results, array $includes, StringArray $includePaths): void
     {
 
     }
@@ -1168,4 +1169,15 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //        AfterConversionToEntityEventArgs eventArgs = new AfterConversionToEntityEventArgs(this, id, document, entity);
 //        EventHelper.invoke(onAfterConversionToEntity, this, eventArgs);
 //    }
+
+    /**
+     * Gets the store identifier for this session.
+     * The store identifier is the identifier for the particular RavenDB instance.
+     *
+     * @return string store identifier
+     */
+    public function storeIdentifier(): string
+    {
+        return $this->documentStore->getIdentifier() . ";" . $this->databaseName;
+    }
 }

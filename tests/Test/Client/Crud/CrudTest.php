@@ -88,7 +88,7 @@ class CrudTest extends RemoteTestBase
                 /** @var Family $newFamily */
                 $newFamily = $newSession->load(Family::class, 'family/1');
 
-                echo 'NULTA PROVERA PROVERA 0: ' . PHP_EOL;
+                echo 'FIRST CHECK 0: ' . PHP_EOL;
                 $this->assertCount(0, $newSession->advanced()->whatChanged());
 
                 $names1 = [
@@ -97,7 +97,7 @@ class CrudTest extends RemoteTestBase
                 ];
                 $newFamily->setNames($names1);
 
-                echo 'PRVA PROVERA 0: ' . PHP_EOL;
+                echo 'SECOND CHECK 0: ' . PHP_EOL;
                 $this->assertCount(1, $newSession->advanced()->whatChanged());
 
 
@@ -107,7 +107,7 @@ class CrudTest extends RemoteTestBase
                 ];
                 $newFamily->setNames($names2);
 
-                echo 'DRUGA PROVERA 1: ' . PHP_EOL;
+                echo 'FIRST CHECK 1: ' . PHP_EOL;
                 $this->assertCount(1, $newSession->advanced()->whatChanged());
 
                 $newSession->saveChanges();

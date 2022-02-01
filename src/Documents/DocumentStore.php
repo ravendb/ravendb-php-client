@@ -34,7 +34,7 @@ class DocumentStore extends DocumentStoreBase
 //
 //    private DatabaseSmuggler _smuggler;
 //
-//    private String identifier;
+    private string $identifier = '';
 
     /**
      * @throws IllegalStateException
@@ -57,32 +57,34 @@ class DocumentStore extends DocumentStoreBase
 //    public ExecutorService getExecutorService() {
 //        return executorService;
 //    }
-//
-//    /**
-//     * Gets the identifier for this store.
-//     */
-//    public String getIdentifier() {
-//        if (identifier != null) {
-//            return identifier;
-//        }
-//
-//        if (urls == null) {
-//            return null;
-//        }
-//
-//        if (database != null) {
-//            return String.join(",", urls) + " (DB: " + database + ")";
-//        }
-//
-//        return String.join(",", urls);
-//    }
-//
-//    /**
-//     * Sets the identifier for this store.
-//     */
-//    public void setIdentifier(String identifier) {
-//        this.identifier = identifier;
-//    }
+
+    /**
+     * Gets the identifier for this store.
+     */
+    public function getIdentifier(): ?string
+    {
+        if (!empty($this->identifier)) {
+            return $this->identifier;
+        }
+
+        if ($this->urls->count() == 0) {
+            return null;
+        }
+
+        if ($this->database != null) {
+            return join(",", $this->urls->getArrayCopy()) . " (DB: " . $this->database . ")";
+        }
+
+        return join(",", $this->urls->getArrayCopy());
+    }
+
+    /**
+     * Sets the identifier for this store.
+     */
+    public function setIdentifier(string $identifier): void
+    {
+        $this->identifier = $identifier;
+    }
 
     public function close(): void
     {

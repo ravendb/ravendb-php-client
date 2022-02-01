@@ -5,9 +5,13 @@ namespace RavenDB\Documents\Session\Operations;
 use InvalidArgumentException;
 use RavenDB\Documents\Commands\GetDocumentsCommand;
 use RavenDB\Documents\Commands\GetDocumentsResult;
+use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRangeArray;
 use RavenDB\Documents\Session\DocumentInfo;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Type\StringArray;
+use RavenDB\Utils\Logger;
+use RavenDB\Utils\LoggerFactory;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use function PHPUnit\Framework\isEmpty;
 
@@ -15,24 +19,33 @@ class LoadOperation
 {
     private InMemoryDocumentSessionOperations $session;
 
-//    private static final Log logger = LogFactory.getLog(LoadOperation.class);
+    private static ?Logger $logger = null;
 
-    private array $ids = [];
-    private array $includes = [];
+    private StringArray $ids;
+    private StringArray $includes;
+    private StringArray $countersToInclude;
+    private StringArray $compareExchangeValuesToInclude;
 
-    private array $countersToInclude = [];
-    private array $compareExchangeValuesToInclude = [];
     private bool  $includeAllCounters = false;
-    private array $timeSeriesToInclude = [];
-
+    private AbstractTimeSeriesRangeArray $timeSeriesToInclude;
 
     private bool $resultsSet = false;
     private GetDocumentsResult $results;
 
-
     public function __construct(InMemoryDocumentSessionOperations $session)
     {
         $this->session = $session;
+
+        $this->ids = new StringArray();
+        $this->includes = new StringArray();
+        $this->countersToInclude = new StringArray();
+        $this->compareExchangeValuesToInclude = new StringArray();
+
+        $this->timeSeriesToInclude = new AbstractTimeSeriesRangeArray();
+
+        if (self::$logger == null) {
+            self::$logger = LoggerFactory::getLogger(LoadOperation::class);
+        }
     }
 
     /**
@@ -47,11 +60,11 @@ class LoadOperation
 
         $this->session->incrementRequestCount();
 
-//        if (logger.isInfoEnabled()) {
-//            logger.info(
-//              "Requesting the following ids " + String.join(",", _ids) + " from " + _session.storeIdentifier()
-//            );
-//        }
+        if (self::$logger->isInfoEnabled()) {
+            self::$logger->info(
+              "Requesting the following ids " . join(",", $this->ids->getArrayCopy()) . " from " . $this->session->storeIdentifier()
+            );
+        }
 
         if ($this->includeAllCounters) {
 //            return new GetDocumentsCommand(
