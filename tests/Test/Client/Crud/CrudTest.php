@@ -39,8 +39,6 @@ class CrudTest extends RemoteTestBase
                 $newSession->store($family, 'family/1');
                 $newSession->saveChanges();
 
-                $this->assertEquals(0, count($newSession->advanced()->whatChanged()));
-
                 /** @var Family $newFamily */
                 $newFamily = $newSession->load(Family::class, 'family/1');
 
@@ -84,12 +82,8 @@ class CrudTest extends RemoteTestBase
                 $newSession->store($family, 'family/1');
                 $newSession->saveChanges();
 
-
                 /** @var Family $newFamily */
                 $newFamily = $newSession->load(Family::class, 'family/1');
-
-                echo 'FIRST CHECK 0: ' . PHP_EOL;
-                $this->assertCount(0, $newSession->advanced()->whatChanged());
 
                 $names1 = [
                     "Hibernating Rhinos",
@@ -97,8 +91,7 @@ class CrudTest extends RemoteTestBase
                 ];
                 $newFamily->setNames($names1);
 
-                echo 'SECOND CHECK 0: ' . PHP_EOL;
-                $this->assertCount(1, $newSession->advanced()->whatChanged());
+                $this->assertCount(0, $newSession->advanced()->whatChanged());
 
                 $names2 = [
                     "RavenDB",
@@ -106,7 +99,6 @@ class CrudTest extends RemoteTestBase
                 ];
                 $newFamily->setNames($names2);
 
-                echo 'FIRST CHECK 1: ' . PHP_EOL;
                 $this->assertCount(1, $newSession->advanced()->whatChanged());
 
                 $newSession->saveChanges();
@@ -122,7 +114,7 @@ class CrudTest extends RemoteTestBase
      * @throws InvalidArgumentException
      * @throws IllegalStateException
      */
-    public function AtestCrudOperationsWithArrayInObject3(): void
+    public function testCrudOperationsWithArrayInObject3(): void
     {
         $store = $this->getDocumentStore();
 
@@ -144,8 +136,7 @@ class CrudTest extends RemoteTestBase
                 /** @var Family $newFamily */
                 $newFamily = $newSession->load(Family::class, 'family/1');
 
-                unset($names[0]);
-                $newFamily->setNames($names);
+                $newFamily->setNames(['RavenDB']);
 
                 $this->assertCount(1, $newSession->advanced()->whatChanged());
 
@@ -162,7 +153,7 @@ class CrudTest extends RemoteTestBase
      * @throws InvalidArgumentException
      * @throws IllegalStateException
      */
-    public function AtestCrudOperationsWithArrayInObject4(): void
+    public function testCrudOperationsWithArrayInObject4(): void
     {
         $store = $this->getDocumentStore();
 
@@ -202,6 +193,29 @@ class CrudTest extends RemoteTestBase
             $store->close();
         }
     }
+
+//     public void crudOperationsWithNull() throws Exception {
+//        try (IDocumentStore store = getDocumentStore()) {
+//
+//            try (IDocumentSession newSession = store.openSession()) {
+//                User user = new User();
+//                user.setName(null);
+//
+//                newSession.store(user, "users/1");
+//                newSession.saveChanges();
+//
+//                User user2 = newSession.load(User.class, "users/1");
+//                assertThat(newSession.advanced().whatChanged())
+//                        .isEmpty();
+//
+//                user2.setAge(3);
+//
+//                assertThat(newSession.advanced().whatChanged())
+//                        .hasSize(1);
+//            }
+//        }
+//    }
+
 
     public function AtestCrudOperationsWithArrayOfObjects(): void
     {

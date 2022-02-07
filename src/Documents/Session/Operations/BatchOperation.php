@@ -2,10 +2,13 @@
 
 namespace RavenDB\Documents\Session\Operations;
 
+use RavenDB\Constants\Metadata;
 use RavenDB\Documents\Commands\Batches\ClusterWideBatchCommand;
 use RavenDB\Documents\Commands\Batches\CommandType;
 use RavenDB\Documents\Commands\Batches\SingleNodeBatchCommand;
 use RavenDB\Documents\Session\ActionsToRunOnSuccess;
+use RavenDB\Documents\Session\AfterSaveChangesEventArgs;
+use RavenDB\Documents\Session\DocumentInfo;
 use RavenDB\Documents\Session\DocumentInfoArray;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Exceptions\ClientVersionMismatchException;
@@ -23,11 +26,10 @@ class BatchOperation
     private int $allCommandsCount = 0;
     private ActionsToRunOnSuccess $onSuccessfulRequest;
 
-    private DocumentInfoArray $modifications;
+    private ?DocumentInfoArray $modifications = null;
 
     public function __construct(InMemoryDocumentSessionOperations $session)
     {
-        $this->modifications = new DocumentInfoArray();
         $this->session = $session;
     }
 
@@ -75,18 +77,18 @@ class BatchOperation
     public function setResult(BatchCommandResult $result): void
     {
 
-//        Function<ObjectNode, CommandType> getCommandType = batchResult -> {
-//            JsonNode type = batchResult.get("Type");
-//
-//            if (type == null || !type.isTextual()) {
-//                return CommandType.NONE;
-//            }
-//
-//            String typeAsString = type.asText();
-//
-//            CommandType commandType = CommandType.parseCSharpValue(typeAsString);
-//            return commandType;
-//        };
+        $getCommandType = function($batchResult): CommandType {
+            $type = null;
+            if (key_exists('Type', $batchResult)) {
+                $type = $batchResult['Type'];
+            }
+
+            if ($type == null) {
+                return CommandType::none();
+            }
+
+            return CommandType::parseCSharpValue($type);
+        };
 
         if (empty($result->getResults())) {
             $this->throwOnNullResults();
@@ -103,130 +105,145 @@ class BatchOperation
             }
         }
 
-//        for (int i = 0; i < _sessionCommandsCount; i++) {
-//            ObjectNode batchResult = (ObjectNode) result.getResults().get(i);
-//            if (batchResult == null) {
-//                continue;
-//            }
-//
-//            CommandType type = getCommandType.apply(batchResult);
-//
-//            switch (type) {
-//                case PUT:
-//                    handlePut(i, batchResult, false);
-//                    break;
-//                case FORCE_REVISION_CREATION:
+        for ($i = 0; $i < $this->sessionCommandsCount; $i++) {
+            if ($i >= count($result->getResults())) {
+                continue;
+            }
+            $batchResult = $result->getResults()[$i];
+            if ($batchResult == null) {
+                continue;
+            }
+
+            $type = $getCommandType($batchResult);
+
+            switch ($type->getValue()) {
+                case CommandType::PUT:
+                    $this->handlePut($i, $batchResult, false);
+                    break;
+                case CommandType::FORCE_REVISION_CREATION:
 //                    handleForceRevisionCreation(batchResult);
-//                    break;
-//                case DELETE:
+                    break;
+                case CommandType::DELETE:
 //                    handleDelete(batchResult);
-//                    break;
-//                case COMPARE_EXCHANGE_PUT:
+                    break;
+                case CommandType::COMPARE_EXCHANGE_PUT:
 //                    handleCompareExchangePut(batchResult);
-//                    break;
-//                case COMPARE_EXCHANGE_DELETE:
+                    break;
+                case CommandType::COMPARE_EXCHANGE_DELETE:
 //                    handleCompareExchangeDelete(batchResult);
-//                    break;
-//                default:
-//                    throw new IllegalStateException("Command " + type + " is not supported");
-//            }
-//        }
-//
-//        for (int i = _sessionCommandsCount; i < _allCommandsCount; i++) {
-//            ObjectNode batchResult = (ObjectNode) result.getResults().get(i);
-//            if (batchResult == null) {
-//                continue;
-//            }
-//
-//            CommandType type = getCommandType.apply(batchResult);
-//
-//            switch (type) {
-//                case PUT:
-//                    handlePut(i, batchResult, true);
-//                    break;
-//                case DELETE:
+                    break;
+                default:
+                    throw new IllegalStateException("Command " . $type . " is not supported");
+            }
+        }
+
+        for ($i = $this->sessionCommandsCount; $i < $this->allCommandsCount; $i++) {
+            if ($i >= count($result->getResults())) {
+                continue;
+            }
+            $batchResult = $result->getResults()[$i];
+            if ($batchResult == null) {
+                continue;
+            }
+
+            $type = $getCommandType($batchResult);
+
+            switch ($type->getValue()) {
+                case CommandType::PUT:
+                    $this->handlePut($i, $batchResult, true);
+                    break;
+                case CommandType::DELETE:
 //                    handleDelete(batchResult);
-//                    break;
-//                case PATCH:
+                    break;
+                case CommandType::PATCH:
 //                    handlePatch(batchResult);
-//                    break;
-//                case ATTACHMENT_PUT:
+                    break;
+                case CommandType::ATTACHMENT_PUT:
 //                    handleAttachmentPut(batchResult);
-//                    break;
-//                case ATTACHMENT_DELETE:
+                    break;
+                case CommandType::ATTACHMENT_DELETE:
 //                    handleAttachmentDelete(batchResult);
-//                    break;
-//                case ATTACHMENT_MOVE:
+                    break;
+                case CommandType::ATTACHMENT_MOVE:
 //                    handleAttachmentMove(batchResult);
-//                    break;
-//                case ATTACHMENT_COPY:
+                    break;
+                case CommandType::ATTACHMENT_COPY:
 //                    handleAttachmentCopy(batchResult);
-//                    break;
-//                case COMPARE_EXCHANGE_PUT:
-//                case COMPARE_EXCHANGE_DELETE:
-//                case FORCE_REVISION_CREATION:
-//                    break;
-//                case COUNTERS:
+                    break;
+                case CommandType::COMPARE_EXCHANGE_PUT:
+                case CommandType::COMPARE_EXCHANGE_DELETE:
+                case CommandType::FORCE_REVISION_CREATION:
+                    break;
+                case CommandType::COUNTERS:
 //                    handleCounters(batchResult);
-//                    break;
-//                case TIME_SERIES:
+                    break;
+                case CommandType::TIME_SERIES:
 //                    //TODO: RavenDB-13474 add to time series cache
-//                    break;
-//                case TIME_SERIES_COPY:
-//                    break;
-//                case BATCH_PATCH:
-//                    break;
-//                default:
-//                    throw new IllegalStateException("Command " + type + " is not supported");
-//            }
-//        }
-//        finalizeResult();
+                    break;
+                case CommandType::TIME_SERIES_COPY:
+                    break;
+                case CommandType::BATCH_PATCH:
+                    break;
+                default:
+                    throw new IllegalStateException("Command " . $type . " is not supported");
+            }
+        }
+        $this->finalizeResult();
     }
 
-//    private void finalizeResult() {
-//        if (_modifications == null || _modifications.isEmpty()) {
-//            return;
-//        }
-//
-//        for (Map.Entry<String, DocumentInfo> kvp : _modifications.entrySet()) {
-//            String id = kvp.getKey();
-//            DocumentInfo documentInfo = kvp.getValue();
-//
-//            applyMetadataModifications(id, documentInfo);
-//        }
-//    }
-//
-//    private void applyMetadataModifications(String id, DocumentInfo documentInfo) {
-//        documentInfo.setMetadataInstance(null);
-//
-//        documentInfo.setMetadata(documentInfo.getMetadata().deepCopy());
-//
-//        documentInfo.getMetadata().set(Constants.Documents.Metadata.CHANGE_VECTOR,
-//                documentInfo.getMetadata().textNode(documentInfo.getChangeVector()));
-//
-//        ObjectNode documentCopy = documentInfo.getDocument().deepCopy();
-//        documentCopy.set(Constants.Documents.Metadata.KEY, documentInfo.getMetadata());
-//
-//        documentInfo.setDocument(documentCopy);
-//    }
-//
-//    private DocumentInfo getOrAddModifications(String id, DocumentInfo documentInfo, boolean applyModifications) {
-//        if (_modifications == null) {
-//            _modifications = new TreeMap<>(String::compareToIgnoreCase);
-//        }
-//
-//        DocumentInfo modifiedDocumentInfo = _modifications.get(id);
-//        if (modifiedDocumentInfo != null) {
-//            if (applyModifications) {
-//                applyMetadataModifications(id, modifiedDocumentInfo);
-//            }
-//        } else {
-//            _modifications.put(id, modifiedDocumentInfo = documentInfo);
-//        }
-//
-//        return modifiedDocumentInfo;
-//    }
-//
+    private function finalizeResult(): void
+    {
+        if (($this->modifications == null) || !count($this->modifications)) {
+            return;
+        }
+
+        /**
+         * @var string $id
+         * @var DocumentInfo $documentInfo
+         */
+        foreach ($this->modifications as $id => $documentInfo) {
+            $this->applyMetadataModifications($id, $documentInfo);
+        }
+    }
+
+    // @todo: check with Marcin: What this method should do and is it implemented as expected
+    private function applyMetadataModifications(string $id, DocumentInfo $documentInfo): void
+    {
+        $documentInfo->setMetadataInstance(null);
+        $metadata = $documentInfo->getMetadata();
+        $cloned = $metadata; // cloned @todo: check is this realy cloned object and we don't have to do nothing here?
+
+        $cloned[Metadata::CHANGE_VECTOR]  = $metadata[Metadata::CHANGE_VECTOR] ?? $documentInfo->getChangeVector();
+        $documentInfo->setMetadata($cloned);
+
+        $document = $documentInfo->getDocument();
+        $documentCopy = $document; // cloned @todo: check is this realy cloned object and we don't have to do nothing here?
+        $documentCopy[Metadata::KEY] = $documentInfo->getMetadata();
+
+        $documentInfo->setDocument($documentCopy);
+    }
+
+    private function getOrAddModifications(
+        string $id,
+        DocumentInfo $documentInfo,
+        bool $applyModifications
+    ): DocumentInfo {
+        if ($this->modifications == null) {
+            $this->modifications = new DocumentInfoArray();
+        }
+
+        $modifiedDocumentInfo = $this->modifications->getValue($id);
+        if ($modifiedDocumentInfo != null) {
+            if ($applyModifications) {
+                $this->applyMetadataModifications($id, $modifiedDocumentInfo);
+            }
+        } else {
+            $this->modifications->offsetSet($id, $modifiedDocumentInfo = $documentInfo);
+        }
+
+        return $modifiedDocumentInfo;
+    }
+
 //    private void handleCompareExchangePut(ObjectNode batchResult) {
 //        handleCompareExchangeInternal(CommandType.COMPARE_EXCHANGE_PUT, batchResult);
 //    }
@@ -427,63 +444,65 @@ class BatchOperation
 //        _session.onAfterSaveChangesInvoke(afterSaveChangesEventArgs);
 //    }
 //
-//    private void handlePut(int index, ObjectNode batchResult, boolean isDeferred) {
-//        Object entity = null;
-//        DocumentInfo documentInfo = null;
-//
-//        if (!isDeferred) {
-//            entity = _entities.get(index);
-//
-//            documentInfo = _session.documentsByEntity.get(entity);
-//            if (documentInfo == null) {
-//                return;
-//            }
-//        }
-//
-//        String id = getStringField(batchResult, CommandType.PUT, Constants.Documents.Metadata.ID);
-//        String changeVector = getStringField(batchResult, CommandType.PUT, Constants.Documents.Metadata.CHANGE_VECTOR);
-//
-//        if (isDeferred) {
-//            DocumentInfo sessionDocumentInfo = _session.documentsById.getValue(id);
-//            if (sessionDocumentInfo == null) {
-//                return;
-//            }
-//
-//            documentInfo = getOrAddModifications(id, sessionDocumentInfo, true);
-//            entity = documentInfo.getEntity();
-//        }
-//
-//        handleMetadataModifications(documentInfo, batchResult, id, changeVector);
-//
-//        _session.documentsById.add(documentInfo);
-//
-//        if (entity != null) {
-//            _session.getGenerateEntityIdOnTheClient().trySetIdentity(entity, id);
-//        }
-//
-//        AfterSaveChangesEventArgs afterSaveChangesEventArgs = new AfterSaveChangesEventArgs(_session, documentInfo.getId(), documentInfo.getEntity());
-//        _session.onAfterSaveChangesInvoke(afterSaveChangesEventArgs);
-//    }
-//
-//    private void handleMetadataModifications(DocumentInfo documentInfo, ObjectNode batchResult, String id, String changeVector) {
-//        Iterator<String> fieldsIterator = batchResult.fieldNames();
-//
-//        while (fieldsIterator.hasNext()) {
-//            String propertyName = fieldsIterator.next();
-//
-//            if ("Type".equals(propertyName)) {
-//                continue;
-//            }
-//
-//            documentInfo.getMetadata().set(propertyName, batchResult.get(propertyName));
-//        }
-//
-//        documentInfo.setId(id);
-//        documentInfo.setChangeVector(changeVector);
-//
-//        applyMetadataModifications(id, documentInfo);
-//    }
-//
+    private function handlePut(int $index, array $batchResult, bool $isDeferred): void
+    {
+        $entity = null;
+        $documentInfo = null;
+
+        if (!$isDeferred) {
+            $entity = $this->entities[$index];
+
+            $documentInfo = $this->session->documentsByEntity->get($entity);
+
+            if ($documentInfo == null) {
+                return;
+            }
+        }
+
+        $id = $this->getStringField($batchResult, CommandType::put(), Metadata::ID);
+        $changeVector = $this->getStringField($batchResult, CommandType::put(), Metadata::CHANGE_VECTOR);
+
+        if ($isDeferred) {
+            $sessionDocumentInfo = $this->session->documentsById->getValue($id);
+            if ($sessionDocumentInfo == null) {
+                return;
+            }
+
+            $documentInfo = $this->getOrAddModifications($id, $sessionDocumentInfo, true);
+            $entity = $documentInfo->getEntity();
+        }
+
+        $this->handleMetadataModifications($documentInfo, $batchResult, $id, $changeVector);
+
+        $this->session->documentsById->add($documentInfo);
+
+        if ($entity != null) {
+            $this->session->getGenerateEntityIdOnTheClient()->trySetIdentity($entity, $id);
+        }
+
+        $afterSaveChangesEventArgs = new AfterSaveChangesEventArgs($this->session, $documentInfo->getId(), $documentInfo->getEntity());
+        $this->session->onAfterSaveChangesInvoke($afterSaveChangesEventArgs);
+    }
+
+    private function handleMetadataModifications(
+        DocumentInfo $documentInfo,
+        array $batchResult,
+        string $id,
+        string $changeVector
+    ): void {
+        foreach ($batchResult as $key => $value) {
+            if ($key == "Type") continue;
+
+            $metadata = $documentInfo->getMetadata();
+            $metadata[$key] = $value;
+            $documentInfo->setMetadata($metadata);
+        }
+        $documentInfo->setId($id);
+        $documentInfo->setChangeVector($changeVector);
+
+        $this->applyMetadataModifications($id, $documentInfo);
+    }
+
 //    private void handleCounters(ObjectNode batchResult) {
 //
 //        String docId = getStringField(batchResult, CommandType.COUNTERS, "Id");
@@ -521,20 +540,25 @@ class BatchOperation
 //            }
 //        }
 //    }
-//
-//    private static String getStringField(ObjectNode json, CommandType type, String fieldName) {
-//        return getStringField(json, type, fieldName, true);
-//    }
-//
-//    private static String getStringField(ObjectNode json, CommandType type, String fieldName, boolean throwOnMissing) {
-//        JsonNode jsonNode = json.get(fieldName);
-//        if ((jsonNode == null || jsonNode.isNull()) && throwOnMissing) {
-//            throwMissingField(type, fieldName);
-//        }
-//
-//        return jsonNode.asText();
-//    }
-//
+
+    private function getStringField(
+        array $json,
+        CommandType $type,
+        string $fieldName,
+        bool $throwOnMissing = true
+    ): ?string {
+        $jsonNode = null;
+        if (key_exists($fieldName, $json)) {
+            $jsonNode = $json[$fieldName];
+        }
+
+        if (($jsonNode == null) && $throwOnMissing) {
+            self::throwMissingField($type, $fieldName);
+        }
+
+        return (string) $jsonNode;
+    }
+
 //    private static Long getLongField(ObjectNode json, CommandType type, String fieldName) {
 //        JsonNode jsonNode = json.get(fieldName);
 //        if (jsonNode == null || !jsonNode.isNumber()) {

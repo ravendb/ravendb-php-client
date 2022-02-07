@@ -4,9 +4,9 @@ namespace RavenDB\Documents\Session;
 
 class DocumentsChanges
 {
-    private ?array $fieldOldValue = null;
+    private $fieldOldValue = null;
 
-    private ?array $fieldNewValue = null;
+    private $fieldNewValue = null;
 
     private ChangeType $change;
 
@@ -19,22 +19,22 @@ class DocumentsChanges
         $this->change = $changeType ?? ChangeType::unknown();
     }
 
-    public function getFieldOldValue(): ?array
+    public function getFieldOldValue()
     {
         return $this->fieldOldValue;
     }
 
-    public function setFieldOldValue(?array $fieldOldValue): void
+    public function setFieldOldValue($fieldOldValue): void
     {
         $this->fieldOldValue = $fieldOldValue;
     }
 
-    public function getFieldNewValue(): ?array
+    public function getFieldNewValue()
     {
         return $this->fieldNewValue;
     }
 
-    public function setFieldNewValue(?array $fieldNewValue): void
+    public function setFieldNewValue($fieldNewValue): void
     {
         $this->fieldNewValue = $fieldNewValue;
     }
@@ -84,8 +84,8 @@ class DocumentsChanges
         ChangeType $changeType,
         ?string $fieldPath = null,
         ?string $name = null,
-        ?array $newValue = null,
-        ?array $oldValue = null
+        $newValue = null,
+        $oldValue = null
     ): self {
         $documentsChanges = new DocumentsChanges($changeType);
         $documentsChanges->setFieldName($name);

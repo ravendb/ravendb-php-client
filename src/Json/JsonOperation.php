@@ -57,7 +57,7 @@ class JsonOperation
         DocumentInfo $documentInfo
     ): DocumentsChangesArray {
 
-        if ($documentInfo->isNewDocument() && $documentInfo->getDocument() != null) {
+        if (!$documentInfo->isNewDocument() && $documentInfo->getDocument() != null) {
             return self::extractChangesFromJson(
                 "",
                 $documentInfo->getDocument(),
@@ -230,14 +230,22 @@ class JsonOperation
                         );
                         break;
                     }
-                        $docChanges = array_merge(
-                            $docChanges,
-                            self::extractChangesFromJson(
-                                self::fieldPathCombine($fieldPath, (string)$prop),
-                                $oldValue,
-                                $newValue
-                            )
-                        );
+                    $dcs = self::extractChangesFromJson(
+                        self::fieldPathCombine($fieldPath, (string)$prop),
+                        $oldValue,
+                        $newValue
+                    );
+                    foreach ($dcs as $dc) {
+                        $docChanges->append($dc);
+                    }
+//                        $docChanges = array_merge(
+//                            $docChanges,
+//                            self::extractChangesFromJson(
+//                                self::fieldPathCombine($fieldPath, (string)$prop),
+//                                $oldValue,
+//                                $newValue
+//                            )
+//                        );
                     break;
                 default:
                     throw new IllegalArgumentException();

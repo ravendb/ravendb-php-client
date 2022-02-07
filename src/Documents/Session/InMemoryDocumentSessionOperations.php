@@ -696,7 +696,10 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         foreach ($this->documentsById as $id => $documentInfo) {
             $this->updateMetadataModifications($documentInfo);
             $newObj = $this->entityToJson->convertEntityToJson($documentInfo->getEntity(), $documentInfo);
-            $changes[$documentInfo->getId()] = $this->getEntityChanges($newObj, $documentInfo);
+            $entityChanges = $this->getEntityChanges($newObj, $documentInfo);
+            if (count($entityChanges)) {
+                $changes[$documentInfo->getId()] = $entityChanges;
+            }
         }
 
         return $changes;
