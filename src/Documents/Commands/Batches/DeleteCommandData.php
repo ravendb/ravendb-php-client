@@ -7,16 +7,17 @@ use RavenDB\Documents\Session\BeforeDeleteEventArgs;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Exceptions\IllegalArgumentException;
 
+// !status: DONE
 class DeleteCommandData implements CommandDataInterface
 {
     private string $id;
     private string $name;
-    private string $changeVector;
+    private ?string $changeVector;
     private CommandType $type;
-    private string $originalChangeVector;
-    private array $document;
+    private ?string $originalChangeVector;
+    private ?array $document = null;
 
-    public function __construct(string $id, string $changeVector, string $originalChangeVector = null)
+    public function __construct(?string $id, ?string $changeVector = null, ?string $originalChangeVector = null)
     {
         if ($id == null) {
             throw new IllegalArgumentException("Id cannot be null");
@@ -64,30 +65,26 @@ class DeleteCommandData implements CommandDataInterface
 
     public function serialize(DocumentConventions $conventions): array
     {
-        // @todo: implement this serialize
+        $data = [];
+        $data['Id'] = $this->id;
+        $data['ChangeVector'] = $this->changeVector;
+        $data['Type'] = 'DELETE';
+        $data['Document'] = $this->document;
+
+        if ($this->originalChangeVector != null) {
+            $data['OriginalChangeVector'] = $this->originalChangeVector;
+        }
+
+        $data = array_merge($data, $this->serializeExtraFields());
+
+        return $data;
     }
 
-//    public void serialize(JsonGenerator generator, DocumentConventions conventions) throws IOException {
-//        generator.writeStartObject();
-//
-//        generator.writeStringField("Id", id);
-//        generator.writeStringField("ChangeVector", changeVector);
-//        generator.writeObjectField("Type", "DELETE");
-//        generator.writeObjectField("Document", document);
-//
-//        if (originalChangeVector != null) {
-//            generator.writeStringField("OriginalChangeVector", originalChangeVector);
-//        }
-//
-//        serializeExtraFields(generator);
-//
-//        generator.writeEndObject();
-//    }
-
-//    protected function serializeExtraFields(JsonGenerator generator): void throws IOException
-//    {
-//         empty by design
-//    }
+    public function serializeExtraFields(): array
+    {
+        // Empty by design
+        return [];
+    }
 
     public function onBeforeSaveChanges(InMemoryDocumentSessionOperations $session): void
     {

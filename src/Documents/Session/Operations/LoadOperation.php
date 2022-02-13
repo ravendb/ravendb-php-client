@@ -156,7 +156,7 @@ class LoadOperation
      * @throws ExceptionInterface
      * @throws IllegalStateException
      */
-    public function getDocument(string $className)
+    public function getDocument(string $className): ?object
     {
         if ($this->session->noTracking) {
             if (!$this->resultsSet && count($this->ids)) {
@@ -187,14 +187,14 @@ class LoadOperation
      * @throws IllegalStateException
      * @throws ExceptionInterface
      */
-    private function getDocumentWithId(string $className, ?string $id = null)
+    private function getDocumentWithId(string $className, ?string $id = null): ?object
     {
         if (empty($id)) {
-            return new $className();
+            return null; // new $className(); @todo: replace this with default value
         }
 
         if ($this->session->isDeleted($id)) {
-            return new $className();
+            return null;// new $className(); @todo: replace this with default value that depends on type
         }
 
         $doc = $this->session->documentsById->getValue($id);
@@ -207,7 +207,7 @@ class LoadOperation
             return $this->session->trackEntity($className, $doc);
         }
 
-        return new $className();
+        return null; // new $className(); @todo: replace this with default value that depends on type
     }
 
     /**

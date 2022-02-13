@@ -124,7 +124,7 @@ class BatchOperation
 //                    handleForceRevisionCreation(batchResult);
                     break;
                 case CommandType::DELETE:
-//                    handleDelete(batchResult);
+                    $this->handleDelete($batchResult);
                     break;
                 case CommandType::COMPARE_EXCHANGE_PUT:
 //                    handleCompareExchangePut(batchResult);
@@ -153,7 +153,7 @@ class BatchOperation
                     $this->handlePut($i, $batchResult, true);
                     break;
                 case CommandType::DELETE:
-//                    handleDelete(batchResult);
+                    $this->handleDelete($batchResult);
                     break;
                 case CommandType::PATCH:
 //                    handlePatch(batchResult);
@@ -206,7 +206,6 @@ class BatchOperation
         }
     }
 
-    // @todo: check with Marcin: What this method should do and is it implemented as expected
     private function applyMetadataModifications(string $id, DocumentInfo $documentInfo): void
     {
         $documentInfo->setMetadataInstance(null);
@@ -398,27 +397,30 @@ class BatchOperation
 //                break;
 //        }
 //    }
-//
-//    private void handleDelete(ObjectNode batchReslt) {
-//        handleDeleteInternal(batchReslt, CommandType.DELETE);
-//    }
-//
-//    private void handleDeleteInternal(ObjectNode batchResult, CommandType type) {
-//        String id = getStringField(batchResult, type, "Id");
-//
-//        DocumentInfo documentInfo = _session.documentsById.getValue(id);
-//        if (documentInfo == null) {
-//            return;
-//        }
-//
-//        _session.documentsById.remove(id);
-//
-//        if (documentInfo.getEntity() != null) {
-//            _session.documentsByEntity.remove(documentInfo.getEntity());
-//            _session.deletedEntities.remove(documentInfo.getEntity());
-//        }
-//    }
-//
+
+    private function handleDelete(array $batchReslt): void
+    {
+        $this->handleDeleteInternal($batchReslt, CommandType::delete());
+    }
+
+    private function handleDeleteInternal(array $batchResult, CommandType $type): void
+    {
+        $id = $this->getStringField($batchResult, $type, "Id");
+
+        /** @var DocumentInfo $documentInfo */
+        $documentInfo = $this->session->documentsById->getValue($id);
+        if ($documentInfo == null) {
+            return;
+        }
+
+        $this->session->documentsById->remove($id);
+
+        if ($documentInfo->getEntity() != null) {
+            $this->session->documentsByEntity->remove($documentInfo->getEntity());
+            $this->session->deletedEntities->remove($documentInfo->getEntity());
+        }
+    }
+
 //    private void handleForceRevisionCreation(ObjectNode batchResult) {
 //        // When forcing a revision for a document that does Not have any revisions yet then the HasRevisions flag is added to the document.
 //        // In this case we need to update the tracked entities in the session with the document new change-vector.

@@ -503,6 +503,82 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         return $this->entityToJson->convertToEntity($entityType, $id, $document, $trackEntity);
     }
 
+    /**
+     * Marks the specified entity for deletion. The entity will be deleted when SaveChanges is called.
+     *
+     * @param ?object $entity Entity to delete
+     *
+     * @throws IllegalArgumentException
+     * @throws IllegalStateException
+     */
+    public function deleteEntity(?object $entity): void
+    {
+        if ($entity === null) {
+            throw new IllegalArgumentException("Entity cannot be null");
+        }
+
+        $value = $this->documentsByEntity->get($entity);
+
+        if ($value == null) {
+            throw new IllegalStateException($entity . ' is not associated with the session, cannot delete unknown entity instance');
+        }
+
+        $this->deletedEntities->add($entity);
+        $this->includedDocumentsById->remove($value->getId());
+        if ($this->countersByDocId !== null) {
+            if (($key = array_search($value->getId(), $this->countersByDocId)) !== false) {
+                unset($this->countersByDocId[$key]);
+            }
+        }
+        $this->knownMissingIds[] = $value->getId();
+    }
+
+    /**
+     * Marks the specified entity for deletion. The entity will be deleted when IDocumentSession.SaveChanges is called.
+     * WARNING: This method will not call beforeDelete listener!
+     *
+     * @param string $id
+     * @param string|null $expectedChangeVector
+     */
+    public function delete(?string $id, ?string $expectedChangeVector = null): void
+    {
+        if ($id == null) {
+            throw new IllegalArgumentException("Id cannot be null");
+        }
+
+        $changeVector = null;
+        /** @var DocumentInfo $documentInfo */
+        $documentInfo = $this->documentsById->getValue($id);
+        if ($documentInfo != null) {
+            $newObj = $this->entityToJson->convertEntityToJson($documentInfo->getEntity(), $documentInfo);
+            if ($documentInfo->getEntity() != null && $this->isEntityChanged($newObj, $documentInfo)) {
+                throw new IllegalStateException("Can't delete changed entity using identifier. Use deleteEntity(?object entity) instead.");
+            }
+
+            if ($documentInfo->getEntity() != null) {
+                $this->documentsByEntity->remove($documentInfo->getEntity());
+            }
+
+            $this->documentsById->remove($id);
+            $changeVector = $documentInfo->getChangeVector();
+        }
+
+        $this->knownMissingIds[] = $id;
+        $changeVector = $this->isUseOptimisticConcurrency() ? $changeVector : null;
+        if ($this->countersByDocId !== null) {
+            if (($key = array_search($value->getId(), $this->countersByDocId)) !== false) {
+                unset($this->countersByDocId[$key]);
+            }
+        }
+
+
+//        defer(new DeleteCommandData(
+//                id,
+//                ObjectUtils.firstNonNull(expectedChangeVector, changeVector),
+//                ObjectUtils.firstNonNull(expectedChangeVector, documentInfo != null ? documentInfo.getChangeVector() : null
+//            )));
+    }
+
 
     /**
      * @throws IllegalStateException
@@ -741,14 +817,78 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $this->documentsById->clear();
         unset($this->knownMissingIds);
         $this->knownMissingIds = [];
-//        if ($this->countersByDocId != null) {
-//            $this->countersByDocId->clear();
-//        }
+        if ($this->countersByDocId != null) {
+            $this->countersByDocId = [];
+        }
         $this->deferredCommands = [];
         $this->deferredCommandsMap->clear();
 //        $this->clearClusterSession();
 //        $this->pendingLazyOperations->clear();
 //        $this->entityToJson->clear();
+    }
+
+    /**
+     * Defer commands to be executed on saveChanges()
+     *
+     * @param CommandDataInterface $command  Command to defer
+     * @param ?array $commands More commands to defer
+     */
+    public function defer(CommandDataInterface $command, array $commands = []): void
+    {
+        $this->deferredCommands[] = $command;
+        $this->deferInternal($command);
+
+        if (count($commands) > 0) {
+            $this->deferCommands($commands);
+        }
+    }
+
+    /**
+     * Defer commands to be executed on saveChanges()
+     *
+     * @param array $commands Commands to defer
+     */
+    public function deferCommands(array $commands): void
+    {
+        foreach ($commands as $command) {
+            $this->deferredCommands[] = $command;
+        }
+
+        foreach ($commands as $command) {
+            $this->deferInternal($command);
+        }
+    }
+
+    // @todo: implement this method fully
+    private function deferInternal(CommandDataInterface $command): void
+    {
+        if ($command->getType()->isBatchPatch()) {
+            /** @var BatchPatchCommandData $batchPatchCommand */
+            $batchPatchCommand = $command;
+//            for (BatchPatchCommandData.IdAndChangeVector kvp : batchPatchCommand.getIds()) {
+//                addCommand(command, kvp.getId(), CommandType.PATCH, command.getName());
+//            }
+//            return;
+        }
+
+        $this->addCommand($command, $command->getId(), $command->getType(), $command->getName());
+    }
+
+    private function addCommand(CommandDataInterface $command, string $id, CommandType $commandType, string $commandName): void
+    {
+        $this->deferredCommandsMap->put(IdTypeAndName::create($id, $commandType, $commandName), $command);
+        $this->deferredCommandsMap->put(IdTypeAndName::create($id, CommandType::clientAnyCommand(), null), $command);
+
+        if (!$command->getType()->isAttachmentPut() &&
+            !$command->getType()->isAttachmentDelete() &&
+            !$command->getType()->isAttachmentCopy() &&
+            !$command->getType()->isAttachmentMove() &&
+            !$command->getType()->isCounters() &&
+            !$command->getType()->isTimeSeries() &&
+            !$command->getType()->isTimeSeriesCopy()
+        ) {
+            $this->deferredCommandsMap->put(IdTypeAndName::create($id, CommandType::clientModifyDocumentCommand(), null), $command);
+        }
     }
 
     public function prepareForSaveChanges(): SaveChangesData
@@ -757,7 +897,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $deferredCommandsCount = count($this->deferredCommands);
 
         // @todo: CONTINUE HERE !!!! implement following lines
-//        $this->prepareForEntitiesDeletion($result, null);
+        $this->prepareForEntitiesDeletion($result);
         $this->prepareForEntitiesPuts($result);
 //        $this->prepareForCreatingRevisionsFromIds($result);
 //        $this->prepareCompareExchangeEntities($result);
@@ -828,7 +968,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
      * @throws IllegalStateException
      * @throws IllegalArgumentException
      */
-    private function prepareForEntitiesDeletion(?SaveChangesData $result, ?array $changes): void
+    private function prepareForEntitiesDeletion(?SaveChangesData $result, ?array &$changes = null): void
     {
         $deletes = $this->deletedEntities->prepareEntitiesDeletes();
         try {
@@ -850,7 +990,11 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
                     $docChanges[] = $change;
                     $changes[$documentInfo->getId()] = $docChanges;
                 } else {
-                    $command = $result->getDeferredCommandsMap()->get(IdTypeAndName::create($documentInfo->getId(), CommandType::clientAnyCommand(), null));
+                    $command = null;
+                    $idTypeAndName = IdTypeAndName::create($documentInfo->getId(), CommandType::clientAnyCommand(), null);
+                    if ($result->getDeferredCommandsMap()->hasKey($idTypeAndName)) {
+                        $command = $result->getDeferredCommandsMap()->get($idTypeAndName);
+                    }
 
                     if ($command != null) {
                         $this->throwInvalidDeletedDocumentWithDeferredCommand($command);
@@ -864,7 +1008,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
                         if ($documentInfo->getEntity() != null) {
                             $result->getOnSuccess()->removeDocumentByEntity($documentInfo->getEntity());
-                            $result->getEntities()[] = $documentInfo->getEntity();
+                            $result->addEntity($documentInfo->getEntity());
                         }
 
                         $result->getOnSuccess()->removeDocumentById($documentInfo->getId());

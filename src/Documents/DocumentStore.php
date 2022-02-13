@@ -130,7 +130,7 @@ class DocumentStore extends DocumentStoreBase
 //        }
 //
 //        executorService.shutdown();
-    }
+}
 
 
     /**

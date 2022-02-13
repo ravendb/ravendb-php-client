@@ -118,6 +118,11 @@ class CommandType
         return $this->value == self::ATTACHMENT_COPY;
     }
 
+    public function isAttachmentMove(): bool
+    {
+        return $this->value == self::ATTACHMENT_MOVE;
+    }
+
     public function isCompareExchangePut(): bool
     {
         return $this->value == self::COMPARE_EXCHANGE_PUT;

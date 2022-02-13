@@ -114,7 +114,8 @@ class ChangeType
             self::REMOVED_FIELD,
             self::ARRAY_VALUE_CHANGED,
             self::ARRAY_VALUE_ADDED,
-            self::ARRAY_VALUE_REMOVED
+            self::ARRAY_VALUE_REMOVED,
+            self::UNKNOWN
         ];
     }
 

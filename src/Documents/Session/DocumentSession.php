@@ -36,7 +36,7 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
      * @throws InvalidArgumentException
      * @throws ExceptionInterface
      */
-    public function load(string $className, string $id): object
+    public function load(string $className, string $id): ?object
     {
         if (empty($id)) {
             return new $className();
@@ -125,5 +125,10 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         /** @var ClusterTransactionOperationsBase  $clusterTransaction */
         $clusterTransaction = $this->clusterTransaction;
         return $clusterTransaction;
+    }
+
+    public function rawQuery(string $className, string $query): RawDocumentQueryInterface
+    {
+        return new RawDocumentQuery($className, $this, $query);
     }
 }

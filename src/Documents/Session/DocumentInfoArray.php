@@ -19,4 +19,11 @@ class DocumentInfoArray extends TypedArray
 
         return $this->offsetGet($id);
     }
+
+    public function remove(string $id): void
+    {
+        if ($this->offsetExists($id)) {
+            $this->offsetUnset($id);
+        }
+    }
 }

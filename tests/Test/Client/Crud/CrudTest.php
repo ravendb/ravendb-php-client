@@ -4,6 +4,7 @@ namespace tests\RavenDB\Test\Client\Crud;
 
 use RavenDB\Documents\Commands\GetDocumentsCommand;
 use RavenDB\Documents\Commands\GetDocumentsResult;
+use RavenDB\Extensions\PropertyNamingStrategy;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
 use tests\RavenDB\Test\Client\Crud\Entities\Arr1;
@@ -17,6 +18,7 @@ use tests\RavenDB\Test\Client\Crud\Entities\Poc;
 class CrudTest extends RemoteTestBase
 {
 
+    // @todo: Implement rawQuary in order for this test to be fully implemented
     public function testEntitiesAreSavedUsingLowerCase(): void
     {
         $store = $this->getDocumentStore();
@@ -40,12 +42,13 @@ class CrudTest extends RemoteTestBase
             $result = $documentsCommand->getResult();
 
             $userJson = $result->getResults()[0];
-            $this->assertTrue(array_key_exists("lastName", $userJson));
+            $this->assertArrayHasKey("lastName", $userJson);
 
             $newSession = $store->openSession();
             try {
 //                @todo: Uncommnet this when we implement rawQueries
-//                $users = $newSession->advanced()->rawQuery(User::class, "from Users where lastName = 'user1'");
+//                $rawDocumentQuery = $newSession->advanced()->rawQuery(User::class, "from Users where lastName = 'user1'");
+//                $users = $rawDocumentQuery->toList();
 //                $this->assertCount(1, $users);
             } finally {
                 $newSession->close();
@@ -55,47 +58,51 @@ class CrudTest extends RemoteTestBase
         }
     }
 
-
+    // @todo: Implement rawQuery in order this test to be fully implemented
     public function testCanCustomizePropertyNamingStrategy(): void
     {
         $store = $this->getDocumentStore();
 
         try {
-            $this->assertTrue(true);
-//            store.getConventions().getEntityMapper().setPropertyNamingStrategy(new JsonExtensions.DotNetNamingStrategy());
-//
-//            try (IDocumentSession newSession = store.openSession()) {
-//                User user1 = new User();
-//                user1.setLastName("user1");
-//                newSession.store(user1, "users/1");
-//                newSession.saveChanges();
-//            }
-//
-//            GetDocumentsCommand documentsCommand = new GetDocumentsCommand("users/1", null, false);
-//            store.getRequestExecutor().execute(documentsCommand);
-//
-//            GetDocumentsResult result = documentsCommand.getResult();
-//
-//            JsonNode userJson = result.getResults().get(0);
-//            assertThat(userJson.has("LastName"))
-//                    .isTrue();
-//
-//            try (IDocumentSession newSession = store.openSession()) {
-//                List<User> users = newSession.advanced().rawQuery(User.class, "from Users where LastName = 'user1'").toList();
-//
-//                assertThat(users)
-//                        .hasSize(1);
-//            }
+            $store->getConventions()->getEntityMapper()->setPropertyNamingStrategy(PropertyNamingStrategy::dotNetNamingStrategy());
+
+            $newSession = $store->openSession();
+            try {
+                $user1 = new User();
+                $user1->setLastName("user1");
+                $newSession->store($user1, "users/1");
+                $newSession->saveChanges();
+
+            } finally {
+                $newSession->close();
+            }
+
+            $documentsCommand = GetDocumentsCommand::forSingleDocument("users/1");
+            $store->getRequestExecutor()->execute($documentsCommand);
+
+            /** @var GetDocumentsResult $result */
+            $result = $documentsCommand->getResult();
+
+            $userJson = $result->getResults()[0];
+            $this->assertArrayHasKey("LastName", $userJson);
+
+            $newSession = $store->openSession();
+            try {
+//                @todo: Uncommnet this when we implement rawQueries
+                $rawDocumentQuery = $newSession->advanced()->rawQuery(User::class, "from Users where lastName = 'user1'");
+//                $users = $rawDocumentQuery->toList();
+//                $this->assertCount(1, $users);
+            } finally {
+                $newSession->close();
+            }
         } finally {
             $store->close();
         }
     }
 
-    // @todo: implement DELETE in order this test to work, and then uncomment all lines
     public function testCrudOperations(): void
     {
         $store = $this->getDocumentStore();
-
         try {
             $newSession = $store->openSession();
             try {
@@ -118,12 +125,12 @@ class CrudTest extends RemoteTestBase
                 $user4->setName("user4");
                 $newSession->store($user4, "users/4");
 
-//                $newSession->delete($user2);
+                $newSession->deleteEntity($user2);
                 $user3->setAge(3);
                 $newSession->saveChanges();
 
                 $tempUser = $newSession->load(User::class, "users/2");
-//                $this->assertNull($tempUser);
+                $this->assertNull($tempUser);
 
                 /** @var User $tempUser */
                 $tempUser = $newSession->load(User::class, "users/3");
@@ -132,12 +139,12 @@ class CrudTest extends RemoteTestBase
                 $user1 = $newSession->load(User::class, "users/1");
                 $user4 = $newSession->load(User::class, "users/4");
 
-//                $newSession->delete($user4);
+                $newSession->deleteEntity($user4);
                 $user1->setAge(10);
                 $newSession->saveChanges();
 
                 $tempUser = $newSession->load(User::class, "users/4");
-//                $this->assertNull($tempUser);
+                $this->assertNull($tempUser);
                 /** @var User $tempUser */
                 $tempUser = $newSession->load(User::class, "users/1");
                 $this->assertEquals(10, $tempUser->getAge());
@@ -150,7 +157,6 @@ class CrudTest extends RemoteTestBase
         }
     }
 
-    // @todo: implement DELETE in order this test to work, and then uncomment all lines
     public function testCrudOperationsWithWhatChanged(): void
     {
         $store = $this->getDocumentStore();
@@ -176,7 +182,7 @@ class CrudTest extends RemoteTestBase
                 $user4->setName("user4");
                 $newSession->store($user4, "users/4");
 
-//                $newSession->delete($user2);
+                $newSession->deleteEntity($user2);
                 $user3->setAge(3);
 
                 $this->assertCount(4, $newSession->advanced()->whatChanged());
@@ -184,7 +190,7 @@ class CrudTest extends RemoteTestBase
                 $newSession->saveChanges();
 
                 $tempUser = $newSession->load(User::class, "users/2");
-//                $this->assertNull($tempUser);
+                $this->assertNull($tempUser);
 
                 /** @var User $tempUser */
                 $tempUser = $newSession->load(User::class, "users/3");
@@ -193,15 +199,14 @@ class CrudTest extends RemoteTestBase
                 $user1 = $newSession->load(User::class, "users/1");
                 $user4 = $newSession->load(User::class, "users/4");
 
-//                $newSession->delete($user4);
+                $newSession->deleteEntity($user4);
                 $user1->setAge(10);
-//                $this->assertCount(2, $newSession->advanced()->whatChanged());
-
+                $this->assertCount(2, $newSession->advanced()->whatChanged());
 
                 $newSession->saveChanges();
 
                 $tempUser = $newSession->load(User::class, "users/4");
-//                $this->assertNull($tempUser);
+                $this->assertNull($tempUser);
 
                 /** @var User $tempUser */
                 $tempUser = $newSession->load(User::class, "users/1");
@@ -459,15 +464,6 @@ class CrudTest extends RemoteTestBase
 
                 $this->assertTrue($changes["family/1"][0]->getChange()->isFieldChanged());
 
-                // @todo: Check with Marcin: Do we need quotes in string or not?
-//                $this->assertSame(
-//                    "\"Hibernating Rhinos\"",
-//                    $changes["family/1"][0]->getFieldOldValue()
-//                );
-//                $this->assertSame(
-//                    "\"RavenDB\"",
-//                    $changes["family/1"][0]->getFieldNewValue()
-//                );
                 $this->assertSame(
                     "Hibernating Rhinos",
                     strval($changes["family/1"][0]->getFieldOldValue())
@@ -490,7 +486,6 @@ class CrudTest extends RemoteTestBase
 
                 $this->assertSame("name", $changes["family/1"][2]->getFieldName());
                 $this->assertTrue($changes["family/1"][2]->getChange()->isFieldChanged());
-                // @todo: Check with Marcin: do we need quotes in string?
                 $this->assertSame(
                     "RavenDB",
                     strval($changes["family/1"][2]->getFieldOldValue())
@@ -533,7 +528,6 @@ class CrudTest extends RemoteTestBase
 
                 $this->assertSame("name", $changes["family/1"][0]->getFieldName());
                 $this->assertTrue($changes["family/1"][0]->getChange()->isFieldChanged());
-                // @todo: Check with Marcin: do we need quotes in string?
                 $this->assertSame(
                     "Hibernating Rhinos",
                     strval($changes["family/1"][0]->getFieldOldValue())
@@ -556,7 +550,6 @@ class CrudTest extends RemoteTestBase
 
                 $this->assertSame("name", $changes["family/1"][2]->getFieldName());
                 $this->assertTrue($changes["family/1"][2]->getChange()->isFieldChanged());
-                // @todo: Check with Marcin: do we need quotes in string?
                 $this->assertSame(
                     "RavenDB",
                     strval($changes["family/1"][2]->getFieldOldValue())
@@ -621,7 +614,6 @@ class CrudTest extends RemoteTestBase
                 $change = $whatChanged["arr/1"];
                 $this->assertCount(4, $change);
 
-                // @todo: Check with Marcin: do we need a quotes?
                 $this->assertSame("a", strval($change[0]->getFieldOldValue()));
                 $this->assertSame("d", strval($change[0]->getFieldNewValue()));
 

@@ -5,6 +5,7 @@ namespace tests\RavenDB\Driver;
 use PHPUnit\Framework\TestCase;
 use RavenDB\Documents\DocumentStore;
 use RavenDB\Documents\DocumentStoreInterface;
+use RavenDB\Http\Adapter\HttpClient;
 
 abstract class RavenTestDriver extends TestCase
 {
@@ -72,20 +73,11 @@ abstract class RavenTestDriver extends TestCase
 
     }
 
-//    public CleanCloseable withFiddler() {
-//        RequestExecutor.requestPostProcessor = request -> {
-//            HttpHost proxy = new HttpHost("127.0.0.1", 8888, "http");
-//            RequestConfig requestConfig = request.getConfig();
-//            if (requestConfig == null) {
-//                requestConfig = RequestConfig.DEFAULT;
-//            }
-//            requestConfig = RequestConfig.copy(requestConfig).setProxy(proxy).build();
-//            request.setConfig(requestConfig);
-//        };
-//
-//        return () -> RequestExecutor.requestPostProcessor = null;
-//    }
-//
+    public function withFiddler(): void
+    {
+        HttpClient::useProxy('http://127.0.0.1:8866');
+    }
+
     protected function setupDatabase(DocumentStoreInterface $documentStore): void
     {
         // empty by design

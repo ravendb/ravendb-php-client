@@ -142,7 +142,7 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
     /**
      * @throws IllegalStateException
      */
-    public function setConventions(DocumentConventions $conventions): void
+    public function setConventions(?DocumentConventions $conventions): void
     {
         $this->assertNotInitialized("conventions");
         $this->conventions = $conventions;

@@ -56,4 +56,9 @@ class StringUtils
         $inflector = InflectorFactory::create()->build();
         return $inflector->pluralize($string);
     }
+
+    public static function capitalize(string $propertyName): string
+    {
+        return ucwords($propertyName);
+    }
 }

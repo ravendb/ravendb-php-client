@@ -15,13 +15,12 @@ interface DocumentSessionInterface
      */
     public function advanced(): AdvancedSessionOperationsInterface;
 
-//    /**
-//     * Marks the specified entity for deletion. The entity will be deleted when IDocumentSession.saveChanges is called.
-//     * @param <T> entity class
-//     * @param entity instance of entity to delete
-//     */
-//    <T> void delete(T entity);
-//
+    /**
+     * Marks the specified entity for deletion. The entity will be deleted when IDocumentSession.saveChanges is called.
+     * @param ?object $entity instance of entity to delete
+     */
+    public function deleteEntity(?object $entity): void;
+
 //    /**
 //     * Marks the specified entity for deletion. The entity will be deleted when DocumentSession.saveChanges is called.
 //     * WARNING: This method will not call beforeDelete listener!
@@ -85,7 +84,7 @@ interface DocumentSessionInterface
      *
      *  @return object           Loaded entity
      */
-    public function load(string $className, string $id): object;
+    public function load(string $className, string $id): ?object;
 
 //    /**
 //     *  Loads the specified entities with the specified ids.

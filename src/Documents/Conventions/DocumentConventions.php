@@ -4,6 +4,7 @@ namespace RavenDB\Documents\Conventions;
 
 use InvalidArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Extensions\EntityMapper;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Http\LoadBalanceBehavior;
 use RavenDB\Utils\ClassUtils;
@@ -95,7 +96,7 @@ class DocumentConventions
     protected LoadBalanceBehavior $loadBalanceBehavior;
 //    private ReadBalanceBehavior _readBalanceBehavior;
     protected int $maxHttpCacheSize;
-    protected Serializer $entityMapper;
+    protected EntityMapper $entityMapper;
 //    private Boolean _useCompression;
 //    private boolean _sendApplicationIdentifier;
 //
@@ -201,6 +202,7 @@ class DocumentConventions
         $this->maxHttpCacheSize = 128 * 1024 * 1024;
 
         $this->entityMapper = JsonExtensions::getDefaultEntityMapper();
+
 //
 //        _aggressiveCache = new AggressiveCacheConventions(this);
 //        _firstBroadcastAttemptTimeout = Duration.ofSeconds(5);
@@ -358,12 +360,12 @@ class DocumentConventions
 //        _useCompression = useCompression;
 //    }
 
-    public function getEntityMapper(): Serializer
+    public function getEntityMapper(): EntityMapper
     {
         return $this->entityMapper;
     }
 
-    public function setEntityMapper(Serializer $mapper): void
+    public function setEntityMapper(EntityMapper $mapper): void
     {
         $this->entityMapper = $mapper;
     }
