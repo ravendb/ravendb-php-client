@@ -45,7 +45,7 @@ class GetDocumentsCommand extends RavenCommand
         parent::__construct(GetDocumentsResult::class);
     }
 
-    public static function forMultipleDocuments(StringArray $ids, StringArray $includes, bool $metadataOnly = false): GetDocumentsCommand
+    public static function forMultipleDocuments(StringArray $ids, ?StringArray $includes, bool $metadataOnly = false): GetDocumentsCommand
     {
         if (empty($ids)) {
             throw new InvalidArgumentException("Please supply at least one id");
@@ -53,21 +53,21 @@ class GetDocumentsCommand extends RavenCommand
         $command = new GetDocumentsCommand();
 
         $command->ids = $ids;
-        $command->includes = $includes;
+        $command->includes = $includes ?? new StringArray();
         $command->metadataOnly = $metadataOnly;
 
         return $command;
     }
 
-    public static function forSingleDocument(string $id, StringArray $includes, bool $metadataOnly = false): GetDocumentsCommand
+    public static function forSingleDocument(string $id, ?StringArray $includes = null, bool $metadataOnly = false): GetDocumentsCommand
     {
         if (empty($id)) {
             throw new IllegalArgumentException("id cannot be null");
         }
 
-        $command = new GetDocumentsCommand(null);
+        $command = new GetDocumentsCommand();
         $command->id = $id;
-        $command->includes = $includes;
+        $command->includes = $includes ?? new StringArray();
         $command->metadataOnly = $metadataOnly;
 
         return $command;
@@ -185,7 +185,7 @@ class GetDocumentsCommand extends RavenCommand
 
         if ($this->includeAllCounters) {
             $path .= '&counter=' . urlEncode(Counters::ALL);
-        } else if (count($this->counters)) {
+        } else if (($this->counters !== null) && count($this->counters)) {
             foreach ($this->counters as $counter) {
                 $path .= '&counter=' . urlEncode($counter);
             }
@@ -217,7 +217,7 @@ class GetDocumentsCommand extends RavenCommand
             }
         }
 
-        if (count($this->compareExchangeValueIncludes)) {
+        if (($this->compareExchangeValueIncludes !== null) && count($this->compareExchangeValueIncludes)) {
             foreach ($this->compareExchangeValueIncludes as $compareExchangeValue) {
                 $path .= "&cmpxchg=" . urlEncode($compareExchangeValue);
             }

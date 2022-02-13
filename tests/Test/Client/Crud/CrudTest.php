@@ -2,9 +2,8 @@
 
 namespace tests\RavenDB\Test\Client\Crud;
 
-use InvalidArgumentException;
-use RavenDB\Documents\Session\ChangeType;
-use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Documents\Commands\GetDocumentsCommand;
+use RavenDB\Documents\Commands\GetDocumentsResult;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
 use tests\RavenDB\Test\Client\Crud\Entities\Arr1;
@@ -13,13 +12,209 @@ use tests\RavenDB\Test\Client\Crud\Entities\Family;
 use tests\RavenDB\Test\Client\Crud\Entities\FamilyMembers;
 use tests\RavenDB\Test\Client\Crud\Entities\Member;
 use tests\RavenDB\Test\Client\Crud\Entities\MemberArray;
+use tests\RavenDB\Test\Client\Crud\Entities\Poc;
 
 class CrudTest extends RemoteTestBase
 {
-    /**
-     * @throws InvalidArgumentException
-     * @throws IllegalStateException
-     */
+
+    public function testEntitiesAreSavedUsingLowerCase(): void
+    {
+        $store = $this->getDocumentStore();
+
+        try {
+            $newSession = $store->openSession();
+            try {
+                $user1 = new User();
+                $user1->setLastName("user1");
+                $newSession->store($user1, "users/1");
+                $newSession->saveChanges();
+
+            } finally {
+                $newSession->close();
+            }
+
+            $documentsCommand = GetDocumentsCommand::forSingleDocument("users/1");
+            $store->getRequestExecutor()->execute($documentsCommand);
+
+            /** @var GetDocumentsResult $result */
+            $result = $documentsCommand->getResult();
+
+            $userJson = $result->getResults()[0];
+            $this->assertTrue(array_key_exists("lastName", $userJson));
+
+            $newSession = $store->openSession();
+            try {
+//                @todo: Uncommnet this when we implement rawQueries
+//                $users = $newSession->advanced()->rawQuery(User::class, "from Users where lastName = 'user1'");
+//                $this->assertCount(1, $users);
+            } finally {
+                $newSession->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+
+    public function testCanCustomizePropertyNamingStrategy(): void
+    {
+        $store = $this->getDocumentStore();
+
+        try {
+            $this->assertTrue(true);
+//            store.getConventions().getEntityMapper().setPropertyNamingStrategy(new JsonExtensions.DotNetNamingStrategy());
+//
+//            try (IDocumentSession newSession = store.openSession()) {
+//                User user1 = new User();
+//                user1.setLastName("user1");
+//                newSession.store(user1, "users/1");
+//                newSession.saveChanges();
+//            }
+//
+//            GetDocumentsCommand documentsCommand = new GetDocumentsCommand("users/1", null, false);
+//            store.getRequestExecutor().execute(documentsCommand);
+//
+//            GetDocumentsResult result = documentsCommand.getResult();
+//
+//            JsonNode userJson = result.getResults().get(0);
+//            assertThat(userJson.has("LastName"))
+//                    .isTrue();
+//
+//            try (IDocumentSession newSession = store.openSession()) {
+//                List<User> users = newSession.advanced().rawQuery(User.class, "from Users where LastName = 'user1'").toList();
+//
+//                assertThat(users)
+//                        .hasSize(1);
+//            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    // @todo: implement DELETE in order this test to work, and then uncomment all lines
+    public function testCrudOperations(): void
+    {
+        $store = $this->getDocumentStore();
+
+        try {
+            $newSession = $store->openSession();
+            try {
+                $user1 = new User();
+                $user1->setLastName("user1");
+                $newSession->store($user1, "users/1");
+
+                $user2 = new User();
+                $user2->setName("user2");
+                $user1->setAge(1);
+                $newSession->store($user2, "users/2");
+
+                $user3 = new User();
+                $user3->setName("user3");
+                $user3->setAge(1);
+                $newSession->store($user3, "users/3");
+
+
+                $user4 = new User();
+                $user4->setName("user4");
+                $newSession->store($user4, "users/4");
+
+//                $newSession->delete($user2);
+                $user3->setAge(3);
+                $newSession->saveChanges();
+
+                $tempUser = $newSession->load(User::class, "users/2");
+//                $this->assertNull($tempUser);
+
+                /** @var User $tempUser */
+                $tempUser = $newSession->load(User::class, "users/3");
+                $this->assertEquals(3, $tempUser->getAge());
+
+                $user1 = $newSession->load(User::class, "users/1");
+                $user4 = $newSession->load(User::class, "users/4");
+
+//                $newSession->delete($user4);
+                $user1->setAge(10);
+                $newSession->saveChanges();
+
+                $tempUser = $newSession->load(User::class, "users/4");
+//                $this->assertNull($tempUser);
+                /** @var User $tempUser */
+                $tempUser = $newSession->load(User::class, "users/1");
+                $this->assertEquals(10, $tempUser->getAge());
+
+            } finally {
+                $newSession->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    // @todo: implement DELETE in order this test to work, and then uncomment all lines
+    public function testCrudOperationsWithWhatChanged(): void
+    {
+        $store = $this->getDocumentStore();
+
+        try {
+            $newSession = $store->openSession();
+            try {
+                $user1 = new User();
+                $user1->setLastName("user1");
+                $newSession->store($user1, "users/1");
+
+                $user2 = new User();
+                $user2->setName("user2");
+                $user1->setAge(1);
+                $newSession->store($user2, "users/2");
+
+                $user3 = new User();
+                $user3->setName("user3");
+                $user3->setAge(1);
+                $newSession->store($user3, "users/3");
+
+                $user4 = new User();
+                $user4->setName("user4");
+                $newSession->store($user4, "users/4");
+
+//                $newSession->delete($user2);
+                $user3->setAge(3);
+
+                $this->assertCount(4, $newSession->advanced()->whatChanged());
+
+                $newSession->saveChanges();
+
+                $tempUser = $newSession->load(User::class, "users/2");
+//                $this->assertNull($tempUser);
+
+                /** @var User $tempUser */
+                $tempUser = $newSession->load(User::class, "users/3");
+                $this->assertEquals(3, $tempUser->getAge());
+
+                $user1 = $newSession->load(User::class, "users/1");
+                $user4 = $newSession->load(User::class, "users/4");
+
+//                $newSession->delete($user4);
+                $user1->setAge(10);
+//                $this->assertCount(2, $newSession->advanced()->whatChanged());
+
+
+                $newSession->saveChanges();
+
+                $tempUser = $newSession->load(User::class, "users/4");
+//                $this->assertNull($tempUser);
+
+                /** @var User $tempUser */
+                $tempUser = $newSession->load(User::class, "users/1");
+                $this->assertEquals(10, $tempUser->getAge());
+
+            } finally {
+                $newSession->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
     public function testCrudOperationsWithArrayInObject(): void
     {
         $store = $this->getDocumentStore();
@@ -59,10 +254,6 @@ class CrudTest extends RemoteTestBase
         }
     }
 
-    /**
-     * @throws InvalidArgumentException
-     * @throws IllegalStateException
-     */
     public function testCrudOperationsWithArrayInObject2(): void
     {
         $store = $this->getDocumentStore();
@@ -110,10 +301,6 @@ class CrudTest extends RemoteTestBase
         }
     }
 
-    /**
-     * @throws InvalidArgumentException
-     * @throws IllegalStateException
-     */
     public function testCrudOperationsWithArrayInObject3(): void
     {
         $store = $this->getDocumentStore();
@@ -149,10 +336,6 @@ class CrudTest extends RemoteTestBase
         }
     }
 
-    /**
-     * @throws InvalidArgumentException
-     * @throws IllegalStateException
-     */
     public function testCrudOperationsWithArrayInObject4(): void
     {
         $store = $this->getDocumentStore();
@@ -194,30 +377,36 @@ class CrudTest extends RemoteTestBase
         }
     }
 
-//     public void crudOperationsWithNull() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//
-//            try (IDocumentSession newSession = store.openSession()) {
-//                User user = new User();
-//                user.setName(null);
-//
-//                newSession.store(user, "users/1");
-//                newSession.saveChanges();
-//
-//                User user2 = newSession.load(User.class, "users/1");
-//                assertThat(newSession.advanced().whatChanged())
-//                        .isEmpty();
-//
-//                user2.setAge(3);
-//
-//                assertThat(newSession.advanced().whatChanged())
-//                        .hasSize(1);
-//            }
-//        }
-//    }
+    public function testCrudOperationsWithNull(): void
+    {
+        $store = $this->getDocumentStore();
 
+        try {
+            $newSession = $store->openSession();
 
-    public function AtestCrudOperationsWithArrayOfObjects(): void
+            try {
+                $user = new User();
+                $user->setName(null);
+
+                $newSession->store($user, "users/1");
+                $newSession->saveChanges();
+
+                /** @var User $user2 */
+                $user2 = $newSession->load(User::class, "users/1");
+                $this->assertEmpty($newSession->advanced()->whatChanged());
+
+                $user2->setAge(3);
+                $this->assertCount(1, $newSession->advanced()->whatChanged());
+
+            } finally {
+                $newSession->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCrudOperationsWithArrayOfObjects(): void
     {
         $store = $this->getDocumentStore();
 
@@ -233,10 +422,11 @@ class CrudTest extends RemoteTestBase
                 $member2->setName("RavenDB");
                 $member2->setAge(4);
 
-                $family = new FamilyMembers();
                 $members = new MemberArray();
                 $members->append($member1);
                 $members->append($member2);
+
+                $family = new FamilyMembers();
                 $family->setMembers($members);
 
                 $newSession->store($family, "family/1");
@@ -251,7 +441,7 @@ class CrudTest extends RemoteTestBase
                 $member2->setAge(8);
 
                 /** @var FamilyMembers $newFamily */
-                $newFamily = $newSession->load(Family::class, 'family/1');
+                $newFamily = $newSession->load(FamilyMembers::class, 'family/1');
                 $members = new MemberArray();
                 $members->append($member1);
                 $members->append($member2);
@@ -260,54 +450,66 @@ class CrudTest extends RemoteTestBase
                 /** @var array<string, array> $changes */
                 $changes = $newSession->advanced()->whatChanged();
 
-                $this->expectNotToPerformAssertions();
-//                $this->assertCount(1, $changes);
-//
-//                $this->assertCount(4, $changes["family/1"]);
-//
-//                $this->assertSame("name", $changes["family/1"][0]->getFieldName());
-//                $this->assertSame(ChangeType::fieldChanged(), $changes["family/1"][0]->getChange());
+                $this->assertCount(1, $changes);
+
+                $this->assertCount(4, $changes["family/1"]);
+
+                $this->assertSame("name", $changes["family/1"][0]->getFieldName());
+
+
+                $this->assertTrue($changes["family/1"][0]->getChange()->isFieldChanged());
+
+                // @todo: Check with Marcin: Do we need quotes in string or not?
 //                $this->assertSame(
 //                    "\"Hibernating Rhinos\"",
-//                    $changes["family/1"][0]->getFieldOldValue()->__toString()
+//                    $changes["family/1"][0]->getFieldOldValue()
 //                );
 //                $this->assertSame(
 //                    "\"RavenDB\"",
-//                    $changes["family/1"][0]->getFieldNewValue()->__toString()
+//                    $changes["family/1"][0]->getFieldNewValue()
 //                );
-//
-//                $this->assertSame("age", $changes["family/1"][1]->getFieldName());
-//                $this->assertSame(ChangeType::fieldChanged(), $changes["family/1"][1]->getChange());
-//                $this->assertSame(
-//                    "8",
-//                    $changes["family/1"][1]->getFieldOldValue()->__toString()
-//                );
-//                $this->assertSame(
-//                    "4",
-//                    $changes["family/1"][1]->getFieldNewValue()->__toString()
-//                );
-//
-//                $this->assertSame("name", $changes["family/1"][2]->getFieldName());
-//                $this->assertSame(ChangeType::fieldChanged(), $changes["family/1"][2]->getChange());
-//                $this->assertSame(
-//                    "\"RavenDB\"",
-//                    $changes["family/1"][2]->getFieldOldValue()->__toString()
-//                );
-//                $this->assertSame(
-//                    "\"Hibernating Rhinos\"",
-//                    $changes["family/1"][2]->getFieldNewValue()->__toString()
-//                );
-//
-//                $this->assertSame("age", $changes["family/1"][3]->getFieldName());
-//                $this->assertSame(ChangeType::fieldChanged(), $changes["family/1"][3]->getChange());
-//                $this->assertSame(
-//                    "4",
-//                    $changes["family/1"][3]->getFieldOldValue()->__toString()
-//                );
-//                $this->assertSame(
-//                    "8",
-//                    $changes["family/1"][3]->getFieldNewValue()->__toString()
-//                );
+                $this->assertSame(
+                    "Hibernating Rhinos",
+                    strval($changes["family/1"][0]->getFieldOldValue())
+                );
+                $this->assertSame(
+                    "RavenDB",
+                    strval($changes["family/1"][0]->getFieldNewValue())
+                );
+
+                $this->assertSame("age", $changes["family/1"][1]->getFieldName());
+                $this->assertTrue($changes["family/1"][1]->getChange()->isFieldChanged());
+                $this->assertSame(
+                    "8",
+                    strval($changes["family/1"][1]->getFieldOldValue())
+                );
+                $this->assertSame(
+                    "4",
+                    strval($changes["family/1"][1]->getFieldNewValue())
+                );
+
+                $this->assertSame("name", $changes["family/1"][2]->getFieldName());
+                $this->assertTrue($changes["family/1"][2]->getChange()->isFieldChanged());
+                // @todo: Check with Marcin: do we need quotes in string?
+                $this->assertSame(
+                    "RavenDB",
+                    strval($changes["family/1"][2]->getFieldOldValue())
+                );
+                $this->assertSame(
+                    "Hibernating Rhinos",
+                    strval($changes["family/1"][2]->getFieldNewValue())
+                );
+
+                $this->assertSame("age", $changes["family/1"][3]->getFieldName());
+                $this->assertTrue($changes["family/1"][3]->getChange()->isFieldChanged());
+                $this->assertSame(
+                    "4",
+                    strval($changes["family/1"][3]->getFieldOldValue())
+                );
+                $this->assertSame(
+                    "8",
+                    strval($changes["family/1"][3]->getFieldNewValue())
+                );
 
                 $member1 = new Member();
                 $member1->setName("Toli");
@@ -325,53 +527,55 @@ class CrudTest extends RemoteTestBase
                 /** @var array<string, array> $changes */
                 $changes = $newSession->advanced()->whatChanged();
 
-//                $this->assertCount(1, $changes);
-//
-//                $this->assertCount(4, $changes["family/1"]);
-//
-//                $this->assertSame("name", $changes["family/1"][0]->getFieldName());
-//                $this->assertSame(ChangeType::fieldChanged(), $changes["family/1"][0]->getChange());
-//                $this->assertSame(
-//                    "\"Hibernating Rhinos\"",
-//                    $changes["family/1"][0]->getFieldOldValue()->__toString()
-//                );
-//                $this->assertSame(
-//                    "\"Toli\"",
-//                    $changes["family/1"][0]->getFieldNewValue()->__toString()
-//                );
-//
-//                $this->assertSame("age", $changes["family/1"][1]->getFieldName());
-//                $this->assertSame(ChangeType::fieldChanged(), $changes["family/1"][1]->getChange());
-//                $this->assertSame(
-//                    "8",
-//                    $changes["family/1"][1]->getFieldOldValue()->__toString()
-//                );
-//                $this->assertSame(
-//                    "5",
-//                    $changes["family/1"][1]->getFieldNewValue()->__toString()
-//                );
-//
-//                $this->assertSame("name", $changes["family/1"][2]->getFieldName());
-//                $this->assertSame(ChangeType::fieldChanged(), $changes["family/1"][2]->getChange());
-//                $this->assertSame(
-//                    "\"RavenDB\"",
-//                    $changes["family/1"][2]->getFieldOldValue()->__toString()
-//                );
-//                $this->assertSame(
-//                    "\"Boki\"",
-//                    $changes["family/1"][2]->getFieldNewValue()->__toString()
-//                );
-//
-//                $this->assertSame("age", $changes["family/1"][3]->getFieldName());
-//                $this->assertSame(ChangeType::fieldChanged(), $changes["family/1"][3]->getChange());
-//                $this->assertSame(
-//                    "4",
-//                    $changes["family/1"][3]->getFieldOldValue()->__toString()
-//                );
-//                $this->assertSame(
-//                    "15",
-//                    $changes["family/1"][3]->getFieldNewValue()->__toString()
-//                );
+                $this->assertCount(1, $changes);
+
+                $this->assertCount(4, $changes["family/1"]);
+
+                $this->assertSame("name", $changes["family/1"][0]->getFieldName());
+                $this->assertTrue($changes["family/1"][0]->getChange()->isFieldChanged());
+                // @todo: Check with Marcin: do we need quotes in string?
+                $this->assertSame(
+                    "Hibernating Rhinos",
+                    strval($changes["family/1"][0]->getFieldOldValue())
+                );
+                $this->assertSame(
+                    "Toli",
+                    strval($changes["family/1"][0]->getFieldNewValue())
+                );
+
+                $this->assertSame("age", $changes["family/1"][1]->getFieldName());
+                $this->assertTrue($changes["family/1"][1]->getChange()->isFieldChanged());
+                $this->assertSame(
+                    "8",
+                    strval($changes["family/1"][1]->getFieldOldValue())
+                );
+                $this->assertSame(
+                    "5",
+                    strval($changes["family/1"][1]->getFieldNewValue())
+                );
+
+                $this->assertSame("name", $changes["family/1"][2]->getFieldName());
+                $this->assertTrue($changes["family/1"][2]->getChange()->isFieldChanged());
+                // @todo: Check with Marcin: do we need quotes in string?
+                $this->assertSame(
+                    "RavenDB",
+                    strval($changes["family/1"][2]->getFieldOldValue())
+                );
+                $this->assertSame(
+                    "Boki",
+                    strval($changes["family/1"][2]->getFieldNewValue())
+                );
+
+                $this->assertSame("age", $changes["family/1"][3]->getFieldName());
+                $this->assertTrue($changes["family/1"][3]->getChange()->isFieldChanged());
+                $this->assertSame(
+                    "4",
+                    strval($changes["family/1"][3]->getFieldOldValue())
+                );
+                $this->assertSame(
+                    "15",
+                    strval($changes["family/1"][3]->getFieldNewValue())
+                );
             } finally {
                 $newSession->close();
             }
@@ -380,7 +584,7 @@ class CrudTest extends RemoteTestBase
         }
     }
 
-    public function AtestCrudOperationsWithArrayOfArrays(): void
+    public function testCrudOperationsWithArrayOfArrays(): void
     {
         $store = $this->getDocumentStore();
 
@@ -389,13 +593,13 @@ class CrudTest extends RemoteTestBase
 
             try {
                 $a1 = new Arr1();
-                $a1->setStr(array("a", "b"));
+                $a1->setStr(["a", "b"]);
 
                 $a2 = new Arr1();
-                $a2->setStr(array("c", "d"));
+                $a2->setStr(["c", "d"]);
 
                 $arr = new Arr2();
-                $arr->setArr1(array($a1, $a2));
+                $arr->setArr1([$a1, $a2]);
 
                 $newSession->store($arr, "arr/1");
                 $newSession->saveChanges();
@@ -403,87 +607,77 @@ class CrudTest extends RemoteTestBase
                 $newArr = $newSession->load(Arr2::class, "arr/1");
 
                 $a1 = new Arr1();
-                $a1->setStr(array("d", "c"));
+                $a1->setStr(["d", "c"]);
 
                 $a2 = new Arr1();
-                $a1->setStr(array("a", "b"));
+                $a2->setStr(["a", "b"]);
 
-                $newArr->setArr1(array($a1, $a2));
+                $newArr->setArr1([$a1, $a2]);
 
-//                /** @var array<string, array> $whatChanged */
-//                $whatChanged = $newSession->advanced()->whatChanged();
+                $whatChanged = $newSession->advanced()->whatChanged();
 
-//                $this->assertCount(1, $whatChanged);
-//
-//                $change = $whatChanged["arr/1"];
-//                $this->assertCount(4, $change);
-//
-//                $this->assertSame("\"a\"", $change[0]->getFieldOldValue()->__toString());
-//                $this->assertSame("\"d\"", $change[0]->getFieldNewValue()->__toString());
-//
-//                $this->assertSame("\"b\"", $change[1]->getFieldOldValue()->__toString());
-//                $this->assertSame("\"c\"", $change[1]->getFieldNewValue()->__toString());
-//
-//                $this->assertSame("\"c\"", $change[2]->getFieldOldValue()->__toString());
-//                $this->assertSame("\"a\"", $change[2]->getFieldNewValue()->__toString());
-//
-//                $this->assertSame("\"d\"", $change[3]->getFieldOldValue()->__toString());
-//                $this->assertSame("\"b\"", $change[3]->getFieldNewValue()->__toString());
+                $this->assertCount(1, $whatChanged);
 
- //               $newSession->saveChanges();
+                $change = $whatChanged["arr/1"];
+                $this->assertCount(4, $change);
+
+                // @todo: Check with Marcin: do we need a quotes?
+                $this->assertSame("a", strval($change[0]->getFieldOldValue()));
+                $this->assertSame("d", strval($change[0]->getFieldNewValue()));
+
+                $this->assertSame("b", strval($change[1]->getFieldOldValue()));
+                $this->assertSame("c", strval($change[1]->getFieldNewValue()));
+
+                $this->assertSame("c", strval($change[2]->getFieldOldValue()));
+                $this->assertSame("a", strval($change[2]->getFieldNewValue()));
+
+                $this->assertSame("d", strval($change[3]->getFieldOldValue()));
+                $this->assertSame("b", strval($change[3]->getFieldNewValue()));
+
+                $newSession->saveChanges();
             } finally {
                 $newSession->close();
             }
-        } finally {
-            $store->close();
-        }
 
-        try {
             $newSession = $store->openSession();
-
             try {
                 $newArr = $newSession->load(Arr2::class, "arr/1");
                 $a1 = new Arr1();
-                $a1->setStr(array("q", "w"));
+                $a1->setStr(["q", "w"]);
 
                 $a2 = new Arr1();
-                $a2->setStr(array( "a", "b" ));
+                $a2->setStr(["a", "b"]);
 
-                $newArr->setArr1(array($a1, $a2));
+                $newArr->setArr1([$a1, $a2]);
 
-//                /** @var array<string, array> $whatChanged */
-//                $whatChanged = $newSession->advanced()->whatChanged();
+                $whatChanged = $newSession->advanced()->whatChanged();
 
-//                $this->assertCount(1, $whatChanged);
-//
-//                $change = $whatChanged["arr/1"];
-//                $this->assertCount(2, $change);
-//
-//                $this->assertSame("\"d\"", $change[0]->getFieldOldValue()->__toString());
-//                $this->assertSame("\"q\"", $change[0]->getFieldNewValue()->__toString());
-//
-//                $this->assertSame("\"c\"", $change[1]->getFieldOldValue()->__toString());
-//                $this->assertSame("\"w\"", $change[1]->getFieldNewValue()->__toString());
+                $this->assertCount(1, $whatChanged);
+
+                $change = $whatChanged["arr/1"];
+                $this->assertCount(2, $change);
+
+                $this->assertSame("d", strval($change[0]->getFieldOldValue()));
+                $this->assertSame("q", strval($change[0]->getFieldNewValue()));
+
+                $this->assertSame("c", strval($change[1]->getFieldOldValue()));
+                $this->assertSame("w", strval($change[1]->getFieldNewValue()));
 
                 $newSession->saveChanges();
             } finally {
                 $newSession->close();
             }
         } finally {
+            $store->close();
         }
     }
 
-    /**
-     * @throws InvalidArgumentException
-     * @throws IllegalStateException
-     */
-    public function AtestCrudCanUpdatePropertyToNull(): void
+    public function testCrudCanUpdatePropertyToNull(): void
     {
         $store = $this->getDocumentStore();
 
         try {
             $newSession = $store->openSession();
-
             try {
                 $user = new User();
                 $user->setName("user1");
@@ -493,13 +687,8 @@ class CrudTest extends RemoteTestBase
             } finally {
                 $newSession->close();
             }
-        } finally {
-            $store->close();
-        }
 
-        try {
             $newSession = $store->openSession();
-
             try {
                 /** @var User $user */
                 $user = $newSession->load(User::class, 'users/1');
@@ -509,19 +698,60 @@ class CrudTest extends RemoteTestBase
             } finally {
                 $newSession->close();
             }
-        } finally {
-            $store->close();
-        }
 
-        try {
             $newSession = $store->openSession();
-
             try {
                 $user = $newSession->load(User::class, 'users/1');
 
-                $this->assertEquals(null, $user->getName());
+                $this->assertNull($user->getName());
             } finally {
                 $newSession->close();
+            }
+
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCrudCanUpdatePropertyFromNullToObject(): void
+    {
+        $store = $this->getDocumentStore();
+
+        try {
+            $session = $store->openSession();
+            try {
+                $poc = new Poc();
+                $poc->setName("aviv");
+                $poc->setObj(null);
+
+                $session->store($poc, "pocs/1");
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                /** @var Poc $poc */
+                $poc = $session->load(Poc::class, "pocs/1");
+                $this->assertNull($poc->getObj());
+
+                $user = new User();
+                $poc->setObj($user);
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                /** @var Poc $poc */
+                $poc = $session->load(Poc::class, "pocs/1");
+                $this->assertNotNull($poc->getObj());
+
+            } finally {
+                $session->close();
             }
         } finally {
             $store->close();
