@@ -504,6 +504,28 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     }
 
     /**
+     *
+     * Marks the specified entity for deletion. The entity will be deleted when IDocumentSession.saveChanges is called.
+     *
+     * WARNING: This method when used with string entityId will not call beforeDelete listener!
+     *
+     * @param string|object|null $entity
+     * @param string|null $changeVector
+     *
+     * @throws IllegalArgumentException
+     * @throws IllegalStateException
+     */
+    public function delete($entity, ?string $changeVector = null): void
+    {
+        if (is_object($entity)) {
+            $this->deleteEntity($entity);
+            return;
+        }
+
+        $this->deleteById($entity, $changeVector);
+    }
+
+    /**
      * Marks the specified entity for deletion. The entity will be deleted when SaveChanges is called.
      *
      * @param ?object $entity Entity to delete
@@ -511,7 +533,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
      * @throws IllegalArgumentException
      * @throws IllegalStateException
      */
-    public function deleteEntity(?object $entity): void
+    protected function deleteEntity(?object $entity): void
     {
         if ($entity === null) {
             throw new IllegalArgumentException("Entity cannot be null");
@@ -537,10 +559,13 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
      * Marks the specified entity for deletion. The entity will be deleted when IDocumentSession.SaveChanges is called.
      * WARNING: This method will not call beforeDelete listener!
      *
-     * @param string $id
-     * @param string|null $expectedChangeVector
+     * @param ?string $id
+     * @param ?string $expectedChangeVector
+     *
+     * @throws IllegalArgumentException
+     * @throws IllegalStateException
      */
-    public function delete(?string $id, ?string $expectedChangeVector = null): void
+    protected function deleteById(?string $id, ?string $expectedChangeVector = null): void
     {
         if ($id == null) {
             throw new IllegalArgumentException("Id cannot be null");
@@ -552,7 +577,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         if ($documentInfo != null) {
             $newObj = $this->entityToJson->convertEntityToJson($documentInfo->getEntity(), $documentInfo);
             if ($documentInfo->getEntity() != null && $this->isEntityChanged($newObj, $documentInfo)) {
-                throw new IllegalStateException("Can't delete changed entity using identifier. Use deleteEntity(?object entity) instead.");
+                throw new IllegalStateException("Can't delete changed entity using identifier. Use delete(?object entity) instead.");
             }
 
             if ($documentInfo->getEntity() != null) {

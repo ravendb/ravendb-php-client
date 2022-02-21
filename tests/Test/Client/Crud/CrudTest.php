@@ -125,7 +125,7 @@ class CrudTest extends RemoteTestBase
                 $user4->setName("user4");
                 $newSession->store($user4, "users/4");
 
-                $newSession->deleteEntity($user2);
+                $newSession->delete($user2);
                 $user3->setAge(3);
                 $newSession->saveChanges();
 
@@ -139,7 +139,7 @@ class CrudTest extends RemoteTestBase
                 $user1 = $newSession->load(User::class, "users/1");
                 $user4 = $newSession->load(User::class, "users/4");
 
-                $newSession->deleteEntity($user4);
+                $newSession->delete($user4);
                 $user1->setAge(10);
                 $newSession->saveChanges();
 
@@ -182,7 +182,7 @@ class CrudTest extends RemoteTestBase
                 $user4->setName("user4");
                 $newSession->store($user4, "users/4");
 
-                $newSession->deleteEntity($user2);
+                $newSession->delete($user2);
                 $user3->setAge(3);
 
                 $this->assertCount(4, $newSession->advanced()->whatChanged());
@@ -199,7 +199,7 @@ class CrudTest extends RemoteTestBase
                 $user1 = $newSession->load(User::class, "users/1");
                 $user4 = $newSession->load(User::class, "users/4");
 
-                $newSession->deleteEntity($user4);
+                $newSession->delete($user4);
                 $user1->setAge(10);
                 $this->assertCount(2, $newSession->advanced()->whatChanged());
 

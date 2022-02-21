@@ -17,24 +17,13 @@ interface DocumentSessionInterface
 
     /**
      * Marks the specified entity for deletion. The entity will be deleted when IDocumentSession.saveChanges is called.
-     * @param ?object $entity instance of entity to delete
+     *
+     * WARNING: This method when used with string entityId will not call beforeDelete listener!
+     *
+     * @param string|object|null $entity instance of entity to delete
+     * @param ?string $expectedChangeVector Expected change vector of a document to delete.
      */
-    public function deleteEntity(?object $entity): void;
-
-//    /**
-//     * Marks the specified entity for deletion. The entity will be deleted when DocumentSession.saveChanges is called.
-//     * WARNING: This method will not call beforeDelete listener!
-//     * @param id entity id
-//     */
-//    void delete(String id);
-//
-//    /**
-//     * Marks the specified entity for deletion. The entity will be deleted when DocumentSession.saveChanges is called.
-//     * WARNING: This method will not call beforeDelete listener!
-//     * @param id entity Id
-//     * @param expectedChangeVector Expected change vector of a document to delete.
-//     */
-//    void delete(String id, String expectedChangeVector);
+    public function delete($entity, ?string $expectedChangeVector = null): void;
 
     /**
      * Saves all the pending changes to the server.
