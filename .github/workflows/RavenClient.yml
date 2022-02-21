@@ -12,7 +12,7 @@ jobs:
             RAVEN_License: ${{ secrets.RAVEN_LICENSE }}
         strategy:
             matrix:
-                php-version: [ "7.4" ]
+                php-versions: [ "7.4", "8.1" ]
                 serverVersion: [ "5.2" ]
             fail-fast: false
 
@@ -22,10 +22,16 @@ jobs:
 #            - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
             - name: Check out repository code
               uses: actions/checkout@v2
-            - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
 
-            - name: Display PHP version
-              run:  php -v
+            - name: Install PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php-versions }}
+                  extensions: intl
+#                  ini-values: "post_max_size=256M"
+
+            - name: Check PHP Version
+              run: php -v
 
 
 #            - name: List files in the repository
