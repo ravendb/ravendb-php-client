@@ -3,10 +3,10 @@
 namespace RavenDB\ServerWide\Operations;
 
 use RavenDB\Documents\Conventions\DocumentConventions;
-use RavenDB\Http\RavenCommand;
 use RavenDB\ServerWide\Commands\CreateDatabaseCommand;
 use RavenDB\ServerWide\DatabaseRecord;
 
+// !status: DONE
 class CreateDatabaseOperation implements ServerOperationInterface
 {
     private DatabaseRecord $databaseRecord;
@@ -16,7 +16,7 @@ class CreateDatabaseOperation implements ServerOperationInterface
     {
         $this->databaseRecord = $databaseRecord;
 
-        if ($replicationFactor > 0) {
+        if (($replicationFactor != null) && ($replicationFactor > 0)) {
             $this->replicationFactor = $replicationFactor;
             return;
         }

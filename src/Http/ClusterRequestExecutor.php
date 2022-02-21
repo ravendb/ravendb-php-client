@@ -2,7 +2,232 @@
 
 namespace RavenDB\Http;
 
+use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Exceptions\UnsupportedOperationException;
+use RavenDB\Type\Url;
+use RavenDB\Type\UrlArray;
+
+// !status: IN PROGRESS
 class ClusterRequestExecutor extends RequestExecutor
 {
+//  private final Semaphore clusterTopologySemaphore = new Semaphore(1);
 
+    protected function __construct(
+        ?string $databaseName,
+//        KeyStore certificate,
+//        char[] keyPassword,
+//        KeyStore trustStore,
+        DocumentConventions $conventions
+//        ExecutorService executorService,
+//        String[] initialUrls
+    ) {
+        parent::__construct(
+            $databaseName,
+//            certificate,
+//            keyPassword,
+//            trustStore,
+            $conventions
+//            executorService,
+//            initialUrls
+        );
+    }
+
+    public static function create(
+        UrlArray $initialUrls,
+        ?string $databaseName = null,
+//        KeyStore certificate,
+//        char[] keyPassword,
+//        KeyStore trustStore,
+//        ExecutorService executorService,
+        ?DocumentConventions $conventions = null
+    ): ClusterRequestExecutor {
+        $executor = new ClusterRequestExecutor(
+            $databaseName,
+//            certificate,
+//            keyPassword,
+//            trustStore,
+            $conventions ?? DocumentConventions::getDefaultConventions(),
+//            executorService,
+//            initialUrls
+        );
+
+//        $executor->_disableClientConfigurationUpdates = true;
+//        $executor->_firstTopologyUpdate = $executor->firstTopologyUpdate($initialUrls, null);
+
+
+        // @todo: remove following lines
+        $serverNode = new ServerNode();
+        $serverNode->setDatabase($databaseName);
+        $serverNode->setUrl($initialUrls[0]);
+
+        $topology = new Topology();
+        $topology->setEtag(-1);
+        $topology->getServerNodes()->append($serverNode);
+
+        $executor->setNodeSelector(new NodeSelector($topology));
+        //-- until here
+
+        return $executor;
+    }
+
+    public static function createForSingleNodeWithConfigurationUpdates(
+        Url $url,
+        string $databaseName,
+//        KeyStore certificate,
+//        char[] keyPassword,
+        DocumentConventions $conventions
+    ): ClusterRequestExecutor {
+        throw new UnsupportedOperationException();
+    }
+
+    public static function createForSingleNodeWithoutConfigurationUpdates(
+        string $url,
+        string $databaseName,
+//        KeyStore certificate,
+//        char[] keyPassword,
+        DocumentConventions $conventions
+    ): ClusterRequestExecutor {
+        throw new UnsupportedOperationException();
+    }
+
+    public static function createForSingleNode(
+        Url $url,
+//        KeyStore certificate,
+//        char[] keyPassword,
+//        KeyStore trustStore,
+//        ExecutorService executorService,
+        ?DocumentConventions $conventions = null
+    ): ClusterRequestExecutor {
+        $initialUrls = new UrlArray();
+        $initialUrls->append($url);
+
+        //@todo: implement following line
+//        $url = $self::validateUrls($initialUrls, $certificate)[0];
+
+//        ClusterRequestExecutor
+        $executor = new ClusterRequestExecutor(
+            "",
+//            certificate,
+//            keyPassword,
+//            trustStore,
+                $conventions ?? DocumentConventions::getDefaultConventions()
+//            executorService,
+//            $initialUrls
+        );
+
+        $serverNode = new ServerNode();
+        $serverNode->setUrl($url);
+
+        $topology = new Topology();
+        $topology->setEtag(-1);
+
+        $nodes = new ServerNodeArray();
+        $nodes->append($serverNode);
+        $topology->setServerNodes($nodes);
+
+        // @todo: check this line
+        $nodeSelector = new NodeSelector($topology); // new NodeSelector($topology, $executorService);
+
+        $executor->setNodeSelector($nodeSelector);
+//        @todo: implement following lines
+//        $executor->setTopologyEtag(-2);
+//        executor._disableClientConfigurationUpdates = true;
+//        executor._disableTopologyUpdates = true;
+
+        return $executor;
+    }
+
+//
+//    @Override
+//    protected void performHealthCheck(ServerNode serverNode, int nodeIndex) {
+//        execute(serverNode, nodeIndex, new GetTcpInfoCommand("health-check"), false, null);
+//    }
+//
+//    @Override
+//    public CompletableFuture<Boolean> updateTopologyAsync(UpdateTopologyParameters parameters) {
+//        if (parameters == null) {
+//            throw new IllegalArgumentException("Parameters cannot be null");
+//        }
+//
+//        if (_disposed) {
+//            return CompletableFuture.completedFuture(false);
+//        }
+//
+//        return CompletableFuture.supplyAsync(() -> {
+//            try {
+//                boolean lockTaken = clusterTopologySemaphore.tryAcquire(parameters.getTimeoutInMs(), TimeUnit.MILLISECONDS);
+//                if (!lockTaken) {
+//                    return false;
+//                }
+//            } catch (InterruptedException e) {
+//                throw new RuntimeException(e);
+//            }
+//
+//            try {
+//                if (_disposed) {
+//                    return false;
+//                }
+//
+//                GetClusterTopologyCommand command = new GetClusterTopologyCommand(parameters.getDebugTag());
+//                execute(parameters.getNode(), null, command, false, null);
+//
+//                ClusterTopologyResponse results = command.getResult();
+//                List<ServerNode> nodes = results
+//                        .getTopology()
+//                        .getMembers()
+//                        .entrySet()
+//                        .stream()
+//                        .map(kvp -> {
+//                            ServerNode serverNode = new ServerNode();
+//                            serverNode.setUrl(kvp.getValue());
+//                            serverNode.setClusterTag(kvp.getKey());
+//                            return serverNode;
+//                        })
+//                        .collect(Collectors.toList());
+//
+//                Topology newTopology = new Topology();
+//                newTopology.setNodes(nodes);
+//                newTopology.setEtag(results.getEtag());
+//
+//                topologyEtag = results.getEtag();
+//
+//                if (_nodeSelector == null) {
+//                    _nodeSelector = new NodeSelector(newTopology, _executorService);
+//
+//                    if (getConventions().getReadBalanceBehavior() == ReadBalanceBehavior.FASTEST_NODE) {
+//                        _nodeSelector.scheduleSpeedTest();
+//                    }
+//                } else if (_nodeSelector.onUpdateTopology(newTopology, parameters.isForceUpdate())) {
+//                    disposeAllFailedNodesTimers();
+//
+//                    if (getConventions().getReadBalanceBehavior() == ReadBalanceBehavior.FASTEST_NODE) {
+//                        _nodeSelector.scheduleSpeedTest();
+//                    }
+//                }
+//
+//                onTopologyUpdatedInvoke(newTopology);
+//            } catch (Exception e) {
+//                if (!_disposed) {
+//                    throw e;
+//                }
+//            } finally {
+//                clusterTopologySemaphore.release();
+//            }
+//
+//            return true;
+//        }, _executorService);
+//    }
+//
+//    @Override
+//    protected CompletableFuture<Void> updateClientConfigurationAsync(ServerNode serverNode) {
+//        return CompletableFuture.completedFuture(null);
+//    }
+
+    /**
+     * @throws IllegalStateException
+     */
+    protected function throwExceptions(string $details): void {
+        throw new IllegalStateException("Failed to retrieve cluster topology from all known nodes" . PHP_EOL . $details);
+    }
 }

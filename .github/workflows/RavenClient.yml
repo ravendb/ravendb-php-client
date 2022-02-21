@@ -1,0 +1,62 @@
+name: Run unit tests
+on:
+    push:
+        branches: [ v5.2 ]
+    pull_request:
+        branches: [ v5.2 ]
+
+jobs:
+    Explore-GitHub-Actions:
+        runs-on: ubuntu-latest
+
+        env:
+            RAVENDB_BUILD_TYPE: nightly
+            RAVEN_License: ${{ secrets.RAVEN_LICENSE }}
+        strategy:
+            matrix:
+                php-versions: [ "7.4" ]
+                serverVersion: [ "5.2" ]
+            fail-fast: false
+
+        steps:
+            - name: Check out repository code
+              uses: actions/checkout@v2
+
+            - name: Install PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php-versions }}
+                  extensions: ds, json
+#                  ini-values: "post_max_size=256M"
+                  tools: composer:v2, phpunit
+                  coverage: none
+
+            - name: Check PHP Version
+              run: php -v
+
+            - name: Download RavenDB Server
+              run: wget -q -O RavenDB.tar.bz2 "https://hibernatingrhinos.com/downloads/RavenDB%20for%20Linux%20x64/latest?buildType=${{ env.RAVENDB_BUILD_TYPE }}&version=${{ matrix.serverVersion }}"
+
+            - name: Extract RavenDB Server
+              run: tar xjf RavenDB.tar.bz2
+
+            - name: Run RDB
+              run: ./RavenDB/Server/Raven.Server -c $(realpath ./settings.json) &
+
+            - name: Wait for server to run
+              run: while ! curl http://127.0.0.1:8080; do sleep 0.2; echo "Waiting for server to start..."; done
+
+            - name: Install library tools
+              run: composer install
+
+            - name: Run unit tests
+              run: phpunit
+
+
+#    push:
+#        branches: [ v5.2 ]
+#    pull_request:
+#        branches: [ v5.2 ]
+#    schedule:
+#        - cron: '0 10 * * 6'
+#

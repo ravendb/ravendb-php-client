@@ -2,22 +2,24 @@
 
 namespace RavenDB\Extensions;
 
-use RavenDB\Type\TypedArray;
-use RavenDB\Type\TypedMap;
+use RavenDB\Type\StringArray;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
-class TypedArrayDenormalizer implements DenormalizerInterface
+class StringArrayNormalizer implements DenormalizerInterface
 {
     public function denormalize($data, string $type, string $format = null, array $context = [])
     {
         $object = new $type();
-        $object->denormalize($this, $data, $format, $context);
+
+        foreach ($data as $key => $item) {
+            $object->offsetSet($key, $item);
+        }
 
         return $object;
     }
 
     public function supportsDenormalization($data, string $type, string $format = null): bool
     {
-        return is_subclass_of($type, TypedArray::class) || is_subclass_of($type, TypedMap::class);
+        return $type == StringArray::class;
     }
 }

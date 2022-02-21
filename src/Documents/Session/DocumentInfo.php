@@ -12,7 +12,7 @@ class DocumentInfo
     private ?string $changeVector;
     private ConcurrencyCheckMode $concurrencyCheckMode;
 
-    private bool $ignoreChanges;
+    private bool $ignoreChanges = false;
 
     private array $metadata;
     private array $document;
@@ -20,13 +20,18 @@ class DocumentInfo
     private ?MetadataDictionaryInterface $metadataInstance = null;
 
     private ?object $entity;
-    private bool $newDocument;
-    private string $collection;
+    private bool $newDocument = false;
+    private string $collection = '';
+
+    public function __construct()
+    {
+        $this->concurrencyCheckMode = ConcurrencyCheckMode::auto();
+    }
 
     /**
      * @throws IllegalStateException
      */
-    public static function getNewDocumentInfo($document): DocumentInfo
+    public static function getNewDocumentInfo(array $document): DocumentInfo
     {
         if (!array_key_exists('@metadata', $document)) {
             throw new IllegalStateException("Document must have a metadata");

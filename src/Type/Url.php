@@ -25,4 +25,9 @@ class Url
     {
         $this->value = $url;
     }
+
+    public function getHost(): string
+    {
+        return parse_url($this->value, PHP_URL_HOST);
+    }
 }

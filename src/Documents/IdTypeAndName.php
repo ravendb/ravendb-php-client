@@ -2,7 +2,7 @@
 
 namespace RavenDB\Documents;
 
-use RavenDB\Documents\Commands\batches\CommandType;
+use RavenDB\Documents\Commands\Batches\CommandType;
 use RavenDB\Utils\StringUtils;
 
 class IdTypeAndName
@@ -94,7 +94,7 @@ class IdTypeAndName
         return $result;
     }
 
-    public static function create(string $id, CommandType $type, string $name): IdTypeAndName
+    public static function create(string $id, CommandType $type, ?string $name): IdTypeAndName
     {
         $idTypeAndName = new IdTypeAndName();
         $idTypeAndName->setId($id);

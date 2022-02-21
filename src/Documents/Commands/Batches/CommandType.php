@@ -1,7 +1,10 @@
 <?php
 
-namespace RavenDB\Documents\Commands\batches;
+namespace RavenDB\Documents\Commands\Batches;
 
+use RavenDB\Exceptions\IllegalArgumentException;
+
+// !status: DONE
 class CommandType
 {
     const NONE = 'None';
@@ -27,11 +30,37 @@ class CommandType
     const CLIENT_ANY_COMMAND = 'ClientAndCommand';
     const CLIENT_MODIFY_DOCUMENT_COMMAND = 'ClientModifyDocumentCommand';
 
+    private static array $allowedValues = [
+        self::NONE,
+        self::PUT,
+        self::PATCH,
+        self::DELETE,
+        self::ATTACHMENT_PUT,
+        self::ATTACHMENT_DELETE,
+        self::ATTACHMENT_MOVE,
+        self::ATTACHMENT_COPY,
+        self::COMPARE_EXCHANGE_PUT,
+        self::COMPARE_EXCHANGE_DELETE,
+        self::FORCE_REVISION_CREATION,
+        self::COUNTERS,
+        self::TIME_SERIES,
+        self::TIME_SERIES_BULK_INSERT,
+        self::TIME_SERIES_COPY,
+        self::BATCH_PATCH,
+        self::CLIENT_ANY_COMMAND,
+        self::CLIENT_MODIFY_DOCUMENT_COMMAND,
+    ];
+
     private string $value = '';
 
     private function __construct(string $value)
     {
         $this->setValue($value);
+    }
+
+    public function __toString(): string
+    {
+        return $this->getValue();
     }
 
     public function getValue(): string
@@ -41,6 +70,9 @@ class CommandType
 
     public function setValue(string $value): void
     {
+        if (!in_array($value, self::$allowedValues)) {
+            throw new IllegalArgumentException('Unable to parse type: ' . $value);
+        }
         $this->value = $value;
     }
 
@@ -84,6 +116,11 @@ class CommandType
     public function isAttachmentCopy(): bool
     {
         return $this->value == self::ATTACHMENT_COPY;
+    }
+
+    public function isAttachmentMove(): bool
+    {
+        return $this->value == self::ATTACHMENT_MOVE;
     }
 
     public function isCompareExchangePut(): bool
@@ -137,6 +174,11 @@ class CommandType
     }
 
     // Named constructors
+    public static function parseCSharpValue(string $type): CommandType
+    {
+        return new CommandType($type);
+    }
+
     public static function none(): CommandType
     {
         return new CommandType(self::NONE);

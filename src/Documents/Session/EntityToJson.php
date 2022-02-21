@@ -7,24 +7,32 @@ use RavenDB\Documents\Conventions\DocumentConventions;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use Symfony\Component\Serializer\Serializer;
 
+use Ds\Map as DSMap;
+
 class EntityToJson
 {
     private InMemoryDocumentSessionOperations $session;
+
+    private ?DSMap $missingDictionary = null;
+
 
     public function __construct(InMemoryDocumentSessionOperations $session)
     {
         $this->session = $session;
     }
 
-    /**
-     * @throws ExceptionInterface
-     */
-    public function convertToEntity(string $entityType, string $id, array $document, bool $trackEntity)
+    public function getMissingDictionary(): ?DSMap
     {
-        return $this->session->getConventions()->getEntityMapper()->denormalize($document, $entityType, 'json');
+        return $this->missingDictionary;
     }
 
-    public function convertEntityToJson(object $entity, ?DocumentInfo $documentInfo): array
+    /**
+     * @param object|array $entity
+     * @param DocumentInfo|null $documentInfo
+     *
+     * @return array
+     */
+    public function convertEntityToJson($entity, ?DocumentInfo $documentInfo): array
     {
         // maybe we don't need to do anything?
         if (is_array($entity)) {
@@ -32,10 +40,19 @@ class EntityToJson
         }
 
         if ($documentInfo != null) {
-//            $this->session->onBeforeConversionToDocumentInvoke($documentInfo->getId(), $entity);
+            $this->session->onBeforeConversionToDocumentInvoke($documentInfo->getId(), $entity);
         }
 
         $document = $this->convertEntityToJsonInternal($entity, $this->session->getConventions(), $documentInfo);
+
+        if ($documentInfo != null) {
+//            Reference<ObjectNode> documentReference = new Reference<>(document);
+//            _session.onAfterConversionToDocumentInvoke(documentInfo.getId(), entity, documentReference);
+//            document = documentReference.value;
+        }
+
+        return $document;
+    }
 
 //        if (documentInfo != null) {
 //            Reference<ObjectNode> documentReference = new Reference<>(document);
@@ -43,8 +60,6 @@ class EntityToJson
 //            document = documentReference.value;
 //        }
 
-        return $document;
-    }
 
     private function convertEntityToJsonInternal(
         object $entity,
@@ -64,6 +79,15 @@ class EntityToJson
         }
 
         return $jsonNode;
+    }
+
+
+    /**
+     * @throws ExceptionInterface
+     */
+    public function convertToEntity(string $entityType, string $id, array $document, bool $trackEntity)
+    {
+        return $this->session->getConventions()->getEntityMapper()->denormalize($document, $entityType, 'json');
     }
 
     private function tryRemoveIdentityProperty($document, string $className, DocumentConventions $conventions): bool

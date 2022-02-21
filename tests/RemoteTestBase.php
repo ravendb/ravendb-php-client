@@ -2,6 +2,7 @@
 
 namespace tests\RavenDB;
 
+use DateInterval;
 use RavenDB\Documents\DocumentStore;
 use RavenDB\Documents\DocumentStoreArray;
 use RavenDB\Documents\DocumentStoreInterface;
@@ -9,67 +10,172 @@ use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Exceptions\Cluster\NoLeaderException;
 use RavenDB\Exceptions\Database\DatabaseDoesNotExistException;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Primitives\CleanCloseable;
+use RavenDB\ServerWide\DatabaseRecord;
+use RavenDB\ServerWide\Operations\CreateDatabaseOperation;
+use RavenDB\ServerWide\Operations\DeleteDatabasesOperation;
 use RavenDB\Type\Url;
 use RavenDB\Type\UrlArray;
 
+use RavenDB\Utils\AtomicInteger;
+use RuntimeException;
+use tests\RavenDB\Driver\RavenServerLocator;
 use tests\RavenDB\Driver\RavenTestDriver;
 
-class RemoteTestBase extends RavenTestDriver
+// !class - IN PROGRESS
+class RemoteTestBase extends RavenTestDriver implements CleanCloseable
 {
+    private RavenServerLocator $locator;
+    private RavenServerLocator $securedLocator;
+
     private static ?DocumentStoreInterface $globalServer = null;
+//    private static Process globalServerProcess;
 
     private static ?DocumentStoreInterface $globalSecureServer = null;
+//    private static Process globalSecuredServerProcess;
 
     private DocumentStoreArray $documentStores;
+
+    private static ?AtomicInteger $index = null;
 
     public function __construct()
     {
         parent::__construct();
 
+        $this->locator = new TestServiceLocator();
+        $this->securedLocator = new TestSecuredServiceLocator();
+
         $this->documentStores = new DocumentStoreArray();
+
+        if (self::$index == null) {
+            self::$index = new AtomicInteger();
+        }
     }
 
-    public function getDocumentStore(string $databaseName = null, bool $secured = false): DocumentStoreInterface
+    protected function customizeDbRecord(DatabaseRecord &$dbRecord): void
     {
-        $databaseName = $this->modifyDatabaseName($databaseName);
 
-        $this->setupGlobalServer($secured);
-        $globalServer = self::getGlobalServer($secured);
+    }
 
+    protected function customizeStore(DocumentStore &$store): void
+    {
 
-//        DatabaseRecord databaseRecord = new DatabaseRecord();
-//        databaseRecord.setDatabaseName(name);
+    }
+
+//    public KeyStore getTestClientCertificate() throws IOException, GeneralSecurityException {
+//        KeyStore clientStore = KeyStore.getInstance("PKCS12");
+//        clientStore.load(new FileInputStream(securedLocator.getServerCertificatePath()), "".toCharArray());
+//        return clientStore;
+//    }
 //
-//        customizeDbRecord(databaseRecord);
+//    public KeyStore getTestCaCertificate() throws IOException, GeneralSecurityException {
+//        String caPath = securedLocator.getServerCaPath();
+//        if (caPath != null) {
+//            KeyStore trustStore = KeyStore.getInstance("PKCS12");
+//            trustStore.load(null, null);
 //
-//        CreateDatabaseOperation createDatabaseOperation = new CreateDatabaseOperation(databaseRecord);
-//        documentStore.maintenance().server().send(createDatabaseOperation);
-
-        $store =  new DocumentStore($databaseName);
-        $store->setUrls($globalServer->getUrls());
-
-
-//        if (secured) {
-//            store.setCertificate(getTestClientCertificate());
-//            store.setTrustStore(getTestClientCertificate());
+//            CertificateFactory x509 = CertificateFactory.getInstance("X509");
+//
+//            try (InputStream source = new FileInputStream(new File(caPath))) {
+//                Certificate certificate = x509.generateCertificate(source);
+//                trustStore.setCertificateEntry("ca-cert", certificate);
+//                return trustStore;
+//            }
 //        }
 //
-//        customizeStore(store);
-//
-//        hookLeakedConnectionCheck(store);
+//        return null;
+//    }
+
+    /**
+     * @throws IllegalStateException
+     */
+    private function runServer(bool $secured): DocumentStoreInterface
+    {
+        $urls = new UrlArray();
+//        $urls->append(new Url('http://live-test.ravendb.net'));
+        $urls->append(new Url('http://127.0.0.1:8080'));
+
+        $store = new DocumentStore('test.manager');
+        $store->setUrls($urls);
+        $store->getConventions()->setDisableTopologyUpdates(true);
 
         $store->initialize();
 
-//        setupDatabase(store);
-//
-//        if (waitForIndexingTimeout != null) {
-//            waitForIndexing(store, name, waitForIndexingTimeout);
-//        }
-
-        $this->documentStores->append($store);
+        if ($secured) {
+            self::$globalSecureServer = $store;
+        } else {
+            self::$globalServer = $store;
+        }
 
         return $store;
     }
+
+//    @SuppressWarnings("UnusedReturnValue")
+//    private IDocumentStore runServer(boolean secured) throws Exception {
+//        Reference<Process> processReference = new Reference<>();
+//        IDocumentStore store = runServerInternal(getLocator(secured), processReference, s -> {
+//            if (secured) {
+//                try {
+//                    KeyStore clientCert = getTestClientCertificate();
+//                    s.setCertificate(clientCert);
+//                    s.setTrustStore(getTestCaCertificate());
+//                } catch (Exception e) {
+//                    throw ExceptionsUtils.unwrapException(e);
+//                }
+//            }
+//        });
+//        setGlobalServerProcess(secured, processReference.value);
+//
+//        if (secured) {
+//            globalSecuredServer = store;
+//        } else {
+//            globalServer = store;
+//        }
+//
+//        Runtime.getRuntime().addShutdownHook(new Thread(() -> killGlobalServerProcess(secured)));
+//        return store;
+//    }
+//
+    private function getLocator(bool $secured): RavenServerLocator
+    {
+        return $secured ? $this->securedLocator : $this->locator;
+    }
+
+    private static function getGlobalServer(bool $secured = false): ?DocumentStoreInterface
+    {
+        return $secured ? self::$globalSecureServer : self::$globalServer;
+    }
+
+//
+//    private static Process getGlobalProcess(boolean secured) {
+//        return secured ? globalSecuredServerProcess : globalServerProcess;
+//    }
+//
+//    private static void setGlobalServerProcess(boolean secured, Process p) {
+//        if (secured) {
+//            globalSecuredServerProcess = p;
+//        } else {
+//            globalServerProcess = p;
+//        }
+//    }
+//
+//    private static void killGlobalServerProcess(boolean secured) {
+//        Process p;
+//        if (secured) {
+//            p = globalSecuredServerProcess;
+//            globalSecuredServerProcess = null;
+//            globalSecuredServer.close();
+//            globalSecuredServer = null;
+//        } else {
+//            p = globalServerProcess;
+//            globalServerProcess = null;
+//            globalServer.close();
+//            globalServer = null;
+//        }
+//
+//        killProcess(p);
+//    }
+
 
     private function modifyDatabaseName(?string $databaseName): string
     {
@@ -77,15 +183,11 @@ class RemoteTestBase extends RavenTestDriver
             $databaseName = 'test_db';
         }
 
-        // todo: change this to use increment database name  // from Java: index.incrementAndGet()
-        $databaseName .= '_' . 1;
+        $databaseName .= '_' . self::$index->incrementAndGet();
+
+        $this->reportInfo("getDocumentStore for db " . $databaseName . ".");
 
         return $databaseName;
-    }
-
-    private static function getGlobalServer(bool $secured = false): ?DocumentStoreInterface
-    {
-        return $secured ? self::$globalSecureServer : self::$globalServer;
     }
 
     private function setupGlobalServer(bool $secured)
@@ -95,20 +197,131 @@ class RemoteTestBase extends RavenTestDriver
         }
     }
 
-    private function runServer(bool $secured): void
+    public function getSecuredDocumentStore(?string $databaseName = null): DocumentStoreInterface
     {
-        $urls = new UrlArray();
-        $urls->append(new Url('http://live-test.ravendb.net'));
+        return $this->getDocumentStore($databaseName, true);
+    }
 
-        $store = new DocumentStore('test.manager');
-        $store->setUrls($urls);
-        $store->getConventions()->disableTopologyUpdates();
+    /**
+     * @throws IllegalStateException
+     */
+    public function getDocumentStore(?string $databaseName = null, bool $secured = false, ?DateInterval $waitForIndexingTimeout = null ): DocumentStoreInterface
+    {
+        $databaseName = $this->modifyDatabaseName($databaseName);
+
+        $this->setupGlobalServer($secured);
+        $documentStore = self::getGlobalServer($secured);
+
+        $databaseRecord = new DatabaseRecord();
+        $databaseRecord->setDatabaseName($databaseName);
+
+        $this->customizeDbRecord($databaseRecord);
+
+        $createDatabaseOperation = new CreateDatabaseOperation($databaseRecord);
+        $documentStore->maintenance()->server()->send($createDatabaseOperation);
+
+        $store =  new DocumentStore($databaseName);
+        $store->setUrls($documentStore->getUrls());
 
         if ($secured) {
-            self::$globalSecureServer = $store;
-        } else {
-            self::$globalServer = $store;
+//            $store->setCertificate($this->getTestClientCertificate());
+//            $store->setTrustStore($this->getTestClientCertificate());
         }
+
+        $this->customizeStore($store);
+
+        $this->hookLeakedConnectionCheck($store);
+
+        $store->initialize();
+
+        $documentStores = $this->documentStores;
+
+        $store->addAfterCloseListener(function($sender, $event) use (&$documentStores) {
+            /** @var DocumentStore $store */
+            $store = $sender;
+            if (!in_array($store, $documentStores->getArrayCopy())) {
+                return;
+            }
+
+            try {
+                $store->maintenance()->server()->send(new DeleteDatabasesOperation($store->getDatabase(), true));
+            } catch (DatabaseDoesNotExistException | NoLeaderException $exception) {
+                // ignore
+            }
+        });
+
+        $this->setupDatabase($store);
+
+        if ($waitForIndexingTimeout != null) {
+            $this->waitForIndexing($store, $databaseName, $waitForIndexingTimeout);
+        }
+
+        $this->documentStores->append($store);
+
+        return $store;
+    }
+
+    public function close(): void
+    {
+        if ($this->isDisposed()) {
+            return;
+        }
+
+        $exceptions = [];
+
+        foreach ($this->documentStores as $documentStore) {
+            try {
+                $documentStore->close();
+            } catch (\Throwable $e) {
+                $exceptions[] = $e;
+            }
+        }
+
+        $this->disposed = true;
+
+        if (count($exceptions) > 0) {
+            $message = '';
+            foreach ($exceptions as $exception) {
+                $message .= $exception->getMessage() . ', ';
+            }
+
+            throw new RuntimeException($message);
+        }
+    }
+
+    protected function waitForDocument(
+        string $className,
+        DocumentStoreInterface $store,
+        string $docId,
+        $predicate = null,
+        int $timeout = 10000
+    ): bool {
+//        @todo: implement method
+
+//        Stopwatch sw = Stopwatch.createStarted();
+//        Exception ex = null;
+//        while (sw.elapsed().toMillis() < timeout) {
+//            try (IDocumentSession session = store.openSession(store.getDatabase())) {
+//                try {
+//                    T doc = session.load(clazz, docId);
+//                    if (doc != null) {
+//                        if (predicate == null || predicate.apply(doc)) {
+//                            return true;
+//                        }
+//                    }
+//                } catch (Exception e) {
+//                    ex = e;
+//                }
+//            }
+//
+//            try {
+//                Thread.sleep(100);
+//            } catch (InterruptedException e) {
+//                // empty
+//            }
+//        }
+
+        return false;
     }
 
     /**
@@ -116,15 +329,8 @@ class RemoteTestBase extends RavenTestDriver
      */
     public function cleanUp(DocumentStore $store): void
     {
-        if (!in_array($store, $this->documentStores->getArrayCopy())) {
-            return;
-        }
 
-        try {
-            // todo: implement this
-//            $store->maintenance()->server()->send(new DeleteDatabasesOperation($store->getDatabase(), true));
-        } catch (DatabaseDoesNotExistException | NoLeaderException $exception) {
-            // ignore
-        }
     }
+
+
 }

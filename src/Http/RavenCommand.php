@@ -2,9 +2,13 @@
 
 namespace RavenDB\Http;
 
+use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Exceptions\InvalidResultAssignedToCommandException;
 use RavenDB\Extensions\JsonExtensions;
+use ReflectionClass;
+use ReflectionException;
 use Symfony\Component\Serializer\Serializer;
+use Throwable;
 
 abstract class RavenCommand
 {
@@ -34,10 +38,12 @@ abstract class RavenCommand
 
     /**
      * @throws InvalidResultAssignedToCommandException
+     * @throws ReflectionException
      */
     public function setResult(?ResultInterface $result): void
     {
-        if (!$result instanceof $this->resultClass) {
+        $reflectionClass = new ReflectionClass($this->resultClass);
+        if (!$reflectionClass->isInstance($result)) {
             throw new InvalidResultAssignedToCommandException($this->resultClass);
         }
 
@@ -45,7 +51,7 @@ abstract class RavenCommand
     }
 
     /**
-     * @throws InvalidResultAssignedToCommandException
+     * @throws InvalidResultAssignedToCommandException|ReflectionException
      */
     public function send(HttpClientInterface $client, HttpRequestInterface $request): HttpResponseInterface
     {
@@ -81,5 +87,17 @@ abstract class RavenCommand
     protected function getResultClass(): ?string
     {
         return $this->resultClass;
+    }
+
+    /**
+     * @throws IllegalStateException
+     */
+    static protected function throwInvalidResponse(?Throwable $cause = null): void
+    {
+        $message = 'Response is invalid';
+        if ($cause != null) {
+            $message .= ': ' . $cause->getMessage();
+        }
+        throw new IllegalStateException($message);
     }
 }

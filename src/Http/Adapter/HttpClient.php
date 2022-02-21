@@ -15,6 +15,8 @@ class HttpClient implements HttpClientInterface
 {
     private SymfonyHttpClientInterface $client;
 
+    private static string $proxy;
+
     public function __construct()
     {
         $this->client = SymfonyHttpClient::create();
@@ -26,8 +28,20 @@ class HttpClient implements HttpClientInterface
      */
     public function execute(HttpRequestInterface $request): HttpResponseInterface
     {
-        $symfonyResponse =  $this->client->request($request->getMethod(), $request->getUrl(), $request->getOptions());
+        $options = $request->getOptions();
+
+        if (!empty(self::$proxy) && !key_exists('proxy', $options)) {
+            $options['proxy'] = self::$proxy;
+        }
+
+        $symfonyResponse =  $this->client->request($request->getMethod(), $request->getUrl(), $options);
 
         return HttpResponseTransformer::fromHttpClientResponse($symfonyResponse);
+    }
+
+    public static function useProxy(string $proxy): void
+    {
+
+        self::$proxy = $proxy;
     }
 }

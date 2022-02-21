@@ -2,64 +2,41 @@
 
 namespace RavenDB\Documents\Session;
 
-use Iterator;
+use RavenDB\Type\TypedMap;
 
-class DocumentsById implements Iterator
+class DocumentsById extends TypedMap
 {
-    private int $position = 0;
-    private array $inner = [];
-
-    public function getValue(string $id): DocumentInfo
+    public function __construct()
     {
-        return $this->inner[$id];
+        parent::__construct(DocumentInfo::class);
     }
 
-    public function add(DocumentInfo $info): void
+    public function add(DocumentInfo $documentInfo)
     {
-        if (array_key_exists($info->getId(), $this->inner)) {
+        if ($this->offsetExists($documentInfo->getId())) {
             return;
         }
+        $this[$documentInfo->getId()] = $documentInfo;
+    }
 
-        $this->inner[$info->getId()] = $info;
+    public function getValue($id): ?DocumentInfo
+    {
+        if (!$this->offsetExists($id)) {
+            return null;
+        }
+
+        return $this->offsetGet($id);
     }
 
     public function remove(string $id): void
     {
-        unset($this->inner[$id]);
+        if ($this->offsetExists($id)) {
+            $this->remove($id);
+        }
     }
 
     public function clear(): void
     {
-        $this->inner = [];
-    }
-
-    public function getCount(): int
-    {
-        return count($this->inner);
-    }
-
-    public function current()
-    {
-        return $this->inner[$this->position];
-    }
-
-    public function next()
-    {
-        ++$this->position;
-    }
-
-    public function key()
-    {
-        return $this->position;
-    }
-
-    public function valid(): bool
-    {
-        return isset($this->inner[$this->position]);
-    }
-
-    public function rewind()
-    {
-        $this->position = 0;
+        $this->exchangeArray([]);
     }
 }

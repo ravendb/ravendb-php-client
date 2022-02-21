@@ -19,6 +19,7 @@
     "require": {
         "php": "~7.4",
         "ext-json": "*",
+        "ext-ds": "*",
         "doctrine/annotations": "^1.13",
         "doctrine/inflector": "^2.0",
         "ramsey/uuid": "^4.2",

@@ -2,10 +2,28 @@
 
 namespace RavenDB\Type;
 
-class StringArray extends TypedArray
+class StringArray extends \ArrayObject implements \JsonSerializable
 {
-    public function __construct()
+    public static function withValue(string $id): StringArray
     {
-        parent::__construct('string');
+        $a = new StringArray();
+        $a->append($id);
+        return $a;
+    }
+
+    public function offsetSet($key, $value)
+    {
+        if (!is_string($value)) {
+            throw new \TypeError(
+                sprintf("Only values of type string are supported")
+            );
+        }
+
+        parent::offsetSet($key, $value);
+    }
+
+    public function jsonSerialize(): array
+    {
+        return $this->getArrayCopy();
     }
 }
