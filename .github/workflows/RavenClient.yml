@@ -14,7 +14,7 @@ jobs:
             RAVEN_License: ${{ secrets.RAVEN_LICENSE }}
         strategy:
             matrix:
-                php-versions: [ "7.4", "8.1" ]
+                php-versions: [ "7.4" ]
                 serverVersion: [ "5.2" ]
             fail-fast: false
 
@@ -29,6 +29,7 @@ jobs:
                   extensions: ds, json
 #                  ini-values: "post_max_size=256M"
                   tools: composer:v2, phpunit
+                  coverage: none
 
             - name: Check PHP Version
               run: php -v
@@ -51,12 +52,7 @@ jobs:
             - name: Run unit tests
               run: phpunit
 
-            - run: echo "This job's status is ${{ job.status }}."
 
-
-#name: tests/php
-#
-#on:
 #    push:
 #        branches: [ v5.2 ]
 #    pull_request:
@@ -64,41 +60,3 @@ jobs:
 #    schedule:
 #        - cron: '0 10 * * 6'
 #
-#
-#jobs:
-#    build:
-#        runs-on: ubuntu-latest
-#
-#        env:
-#            RAVENDB_BUILD_TYPE: nightly
-#            RAVEN_License: ${{ secrets.RAVEN_LICENSE }}
-#
-#        strategy:
-#            matrix:
-#                php-version: [ '7.4', '8.1']
-#                serverVersion: [ "5.1", "5.2" ]
-#            fail-fast: false
-#
-#        steps:
-
-#
-#            - name: Upgrade pip
-#              run: python -m pip install -U pip
-#
-#            - name: Install client deps
-#              run: pip install -e .
-#
-##            - name: Install black linter
-##              run: pip install git+git://github.com/psf/black
-#
-#            - name: Run RDB
-#              run: ./RavenDB/Server/Raven.Server -c $(realpath ./settings.json) &
-#
-#            - name: Wait for server to run
-#              run: while ! curl http://127.0.0.1:8080; do sleep 0.2; echo "Waiting for server to start..."; done
-#
-##            - name: Check code format
-##              run: black --check .
-#
-##            - name: Run tests
-##              run: python -m unittest discover
