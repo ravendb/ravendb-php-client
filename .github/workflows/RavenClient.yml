@@ -2,6 +2,8 @@ name: Run unit tests
 on:
     push:
         branches: [ vGHActions ]
+    pull_request:
+        branches: [ v5.2 ]
 
 jobs:
     Explore-GitHub-Actions:
@@ -26,6 +28,7 @@ jobs:
                   php-version: ${{ matrix.php-versions }}
 #                  extensions: intl
 #                  ini-values: "post_max_size=256M"
+                  tools: composer:v2, phpunit
 
             - name: Check PHP Version
               run: php -v
@@ -42,9 +45,11 @@ jobs:
             - name: Wait for server to run
               run: while ! curl http://127.0.0.1:8080; do sleep 0.2; echo "Waiting for server to start..."; done
 
+            - name: Install library tools
+              run: composer install
 
-
-
+            - name: Run unit tests
+              run: phpunit
 
             - run: echo "This job's status is ${{ job.status }}."
 
