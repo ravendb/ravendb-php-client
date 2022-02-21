@@ -17,9 +17,6 @@ jobs:
             fail-fast: false
 
         steps:
-#            - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-#            - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
-#            - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
             - name: Check out repository code
               uses: actions/checkout@v2
 
@@ -27,17 +24,29 @@ jobs:
               uses: shivammathur/setup-php@v2
               with:
                   php-version: ${{ matrix.php-versions }}
-                  extensions: intl
+#                  extensions: intl
 #                  ini-values: "post_max_size=256M"
 
             - name: Check PHP Version
               run: php -v
 
+            - name: Download RavenDB Server
+              run: wget -q -O RavenDB.tar.bz2 "https://hibernatingrhinos.com/downloads/RavenDB%20for%20Linux%20x64/latest?buildType=${{ env.RAVENDB_BUILD_TYPE }}&version=${{ matrix.serverVersion }}"
 
-#            - name: List files in the repository
-#              run: |
-#                  ls ${{ github.workspace }}
-#            - run: echo "🍏 This job's status is ${{ job.status }}."
+            - name: Extract RavenDB Server
+              run: tar xjf RavenDB.tar.bz2
+
+            - name: Run RDB
+              run: ./RavenDB/Server/Raven.Server -c $(realpath ./settings.json) &
+
+            - name: Wait for server to run
+              run: while ! curl http://127.0.0.1:8080; do sleep 0.2; echo "Waiting for server to start..."; done
+
+
+
+
+
+            - run: echo "This job's status is ${{ job.status }}."
 
 
 #name: tests/php
@@ -66,21 +75,7 @@ jobs:
 #            fail-fast: false
 #
 #        steps:
-#            - uses: actions/checkout@v2
-#
-#            - name: Use PHP ${{ matrix.node-version }}
-#              uses: actions/setup-php
-#              with:
-#                  php-version : ${{ matrix.php-version }}
-#
-#            - name: Display PHP version
-#              run:  php -v
-#
-#            - name: Download RavenDB Server
-#              run: wget -q -O RavenDB.tar.bz2 "https://hibernatingrhinos.com/downloads/RavenDB%20for%20Linux%20x64/latest?buildType=${{ env.RAVENDB_BUILD_TYPE }}&version=${{ matrix.serverVersion }}"
-#
-#            - name: Extract RavenDB Server
-#              run: tar xjf RavenDB.tar.bz2
+
 #
 #            - name: Upgrade pip
 #              run: python -m pip install -U pip
