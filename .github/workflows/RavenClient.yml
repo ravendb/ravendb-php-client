@@ -6,7 +6,7 @@ on:
         branches: [ v5.2 ]
 
 jobs:
-    Explore-GitHub-Actions:
+    build:
         runs-on: ubuntu-latest
 
         env:
@@ -48,6 +48,9 @@ jobs:
 
             - name: Install library tools
               run: composer install
+
+            - name: List unit tests
+              run: phpunit --list-tests
 
             - name: Run unit tests
               run: phpunit
