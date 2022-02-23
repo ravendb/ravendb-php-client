@@ -3,25 +3,31 @@
 namespace RavenDB\ServerWide\Operations;
 
 use RavenDB\Http\ResultInterface;
+use RavenDB\Type\StringArray;
 
+// !status: DONE
 class DeleteDatabaseResult implements ResultInterface
 {
-//  private long raftCommandIndex;
-//    private String[] pendingDeletes;
-//
-//    public long getRaftCommandIndex() {
-//        return raftCommandIndex;
-//    }
-//
-//    public void setRaftCommandIndex(long raftCommandIndex) {
-//        this.raftCommandIndex = raftCommandIndex;
-//    }
-//
-//    public String[] getPendingDeletes() {
-//        return pendingDeletes;
-//    }
-//
-//    public void setPendingDeletes(String[] pendingDeletes) {
-//        this.pendingDeletes = pendingDeletes;
-//    }
+    private int $raftCommandIndex;
+    private StringArray $pendingDeletes;
+
+    public function getRaftCommandIndex(): int
+    {
+        return $this->raftCommandIndex;
+    }
+
+    public function setRaftCommandIndex(int $raftCommandIndex): void
+    {
+        $this->raftCommandIndex = $raftCommandIndex;
+    }
+
+    public function getPendingDeletes(): StringArray
+    {
+        return $this->pendingDeletes;
+    }
+
+    public function setPendingDeletes(StringArray $pendingDeletes): void
+    {
+        $this->pendingDeletes = $pendingDeletes;
+    }
 }

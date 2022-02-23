@@ -2,7 +2,7 @@
 
 namespace RavenDB\Type;
 
-class TypedArray extends \ArrayObject implements \JsonSerializable
+class TypedArray extends \ArrayObject implements TypedArrayInterface, \JsonSerializable
 {
     protected string $type;
 

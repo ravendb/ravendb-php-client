@@ -57,19 +57,19 @@ class TestSecuredServiceLocator extends RavenServerLocator
      * @throws IllegalStateException
      */
     public function getServerCertificatePath(): string
-        {
-            $certificatePath = getenv(self::ENV_CERTIFICATE_PATH);
-            if (empty($certificatePath)) {
-                throw new IllegalStateException("Unable to find RavenDB server certificate path. " .
-                        "Please make sure " . self::ENV_CERTIFICATE_PATH . " environment variable is set and is valid " .
-                        "(current value = " . $certificatePath . ")");
-            }
-
-            return $certificatePath;
+    {
+        $certificatePath = getenv(self::ENV_CERTIFICATE_PATH);
+        if (empty($certificatePath)) {
+            throw new IllegalStateException("Unable to find RavenDB server certificate path. " .
+                    "Please make sure " . self::ENV_CERTIFICATE_PATH . " environment variable is set and is valid " .
+                    "(current value = " . $certificatePath . ")");
         }
 
-        public function getServerCaPath(): string
-        {
-            return getenv(self::ENV_TEST_CA_PATH);
-        }
+        return $certificatePath;
+    }
+
+    public function getServerCaPath(): string
+    {
+        return getenv(self::ENV_TEST_CA_PATH);
+    }
 }

@@ -1,0 +1,87 @@
+<?php
+
+namespace RavenDB\ServerWide\Operations\Certificates;
+
+use RavenDB\Type\ValueObjectInterface;
+
+// !status: DONE
+class SecurityClearance implements ValueObjectInterface
+{
+    public const UNAUTHENTICATED_CLIENTS = 'UNAUTHENTICATED_CLIENTS';
+    public const CLUSTER_ADMIN = 'CLUSTER_ADMIN';
+    public const CLUSTER_NODE = 'CLUSTER_NODE';
+    public const OPERATOR = 'OPERATOR';
+    public const VALID_USER = 'VALID_USER';
+
+    private string $value;
+
+    public function __construct(string $value)
+    {
+        $this->setValue($value);
+    }
+
+    public function __toString(): string
+    {
+        return $this->value;
+    }
+
+    public function getValue(): string
+    {
+        return $this->value;
+    }
+
+    public function setValue(string $value): void
+    {
+        $this->value = $value;
+    }
+
+    public function isUnauthenticatedClients(): bool
+    {
+        return $this->value == self::UNAUTHENTICATED_CLIENTS;
+    }
+
+    public function isClusterAdmin(): bool
+    {
+        return $this->value == self::CLUSTER_ADMIN;
+    }
+
+    public function isClusterNode(): bool
+    {
+        return $this->value == self::CLUSTER_NODE;
+    }
+
+    public function isOperator(): bool
+    {
+        return $this->value == self::OPERATOR;
+    }
+
+    public function isValidUser(): bool
+    {
+        return $this->value == self::VALID_USER;
+    }
+
+    public static function unauthenticatedClients(): SecurityClearance
+    {
+        return new SecurityClearance(self::UNAUTHENTICATED_CLIENTS);
+    }
+
+    public static function clusterAdmin(): SecurityClearance
+    {
+        return new SecurityClearance(self::CLUSTER_ADMIN);
+    }
+
+    public static function clusterNode(): SecurityClearance
+    {
+        return new SecurityClearance(self::CLUSTER_NODE);
+    }
+
+    public static function operator(): SecurityClearance
+    {
+        return new SecurityClearance(self::OPERATOR);
+    }
+
+    public static function validUser(): SecurityClearance
+    {
+        return new SecurityClearance(self::VALID_USER);
+    }
+}
