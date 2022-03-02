@@ -2,11 +2,28 @@
 
 namespace RavenDB\Http;
 
+use DateTime;
+use Ds\Map as DSMap;
+use Exception;
+use RavenDB\Auth\AuthOptions;
+use RavenDB\Constants\HttpStatusCode;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Session\SessionInfo;
+use RavenDB\Exceptions\AllTopologyNodesDownException;
+use RavenDB\Exceptions\Database\DatabaseDoesNotExistException;
+use RavenDB\Exceptions\ExceptionDispatcher;
+use RavenDB\Exceptions\ExceptionSchema;
+use RavenDB\Exceptions\ExecutionException;
+use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Exceptions\Security\AuthorizationException;
+use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Http\Adapter\HttpClient;
 use RavenDB\Primitives\CleanCloseable;
+use RavenDB\primitives\ExceptionsUtils;
+use RavenDB\Type\Duration;
 use RavenDB\Type\UrlArray;
+use RavenDB\Utils\AtomicInteger;
+use RavenDB\Utils\UrlUtils;
 
 // !status: IN PROGRESS
 class RequestExecutor implements CleanCloseable
@@ -37,10 +54,6 @@ class RequestExecutor implements CleanCloseable
 //    private final Semaphore _updateClientConfigurationSemaphore = new Semaphore(1);
 //
 //    private final ConcurrentMap<ServerNode, NodeStatus> _failedNodesTimers = new ConcurrentHashMap<>();
-//
-//    private final KeyStore certificate;
-//    private final char[] keyPassword;
-//    private final KeyStore trustStore;
 
     private string $databaseName;
 
@@ -54,9 +67,21 @@ class RequestExecutor implements CleanCloseable
         $this->databaseName = $databaseName;
     }
 
+    private ?AuthOptions $authOptions = null;
+
+    public function getAuthOptions(): ?AuthOptions
+    {
+        return $this->authOptions;
+    }
+
+    public function setAuthOptions(AuthOptions $authOptions): void
+    {
+        $this->authOptions = $authOptions;
+    }
+
 //
 //    private static final Log logger = LogFactory.getLog(RequestExecutor.class);
-//    private Date _lastReturnedResponse;
+    private DateTime $lastReturnedResponse;
 //
 //    protected final ExecutorService _executorService;
 //
@@ -70,26 +95,25 @@ class RequestExecutor implements CleanCloseable
 //
 //    public final ThreadLocal<AggressiveCacheOptions> aggressiveCaching = new ThreadLocal<>();
 //
-//    public Topology getTopology() {
-//        return _nodeSelector != null ? _nodeSelector.getTopology() : null;
-//    }
-//
+    public function getTopology(): ?Topology
+    {
+        return $this->nodeSelector != null ? $this->nodeSelector->getTopology() : null;
+    }
+
 //    private CloseableHttpClient _httpClient;
+
+    private ?HttpClientInterface $httpClient = null;
 
     private function getHttpClient(): HttpClientInterface
     {
-        // todo: replace this instantiation
-        return new HttpClient();
+        if ($this->httpClient == null) {
+            $this->httpClient = $this->createHttpClient();
+        }
+
+        return $this->httpClient;
     }
-//    public CloseableHttpClient getHttpClient() {
-//        CloseableHttpClient httpClient = _httpClient;
-//        if (httpClient != null) {
-//            return httpClient;
-//        }
-//
-//        return _httpClient = createHttpClient();
-//    }
-//
+
+
 //    public List<ServerNode> getTopologyNodes() {
 //        return Optional.ofNullable(getTopology())
 //                .map(Topology::getNodes)
@@ -110,10 +134,9 @@ class RequestExecutor implements CleanCloseable
     {
         $this->nodeSelector = $nodeSelector;
     }
+    private Duration $defaultTimeout;
 
-//    private Duration _defaultTimeout;
-//
-//    public final AtomicLong numberOfServerRequests = new AtomicLong(0);
+    public AtomicInteger $numberOfServerRequests;
 
     public function getUrl(): ?string
     {
@@ -222,14 +245,16 @@ class RequestExecutor implements CleanCloseable
 //        EventHelper.invoke(_onFailedRequest, this, new FailedRequestEventArgs(_databaseName, url, e));
 //    }
 //
-//    private CloseableHttpClient createHttpClient() {
+    private function createHttpClient(): HttpClientInterface
+    {
+        return new HttpClient();
 //        ConcurrentMap<String, CloseableHttpClient> httpClientCache = getHttpClientCache();
 //
 //        String name = getHttpClientName();
 //
 //        return httpClientCache.computeIfAbsent(name, n -> createClient());
-//    }
-//
+    }
+
 //    private String getHttpClientName() {
 //        if (certificate != null) {
 //            return CertificateUtils.extractThumbprintFromCertificate(certificate);
@@ -260,6 +285,7 @@ class RequestExecutor implements CleanCloseable
 
     protected function __construct(
         ?string $databaseName,
+        ?AuthOptions $authOptions,
 //        KeyStore certificate,
 //        char[] keyPassword,
 //        KeyStore trustStore,
@@ -268,17 +294,17 @@ class RequestExecutor implements CleanCloseable
 //        String[] initialUrls
 
     ) {
+        $this->numberOfServerRequests = new AtomicInteger(0);
+
 //        cache = new HttpCache(conventions.getMaxHttpCacheSize());
 //        _executorService = executorService;
         $this->databaseName = $databaseName ?? '';
-//        this.certificate = certificate;
-//        this.keyPassword = keyPassword;
-//        this.trustStore = trustStore;
-//
-//        _lastReturnedResponse = new Date();
+        $this->authOptions = $authOptions;
+
+        $this->lastReturnedResponse = new DateTime();
         $this->conventions = $conventions;
 //        this.conventions = conventions.clone();
-//        this._defaultTimeout = conventions.getRequestTimeout();
+        $this->defaultTimeout = $conventions->getRequestTimeout();
 //        this._secondBroadcastAttemptTimeout = conventions.getSecondBroadcastAttemptTimeout();
 //        this._firstBroadcastAttemptTimeout = conventions.getFirstBroadcastAttemptTimeout();
     }
@@ -286,17 +312,13 @@ class RequestExecutor implements CleanCloseable
     public static function create(
         UrlArray $initialUrls,
         ?string $databaseName,
-//        KeyStore certificate,
-//        char[] keyPassword,
-//        KeyStore trustStore,
+        ?AuthOptions $authOptions,
 //        ExecutorService executorService,
         DocumentConventions $conventions
     ): RequestExecutor {
         $executor = new RequestExecutor(
               $databaseName,
-//              $certificate,
-//              $keyPassword,
-//              $trustStore,
+              $authOptions,
               $conventions
 //              $executorService,
 //              $initialUrls
@@ -480,10 +502,24 @@ class RequestExecutor implements CleanCloseable
         ?SessionInfo $sessionInfo,
         ExecuteOptions $options
     ): void {
-        $request = $command->createRequest($options->getChosenNode());
+
+        $request = $this->createRequest($options->getChosenNode(), $command);
 
         if ($request == null) {
             return;
+        }
+
+        if ($this->authOptions != null) {
+            if ($this->authOptions->getType()->isPem()) {
+                $requestOptions = $request->getOptions();
+                if (!array_key_exists('local_cert', $requestOptions)) {
+                    $requestOptions['local_cert'] = $this->authOptions->getCertificatePath();
+                }
+                if (!array_key_exists('passphrase', $requestOptions)) {
+                    $requestOptions['passphrase'] = $this->authOptions->getPassword();
+                }
+                $request->setOptions($requestOptions);
+            }
         }
 
         $response = $this->sendRequestToServer(
@@ -498,6 +534,100 @@ class RequestExecutor implements CleanCloseable
         if ($response == null) {
             return ;
         }
+
+//        CompletableFuture<Void> refreshTask = refreshIfNeeded(chosenNode, response);
+//
+        $command->setStatusCode($response->getStatusCode());
+
+        $responseDispose = ResponseDisposeHandling::automatic();
+
+        try {
+            if ($response->getStatusCode() == HttpStatusCode::NOT_MODIFIED) {
+//                    EventHelper.invoke(_onSucceedRequest, this, new SucceedRequestEventArgs(_databaseName, urlRef.value, response, request, attemptNum));
+//
+//                    cachedItem.notModified();
+//
+//                    try {
+//                        if (command.getResponseType() == RavenCommandResponseType.OBJECT) {
+//                            command.setResponse(cachedValue.value, true);
+//                        }
+//                    } catch (IOException e) {
+//                        throw ExceptionsUtils.unwrapException(e);
+//                    }
+//
+//                    return;
+                }
+
+                if ($response->getStatusCode() >= 400) {
+                    if (!$this->handleUnsuccessfulResponse(
+                        $options->getChosenNode(),
+//                        nodeIndex,
+                        $command,
+                        $request,
+                        $response
+//                        urlRef.value,
+//                        sessionInfo,
+//                        shouldRetry
+                    )) {
+                        $dbMissingHeader = $response->getFirstHeader("Database-Missing");
+                        if ($dbMissingHeader != null) {
+                            throw new DatabaseDoesNotExistException($dbMissingHeader);
+                        }
+
+                        $this->throwFailedToContactAllNodes($command, $request);
+                    }
+                    return; // we either handled this already in the unsuccessful response or we are throwing
+                }
+
+//                EventHelper.invoke(_onSucceedRequest, this, new SucceedRequestEventArgs(_databaseName, urlRef.value, response, request, attemptNum));
+//
+//                $responseDispose = $command->processResponse($cache, $response, $urlRef);
+                $responseDispose = $command->processResponse(null, $response, $request->getUrl());
+                $this->lastReturnedResponse = new DateTime();
+        } finally {
+                if ($responseDispose->isAutomatic()) {
+                    // @todo: check what to do with this - initial idea is to do nothing 'cause this is Java
+//                    IOUtils::closeQuietly($response, null);
+                }
+//
+//                try {
+//                    refreshTask.get();
+//                } catch (Exception e) {
+//                    //noinspection ThrowFromFinallyBlock
+//                    throw ExceptionsUtils.unwrapException(e);
+//                }
+        }
+    }
+
+    private function createRequest(ServerNode $serverNode, RavenCommand $command): ?HttpRequestInterface
+    {
+        $request = $command->createRequest($serverNode);
+
+        if ($request == null) {
+            return null;
+        }
+
+        $url = $request->getUrl();
+
+//        @todo: Implement following code
+//        if ($this->requestPostProcessor != null) {
+//            $this->requestPostProcessor->accept($request);
+//        }
+
+        if ($command instanceof RaftCommandInterface) {
+            /** @var RaftCommandInterface $raftCommand */
+            $raftCommand = $command;
+
+            $url = UrlUtils::appendQuery($url, 'raft-request-id', $raftCommand->getRaftUniqueRequestId());
+        }
+
+//        if ($this->shouldBroadcast($command)) {
+//            $command->setTimeout($command->getTimeout() ?? $this->firstBroadcastAttemptTimeout);
+//        }
+
+        $request->setUrl($url);
+
+        return $request;
     }
 //    public <TResult> void execute(RavenCommand<TResult> command) {
 //        execute(command, null);
@@ -879,6 +1009,9 @@ class RequestExecutor implements CleanCloseable
 //        return CompletableFuture.allOf();
 //    }
 
+    /**
+     * @throws \Exception
+     */
     private function sendRequestToServer(
         ServerNode $chosenNode,
         int $nodeIndex,
@@ -886,8 +1019,79 @@ class RequestExecutor implements CleanCloseable
         bool $shouldRetry,
         ?SessionInfo $sessionInfo,
         HttpRequestInterface $request
-    ): HttpResponseInterface {
-        return $this->send($chosenNode, $command, $sessionInfo, $request);
+    ): ?HttpResponseInterface {
+
+        try {
+            $this->numberOfServerRequests->incrementAndGet();
+
+            $timeout = $command->getTimeout() ?? $this->defaultTimeout;
+
+            if ($timeout != null) {
+                // @todo implement timeout strategy call
+                // this call is just here to execute something for now, when implementing timout strategy we should remove it
+                return $this->send($chosenNode, $command, $sessionInfo, $request);
+
+
+//                AggressiveCacheOptions callingTheadAggressiveCaching = aggressiveCaching.get();
+//
+//                CompletableFuture<CloseableHttpResponse> sendTask = CompletableFuture.supplyAsync(() -> {
+//                    AggressiveCacheOptions aggressiveCacheOptionsToRestore = aggressiveCaching.get();
+//
+//                    try {
+//                        aggressiveCaching.set(callingTheadAggressiveCaching);
+//                        return send(chosenNode, command, sessionInfo, request);
+//                    } catch (IOException e) {
+//                        throw ExceptionsUtils.unwrapException(e);
+//                    } finally {
+//                        aggressiveCaching.set(aggressiveCacheOptionsToRestore);
+//                    }
+//                }, _executorService);
+//
+//                try {
+//                    return sendTask.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+//                } catch (InterruptedException e) {
+//                    throw ExceptionsUtils.unwrapException(e);
+//                } catch (TimeoutException e) {
+//                    request.abort();
+//
+//                    net.ravendb.client.exceptions.TimeoutException timeoutException = new net.ravendb.client.exceptions.TimeoutException("The request for " + request.getURI() + " failed with timeout after " + TimeUtils.durationToTimeSpan(timeout), e);
+//                    if (!shouldRetry) {
+//                        if (command.getFailedNodes() == null) {
+//                            command.setFailedNodes(new HashMap<>());
+//                        }
+//
+//                        command.getFailedNodes().put(chosenNode, timeoutException);
+//                        throw timeoutException;
+//                    }
+//
+//                    if (!handleServerDown(url, chosenNode, nodeIndex, command, request, null, timeoutException, sessionInfo, shouldRetry)) {
+//                        throwFailedToContactAllNodes(command, request);
+//                    }
+//
+//                    return null;
+//                } catch (ExecutionException e) {
+//                    Throwable rootCause = ExceptionUtils.getRootCause(e);
+//                    if (rootCause instanceof IOException) {
+//                        throw (IOException) rootCause;
+//                    }
+//
+//                    throw ExceptionsUtils.unwrapException(e);
+//                }
+            } else {
+                return $this->send($chosenNode, $command, $sessionInfo, $request);
+            }
+        } catch (\Throwable $exception) {
+            if (!$shouldRetry) {
+                throw ExceptionsUtils::unwrapException($exception);
+            }
+
+            $url = $request->getUrl();
+//            if (!$this->handleServerDown($url, $chosenNode, $nodeIndex, $command, $request, null, $exception, $sessionInfo,  $shouldRetry)) {
+//                throwFailedToContactAllNodes($command, $request);
+//            }
+
+            return null;
+        }
     }
 
 //    private <TResult> CloseableHttpResponse sendRequestToServer(ServerNode chosenNode, Integer nodeIndex, RavenCommand<TResult> command,
@@ -1067,21 +1271,22 @@ class RequestExecutor implements CleanCloseable
 //
 //        return null;
 //    }
-//
-//
-//    private <TResult> void throwFailedToContactAllNodes(RavenCommand<TResult> command, HttpRequestBase request) {
-//        if (command.getFailedNodes() == null || command.getFailedNodes().size() == 0) { //precaution, should never happen at this point
-//            throw new IllegalStateException("Received unsuccessful response and couldn't recover from it. " +
-//                    "Also, no record of exceptions per failed nodes. This is weird and should not happen.");
-//        }
-//
-//        if (command.getFailedNodes().size() == 1) {
-//            throw ExceptionsUtils.unwrapException(command.getFailedNodes().values().iterator().next());
-//        }
-//
-//        String message = "Tried to send " + command.resultClass.getName() + " request via " + request.getMethod()
-//                + " " + request.getURI() + " to all configured nodes in the topology, none of the attempt succeeded." + System.lineSeparator();
-//
+
+
+    private function throwFailedToContactAllNodes(RavenCommand $command, HttpRequestInterface $request): void
+    {
+        if (($command->getFailedNodes() == null) || $command->getFailedNodes()->count() == 0) { //precaution, should never happen at this point
+            throw new IllegalStateException("Received unsuccessful response and couldn't recover from it. " .
+                    "Also, no record of exceptions per failed nodes. This is weird and should not happen.");
+        }
+
+        if (count($command->getFailedNodes()) == 1) {
+            throw ExceptionsUtils::unwrapException($command->getFailedNodes()->first()->value);
+        }
+
+        $message = 'Tried to send ' . $command->getResultClass() . " request via " . $request->getMethod()
+                . ' ' . $request->getUrl() . " to all configured nodes in the topology, none of the attempt succeeded." . PHP_EOL;
+
 //        if (_topologyTakenFromNode != null) {
 //            message += "I was able to fetch " + _topologyTakenFromNode.getDatabase()
 //                    + " topology from " + _topologyTakenFromNode.getUrl() + "." + System.lineSeparator();
@@ -1108,8 +1313,8 @@ class RequestExecutor implements CleanCloseable
 //            }
 //        }
 //
-//        throw new AllTopologyNodesDownException(message);
-//    }
+        throw new AllTopologyNodesDownException($message);
+    }
 //
 //    public boolean inSpeedTestPhase() {
 //        return Optional.ofNullable(_nodeSelector).map(NodeSelector::inSpeedTestPhase).orElse(false);
@@ -1234,47 +1439,60 @@ class RequestExecutor implements CleanCloseable
 //            throw new IllegalArgumentException("Unable to parse URL", e);
 //        }
 //    }
-//
-//    private <TResult> boolean handleUnsuccessfulResponse(ServerNode chosenNode, Integer nodeIndex, RavenCommand<TResult> command, HttpRequestBase request, CloseableHttpResponse response, String url, SessionInfo sessionInfo, boolean shouldRetry) {
-//        try {
-//            switch (response.getStatusLine().getStatusCode()) {
-//                case HttpStatus.SC_NOT_FOUND:
+
+    private function handleUnsuccessfulResponse(
+        ServerNode $chosenNode,
+//        Integer nodeIndex,
+        RavenCommand $command,
+        HttpRequestInterface $request,
+        HttpResponseInterface $response
+//        String url,
+//        SessionInfo sessionInfo,
+//        boolean shouldRetry
+    ): bool
+    {
+
+        try {
+            switch ($response->getStatusCode()) {
+                case HttpStatusCode::NOT_FOUND:
+                    // @todo: implement cache
 //                    cache.setNotFound(url, aggressiveCaching.get() != null);
-//                    switch (command.getResponseType()) {
-//                        case EMPTY:
-//                            return true;
-//                        case OBJECT:
-//                            command.setResponse(null, false);
-//                            break;
-//                        default:
-//                            command.setResponseRaw(response, null);
-//                            break;
-//                    }
-//                    return true;
-//
-//                case HttpStatus.SC_FORBIDDEN:
-//                    String msg = tryGetResponseOfError(response);
-//                    StringBuilder builder = new StringBuilder("Forbidden access to ");
-//                    builder.append(chosenNode.getDatabase())
-//                            .append("@")
-//                            .append(chosenNode.getUrl())
-//                            .append(", ");
-//
-//                    if (certificate == null) {
-//                        builder.append("a certificate is required. ");
-//                    } else {
-//                        builder.append("certificate does not have permission to access it or is unknown. ");
-//                    }
-//
-//                    builder.append(" Method: ")
-//                        .append(request.getMethod())
-//                            .append(", Request: ")
-//                            .append(request.getURI().toString())
-//                            .append(System.lineSeparator())
-//                            .append(msg);
-//
-//                    throw new AuthorizationException(builder.toString());
-//
+                    if ($command->getResponseType()->isEmpty()) {
+                        return true;
+                    }
+
+                    if ($command->getResponseType()->isObject()) {
+                        $command->setResponse(null, false);
+                    } else {
+                        $command->setResponseRaw($response);
+                    }
+
+                    return true;
+
+                case HttpStatusCode::FORBIDDEN:
+                    $msg = $this->tryGetResponseOfError($response);
+
+                    $errorMessage = "Forbidden access to ";
+                    $errorMessage .= $chosenNode->getDatabase();
+                    $errorMessage .= "@";
+                    $errorMessage .= $chosenNode->getUrl();
+                    $errorMessage .= ", ";
+
+                    if ($this->authOptions == null) {
+                        $errorMessage .= "a certificate is required. ";
+                    } else {
+                        $errorMessage .= "certificate does not have permission to access it or is unknown. ";
+                    }
+
+                    $errorMessage .= "Method: ";
+                    $errorMessage .= $request->getMethod();
+                    $errorMessage .= ', Request: ';
+                    $errorMessage .= $request->getUrl();
+                    $errorMessage .= PHP_EOL;
+                    $errorMessage .= $msg;
+
+                    throw new AuthorizationException($errorMessage);
+
 //                case HttpStatus.SC_GONE: // request not relevant for the chosen node - the database has been moved to a different one
 //                    if (!shouldRetry) {
 //                        return false;
@@ -1314,11 +1532,22 @@ class RequestExecutor implements CleanCloseable
 //
 //                    execute(indexAndNode.currentNode, indexAndNode.currentIndex, command, false, sessionInfo);
 //                    return true;
-//                case HttpStatus.SC_GATEWAY_TIMEOUT:
-//                case HttpStatus.SC_REQUEST_TIMEOUT:
-//                case HttpStatus.SC_BAD_GATEWAY:
-//                case HttpStatus.SC_SERVICE_UNAVAILABLE:
-//                    return handleServerDown(url, chosenNode, nodeIndex, command, request, response, null, sessionInfo, shouldRetry);
+                case HttpStatusCode::INTERNAL_SERVER_ERROR:
+                case HttpStatusCode::GATEWAY_TIMEOUT:
+                case HttpStatusCode::REQUEST_TIMEOUT:
+                case HttpStatusCode::BAD_GATEWAY:
+                case HttpStatusCode::SERVICE_UNAVAILABLE:
+                    return $this->handleServerDown(
+//                        url,
+                        $chosenNode,
+//                        nodeIndex,
+                        $command,
+                        $request,
+                        $response,
+                        null,
+//                        sessionInfo,
+//                        shouldRetry
+                    );
 //                case HttpStatus.SC_CONFLICT:
 //                    handleConflict(response);
 //                    break;
@@ -1348,25 +1577,28 @@ class RequestExecutor implements CleanCloseable
 //                    }
 //
 //                    return true;
-//                default:
+                default:
 //                    command.onResponseFailure(response);
 //                    ExceptionDispatcher.throwException(response);
-//                    break;
-//            }
-//        } catch (IOException | ExecutionException | InterruptedException e) {
-//            throw ExceptionsUtils.unwrapException(e);
-//        }
-//
-//        return false;
-//    }
-//
-//    private static String tryGetResponseOfError(CloseableHttpResponse response) {
-//        try {
-//            return IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
-//        } catch (Exception e) {
-//            return "Could not read request: " + e.getMessage();
-//        }
-//    }
+                    break;
+            }
+        } catch (\Throwable $e) {
+            throw ExceptionsUtils::unwrapException($e);
+        }
+
+        return false;
+    }
+
+    private function tryGetResponseOfError(HttpResponseInterface $response): string
+    {
+        try {
+            return $response->getContent();
+        } catch (\Throwable $exception) {
+            return "Could not read request: " . $exception->getMessage();
+        }
+
+    }
+
 //
 //    private static void handleConflict(CloseableHttpResponse response) {
 //        ExceptionDispatcher.throwException(response);
@@ -1375,17 +1607,26 @@ class RequestExecutor implements CleanCloseable
 //    public static InputStream readAsStream(CloseableHttpResponse response) throws IOException {
 //        return response.getEntity().getContent();
 //    }
-//
-//    private <TResult> boolean handleServerDown(String url, ServerNode chosenNode, Integer nodeIndex,
-//                                               RavenCommand<TResult> command, HttpRequestBase request,
-//                                               CloseableHttpResponse response, Exception e,
-//                                               SessionInfo sessionInfo, boolean shouldRetry) {
-//        if (command.getFailedNodes() == null) {
-//            command.setFailedNodes(new HashMap<>());
-//        }
-//
-//        command.getFailedNodes().put(chosenNode, readExceptionFromServer(request, response, e));
-//
+
+    private function handleServerDown(
+//          String url,
+          ServerNode $chosenNode,
+//          Integer nodeIndex,
+          RavenCommand $command,
+          HttpRequestInterface $request,
+          HttpResponseInterface $response,
+          ?Exception $e
+//          SessionInfo sessionInfo,
+//          boolean shouldRetry
+    ): bool {
+        $failedNodes = $command->getFailedNodes();
+        if ($failedNodes == null) {
+            $failedNodes = new DSMap();
+        }
+
+        $failedNodes->put($chosenNode, self::readExceptionFromServer($request, $response, $e));
+        $command->setFailedNodes($failedNodes);
+
 //        if (nodeIndex == null) {
 //            //We executed request over a node not in the topology. This means no failover...
 //            return false;
@@ -1422,8 +1663,8 @@ class RequestExecutor implements CleanCloseable
 //
 //        execute(indexAndNodeAndEtag.currentNode, indexAndNodeAndEtag.currentIndex, command, shouldRetry, sessionInfo);
 //
-//        return true;
-//    }
+        return true;
+    }
 //
 //    private <TResult> boolean shouldBroadcast(RavenCommand<TResult> command) {
 //        if (!(command instanceof IBroadcast)) {
@@ -1696,35 +1937,44 @@ class RequestExecutor implements CleanCloseable
 //    private void executeOldHealthCheck(ServerNode serverNode, int nodeIndex) {
 //        execute(serverNode, nodeIndex, backwardCompatibilityFailureCheckOperation.getCommand(conventions), false, null);
 //    }
-//
-//    private static <TResult> Exception readExceptionFromServer(HttpRequestBase request, CloseableHttpResponse response, Exception e) {
-//        if (response != null && response.getEntity() != null) {
-//            String responseJson = null;
-//            try {
-//                responseJson = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
-//
-//                return ExceptionDispatcher.get(JsonExtensions.getDefaultMapper().readValue(responseJson, ExceptionDispatcher.ExceptionSchema.class), response.getStatusLine().getStatusCode(), e);
-//            } catch (Exception __) {
-//                ExceptionDispatcher.ExceptionSchema exceptionSchema = new ExceptionDispatcher.ExceptionSchema();
-//                exceptionSchema.setUrl(request.getURI().toString());
-//                exceptionSchema.setMessage("Get unrecognized response from the server");
-//                exceptionSchema.setError(responseJson);
-//                exceptionSchema.setType("Unparsable Server Response");
-//
-//                return ExceptionDispatcher.get(exceptionSchema, response.getStatusLine().getStatusCode(), e);
-//            }
-//        }
-//
-//        // this would be connections that didn't have response, such as "couldn't connect to remote server"
-//        ExceptionDispatcher.ExceptionSchema exceptionSchema = new ExceptionDispatcher.ExceptionSchema();
-//        exceptionSchema.setUrl(request.getURI().toString());
-//        exceptionSchema.setMessage(e.getMessage());
-//        exceptionSchema.setError("An exception occurred while contacting " + request.getURI() + "." + System.lineSeparator() + e.toString());
-//        exceptionSchema.setType(e.getClass().getCanonicalName());
-//
-//        return ExceptionDispatcher.get(exceptionSchema, HttpStatus.SC_SERVICE_UNAVAILABLE, e);
-//    }
-//
+
+    private static function readExceptionFromServer(
+        HttpRequestInterface $request,
+        ?HttpResponseInterface $response,
+        ?Exception $e
+    ): Exception {
+
+        if ($response != null) {
+
+            $responseJson = '';
+            try {
+                $responseJson = $response->getContent();
+                $exceptionScheme = JsonExtensions::getDefaultMapper()->deserialize($responseJson, ExceptionSchema::class, 'json');
+
+                echo 'READ EXCEPTION FROM SERVER' . PHP_EOL;
+                print_r($exceptionScheme);
+                return ExceptionDispatcher::get($exceptionScheme, $response->getStatusCode(), $e);
+            } catch (Exception $exception) {
+                $exceptionScheme = new ExceptionSchema();
+                $exceptionScheme->setUrl($request->getUrl());
+                $exceptionScheme->setMessage("Get unrecognized response from the server");
+                $exceptionScheme->setError($responseJson);
+                $exceptionScheme->setType("Unparsable Server Response");
+
+                return ExceptionDispatcher::get($exceptionScheme, $response->getStatusCode(), $exception);
+            }
+        }
+
+        // this would be connections that didn't have response, such as "couldn't connect to remote server"
+        $exceptionScheme = new ExceptionSchema();
+        $exceptionScheme->setUrl($request->getUrl());
+        $exceptionScheme->setMessage($e->getMessage());
+        $exceptionScheme->setError("An exception occurred while contacting " . $request->getUrl() . "." . PHP_EOL . $e->getTraceAsString());
+        $exceptionScheme->setType(get_class($e));
+
+        return ExceptionDispatcher::get($exceptionScheme, HttpStatusCode::SERVICE_UNAVAILABLE, $e);
+    }
+
 //    protected CompletableFuture<Void> _firstTopologyUpdate;
 //    protected String[] _lastKnownUrls;
 //    protected boolean _disposed;

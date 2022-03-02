@@ -7,6 +7,7 @@ use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Extensions\EntityMapper;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Http\LoadBalanceBehavior;
+use RavenDB\Type\Duration;
 use RavenDB\Utils\ClassUtils;
 use RavenDB\Utils\StringUtils;
 use ReflectionClass;
@@ -84,8 +85,8 @@ class DocumentConventions
     private bool $useOptimisticConcurrency = false;
     private bool $throwIfQueryPageSizeIsNotSet = false;
     protected int $maxNumberOfRequestsPerSession;
-//
-//    private Duration _requestTimeout;
+
+    private Duration $requestTimeout;
 //    private Duration _firstBroadcastAttemptTimeout;
 //    private Duration _secondBroadcastAttemptTimeout;
 //    private Duration _waitForIndexesAfterSaveChangesTimeout;
@@ -166,6 +167,7 @@ class DocumentConventions
     public function __construct()
     {
         $this->loadBalanceBehavior = LoadBalanceBehavior::none();
+        $this->requestTimeout = new Duration();
 
         // @todo: implement this constructor
 
@@ -220,15 +222,17 @@ class DocumentConventions
 //        return _useCompression != null;
 //    }
 //
-//    public Duration getRequestTimeout() {
-//        return _requestTimeout;
-//    }
-//
-//    public void setRequestTimeout(Duration requestTimeout) {
-//        assertNotFrozen();
-//        _requestTimeout = requestTimeout;
-//    }
-//
+    public function getRequestTimeout(): Duration
+    {
+        return $this->requestTimeout;
+    }
+
+    public function setRequestTimeout(Duration $requestTimeout): void
+    {
+        $this->assertNotFrozen();
+        $this->requestTimeout = $requestTimeout;
+    }
+
 //    /**
 //     * Enables sending a unique application identifier to the RavenDB Server that is used for Client API usage tracking.
 //     * It allows RavenDB Server to issue performance hint notifications e.g. during robust topology update requests which could indicate Client API misuse impacting the overall performance

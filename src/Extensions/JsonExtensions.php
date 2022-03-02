@@ -34,7 +34,6 @@ class JsonExtensions
         $dotNetNamingConvertor = new DotNetNamingConverter();
         $dotNetNamingConvertor->setEnabled(false);
 
-
         $classMetadataFactory = new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()));
 
         $metadataAwareNameConverter = new MetadataAwareNameConverter($classMetadataFactory, $dotNetNamingConvertor);

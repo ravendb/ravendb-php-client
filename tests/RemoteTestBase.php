@@ -91,15 +91,11 @@ class RemoteTestBase extends RavenTestDriver implements CleanCloseable
      */
     private function runServer(bool $secured): DocumentStoreInterface
     {
-        $urls = new UrlArray();
-//        $urls->append(new Url('http://live-test.ravendb.net'));
-        $urls->append(new Url('http://127.0.0.1:8080'));
-
-        $store = new DocumentStore('test.manager');
-        $store->setUrls($urls);
-        $store->getConventions()->setDisableTopologyUpdates(true);
-
-        $store->initialize();
+        $store = $this->runServerInternal($this->getLocator($secured), function(DocumentStore &$store) use (&$secured) {
+            if ($secured) {
+                $store->setAuthOptions($this->securedLocator->getClientAuthOptions());
+            }
+        });
 
         if ($secured) {
             self::$globalSecureServer = $store;
@@ -176,27 +172,9 @@ class RemoteTestBase extends RavenTestDriver implements CleanCloseable
 //        killProcess(p);
 //    }
 
-
-    private function modifyDatabaseName(?string $databaseName): string
-    {
-        if ($databaseName == null) {
-            $databaseName = 'test_db';
-        }
-
-        $databaseName .= '_' . self::$index->incrementAndGet();
-
-        $this->reportInfo("getDocumentStore for db " . $databaseName . ".");
-
-        return $databaseName;
-    }
-
-    private function setupGlobalServer(bool $secured)
-    {
-        if (self::getGlobalServer($secured) == null) {
-            $this->runServer($secured);
-        }
-    }
-
+    /**
+     * @throws IllegalStateException
+     */
     public function getSecuredDocumentStore(?string $databaseName = null): DocumentStoreInterface
     {
         return $this->getDocumentStore($databaseName, true);
@@ -205,33 +183,38 @@ class RemoteTestBase extends RavenTestDriver implements CleanCloseable
     /**
      * @throws IllegalStateException
      */
-    public function getDocumentStore(?string $databaseName = null, bool $secured = false, ?DateInterval $waitForIndexingTimeout = null ): DocumentStoreInterface
+    public function getDocumentStore(?string $database = null, bool $secured = false, ?DateInterval $waitForIndexingTimeout = null ): DocumentStoreInterface
     {
-        $databaseName = $this->modifyDatabaseName($databaseName);
+        if ($database == null) {
+            $database = 'test_db';
+        }
 
-        $this->setupGlobalServer($secured);
+        $name = $database . '_' . self::$index->incrementAndGet();
+        $this->reportInfo("getDocumentStore for db " . $name . ".");
+
+        if (self::getGlobalServer($secured) == null) {
+            $this->runServer($secured);
+        }
+
         $documentStore = self::getGlobalServer($secured);
-
         $databaseRecord = new DatabaseRecord();
-        $databaseRecord->setDatabaseName($databaseName);
+        $databaseRecord->setDatabaseName($name);
 
         $this->customizeDbRecord($databaseRecord);
 
         $createDatabaseOperation = new CreateDatabaseOperation($databaseRecord);
         $documentStore->maintenance()->server()->send($createDatabaseOperation);
 
-        $store =  new DocumentStore($databaseName);
+        $store =  new DocumentStore($name);
         $store->setUrls($documentStore->getUrls());
 
         if ($secured) {
-//            $store->setCertificate($this->getTestClientCertificate());
-//            $store->setTrustStore($this->getTestClientCertificate());
+            $store->setAuthOptions($this->securedLocator->getClientAuthOptions());
         }
 
         $this->customizeStore($store);
 
         $this->hookLeakedConnectionCheck($store);
-
         $store->initialize();
 
         $documentStores = $this->documentStores;
@@ -245,6 +228,7 @@ class RemoteTestBase extends RavenTestDriver implements CleanCloseable
 
             try {
                 $store->maintenance()->server()->send(new DeleteDatabasesOperation($store->getDatabase(), true));
+
             } catch (DatabaseDoesNotExistException | NoLeaderException $exception) {
                 // ignore
             }
@@ -253,7 +237,7 @@ class RemoteTestBase extends RavenTestDriver implements CleanCloseable
         $this->setupDatabase($store);
 
         if ($waitForIndexingTimeout != null) {
-            $this->waitForIndexing($store, $databaseName, $waitForIndexingTimeout);
+            $this->waitForIndexing($store, $name, $waitForIndexingTimeout);
         }
 
         $this->documentStores->append($store);

@@ -76,7 +76,6 @@ class BatchOperation
 
     public function setResult(BatchCommandResult $result): void
     {
-
         $getCommandType = function($batchResult): CommandType {
             $type = null;
             if (key_exists('Type', $batchResult)) {

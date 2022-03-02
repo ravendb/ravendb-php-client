@@ -4,9 +4,12 @@ namespace RavenDB\Json;
 
 use RavenDB\Http\ResultInterface;
 
+use Symfony\Component\Serializer\Annotation\SerializedName;
+
 // !status: DONE
 class BatchCommandResult implements ResultInterface
 {
+    /** @SerializedName("Results") */
     private array $results = [];
     private int $transactionIndex = 0;
 

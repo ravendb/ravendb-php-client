@@ -44,7 +44,7 @@ class ReplaceClusterCertificateCommand extends VoidRavenCommand implements RaftC
         $request = new HttpRequest($this->createUrl($serverNode), HttpRequest::POST);
 
         $entity = [
-            'Certificate' => $this->certBytes // todo: check does certBytes needs to be encoded with Base64 string
+
         ];
 
 
@@ -53,7 +53,7 @@ class ReplaceClusterCertificateCommand extends VoidRavenCommand implements RaftC
                 'Accept' => 'application/json',
             ],
             'json' => [
-                'Entity' => $entity
+                'Certificate' => $this->certBytes // todo: check does certBytes needs to be encoded with Base64 string
             ]
         ]);
 

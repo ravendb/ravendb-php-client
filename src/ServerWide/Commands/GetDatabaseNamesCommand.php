@@ -3,16 +3,18 @@
 namespace RavenDB\ServerWide\Commands;
 
 use RavenDB\Http\GetDatabaseNamesResponse;
+use RavenDB\Http\HttpRequest;
+use RavenDB\Http\HttpRequestInterface;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ServerNode;
 
+// !status: DONE
 class GetDatabaseNamesCommand extends RavenCommand
 {
-
     private int $start;
     private int $pageSize;
 
-    public function __construct(int $start = 0, int $pageSize = 20)
+    public function __construct(int $start, int $pageSize)
     {
         $this->start = $start;
         $this->pageSize = $pageSize;
@@ -26,5 +28,24 @@ class GetDatabaseNamesCommand extends RavenCommand
             '/databases?start=' . $this->start .
             '&pageSize=' . $this->pageSize .
             '&namesOnly=true';
+    }
+
+    public function createRequest(ServerNode $serverNode): HttpRequestInterface
+    {
+        return new HttpRequest($this->createUrl($serverNode), HttpRequest::GET);
+    }
+
+    public function isReadRequest(): bool
+    {
+        return true;
+    }
+
+    /**
+     * @throws \ReflectionException
+     * @throws \RavenDB\Exceptions\InvalidResultAssignedToCommandException
+     */
+    public function setResponse(string $response, bool $fromCache): void
+    {
+        $this->setResult($this->getMapper()->deserialize($response, $this->getResultClass(), 'json'));
     }
 }

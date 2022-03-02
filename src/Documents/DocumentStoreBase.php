@@ -3,6 +3,7 @@
 namespace RavenDB\Documents;
 
 use InvalidArgumentException;
+use RavenDB\Auth\AuthOptions;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Exceptions\IllegalStateException;
@@ -185,6 +186,19 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
     }
 
     protected bool $initialized = false;
+
+    protected ?AuthOptions $authOptions = null;
+
+    public function getAuthOptions(): ?AuthOptions
+    {
+        return $this->authOptions;
+    }
+
+    public function setAuthOptions(?AuthOptions $options): void
+    {
+        $this->assertNotInitialized('authOptions');
+        $this->authOptions = $options;
+    }
 
 //    private KeyStore _certificate;
 //    private char[] _certificatePrivateKeyPassword = "".toCharArray();
@@ -451,10 +465,26 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //        return aggressivelyCacheFor(conventions.aggressiveCache().getDuration(), database);
 //    }
 
-    protected function registerEvents(InMemoryDocumentSessionOperations $session)
+    /**
+     * @param InMemoryDocumentSessionOperations|RequestExecutor $object
+     */
+    public function registerEvents($object)
     {
-        // todo: implement this
+        if (is_a($object, InMemoryDocumentSessionOperations::class)) {
+            $this->_registerEventsForInMemoryDocumentSessionOperations($object);
+            return;
+        }
 
+        if (is_a($object, RequestExecutor::class)) {
+            $this->_registerEventsForRequestExecutor($object);
+            return;
+        }
+
+        throw new InvalidArgumentException('Passed object must be instance of InMemoryDocumentSessionOperation or RequestExecutor');
+    }
+
+    private function _registerEventsForInMemoryDocumentSessionOperations(InMemoryDocumentSessionOperations $session): void
+    {
 //        for (EventHandler<BeforeStoreEventArgs> handler : onBeforeStore) {
 //            session.addBeforeStoreListener(handler);
 //        }
@@ -492,8 +522,9 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //        }
     }
 
-//
-//    public void registerEvents(RequestExecutor requestExecutor) {
+    private function _registerEventsForRequestExecutor(RequestExecutor $requestExecutor): void
+    {
+
 //        for (EventHandler<FailedRequestEventArgs> handler : onFailedRequest) {
 //            requestExecutor.addOnFailedRequestListener(handler);
 //        }
@@ -509,7 +540,7 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //        for (EventHandler<SucceedRequestEventArgs> handler : onSucceedRequest) {
 //            requestExecutor.addOnSucceedRequestListener(handler);
 //        }
-//    }
+    }
 
     protected function afterSessionCreated(InMemoryDocumentSessionOperations $session): void
     {

@@ -4,10 +4,17 @@ namespace RavenDB\ServerWide\Operations;
 
 use InvalidArgumentException;
 use RavenDB\Documents\DocumentStore;
+use RavenDB\Documents\Operations\Operation;
+use RavenDB\Exceptions\IllegalArgumentException;
+use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Http\ClusterRequestExecutor;
+use RavenDB\Http\ServerNode;
+use RavenDB\Http\Topology;
+use RavenDB\Http\VoidRavenCommand;
 use RavenDB\Primitives\CleanCloseable;
+use RavenDB\Utils\StringUtils;
 
-// !status: IN PROGRESS
+// !status: DONE
 class ServerOperationExecutor implements CleanCloseable
 {
     private ?ServerOperationExecutorArray $cache;
@@ -39,11 +46,20 @@ class ServerOperationExecutor implements CleanCloseable
         $this->cache = $cache;
         $this->nodeTag = $nodeTag;
 
-//        store.registerEvents(_requestExecutor);
-//
-//        if (_nodeTag == null) {
-//            store.addAfterCloseListener((sender, event) -> _requestExecutor.close());
-//        }
+//        $$this->store->registerEvents($this->requestExecutor);
+
+        if ($this->nodeTag == null) {
+            $this->store->addAfterCloseListener(function($sender, $event) {
+                /** @var DocumentStore $store */
+                $store = $sender;
+                $store->getRequestExecutor()->close();
+            });
+        }
+    }
+
+    public function __toString()
+    {
+        return 'ServerOperationExecutor';
     }
 
     static public function forStore(DocumentStore $store): ServerOperationExecutor
@@ -52,159 +68,156 @@ class ServerOperationExecutor implements CleanCloseable
             $store,
             self::createRequestExecutor($store),
             null,
-            null,
+            new ServerOperationExecutorArray(),
             null
+        );
+    }
+
+    /**
+     * @throws IllegalArgumentException
+     * @throws IllegalStateException
+     */
+    public function forNode(string $nodeTag): ServerOperationExecutor
+    {
+        if (StringUtils::isBlank($nodeTag)) {
+            throw new IllegalArgumentException('Value cannot be null or whitespace.');
+        }
+
+        if ((($nodeTag == null) && ($this->nodeTag == null)) || (strcasecmp($nodeTag, $this->nodeTag) == 0)) {
+            return $this;
+        }
+
+        if ($this->store->getConventions()->isDisableTopologyUpdates()) {
+            throw new IllegalStateException('Cannot switch server operation executor, because Conventions.isDisableTopologyUpdates() is set to true');
+        }
+
+        $existingValue = $this->cache->offsetGet(strtolower($nodeTag));
+        if ($existingValue != false) {
+            return $existingValue;
+        }
+
+        $requestExecutor = $this->initialRequestExecutor ?? $this->requestExecutor;
+        $topology = $this->getTopology($requestExecutor);
+
+        $node = null;
+
+        /** @var ServerNode $serverNode */
+        foreach ($topology->getServerNodes() as $serverNode) {
+            if (strcasecmp($serverNode->getClusterTag(), $nodeTag) == 0) {
+                $node = $serverNode;
+            }
+        }
+
+        if (!$node) {
+            $availableNodes = '';
+            foreach ($topology->getServerNodes() as $serverNode) {
+                if (!empty($availableNodes)) {
+                    $availableNodes .= ', ';
+                }
+                $availableNodes .= $serverNode->getClusterTag();
+            }
+
+            throw new IllegalStateException("Could not find node '$nodeTag' in the topology. Available nodes: $availableNodes");
+        }
+
+        $clusterExecutor = ClusterRequestExecutor::createForSingleNode(
+            $node->getUrl(),
+            $this->store->getAuthOptions()
+//            $this->getExecutorService()
+        );
+
+        return new ServerOperationExecutor($this->store, $clusterExecutor, $requestExecutor, $this->cache, $node->getClusterTag());
+    }
+
+    public function send(ServerOperationInterface $operation): ?object
+    {
+        $command = $operation->getCommand($this->requestExecutor->getConventions());
+        $this->requestExecutor->execute($command);
+
+        if ($command instanceof VoidRavenCommand) {
+            return null;
+        }
+
+        return $command->getResult();
+    }
+
+
+    public function sendAsync(ServerOperationInterface  $operation): Operation
+    {
+        $command = $operation->getCommand($this->requestExecutor->getConventions());
+        $this->requestExecutor->execute($command);
+
+        return new ServerWideOperation(
+            $this->requestExecutor,
+            $this->requestExecutor->getConventions(),
+            $command->getResult()->getOperationId(),
+            $command->getSelectedNodeTag() ?? $command->getResult()->getOperationNodeTag()
         );
     }
 
     public function close(): void
     {
-        // TODO: Implement close() method.
+        if ($this->nodeTag != null) {
+            return;
+        }
+
+        if ($this->requestExecutor != null) {
+            $this->requestExecutor->close();
+        }
+
+        $cache = $this->cache;
+        if ($cache != null) {
+            /** @var ServerOperationExecutor $value */
+            foreach ($cache as $value) {
+                $requestExecutor = $value->requestExecutor;
+
+                if ($requestExecutor != null) {
+                    $requestExecutor->close();
+                }
+            }
+
+            $cache->clear();
+        }
     }
 
-
-
-//        public ServerOperationExecutor forNode(String nodeTag) {
-//        if (StringUtils.isBlank(nodeTag)) {
-//            throw new IllegalArgumentException("Value cannot be null or whitespace.");
-//        }
-//
-//        if ((nodeTag == null && _nodeTag == null) || _nodeTag.equalsIgnoreCase(nodeTag)) {
-//            return this;
-//        }
-//
-//        if (_store.getConventions().isDisableTopologyUpdates()) {
-//            throw new IllegalStateException("Cannot switch server operation executor, because Conventions.isDisableTopologyUpdates() is set to 'true'");
-//        }
-//
-//        return _cache.computeIfAbsent(nodeTag, tag -> {
-//            ClusterRequestExecutor requestExecutor = ObjectUtils.firstNonNull(_initialRequestExecutor, _requestExecutor);
-//            Topology topology = getTopology(requestExecutor);
-//
-//            ServerNode node = topology
-//                    .getNodes()
-//                    .stream()
-//                    .filter(x -> tag.equalsIgnoreCase(x.getClusterTag()))
-//                    .findFirst()
-//                    .orElse(null);
-//
-//            if (node == null) {
-//                String availableNodes = topology.getNodes()
-//                        .stream()
-//                        .map(x -> x.getClusterTag())
-//                        .collect(Collectors.joining(", "));
-//
-//                throw new IllegalStateException("Could not find node '" + tag + "' in the topology. Available nodes: " + availableNodes);
-//            }
-//
-//            ClusterRequestExecutor clusterExecutor = ClusterRequestExecutor.createForSingleNode(node.getUrl(),
-//                    _store.getCertificate(),
-//                    _store.getCertificatePrivateKeyPassword(),
-//                    _store.getTrustStore(),
-//                    _store.getExecutorService());
-//
-//            return new ServerOperationExecutor(_store, clusterExecutor, requestExecutor, _cache, node.getClusterTag());
-//        });
-//    }
-
-    public function sendWithoutResult(VoidServerOperationInterface $operation): void
+    private function getTopology(ClusterRequestExecutor $requestExecutor): Topology
     {
-        $command = $operation->getCommand($this->requestExecutor->getConventions());
-        $this->requestExecutor->execute($command);
+        $topology = null;
+
+        try {
+            $topology = $requestExecutor->getTopology();
+            if ($topology == null) {
+                // a bit rude way to make sure that topology has been refreshed
+                // but it handles a case when first topology update failed
+
+                $operation = new GetBuildNumberOperation();
+                $command = $operation->getCommand($requestExecutor->getConventions());
+                $requestExecutor->execute($command);
+
+                $topology = $requestExecutor->getTopology();
+            }
+        } catch (\Throwable $exception) {
+            // ignored
+        }
+
+        if ($topology == null) {
+            throw new IllegalStateException('Could not fetch the toplogy.');
+        }
+        return $topology;
     }
-
-    public function send(ServerOperationInterface $operation): object
-    {
-        $command = $operation->getCommand($this->requestExecutor->getConventions());
-        $this->requestExecutor->execute($command);
-
-        return $command->getResult();
-    }
-
-//    @SuppressWarnings("UnusedReturnValue")
-//    public <TResult> TResult send(IServerOperation<TResult> operation) {
-//        RavenCommand<TResult> command = operation.getCommand(_requestExecutor.getConventions());
-//        _requestExecutor.execute(command);
-//
-//        return command.getResult();
-//    }
-//
-//    public Operation sendAsync(IServerOperation<OperationIdResult> operation) {
-//        RavenCommand<OperationIdResult> command = operation.getCommand(_requestExecutor.getConventions());
-//
-//        _requestExecutor.execute(command);
-//        return new ServerWideOperation(_requestExecutor,
-//                _requestExecutor.getConventions(),
-//                command.getResult().getOperationId(),
-//                ObjectUtils.firstNonNull(command.getSelectedNodeTag(), command.getResult().getOperationNodeTag()));
-//    }
-//
-//    @Override
-//    public void close() {
-//        if (_nodeTag != null) {
-//            return;
-//        }
-//
-//        if (_requestExecutor != null) {
-//            _requestExecutor.close();
-//        }
-//
-//        ConcurrentMap<String, ServerOperationExecutor> cache = _cache;
-//        if (cache != null) {
-//            for (Map.Entry<String, ServerOperationExecutor> kvp : cache.entrySet()) {
-//                ClusterRequestExecutor requestExecutor = kvp.getValue()._requestExecutor;
-//                if (requestExecutor != null) {
-//                    requestExecutor.close();
-//                }
-//            }
-//
-//            cache.clear();
-//        }
-//    }
-//
-//    private Topology getTopology(ClusterRequestExecutor requestExecutor) {
-//        Topology topology = null;
-//        try {
-//            topology = requestExecutor.getTopology();
-//            if (topology == null) {
-//                // a bit rude way to make sure that topology has been refreshed
-//                // but it handles a case when first topology update failed
-//
-//                GetBuildNumberOperation operation = new GetBuildNumberOperation();
-//                RavenCommand<BuildNumber> command = operation.getCommand(requestExecutor.getConventions());
-//                requestExecutor.execute(command);
-//
-//                topology = requestExecutor.getTopology();
-//            }
-//        } catch (Exception e) {
-//            // ignored
-//        }
-//
-//        if (topology == null) {
-//            throw new IllegalStateException("Could not fetch the topology.");
-//        }
-//
-//        return topology;
-//    }
 
     private static function createRequestExecutor(DocumentStore $store): ClusterRequestExecutor
     {
         return $store->getConventions()->isDisableTopologyUpdates() ?
                 ClusterRequestExecutor::createForSingleNode(
                     $store->getUrls()->offsetGet(0),
-//                    $store->getCertificate(),
-//                    $store->getCertificatePrivateKeyPassword(),
-//                    $store->getTrustStore(),
-//                    $store->getExecutorService(),
+                    $store->getAuthOptions(),
                     $store->getConventions()
                 ) :
                 ClusterRequestExecutor::create(
                     $store->getUrls(),
                     null,
-//                    $store->getCertificate(),
-//                    $store->getCertificatePrivateKeyPassword(),
-//                    $store->getTrustStore(),
-//                    $store->getExecutorService(),
+                    $store->getAuthOptions(),
                     $store->getConventions()
                 );
     }

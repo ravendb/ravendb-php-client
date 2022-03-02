@@ -11,7 +11,7 @@ class TestServiceLocator extends RavenServerLocator
     {
         $stringArray = new StringArray();
 
-        $stringArray->append("--ServerUrl=http://127.0.0.1:0");
+        $stringArray->append("--ServerUrl=http://127.0.0.1:8080");
         $stringArray->append("--ServerUrl.Tcp=tcp://127.0.0.1:38881");
         $stringArray->append("--Features.Availability=Experimental");
 

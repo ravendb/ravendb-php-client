@@ -7,23 +7,24 @@ use RavenDB\Type\TypedArrayInterface;
 
 abstract class ResultResponse
 {
-    private string $className;
-    private TypedArrayInterface $results;
+    private string $type;
 
-    public function __construct(string $className)
+    private $results;
+
+    public function __construct(string $type)
     {
-        $this->className = $className;
+        $this->type = $type;
     }
 
-    public function getResults(): TypedArrayInterface
+    public function getResults()
     {
         return $this->results;
     }
 
-    public function setResults(TypedArrayInterface $results): void
+    public function setResults($results): void
     {
-        if ((!$results instanceof $this->className)) {
-            throw new InvalidArgumentException('Results must be instance of: ' . $this->className);
+        if ((!$results instanceof $this->type)) {
+            throw new InvalidArgumentException('Results must be instance of: ' . $this->type);
         }
 
         $this->results = $results;

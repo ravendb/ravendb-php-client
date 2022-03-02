@@ -17,7 +17,6 @@ use tests\RavenDB\Test\Client\Crud\Entities\Poc;
 
 class CrudTest extends RemoteTestBase
 {
-
     // @todo: Implement rawQuary in order for this test to be fully implemented
     public function testEntitiesAreSavedUsingLowerCase(): void
     {

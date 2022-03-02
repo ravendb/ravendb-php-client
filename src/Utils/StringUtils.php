@@ -6,6 +6,7 @@ use Doctrine\Inflector\InflectorFactory;
 
 class StringUtils
 {
+    // @todo: Implement this as explained here: https://stackoverflow.com/questions/23419087/stringutils-isblank-vs-string-isempty
     public static function isBlank(string $value): bool
     {
         return !$value;
@@ -14,6 +15,16 @@ class StringUtils
     public static function isNotBlank(string $value): bool
     {
         return !self::isBlank($value);
+    }
+
+    public static function isEmpty(string $value): bool
+    {
+        return empty($value);
+    }
+
+    public static function isNotEmpty(string $value): bool
+    {
+        return !self::isEmpty($value);
     }
 
     public static function startsWith(string $needle, string $value): bool
@@ -60,5 +71,14 @@ class StringUtils
     public static function capitalize(string $propertyName): string
     {
         return ucwords($propertyName);
+    }
+
+    public static function isNullOrWhitespace(?string $value): bool
+    {
+        if ($value == null) {
+            return true;
+        }
+
+        return strlen(trim($value)) == 0;
     }
 }
