@@ -56,7 +56,7 @@ class ClusterRequestExecutor extends RequestExecutor
 
         $topology = new Topology();
         $topology->setEtag(-1);
-        $topology->getServerNodes()->append($serverNode);
+        $topology->getNodes()->append($serverNode);
 
         $executor->setNodeSelector(new NodeSelector($topology));
         //-- until here
@@ -113,7 +113,7 @@ class ClusterRequestExecutor extends RequestExecutor
 
         $nodes = new ServerNodeArray();
         $nodes->append($serverNode);
-        $topology->setServerNodes($nodes);
+        $topology->setNodes($nodes);
 
         // @todo: check this line
         $nodeSelector = new NodeSelector($topology); // new NodeSelector($topology, $executorService);

@@ -2,14 +2,15 @@
 
 namespace RavenDB\Http;
 
+// !status: DONE
 class Topology
 {
     private int $eTag = -1;
-    private ServerNodeArray $serverNodes;
+    private ServerNodeArray $nodes;
 
     public function __construct()
     {
-        $this->serverNodes = new ServerNodeArray();
+        $this->nodes = new ServerNodeArray();
     }
 
     public function getETag(): int
@@ -22,13 +23,13 @@ class Topology
         $this->eTag = $eTag;
     }
 
-    public function getServerNodes(): ServerNodeArray
+    public function getNodes(): ServerNodeArray
     {
-        return $this->serverNodes;
+        return $this->nodes;
     }
 
-    public function setServerNodes(ServerNodeArray $serverNodes): void
+    public function setNodes(ServerNodeArray $nodes): void
     {
-        $this->serverNodes = $serverNodes;
+        $this->nodes = $nodes;
     }
 }

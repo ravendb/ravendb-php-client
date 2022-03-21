@@ -2,9 +2,10 @@
 
 namespace RavenDB\ServerWide\Operations\Certificates;
 
+use RavenDB\Http\ResultInterface;
 use RavenDB\Type\TypedArray;
 
-class CertificateDefinitionArray extends TypedArray
+class CertificateDefinitionArray extends TypedArray implements ResultInterface
 {
     public function __construct()
     {

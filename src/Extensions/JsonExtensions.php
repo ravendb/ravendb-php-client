@@ -41,6 +41,7 @@ class JsonExtensions
         $normalizers = [
             new TypedArrayNormalizer(),
             new StringArrayNormalizer(),
+            new ValueObjectNormalizer(),
             new ObjectNormalizer(
                 $classMetadataFactory,
                 $metadataAwareNameConverter,

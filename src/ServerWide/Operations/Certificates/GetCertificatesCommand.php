@@ -41,7 +41,7 @@ class GetCertificatesCommand extends RavenCommand
             return;
         }
 
-        $certificates = $this->getMapper()->decode($response, GetCertificatesResponse::class);
+        $certificates = $this->getMapper()->deserialize($response, GetCertificatesResponse::class, 'json');
         $this->result = $certificates->getResults();
     }
 }

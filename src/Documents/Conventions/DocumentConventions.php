@@ -87,11 +87,11 @@ class DocumentConventions
     protected int $maxNumberOfRequestsPerSession;
 
     private Duration $requestTimeout;
-//    private Duration _firstBroadcastAttemptTimeout;
-//    private Duration _secondBroadcastAttemptTimeout;
-//    private Duration _waitForIndexesAfterSaveChangesTimeout;
-//    private Duration _waitForReplicationAfterSaveChangesTimeout;
-//    private Duration _waitForNonStaleResultsTimeout;
+    private ?Duration $firstBroadcastAttemptTimeout = null;
+    private ?Duration $secondBroadcastAttemptTimeout = null;
+    private Duration $waitForIndexesAfterSaveChangesTimeout;
+    private Duration $waitForReplicationAfterSaveChangesTimeout;
+    private Duration $waitForNonStaleResultsTimeout;
 
     protected int $loadBalancerContextSeed = 0;
     protected LoadBalanceBehavior $loadBalanceBehavior;
@@ -252,52 +252,58 @@ class DocumentConventions
 //        _sendApplicationIdentifier = sendApplicationIdentifier;
 //    }
 //
-//    /**
-//     * Get the timeout for the second broadcast attempt.
-//     * Default: 30 seconds
-//     *
-//     * Upon failure of the first attempt the request executor will resend the command to all nodes simultaneously.
-//     * @return broadcast timeout
-//     */
-//    public Duration getSecondBroadcastAttemptTimeout() {
-//        return _secondBroadcastAttemptTimeout;
-//    }
-//
-//    /**
-//     * Set the timeout for the second broadcast attempt.
-//     * Default: 30 seconds
-//     *
-//     * Upon failure of the first attempt the request executor will resend the command to all nodes simultaneously.
-//     * @param secondBroadcastAttemptTimeout broadcast timeout
-//     */
-//    public void setSecondBroadcastAttemptTimeout(Duration secondBroadcastAttemptTimeout) {
-//        assertNotFrozen();
-//        _secondBroadcastAttemptTimeout = secondBroadcastAttemptTimeout;
-//    }
-//
-//    /**
-//     * Get the timeout for the first broadcast attempt.
-//     * Default: 5 seconds
-//     *
-//     * First attempt will send a single request to a selected node.
-//     * @return broadcast timeout
-//     */
-//    public Duration getFirstBroadcastAttemptTimeout() {
-//        return _firstBroadcastAttemptTimeout;
-//    }
-//
-//    /**
-//     * Set the timeout for the first broadcast attempt.
-//     * Default: 5 seconds
-//     *
-//     * First attempt will send a single request to a selected node.
-//     * @param firstBroadcastAttemptTimeout broadcast timeout
-//     */
-//    public void setFirstBroadcastAttemptTimeout(Duration firstBroadcastAttemptTimeout) {
-//        assertNotFrozen();
-//        _firstBroadcastAttemptTimeout = firstBroadcastAttemptTimeout;
-//    }
-//
+    /**
+     * Get the timeout for the second broadcast attempt.
+     * Default: 30 seconds
+     *
+     * Upon failure of the first attempt the request executor will resend the command to all nodes simultaneously.
+     * @return ?Duration broadcast timeout
+     */
+    public function getSecondBroadcastAttemptTimeout(): ?Duration {
+        return $this->secondBroadcastAttemptTimeout;
+    }
+
+    /**
+     * Set the timeout for the second broadcast attempt.
+     * Default: 30 seconds
+     *
+     * Upon failure of the first attempt the request executor will resend the command to all nodes simultaneously.
+     * @param ?Duration $secondBroadcastAttemptTimeout broadcast timeout
+     *
+     * @throws IllegalStateException
+     */
+    public function setSecondBroadcastAttemptTimeout(?Duration $secondBroadcastAttemptTimeout): void {
+        $this->assertNotFrozen();
+        $this->secondBroadcastAttemptTimeout = $secondBroadcastAttemptTimeout;
+    }
+
+    /**
+     * Get the timeout for the first broadcast attempt.
+     * Default: 5 seconds
+     *
+     * First attempt will send a single request to a selected node.
+     * @return ?Duration broadcast timeout
+     */
+    public function getFirstBroadcastAttemptTimeout(): ?Duration
+    {
+        return $this->firstBroadcastAttemptTimeout;
+    }
+
+    /**
+     * Set the timeout for the first broadcast attempt.
+     * Default: 5 seconds
+     *
+     * First attempt will send a single request to a selected node.
+     * @param ?Duration $firstBroadcastAttemptTimeout broadcast timeout
+     *
+     * @throws IllegalStateException
+     */
+    public function setFirstBroadcastAttemptTimeout(?Duration $firstBroadcastAttemptTimeout): void
+    {
+        $this->assertNotFrozen();
+        $this->firstBroadcastAttemptTimeout = $firstBroadcastAttemptTimeout;
+    }
+
 //    /**
 //     * Get the wait for indexes after save changes timeout
 //     * Default: 15 seconds

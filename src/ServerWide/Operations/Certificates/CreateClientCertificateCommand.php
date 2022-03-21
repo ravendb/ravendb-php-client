@@ -5,6 +5,7 @@ namespace RavenDB\ServerWide\Operations\Certificates;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Http\HttpRequest;
 use RavenDB\Http\HttpRequestInterface;
+use RavenDB\Http\HttpResponseInterface;
 use RavenDB\Http\RaftCommandInterface;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Http\RavenCommandResponseType;
@@ -49,51 +50,48 @@ class CreateClientCertificateCommand extends RavenCommand implements RaftCommand
         return $serverNode->getUrl() . '/admin/certificates';
     }
 
-    // @todo: Method not implemented and verified
     public function createRequest(ServerNode $serverNode): HttpRequestInterface
     {
         $request = new HttpRequest($this->createUrl($serverNode), HttpRequest::POST);
 
         $permissions = [];
-
         foreach ($this->permissions as $key => $value) {
             $permissions[$key] = SharpEnum::value($value);
         }
-
-        $entity = [
-            'Name' => $this->name,
-            'SecurityClearance' => SharpEnum::value($this->clearance->getValue()),
-            'Password' => $this->password,
-            'Permissions' => $permissions
-        ];
-
 
         $request->setOptions([
             'headers' => [
                 'Accept' => 'application/json',
             ],
             'json' => [
-                'Entity' => $entity
+                'Name' => $this->name,
+                'SecurityClearance' => SharpEnum::value($this->clearance->getValue()),
+                'Password' => $this->password,
+                'Permissions' => count($permissions) ? $permissions : null
             ]
         ]);
 
         return $request;
     }
 
-//    public function setResponseRaw(?string $response, InputStream $stream): void
-//    {
-//        if ($response == null) {
-//            $this->throwInvalidResponse();
-//        }
-//
-//        $this->result = new CertificateRawData();
-//
-//        try {
-////            $result->setRawData(IOUtils.toByteArray($stream));
-//        } catch (\Throwable $e) {
-//            $this->throwInvalidResponse($e);
-//        }
-//    }
+    /**
+     * @throws \RavenDB\Exceptions\IllegalStateException
+     */
+    public function setResponseRaw(HttpResponseInterface $response): void
+    {
+        $content = $response->getContent();
+        if (empty($content)) {
+            $this->throwInvalidResponse();
+        }
+
+        $this->result = new CertificateRawData();
+
+        try {
+            $this->result->setRawData($content);
+        } catch (\Throwable $e) {
+            $this->throwInvalidResponse($e);
+        }
+    }
 
     public function getRaftUniqueRequestId(): string
     {

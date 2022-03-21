@@ -7,15 +7,15 @@ use RavenDB\Type\ValueObjectInterface;
 // !status: DONE
 class SecurityClearance implements ValueObjectInterface
 {
-    public const UNAUTHENTICATED_CLIENTS = 'UNAUTHENTICATED_CLIENTS';
-    public const CLUSTER_ADMIN = 'CLUSTER_ADMIN';
-    public const CLUSTER_NODE = 'CLUSTER_NODE';
-    public const OPERATOR = 'OPERATOR';
-    public const VALID_USER = 'VALID_USER';
+    public const UNAUTHENTICATED_CLIENTS = 'UnauthenticatedClients';
+    public const CLUSTER_ADMIN = 'ClusterAdmin';
+    public const CLUSTER_NODE = 'ClusterNode';
+    public const OPERATOR = 'Operator';
+    public const VALID_USER = 'ValidUser';
 
     private string $value;
 
-    public function __construct(string $value)
+    public function __construct(string $value = '')
     {
         $this->setValue($value);
     }

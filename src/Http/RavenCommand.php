@@ -148,37 +148,6 @@ abstract class RavenCommand
     public function send(HttpClientInterface $client, HttpRequestInterface $request): HttpResponseInterface
     {
         return $client->execute($request);
-
-        // @todo: JUST REMOVE THIS COMMENTED CODE
-//        $response = $client->execute($request);
-//
-//        print_r(json_decode($response->getContent()));
-//
-////        if ($response->getStatusCode() == 500) {
-////            $errorObject = json_decode($response->getContent(), true);
-////
-////            $exceptionType =
-////                array_key_exists('Type', $errorObject) ?
-////                ServerExceptions::$exceptions[$errorObject['Type']] :
-////                InvalidArgumentException::class;
-////
-////            $message =
-////                array_key_exists('Message', $errorObject) ?
-////                $errorObject['Message'] :
-////                'Server error occurred.';
-////
-////            throw new $exceptionType($message, 500);
-////        }
-//
-//
-////        print_r($resultObject);
-//
-//        $resultObject = $this->getResultObject($response);
-//
-//        print_r($resultObject);
-//        $this->setResult($resultObject);
-//
-//        return $response;
     }
 
     public function setResponseRaw(HttpResponseInterface $response): void

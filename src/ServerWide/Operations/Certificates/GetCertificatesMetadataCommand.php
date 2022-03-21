@@ -42,13 +42,13 @@ class GetCertificatesMetadataCommand extends RavenCommand
         return new HttpRequest($this->createUrl($serverNode), HttpRequest::GET);
     }
 
-    public function setResponse(string $response, bool $fromCache = false)
+    public function setResponse(string $response, bool $fromCache = false): void
     {
         if ($response == null) {
             return;
         }
 
-        $decodedResponse = $this->getMapper()->decode($response, GetCertificatesMetadataResponse::class);
+        $decodedResponse = $this->getMapper()->deserialize($response, GetCertificatesMetadataResponse::class, 'json');
 
         $this->result = $decodedResponse->getResults();
     }

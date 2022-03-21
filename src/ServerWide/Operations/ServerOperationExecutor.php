@@ -102,7 +102,7 @@ class ServerOperationExecutor implements CleanCloseable
         $node = null;
 
         /** @var ServerNode $serverNode */
-        foreach ($topology->getServerNodes() as $serverNode) {
+        foreach ($topology->getNodes() as $serverNode) {
             if (strcasecmp($serverNode->getClusterTag(), $nodeTag) == 0) {
                 $node = $serverNode;
             }
@@ -110,7 +110,7 @@ class ServerOperationExecutor implements CleanCloseable
 
         if (!$node) {
             $availableNodes = '';
-            foreach ($topology->getServerNodes() as $serverNode) {
+            foreach ($topology->getNodes() as $serverNode) {
                 if (!empty($availableNodes)) {
                     $availableNodes .= ', ';
                 }

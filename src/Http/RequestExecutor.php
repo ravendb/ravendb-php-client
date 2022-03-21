@@ -100,8 +100,6 @@ class RequestExecutor implements CleanCloseable
         return $this->nodeSelector != null ? $this->nodeSelector->getTopology() : null;
     }
 
-//    private CloseableHttpClient _httpClient;
-
     private ?HttpClientInterface $httpClient = null;
 
     private function getHttpClient(): HttpClientInterface
@@ -138,6 +136,9 @@ class RequestExecutor implements CleanCloseable
 
     public AtomicInteger $numberOfServerRequests;
 
+    /**
+     * @throws DatabaseDoesNotExistException
+     */
     public function getUrl(): ?string
     {
         if ($this->nodeSelector == null) {
@@ -146,61 +147,68 @@ class RequestExecutor implements CleanCloseable
 
         $preferredNode = $this->nodeSelector->getPreferredNode();
 
-        return $preferredNode != null ? $preferredNode->getUrl() : null;
+        return $preferredNode != null ? $preferredNode->currentNode->getUrl() : null;
     }
 
-//    protected long topologyEtag;
-//
-//    public long getTopologyEtag() {
-//        return topologyEtag;
-//    }
-//
-//    protected long clientConfigurationEtag;
-//
-//    public long getClientConfigurationEtag() {
-//        return clientConfigurationEtag;
-//    }
+    protected int $topologyEtag = -2;
+
+    public function getTopologyEtag(): int
+    {
+        return $this->topologyEtag;
+    }
+
+    protected int $clientConfigurationEtag = 0;
+
+    public function getClientConfigurationEtag(): int
+    {
+        return $this->clientConfigurationEtag;
+    }
 
     private DocumentConventions $conventions;
 
-//    protected boolean _disableTopologyUpdates;
-//
-//    protected boolean _disableClientConfigurationUpdates;
-//
-//    protected String lastServerVersion;
-//
-//    public String getLastServerVersion() {
-//        return lastServerVersion;
-//    }
-//
-//    public Duration getDefaultTimeout() {
-//        return _defaultTimeout;
-//    }
-//
-//    public void setDefaultTimeout(Duration timeout) {
-//        _defaultTimeout = timeout;
-//    }
-//
-//    private Duration _secondBroadcastAttemptTimeout;
-//
-//    public Duration getSecondBroadcastAttemptTimeout() {
-//        return _secondBroadcastAttemptTimeout;
-//    }
-//
-//    public void setSecondBroadcastAttemptTimeout(Duration secondBroadcastAttemptTimeout) {
-//        _secondBroadcastAttemptTimeout = secondBroadcastAttemptTimeout;
-//    }
-//
-//    private Duration _firstBroadcastAttemptTimeout;
-//
-//    public Duration getFirstBroadcastAttemptTimeout() {
-//        return _firstBroadcastAttemptTimeout;
-//    }
-//
-//    public void setFirstBroadcastAttemptTimeout(Duration firstBroadcastAttemptTimeout) {
-//        _firstBroadcastAttemptTimeout = firstBroadcastAttemptTimeout;
-//    }
-//
+    protected bool $disableTopologyUpdates = false;
+
+    protected bool $disableClientConfigurationUpdates = false;
+
+    protected string $lastServerVersion = '';
+
+    public function getLastServerVersion(): string
+    {
+        return $this->lastServerVersion;
+    }
+
+    public function getDefaultTimeout(): Duration
+    {
+        return $this->defaultTimeout;
+    }
+
+    public function setDefaultTimeout(Duration $timeout): void {
+        $this->defaultTimeout = $timeout;
+    }
+
+    private ?Duration $secondBroadcastAttemptTimeout = null;
+
+    public function getSecondBroadcastAttemptTimeout(): ?Duration {
+        return $this->secondBroadcastAttemptTimeout;
+    }
+
+    public function setSecondBroadcastAttemptTimeout(?Duration $secondBroadcastAttemptTimeout): void
+    {
+        $this->secondBroadcastAttemptTimeout = $secondBroadcastAttemptTimeout;
+    }
+
+    private ?Duration $firstBroadcastAttemptTimeout = null;
+
+    public function getFirstBroadcastAttemptTimeout(): ?Duration
+    {
+        return $this->firstBroadcastAttemptTimeout;
+    }
+
+    public function setFirstBroadcastAttemptTimeout(Duration $firstBroadcastAttemptTimeout): void
+    {
+        $this->firstBroadcastAttemptTimeout = $firstBroadcastAttemptTimeout;
+    }
+
 //    private final List<EventHandler<FailedRequestEventArgs>> _onFailedRequest = new ArrayList<>();
 //
 //    public void addOnFailedRequestListener(EventHandler<FailedRequestEventArgs> handler) {
@@ -305,8 +313,8 @@ class RequestExecutor implements CleanCloseable
         $this->conventions = $conventions;
 //        this.conventions = conventions.clone();
         $this->defaultTimeout = $conventions->getRequestTimeout();
-//        this._secondBroadcastAttemptTimeout = conventions.getSecondBroadcastAttemptTimeout();
-//        this._firstBroadcastAttemptTimeout = conventions.getFirstBroadcastAttemptTimeout();
+        $this->secondBroadcastAttemptTimeout = $conventions->getSecondBroadcastAttemptTimeout();
+        $this->firstBroadcastAttemptTimeout = $conventions->getFirstBroadcastAttemptTimeout();
     }
 
     public static function create(
@@ -334,7 +342,7 @@ class RequestExecutor implements CleanCloseable
 
         $topology = new Topology();
         $topology->setEtag(-1);
-        $topology->getServerNodes()->append($serverNode);
+        $topology->getNodes()->append($serverNode);
 
 //        $executor = new RequestExecutor($databaseName, $conventions);
         $executor->setNodeSelector(new NodeSelector($topology));
@@ -487,14 +495,50 @@ class RequestExecutor implements CleanCloseable
             $this->executeOnSpecificNode($command, $sessionInfo, $options);
         }
 
-        $nodeResolver = new NodeResolver($command, $sessionInfo, $this->nodeSelector);
+        $currentIndexAndNode = $this->chooseNodeForRequest($command, $sessionInfo);
 
         $executeOptions = new ExecuteOptions();
-        $executeOptions->setChosenNode($nodeResolver->getNode());
-        $executeOptions->setNodeIndex($nodeResolver->getNodeIndex());
+        $executeOptions->setNodeIndex($currentIndexAndNode->currentIndex);
+        $executeOptions->setChosenNode($currentIndexAndNode->currentNode);
         $executeOptions->setShouldRetry(true);
 
         $this->executeOnSpecificNode($command, $sessionInfo, $executeOptions);
+    }
+
+    public function chooseNodeForRequest(?RavenCommand $cmd, ?SessionInfo $sessionInfo): CurrentIndexAndNode
+    {
+        $preferredNode = $this->nodeSelector->getPreferredNode();
+        return new CurrentIndexAndNode($preferredNode->currentIndex, $preferredNode->currentNode);
+
+//        if (!_disableTopologyUpdates) {
+//            // when we disable topology updates we cannot rely on the node tag,
+//            // because the initial topology will not have them
+//
+//            if (StringUtils.isNotBlank(cmd.getSelectedNodeTag())) {
+//                return _nodeSelector.getRequestedNode(cmd.getSelectedNodeTag());
+//            }
+//        }
+//
+//        if (conventions.getLoadBalanceBehavior() == LoadBalanceBehavior.USE_SESSION_CONTEXT) {
+//            if (sessionInfo != null && sessionInfo.canUseLoadBalanceBehavior()) {
+//                return _nodeSelector.getNodeBySessionId(sessionInfo.getSessionId());
+//            }
+//        }
+//
+//        if (!cmd.isReadRequest()) {
+//            return _nodeSelector.getPreferredNode();
+//        }
+//
+//        switch (conventions.getReadBalanceBehavior()) {
+//            case NONE:
+//                return _nodeSelector.getPreferredNode();
+//            case ROUND_ROBIN:
+//                return _nodeSelector.getNodeBySessionId(sessionInfo != null ? sessionInfo.getSessionId() : 0);
+//            case FASTEST_NODE:
+//                return _nodeSelector.getFastestNode();
+//            default:
+//                throw new IllegalArgumentException();
+//        }
     }
 
     private function executeOnSpecificNode(
@@ -535,6 +579,8 @@ class RequestExecutor implements CleanCloseable
             return ;
         }
 
+
+
 //        CompletableFuture<Void> refreshTask = refreshIfNeeded(chosenNode, response);
 //
         $command->setStatusCode($response->getStatusCode());
@@ -561,7 +607,7 @@ class RequestExecutor implements CleanCloseable
                 if ($response->getStatusCode() >= 400) {
                     if (!$this->handleUnsuccessfulResponse(
                         $options->getChosenNode(),
-//                        nodeIndex,
+                        $options->getNodeIndex(),
                         $command,
                         $request,
                         $response
@@ -1442,7 +1488,7 @@ class RequestExecutor implements CleanCloseable
 
     private function handleUnsuccessfulResponse(
         ServerNode $chosenNode,
-//        Integer nodeIndex,
+        ?int $nodeIndex,
         RavenCommand $command,
         HttpRequestInterface $request,
         HttpResponseInterface $response
@@ -1532,7 +1578,7 @@ class RequestExecutor implements CleanCloseable
 //
 //                    execute(indexAndNode.currentNode, indexAndNode.currentIndex, command, false, sessionInfo);
 //                    return true;
-                case HttpStatusCode::INTERNAL_SERVER_ERROR:
+//                case HttpStatusCode::INTERNAL_SERVER_ERROR: // @todo: check do we need to add this line or default route will handle it as it should
                 case HttpStatusCode::GATEWAY_TIMEOUT:
                 case HttpStatusCode::REQUEST_TIMEOUT:
                 case HttpStatusCode::BAD_GATEWAY:
@@ -1540,7 +1586,7 @@ class RequestExecutor implements CleanCloseable
                     return $this->handleServerDown(
 //                        url,
                         $chosenNode,
-//                        nodeIndex,
+                        $nodeIndex,
                         $command,
                         $request,
                         $response,
@@ -1578,8 +1624,8 @@ class RequestExecutor implements CleanCloseable
 //
 //                    return true;
                 default:
-//                    command.onResponseFailure(response);
-//                    ExceptionDispatcher.throwException(response);
+                    $command->onResponseFailure($response);
+                    ExceptionDispatcher::throwException($response);
                     break;
             }
         } catch (\Throwable $e) {
@@ -1611,7 +1657,7 @@ class RequestExecutor implements CleanCloseable
     private function handleServerDown(
 //          String url,
           ServerNode $chosenNode,
-//          Integer nodeIndex,
+          ?int $nodeIndex,
           RavenCommand $command,
           HttpRequestInterface $request,
           HttpResponseInterface $response,
@@ -1627,34 +1673,39 @@ class RequestExecutor implements CleanCloseable
         $failedNodes->put($chosenNode, self::readExceptionFromServer($request, $response, $e));
         $command->setFailedNodes($failedNodes);
 
-//        if (nodeIndex == null) {
-//            //We executed request over a node not in the topology. This means no failover...
-//            return false;
-//        }
-//
-//        if (_nodeSelector == null) {
-//            spawnHealthChecks(chosenNode, nodeIndex);
-//            return false;
-//        }
-//
-//        // As the server is down, we discard the server version to ensure we update when it goes up.
-//        chosenNode.discardServerVersion();
-//
-//        _nodeSelector.onFailedRequest(nodeIndex);
-//
-//        if (shouldBroadcast(command)) {
-//            command.setResult(broadcast(command, sessionInfo));
+        if ($nodeIndex === null) {
+            //We executed request over a node not in the topology. This means no failover...
+            return false;
+        }
+
+        if ($this->nodeSelector == null) {
+            // @todo: uncomment this linec
+//            $this->spawnHealthChecks($chosenNode, $nodeIndex);
+            return false;
+        }
+
+        // As the server is down, we discard the server version to ensure we update when it goes up.
+        $chosenNode->discardServerVersion();
+
+        $this->nodeSelector->onFailedRequest($nodeIndex);
+
+        // @todo: Uncomment this
+
+//        if ($this->shouldBreadcast($command)) {
+//            $command->setResult($this->broadcast($command, $sessionInfo));
 //            return true;
 //        }
-//
-//        spawnHealthChecks(chosenNode, nodeIndex);
-//
-//        CurrentIndexAndNodeAndEtag indexAndNodeAndEtag = _nodeSelector.getPreferredNodeWithTopology();
-//        if (command.failoverTopologyEtag != topologyEtag) {
+
+        // @todo: uncomment this
+//        $this->spawnHealthChecks($chosenNode, $nodeIndex);
+
+//        $indexAndNodeAndEtag = $this->nodeSelector->getPreferredNodeWithTopology();
+
+        if ($command->failoverTopologyEtag != $this->topologyEtag) {
 //            command.getFailedNodes().clear();
 //            command.failoverTopologyEtag = topologyEtag;
-//        }
-//
+        }
+
 //        if (command.getFailedNodes().containsKey(indexAndNodeAndEtag.currentNode)) {
 //            return false;
 //        }
@@ -1950,9 +2001,6 @@ class RequestExecutor implements CleanCloseable
             try {
                 $responseJson = $response->getContent();
                 $exceptionScheme = JsonExtensions::getDefaultMapper()->deserialize($responseJson, ExceptionSchema::class, 'json');
-
-                echo 'READ EXCEPTION FROM SERVER' . PHP_EOL;
-                print_r($exceptionScheme);
                 return ExceptionDispatcher::get($exceptionScheme, $response->getStatusCode(), $e);
             } catch (Exception $exception) {
                 $exceptionScheme = new ExceptionSchema();

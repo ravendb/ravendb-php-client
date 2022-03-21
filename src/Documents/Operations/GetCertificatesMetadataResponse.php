@@ -2,12 +2,22 @@
 
 namespace RavenDB\Documents\Operations;
 
+use RavenDB\Http\ResultInterface;
 use RavenDB\ServerWide\Operations\Certificates\CertificateMetadataArray;
+use Symfony\Component\Serializer\Annotation\SerializedName;
 
-class GetCertificatesMetadataResponse extends ResultResponse
+class GetCertificatesMetadataResponse implements ResultInterface
 {
-    public function __construct()
+    /** @SerializedName("Results") */
+    private CertificateMetadataArray $results;
+
+    public function getResults(): CertificateMetadataArray
     {
-        parent::__construct(CertificateMetadataArray::class);
+        return $this->results;
+    }
+
+    public function setResults(CertificateMetadataArray $results): void
+    {
+        $this->results = $results;
     }
 }

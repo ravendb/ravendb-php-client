@@ -2,12 +2,14 @@
 
 namespace RavenDB\Documents;
 
+use Closure;
 use InvalidArgumentException;
 use RavenDB\Auth\AuthOptions;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Http\RequestExecutor;
+use RavenDB\Primitives\ClosureArray;
 use RavenDB\Type\UrlArray;
 use RavenDB\Utils\StringUtils;
 
@@ -17,7 +19,7 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //      private final List<EventHandler<BeforeStoreEventArgs>> onBeforeStore = new ArrayList<>();
 //    private final List<EventHandler<AfterSaveChangesEventArgs>> onAfterSaveChanges = new ArrayList<>();
 //    private final List<EventHandler<BeforeDeleteEventArgs>> onBeforeDelete = new ArrayList<>();
-//    private final List<EventHandler<BeforeQueryEventArgs>> onBeforeQuery = new ArrayList<>();
+    private ClosureArray $onBeforeQuery;
 //    private final List<EventHandler<SessionCreatedEventArgs>> onSessionCreated = new ArrayList<>();
 //    private final List<EventHandler<SessionClosingEventArgs>> onSessionClosing = new ArrayList<>();
 //
@@ -35,6 +37,8 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
     {
         $this->database = '';
         $this->urls = new UrlArray();
+
+        $this->onBeforeQuery = new ClosureArray();
 
 //        $this->subscriptions = new DocumentSubscriptions($this);
     }
@@ -301,9 +305,11 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //        this.onBeforeDelete.remove(handler);
 //    }
 //
-//    public void addBeforeQueryListener(EventHandler<BeforeQueryEventArgs> handler) {
-//        this.onBeforeQuery.add(handler);
-//    }
+//    public function addBeforeQueryListener(EventHandler<BeforeQueryEventArgs> $handler): void
+    public function addBeforeQueryListener(Closure $handler): void
+    {
+        $this->onBeforeQuery->append($handler);
+    }
 //
 //    public void removeBeforeQueryListener(EventHandler<BeforeQueryEventArgs> handler) {
 //        this.onBeforeQuery.remove(handler);

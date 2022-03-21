@@ -7,9 +7,9 @@ use RavenDB\Type\ValueObjectInterface;
 // !status = DONE
 class DatabaseAccess implements ValueObjectInterface
 {
-    public const READ_WRITE = 'READ_WRITE';
-    public const ADMIN = 'ADMIN';
-    public const READ = 'READ';
+    public const READ_WRITE = 'ReadWrite';
+    public const ADMIN = 'Admin';
+    public const READ = 'Read';
 
     private string $value;
 

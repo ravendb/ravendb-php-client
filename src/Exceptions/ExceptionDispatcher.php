@@ -54,7 +54,7 @@ class ExceptionDispatcher
         try {
             $json = $response->getContent();
             /** @var ExceptionSchema $schema */
-            $schema = JsonExtensions::getDefaultMapper()->denormalize($json, ExceptionSchema::class);
+            $schema = JsonExtensions::getDefaultMapper()->deserialize($json, ExceptionSchema::class, 'json');
 
             if ($response->getStatusCode() == HttpStatusCode::CONFLICT) {
                 self::throwConflict($schema, $json);

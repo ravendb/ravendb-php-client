@@ -54,9 +54,7 @@ class EditClientCertificateCommand extends VoidRavenCommand implements RaftComma
             'headers' => [
                 'Accept' => 'application/json',
             ],
-            'json' => [
-                $definition
-            ]
+            'json' => $this->getMapper()->normalize($definition)
         ]);
 
         return $request;

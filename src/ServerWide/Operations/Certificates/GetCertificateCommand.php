@@ -38,15 +38,15 @@ class GetCertificateCommand extends RavenCommand
         return new HttpRequest($this->createUrl($serverNode), HttpRequest::GET);
     }
 
-    public function setResponse(string $response, bool $fromCache = false)
+    public function setResponse(?string $response, bool $fromCache = false): void
     {
         if ($response == null) {
             return;
         }
 
-        $certificates = $this->getMapper()->decode($response, GetCertificatesResponse::class);
+        $certificates = $this->getMapper()->deserialize($response, GetCertificatesResponse::class, 'json');
 
-        if (count($certificates) != 1) {
+        if (count($certificates->getResults()) != 1) {
             self::throwInvalidResponse();
         }
 

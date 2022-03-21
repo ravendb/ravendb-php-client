@@ -50,14 +50,6 @@ class HttpClient implements HttpClientInterface
 
         $symfonyResponse =  $this->client->request($request->getMethod(), $request->getUrl(), $options);
 
-        if (false && $symfonyResponse->getStatusCode() > 399) {
-            echo PHP_EOL;
-            echo '>>> ' . $symfonyResponse->getStatusCode() . ' <<<' . PHP_EOL;
-            print_r($request->getUrl());
-//            print_r($options);
-            print_r($symfonyResponse->getInfo());
-        }
-
         return HttpResponseTransformer::fromHttpClientResponse($symfonyResponse);
     }
 

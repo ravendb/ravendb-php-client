@@ -2,10 +2,16 @@
 
 namespace RavenDB\ServerWide\Operations\Certificates;
 
+use RavenDB\Http\ResultInterface;
+use Symfony\Component\Serializer\Annotation\SerializedName;
+
 // !status: DONE
-class CertificateDefinition extends CertificateMetadata
+class CertificateDefinition extends CertificateMetadata implements ResultInterface
 {
+    /** @SerializedName("Certificate") */
     private ?string $certificate = null;
+
+    /** @SerializedName("Password") */
     private ?string $password = null;
 
     public function getCertificate(): ?string

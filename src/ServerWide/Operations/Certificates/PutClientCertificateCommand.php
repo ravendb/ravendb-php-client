@@ -60,20 +60,15 @@ class PutClientCertificateCommand extends VoidRavenCommand implements RaftComman
             $permissions[$key] = SharpEnum::value($value);
         }
 
-        $entity = [
-            'Name' => $this->name,
-            'Certificate' => $this->certificate,
-            'SecurityClearance' => SharpEnum::value($this->clearance->getValue()),
-            'Permissions' => $permissions
-        ];
-
-
         $request->setOptions([
             'headers' => [
                 'Accept' => 'application/json',
             ],
             'json' => [
-                'Entity' => $entity
+                'Name' => $this->name,
+                'Certificate' => $this->certificate,
+                'SecurityClearance' => SharpEnum::value($this->clearance->getValue()),
+                'Permissions' => count($permissions) ? $permissions : null
             ]
         ]);
 

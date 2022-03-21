@@ -9,6 +9,23 @@ class AuthOptions
     private ?string $password = null;
     private ?string $caPath = null;
 
+    public function __construct()
+    {
+
+    }
+
+    public static function pem(string $certificatePath, string $password = null, string $caPath = null): AuthOptions
+    {
+        $options = new self();
+
+        $options->type = CertificateType::pem();
+        $options->setCertificatePath($certificatePath);
+        $options->setPassword($password);
+        $options->setCaPath($caPath);
+
+        return $options;
+    }
+
     public function getType(): ?CertificateType
     {
         return $this->type;

@@ -10,4 +10,15 @@ class DatabaseAccessArray extends TypedArray
     {
         parent::__construct(DatabaseAccess::class);
     }
+
+    public static function fromArray(array $data): DatabaseAccessArray
+    {
+        $dba = new DatabaseAccessArray();
+
+        foreach ($data as $key => $value) {
+            $dba->offsetSet($key, new DatabaseAccess($value));
+        }
+
+        return $dba;
+    }
 }

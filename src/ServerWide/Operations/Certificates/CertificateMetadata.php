@@ -2,18 +2,36 @@
 
 namespace RavenDB\ServerWide\Operations\Certificates;
 
+use RavenDB\Http\ResultInterface;
 use RavenDB\Type\StringArray;
 
+use Symfony\Component\Serializer\Annotation\SerializedName;
+
 // !status: DONE
-class CertificateMetadata
+class CertificateMetadata implements ResultInterface
 {
+    /** @SerializedName("Name") */
     private ?string $name = null;
+
+    /** @SerializedName("SecurityClearance") */
     private ?SecurityClearance $securityClearance = null;
+
+    /** @SerializedName("Thumbprint") */
     private ?string $thumbprint = null;
+
+    /** @SerializedName("NotAfter") */
     private ?\DateTimeInterface $notAfter = null;
-    private DatabaseAccessArray $permissions;
+
+    /** @SerializedName("Permissions") */
+    protected DatabaseAccessArray $permissions;
+
+    /** @SerializedName("CollectionSecondaryKeys") */
     private StringArray $collectionSecondaryKeys;
+
+    /** @SerializedName("CollectionPrimaryKey") */
     private string $collectionPrimaryKey = "";
+
+    /** @SerializedName("PublicKeyPinningHash") */
     private ?string $publicKeyPinningHash = null;
 
     public function __construct()
@@ -67,9 +85,17 @@ class CertificateMetadata
         return $this->permissions;
     }
 
-    public function setPermissions(DatabaseAccessArray $permissions): void
+    /**
+     * @param DatabaseAccessArray|array $permissions
+     */
+    public function setPermissions($permissions): void
     {
-        $this->permissions = $permissions;
+        if (is_a($permissions, DatabaseAccessArray::class)) {
+            $this->permissions = $permissions;
+            return;
+        }
+
+        $this->permissions = DatabaseAccessArray::fromArray($permissions);
     }
 
     public function addPermission(string $key, DatabaseAccess $permission): void
@@ -82,9 +108,17 @@ class CertificateMetadata
         return $this->collectionSecondaryKeys;
     }
 
-    public function setCollectionSecondaryKeys(StringArray $collectionSecondaryKeys): void
+    /**
+     * @param StringArray|array $collectionSecondaryKeys
+     */
+    public function setCollectionSecondaryKeys($collectionSecondaryKeys): void
     {
-        $this->collectionSecondaryKeys = $collectionSecondaryKeys;
+        if (is_a($collectionSecondaryKeys, StringArray::class)) {
+            $this->collectionSecondaryKeys = $collectionSecondaryKeys;
+            return;
+        }
+
+        $this->collectionSecondaryKeys = StringArray::fromArray($collectionSecondaryKeys);
     }
 
     public function addCollectionSecondaryKey(string $key): void
