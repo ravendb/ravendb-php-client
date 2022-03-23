@@ -47,6 +47,13 @@ class TypedArray extends \ArrayObject implements TypedArrayInterface, \JsonSeria
         }
     }
 
+    public function remove($value): void
+    {
+        if(($key = array_search($value, $this->getArrayCopy(), true)) !== FALSE) {
+            $this->offsetUnset($key);
+        }
+    }
+
     public function jsonSerialize(): array
     {
         return $this->getArrayCopy();

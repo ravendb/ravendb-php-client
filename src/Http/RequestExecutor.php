@@ -19,7 +19,7 @@ use RavenDB\Exceptions\Security\AuthorizationException;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Http\Adapter\HttpClient;
 use RavenDB\Primitives\CleanCloseable;
-use RavenDB\primitives\ExceptionsUtils;
+use RavenDB\Primitives\ExceptionsUtils;
 use RavenDB\Type\Duration;
 use RavenDB\Type\UrlArray;
 use RavenDB\Utils\AtomicInteger;

@@ -77,14 +77,16 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     private ClosureArray $onSessionClosing;
 
-//    public void addBeforeStoreListener(EventHandler<BeforeStoreEventArgs> handler) {
-//        this.onBeforeStore.add(handler);
-//    }
-//
-//    public void removeBeforeStoreListener(EventHandler<BeforeStoreEventArgs> handler) {
-//        this.onBeforeStore.remove(handler);
-//    }
-//
+    public function addBeforeStoreListener(Closure $handler): void
+    {
+        $this->onBeforeStore->append($handler);
+    }
+
+    public function removeBeforeStoreListener(Closure $handler): void
+    {
+        $this->onBeforeStore->remove($handler);
+    }
+
 //    public void addAfterSaveChangesListener(EventHandler<AfterSaveChangesEventArgs> handler) {
 //        this.onAfterSaveChanges.add(handler);
 //    }
@@ -106,10 +108,10 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $this->onBeforeQuery->append($handler);
     }
 
-//    public void removeBeforeQueryListener(EventHandler<BeforeQueryEventArgs> handler) {
-//        this.onBeforeQuery.remove(handler);
-//    }
-//
+    public function removeBeforeQueryListener(Closure $handler) {
+        $this->onBeforeQuery->remove($handler);
+    }
+
 //    public void addBeforeConversionToDocumentListener(EventHandler<BeforeConversionToDocumentEventArgs> handler) {
 //        this.onBeforeConversionToDocument.add(handler);
 //    }

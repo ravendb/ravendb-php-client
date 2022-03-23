@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Session;
 
+use InvalidArgumentException;
 use RavenDB\Documents\Session\Operations\QueryOperation;
 use RavenDB\Documents\Session\Tokens\DeclareTokenArray;
 use RavenDB\Documents\Session\Tokens\LoadTokenList;
@@ -16,12 +17,12 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //    protected QueryOperator defaultOperator = QueryOperator.AND;
 //
 //    protected Set<Class> rootTypes = new HashSet<>();
-//
-//    /**
-//     * Whether to negate the next operation
-//     */
-//    protected boolean negate;
-//
+
+    /**
+     * Whether to negate the next operation
+     */
+    protected bool $negate = false;
+
 //    private final String indexName;
 //    private final String collectionName;
 //    private int _currentClauseDepth;
@@ -41,9 +42,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //    protected boolean isIntersect;
 //
 //    protected boolean isGroupBy;
-//
-//    protected final InMemoryDocumentSessionOperations theSession;
-//
+
+    protected InMemoryDocumentSessionOperations $theSession;
 
     protected ?int $pageSize = null;
 
@@ -157,7 +157,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        this.fromToken = FromToken.create(indexName, collectionName, fromAlias);
 //        this.declareTokens = declareTokens;
 //        this.loadTokens = loadTokens;
-//        theSession = session;
+        $this->theSession = $session;
 //        _addAfterQueryExecutedListener(this::updateStatsHighlightingsAndExplanations);
 //        _conventions = session == null ? new DocumentConventions() : session.getConventions();
 //        this.isProjectInto = isProjectInto != null ? isProjectInto : false;
@@ -208,8 +208,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     public function initializeQueryOperation(): QueryOperation
     {
-//        /** @var BeforeQueryEventArgs  $beforeQueryExecutedEventArgs */
-//        $beforeQueryExecutedEventArgs = new BeforeQueryEventArgs($this->theSession, new DocumentQueryCustomizationDelegate($this));
+        $beforeQueryExecutedEventArgs = new BeforeQueryEventArgs($this->theSession, new DocumentQueryCustomizationDelegate($this));
 //        $this->theSession->onBeforeQueryInvoke($beforeQueryExecutedEventArgs);
 //
 //        $indexQuery = $this->getIndexQuery();
@@ -524,14 +523,48 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //    public void _whereEquals(String fieldName, MethodCall method, boolean exact) {
 //        _whereEquals(fieldName, (Object) method, exact);
 //    }
-//
-//    public void _whereEquals(WhereParams whereParams) {
-//        if (negate) {
-//            negate = false;
-//            _whereNotEquals(whereParams);
-//            return;
-//        }
-//
+
+    public function _whereEquals(...$args): void
+    {
+        $argsCount = count($args);
+
+        if($argsCount == 0) {
+            throw new InvalidArgumentException('You must set some arguments on whereEquals method call.');
+        }
+
+        if ($argsCount == 1) {
+            $whereParams = $args[0];
+            if (!$whereParams instanceof WhereParams) {
+                throw new InvalidArgumentException('Argument must be instance of WhereParams or there must be more arguments');
+            }
+            $this->_whereEqualsInternal($whereParams);
+            return;
+        }
+
+        $whereParams = new WhereParams();
+
+        $whereParams->setFieldName($args[0]);
+
+        $value = $args[1];
+        if ($value instanceof MethodCall) {
+            // @todo: Check with Marcin
+            // @todo: cast args[1] to object if it is MethodCall - do we have to do this or not?
+        }
+        $whereParams->setValue($value);
+
+        $whereParams->setExact(count($args) > 2 ? $args[2] : false);
+
+        $this->_whereEqualsInternal($whereParams);
+    }
+
+    public function _whereEqualsInternal(WhereParams $whereParams): void
+    {
+        if ($this->negate) {
+            $this->negate = false;
+            $this->_whereNotEqualsInternal($whereParams);
+            return;
+        }
+
 //        whereParams.setFieldName(ensureValidFieldName(whereParams.getFieldName(), whereParams.isNestedPath()));
 //
 //        List<QueryToken> tokens = getCurrentWhereTokens();
@@ -545,7 +578,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        String addQueryParameter = addQueryParameter(transformToEqualValue);
 //        WhereToken whereToken = WhereToken.create(WhereOperator.EQUALS, whereParams.getFieldName(), addQueryParameter, new WhereToken.WhereOptions(whereParams.isExact()));
 //        tokens.add(whereToken);
-//    }
+    }
 //
 //    private boolean ifValueIsMethod(WhereOperator op, WhereParams whereParams, List<QueryToken> tokens) {
 //        if (whereParams.getValue() instanceof MethodCall) {
@@ -594,15 +627,17 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        _whereNotEquals(fieldName, (Object) method, exact);
 //    }
 //
-//    public void _whereNotEquals(WhereParams whereParams) {
-//        if (negate) {
-//            negate = false;
-//            _whereEquals(whereParams);
-//            return;
-//        }
-//
-//        Object transformToEqualValue = transformValue(whereParams);
-//
+    public function _whereNotEqualsInternal(WhereParams $whereParams): void
+    {
+        if ($this->negate) {
+            $this->negate = false;
+            $this->_whereEqualsInternal($whereParams);
+            return;
+        }
+
+        /** @var object $transformToEqualValue */
+        $transformToEqualValue = $this->transformValue($whereParams);
+
 //        List<QueryToken> tokens = getCurrentWhereTokens();
 //        appendOperatorIfNeeded(tokens);
 //
@@ -614,7 +649,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //
 //        WhereToken whereToken = WhereToken.create(WhereOperator.NOT_EQUALS, whereParams.getFieldName(), addQueryParameter(transformToEqualValue), new WhereToken.WhereOptions(whereParams.isExact()));
 //        tokens.add(whereToken);
-//    }
+    }
 //
 //    @Override
 //    public void _negateNext() {
@@ -846,11 +881,9 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        tokens.add(whereToken);
 //    }
 //
-//    public void _andAlso() {
-//       _andAlso(false);
-//    }
-//
-//    public void _andAlso(boolean wrapPreviousQueryClauses) {
+
+    public function _andAlso(bool $wrapPreviousQueryClauses): void
+    {
 //        List<QueryToken> tokens = getCurrentWhereTokens();
 //        if (tokens.isEmpty()) {
 //            return;
@@ -867,8 +900,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        } else {
 //            tokens.add(QueryOperatorToken.AND);
 //        }
-//    }
-//
+    }
+
 //    /**
 //     * Add an OR to the query
 //     */
@@ -1583,20 +1616,18 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //
 //        return QueryFieldUtil.escapeIfNecessary(fieldName);
 //    }
-//
-//    private Object transformValue(WhereParams whereParams) {
-//        return transformValue(whereParams, false);
-//    }
-//
-//    private Object transformValue(WhereParams whereParams, boolean forRange) {
-//        if (whereParams.getValue() == null) {
-//            return null;
-//        }
-//
-//        if ("".equals(whereParams.getValue())) {
+
+    private function transformValue(WhereParams $whereParams, bool $forRange = false): ?object
+    {
+        if ($whereParams->getValue() == null) {
+            return null;
+        }
+
+        // ??
+//        if ($whereParams->getValue() == "") {
 //            return "";
 //        }
-//
+
 //        Reference<Object> objValueReference = new Reference<>();
 //        if (_conventions.tryConvertValueToObjectForQuery(whereParams.getFieldName(), whereParams.getValue(), forRange, objValueReference)) {
 //            return objValueReference.value;
@@ -1638,9 +1669,9 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        if (clazz.isEnum()) {
 //            return whereParams.getValue();
 //        }
-//
-//        return whereParams.getValue();
-//    }
+
+        return $whereParams->getValue();
+    }
 //
 //    private String addQueryParameter(Object value) {
 //        String parameterName = getParameterPrefix() + queryParameters.size();

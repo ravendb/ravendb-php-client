@@ -1,6 +1,6 @@
 <?php
 
-namespace RavenDB\primitives;
+namespace RavenDB\Primitives;
 
 use RavenDB\Type\StringArray;
 

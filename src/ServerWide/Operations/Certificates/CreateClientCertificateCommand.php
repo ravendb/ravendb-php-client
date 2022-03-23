@@ -10,7 +10,7 @@ use RavenDB\Http\RaftCommandInterface;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Http\RavenCommandResponseType;
 use RavenDB\Http\ServerNode;
-use RavenDB\primitives\SharpEnum;
+use RavenDB\Primitives\SharpEnum;
 use RavenDB\Utils\RaftIdGenerator;
 
 class CreateClientCertificateCommand extends RavenCommand implements RaftCommandInterface

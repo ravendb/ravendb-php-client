@@ -8,7 +8,7 @@ use RavenDB\Http\HttpRequestInterface;
 use RavenDB\Http\RaftCommandInterface;
 use RavenDB\Http\ServerNode;
 use RavenDB\Http\VoidRavenCommand;
-use RavenDB\primitives\SharpEnum;
+use RavenDB\Primitives\SharpEnum;
 use RavenDB\Utils\RaftIdGenerator;
 
 class PutClientCertificateCommand extends VoidRavenCommand implements RaftCommandInterface

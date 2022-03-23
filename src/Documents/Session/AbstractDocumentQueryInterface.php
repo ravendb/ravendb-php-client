@@ -286,12 +286,12 @@ interface AbstractDocumentQueryInterface
 //    void _whereExists(String fieldName);
 //
 //    void _whereRegex(String fieldName, String pattern);
-//
-//    /**
-//     * Add an AND to the query
-//     */
-//    void _andAlso();
-//
+
+    /**
+     * Add an AND to the query
+     */
+    public function _andAlso(): void;
+
 //    /**
 //     * Add an OR to the query
 //     */
@@ -397,6 +397,7 @@ interface AbstractDocumentQueryInterface
 //    /**
 //     * Performs a query matching ALL of the provided values against the given field (AND)
 //     * @param fieldName Field name
+//     * @param values Values to match
 //     * @param values Values to match
 //     */
 //    void _containsAll(String fieldName, Collection<? > values);

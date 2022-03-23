@@ -2,6 +2,7 @@
 
 namespace tests\RavenDB\Test\Client\Query;
 
+use RavenDB\Documents\Session\AbstractDocumentQuery;
 use RavenDB\Documents\Session\BeforeQueryEventArgs;
 use tests\RavenDB\RemoteTestBase;
 use tests\RavenDB\Test\Client\Query\Entity\Article;
@@ -41,7 +42,7 @@ class QueryTest extends RemoteTestBase
                 $session->advanced()->addBeforeQueryListener(function($sender, BeforeQueryEventArgs $event) {
                     $queryToBeExecuted = $event->getQueryCustomization()->getQuery();
                     $queryToBeExecuted->andAlso(true);
-//                    $queryToBeExecuted->whereEquals("deleted", true);
+                    $queryToBeExecuted->whereEquals("deleted", true);
                 });
 
 //                $query = $session->query(Article::class)

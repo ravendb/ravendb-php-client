@@ -14,7 +14,7 @@ use RavenDB\Http\HttpRequest;
 use RavenDB\Http\HttpRequestInterface;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ServerNode;
-use RavenDB\primitives\NetISO8601Utils;
+use RavenDB\Primitives\NetISO8601Utils;
 use RavenDB\Type\StringArray;
 use RavenDB\Utils\UrlUtils;
 

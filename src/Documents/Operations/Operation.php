@@ -8,7 +8,7 @@ use RavenDB\Exceptions\ExceptionSchema;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Http\RequestExecutor;
-use RavenDB\primitives\OperationCancelledException;
+use RavenDB\Primitives\OperationCancelledException;
 
 // !status: DONE
 class Operation

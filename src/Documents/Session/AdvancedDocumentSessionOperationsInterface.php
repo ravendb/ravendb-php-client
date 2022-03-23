@@ -34,8 +34,9 @@ interface AdvancedDocumentSessionOperationsInterface
 //    void removeBeforeDeleteListener(EventHandler<BeforeDeleteEventArgs> handler);
 //
     public function addBeforeQueryListener(Closure $handler): void;
+    public function removeBeforeQueryListener(Closure $handler): void;
 //    void removeBeforeQueryListener(EventHandler<BeforeQueryEventArgs> handler);
-//
+
 //    void addBeforeConversionToDocumentListener(EventHandler<BeforeConversionToDocumentEventArgs> handler);
 //    void removeBeforeConversionToDocumentListener(EventHandler<BeforeConversionToDocumentEventArgs> handler);
 //

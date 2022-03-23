@@ -5,7 +5,7 @@ namespace RavenDB\Http;
 use RavenDB\Exceptions\Database\DatabaseDoesNotExistException;
 use RavenDB\Exceptions\RequestedNodeUnavailableException;
 use RavenDB\Primitives\CleanCloseable;
-use RavenDB\primitives\Timer;
+use RavenDB\Primitives\Timer;
 use RavenDB\Utils\StringUtils;
 
 class NodeSelector implements CleanCloseable
