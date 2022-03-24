@@ -4,6 +4,7 @@ namespace tests\RavenDB\Test\Client\Query;
 
 use RavenDB\Documents\Session\AbstractDocumentQuery;
 use RavenDB\Documents\Session\BeforeQueryEventArgs;
+use RavenDB\Documents\Session\DocumentQueryInterface;
 use tests\RavenDB\RemoteTestBase;
 use tests\RavenDB\Test\Client\Query\Entity\Article;
 
@@ -40,6 +41,7 @@ class QueryTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $session->advanced()->addBeforeQueryListener(function($sender, BeforeQueryEventArgs $event) {
+                    /** @var DocumentQueryInterface $queryToBeExecuted */
                     $queryToBeExecuted = $event->getQueryCustomization()->getQuery();
                     $queryToBeExecuted->andAlso(true);
                     $queryToBeExecuted->whereEquals("deleted", true);
@@ -47,7 +49,8 @@ class QueryTest extends RemoteTestBase
 
 //                $query = $session->query(Article::class)
 //                    .search('title', 'foo')
-//                    .search('description', 'bar', SearchSeparator::or());
+//                    .search('description', 'bar', SearchSeparator::or())
+//                ;
 //
 //                $result = $query->toList();
 //
@@ -57,6 +60,8 @@ class QueryTest extends RemoteTestBase
 //                );
 //
 //                $this->assertCount(1, $result);
+
+                // todo: remove this assert
                 $this->assertTrue(true);
             } finally {
                 $session->close();

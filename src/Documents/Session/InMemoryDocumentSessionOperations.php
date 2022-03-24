@@ -22,6 +22,7 @@ use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Http\RequestExecutor;
+use RavenDB\Http\ServerNode;
 use RavenDB\Json\BatchCommandResult;
 use RavenDB\Json\JsonOperation;
 use RavenDB\Json\MetadataAsDictionary;
@@ -29,6 +30,7 @@ use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Primitives\ClosureArray;
 use RavenDB\Primitives\EventHelper;
 use RavenDB\Type\StringArray;
+use RavenDB\Utils\AtomicInteger;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 
 use DS\Map as DSMap;
@@ -43,9 +45,9 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //    protected final List<ILazyOperation> pendingLazyOperations = new ArrayList<>();
 //    protected final Map<ILazyOperation, Consumer<Object>> onEvaluateLazy = new HashMap<>();
 //
-//    private static final AtomicInteger _instancesCounter = new AtomicInteger();
-//
-//    private final int _hash = _instancesCounter.incrementAndGet();
+    private static  ?AtomicInteger $instancesCounter = null;
+
+    private int $hash = 0;
     protected bool $generateDocumentKeysOnStore = true;
     protected SessionInfo $sessionInfo;
     public ?BatchOptions $saveChangesOptions = null;
@@ -84,73 +86,80 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     public function removeBeforeStoreListener(Closure $handler): void
     {
-        $this->onBeforeStore->remove($handler);
+        $this->onBeforeStore->removeValue($handler);
     }
 
-//    public void addAfterSaveChangesListener(EventHandler<AfterSaveChangesEventArgs> handler) {
-//        this.onAfterSaveChanges.add(handler);
-//    }
-//
-//    public void removeAfterSaveChangesListener(EventHandler<AfterSaveChangesEventArgs> handler) {
-//        this.onAfterSaveChanges.remove(handler);
-//    }
-//
-//    public void addBeforeDeleteListener(EventHandler<BeforeDeleteEventArgs> handler) {
-//        this.onBeforeDelete.add(handler);
-//    }
-//
-//    public void removeBeforeDeleteListener(EventHandler<BeforeDeleteEventArgs> handler) {
-//        this.onBeforeDelete.remove(handler);
-//    }
+    public function addAfterSaveChangesListener(Closure $handler): void
+    {
+        $this->onAfterSaveChanges->append($handler);
+    }
+
+    public function removeAfterSaveChangesListener(Closure $handler): void
+    {
+        $this->onAfterSaveChanges->removeValue($handler);
+    }
+
+    public function addBeforeDeleteListener(Closure $handler): void
+    {
+        $this->onBeforeDelete->append($handler);
+    }
+
+    public function removeBeforeDeleteListener(Closure $handler): void
+    {
+        $this->onBeforeDelete->removeValue($handler);
+    }
 
     public function addBeforeQueryListener(Closure $handler): void
     {
         $this->onBeforeQuery->append($handler);
     }
 
-    public function removeBeforeQueryListener(Closure $handler) {
-        $this->onBeforeQuery->remove($handler);
+    public function removeBeforeQueryListener(Closure $handler): void
+    {
+        $this->onBeforeQuery->removeValue($handler);
     }
 
-//    public void addBeforeConversionToDocumentListener(EventHandler<BeforeConversionToDocumentEventArgs> handler) {
-//        this.onBeforeConversionToDocument.add(handler);
-//    }
-//
-//    public void removeBeforeConversionToDocumentListener(EventHandler<BeforeConversionToDocumentEventArgs> handler) {
-//        this.onBeforeConversionToDocument.remove(handler);
-//    }
-//
-//    public void addAfterConversionToDocumentListener(EventHandler<AfterConversionToDocumentEventArgs> handler) {
-//        this.onAfterConversionToDocument.add(handler);
-//    }
-//
-//    public void removeAfterConversionToDocumentListener(EventHandler<AfterConversionToDocumentEventArgs> handler) {
-//        this.onAfterConversionToDocument.remove(handler);
-//    }
-//
-//    public void addBeforeConversionToEntityListener(EventHandler<BeforeConversionToEntityEventArgs> handler) {
-//        this.onBeforeConversionToEntity.add(handler);
-//    }
-//
-//    public void removeBeforeConversionToEntityListener(EventHandler<BeforeConversionToEntityEventArgs> handler) {
-//        this.onBeforeConversionToEntity.remove(handler);
-//    }
-//
-//    public void addAfterConversionToEntityListener(EventHandler<AfterConversionToEntityEventArgs> handler) {
-//        this.onAfterConversionToEntity.add(handler);
-//    }
-//
-//    public void removeAfterConversionToEntityListener(EventHandler<AfterConversionToEntityEventArgs> handler) {
-//        this.onAfterConversionToEntity.remove(handler);
-//    }
-//
-//    public void addOnSessionClosingListener(EventHandler<SessionClosingEventArgs> handler) {
-//        this.onSessionClosing.add(handler);
-//    }
-//
-//    public void removeOnSessionClosingListener(EventHandler<SessionClosingEventArgs> handler) {
-//        this.onSessionClosing.remove(handler);
-//    }
+    public function addBeforeConversionToDocumentListener(Closure $handler): void
+    {
+        $this->onBeforeConversionToDocument->append($handler);
+    }
+
+    public function removeBeforeConversionToDocumentListener(Closure $handler): void
+    {
+        $this->onBeforeConversionToDocument->removeValue($handler);
+    }
+
+    public function addAfterConversionToDocumentListener(Closure $handler) {
+        $this->onAfterConversionToDocument->append($handler);
+    }
+
+    public function removeAfterConversionToDocumentListener(Closure $handler) {
+        $this->onAfterConversionToDocument->removeValue($handler);
+    }
+
+    public function addBeforeConversionToEntityListener(Closure $handler) {
+        $this->onBeforeConversionToEntity->append($handler);
+    }
+
+    public function removeBeforeConversionToEntityListener(Closure $handler) {
+        $this->onBeforeConversionToEntity->removeValue($handler);
+    }
+
+    public function addAfterConversionToEntityListener(Closure $handler) {
+        $this->onAfterConversionToEntity->append($handler);
+    }
+
+    public function removeAfterConversionToEntityListener(Closure $handler) {
+        $this->onAfterConversionToEntity->removeValue($handler);
+    }
+
+    public function addOnSessionClosingListener(Closure $handler) {
+        $this->onSessionClosing->append($handler);
+    }
+
+    public function removeOnSessionClosingListener(Closure $handler) {
+        $this->onSessionClosing->removeValue($handler);
+    }
 
     // @todo: This should be set of strings / not array !!! - fix this in future (now it's working like this)
 
@@ -165,10 +174,11 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //        }
 //        return externalState;
 //    }
-//
-//    public ServerNode getCurrentSessionNode() {
-//        return getSessionInfo().getCurrentSessionNode(_requestExecutor);
-//    }
+
+    public function getCurrentSessionNode(): ServerNode
+    {
+        return $this->getSessionInfo()->getCurrentSessionNode($this->requestExecutor);
+    }
 
     /**
      * Translate between an ID and its associated entity
@@ -381,6 +391,11 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
      */
     public function __construct(DocumentStoreBase $documentStore, UuidInterface $id, SessionOptions $options)
     {
+        if (self::$instancesCounter == null) {
+            self::$instancesCounter = new AtomicInteger(0);
+        }
+        $this->hash = self::$instancesCounter->incrementAndGet();
+
         $this->onBeforeStore = new ClosureArray();
         $this->onAfterSaveChanges = new ClosureArray();
         $this->onBeforeDelete = new ClosureArray();
@@ -2256,11 +2271,11 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //        localRange.setEntries(newValues.toArray(new TimeSeriesEntry[0]));
 //    }
 //
-//    @Override
-//    public int hashCode() {
-//        return _hash;
-//    }
 
+    public function hashCode(): int
+    {
+        return $this->hash;
+    }
 
     /**
      * @throws ExceptionInterface

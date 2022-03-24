@@ -1,7 +1,7 @@
 name: Run unit tests
 on:
     push:
-        branches: [ v5.2 ]
+        branches: [ v5.2, https-tests ]
     pull_request:
         branches: [ v5.2 ]
 
@@ -12,6 +12,14 @@ jobs:
         env:
             RAVENDB_BUILD_TYPE: nightly
             RAVEN_License: ${{ secrets.RAVEN_LICENSE }}
+
+            RAVENDB_PHP_TEST_HTTPS_SERVER_URL: "https://localhost:8081"
+            RAVENDB_TEST_CLIENT_CERT_PASSPHRASE: ""
+            RAVENDB_PHP_TEST_CERTIFICATE_PATH: "./RavenDB/Server/certs/server.pfx"
+            RAVENDB_PHP_TEST_CA_PATH: "/usr/local/share/ca-certificates/ca.crt"
+            RAVENDB_TEST_CLIENT_CERT_PATH: "./certs/java.pem"
+
+
         strategy:
             matrix:
                 php-versions: [ "7.4" ]
@@ -45,6 +53,26 @@ jobs:
 
             - name: Wait for server to run
               run: while ! curl http://127.0.0.1:8080; do sleep 0.2; echo "Waiting for server to start..."; done
+
+            - run: mkdir certs
+            - run: openssl genrsa -out certs/ca.key 2048
+            - run: openssl req -new -x509 -key certs/ca.key -out certs/ca.crt -subj "/C=US/ST=Arizona/L=Nevada/O=RavenDB Test CA/OU=RavenDB test CA/CN=localhost/emailAddress=ravendbca@example.com"
+            - run: openssl genrsa -out certs/localhost.key 2048
+            - run: openssl req -new  -key certs/localhost.key -out certs/localhost.csr -subj "/C=US/ST=Arizona/L=Nevada/O=RavenDB Test/OU=RavenDB test/CN=localhost/emailAddress=ravendb@example.com" -addext "subjectAltName = DNS:localhost"
+            - run: openssl x509 -req -extensions ext -extfile cert/test_cert.conf -in certs/localhost.csr -CA certs/ca.crt -CAkey certs/ca.key -CAcreateserial -out certs/localhost.crt
+            - run: cat certs/localhost.key certs/localhost.crt > certs/java.pem
+            - run: openssl pkcs12 -passout pass:"" -export -out certs/server.pfx -inkey certs/localhost.key -in certs/localhost.crt
+            - run: sudo cp certs/ca.crt /usr/local/share/ca-certificates/ca.crt
+            - run: sudo update-ca-certificates
+
+            - name: Deploy server certificate
+              run: mkdir RavenDB/Server/certs && cp certs/server.pfx RavenDB/Server/certs/
+
+            - name: Run Secured RDB
+              run: ./RavenDB/Server/Raven.Server -c $(realpath ./settings-secured.json) &
+
+            - name: Wait for server to run
+              run: while ! curl https://localhost:8081; do sleep 0.2; echo "Waiting for secured server to start..."; done
 
             - name: Install library tools
               run: composer install

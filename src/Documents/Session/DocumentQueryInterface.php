@@ -105,4 +105,18 @@ interface DocumentQueryInterface
 //    ISuggestionDocumentQuery<T> suggestUsing(SuggestionBase suggestion);
 //
 //    ISuggestionDocumentQuery<T> suggestUsing(Consumer<ISuggestionBuilder<T>> builder);
+
+
+    public function andAlso(bool $wrapPreviousQueryClauses = false): DocumentQueryInterface;
+
+    public function orElse(): DocumentQueryInterface;
+
+    /**
+     * @param string $fieldName
+     * @param mixed|MethodCall $value
+     * @param bool $exact
+     */
+    public function whereEquals(string $fieldName, $value, bool $exact = false): DocumentQueryInterface;
+
+    public function whereEqualsWithParams(WhereParams $whereParams): DocumentQueryInterface;
 }

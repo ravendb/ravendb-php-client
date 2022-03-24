@@ -3,6 +3,8 @@
 namespace RavenDB\Documents\Session\Tokens;
 
 // !status: DONE
+use RavenDB\Utils\StringBuilder;
+
 class CounterIncludesToken extends QueryToken
 {
     private string $sourcePath;
@@ -33,23 +35,22 @@ class CounterIncludesToken extends QueryToken
                 : $alias . "." . $this->sourcePath;
     }
 
-    public function writeTo(): string {
-        $result = "counters(";
+    public function writeTo(StringBuilder &$writer): void
+    {
+        $writer->append("counters(");
 
         if (!empty($this->sourcePath)) {
-            $result .= $this->sourcePath;
+            $writer->append($this->sourcePath);
 
             if (!$this->all) {
-                $result .= ", ";
+                $writer->append(", ");
             }
         }
 
         if (!$this->all) {
-            $result .= "'" . $this->counterName . "'";
+            $writer->append("'" . $this->counterName . "'");
         }
 
-        $result .= ")";
-
-        return $result;
+        $writer->append(")");
     }
 }

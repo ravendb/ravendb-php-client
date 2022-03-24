@@ -205,7 +205,7 @@ class HttpsTest extends RemoteTestBase
     }
 
 
-    public function testShouldThrowAuthorizationExceptionWhenNotAuthorized() {
+    public function aTestShouldThrowAuthorizationExceptionWhenNotAuthorized() {
         $store = $this->getSecuredDocumentStore();
         try {
             $permissions = new DatabaseAccessArray();

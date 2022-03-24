@@ -2,10 +2,12 @@
 
 namespace RavenDB\Documents\Session\Tokens;
 
+use RavenDB\Utils\StringBuilder;
+
 // !status: DONE
 abstract class QueryToken
 {
-    public abstract function writeTo(): string;
+    public abstract function writeTo(StringBuilder &$writer): void;
 
     private static array $RQL_KEYWORDS = [
         "as",
@@ -17,14 +19,15 @@ abstract class QueryToken
         "include"
     ];
 
-    protected function writeField(string $field): string
+    protected function writeField(StringBuilder &$writer, string $field): void
     {
         $keyWord = in_array($field, self::$RQL_KEYWORDS);
 
         if ($keyWord) {
-            return "'" . $field . "'";
+            $writer->append("'" . $field . "'");
+            return ;
         }
 
-        return $field;
+        $writer->append($field);
     }
 }

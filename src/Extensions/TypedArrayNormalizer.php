@@ -55,7 +55,11 @@ class TypedArrayNormalizer implements
             return null;
         }
 
-        return $this->normalizer->normalize($object, $format, $context);
+        $result = [];
+        foreach ($object as $item) {
+            $result[] = $this->normalizer->normalize($item, $format, $context);
+        }
+        return $result;
     }
 
     public function supportsNormalization($data, string $format = null)

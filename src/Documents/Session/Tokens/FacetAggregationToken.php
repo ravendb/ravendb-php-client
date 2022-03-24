@@ -4,6 +4,7 @@ namespace RavenDB\Documents\Session\Tokens;
 
 use RavenDB\Documents\Queries\Facets\FacetAggregation;
 use RavenDB\Exceptions\IllegalArgumentException;
+use RavenDB\Utils\StringBuilder;
 
 class FacetAggregationToken extends QueryToken
 {
@@ -18,32 +19,30 @@ class FacetAggregationToken extends QueryToken
         $this->aggregation = $aggregation;
     }
 
-    public function writeTo(): string
+    public function writeTo(StringBuilder &$writer): void
     {
-        $result = '';
-
         switch ($this->aggregation) {
             case FacetAggregation::MAX:
-                $result .= "max(" . $this->fieldName . ")";
+                $writer->append("max(" . $this->fieldName . ")");
                 break;
             case FacetAggregation::MIN:
-                $result .= "min(" . $this->fieldName . ")";
+                $writer->append("min(" . $this->fieldName . ")");
                 break;
             case FacetAggregation::AVERAGE:
-                $result .= "avg(" . $this->fieldName . ")";
+                $writer->append("avg(" . $this->fieldName . ")");
                 break;
             case FacetAggregation::SUM:
-                $result .= "sum(" . $this->fieldName . ")";
+                $writer->append("sum(" . $this->fieldName . ")");
                 break;
             default:
                 throw new IllegalArgumentException("Invalid aggregation mode: " . $this->aggregation);
         }
 
         if (!empty($this->fieldDisplayName)) {
-            $result .= " as " . $this->fieldDisplayName;
+            return;
         }
 
-        return $result;
+        $writer->append(" as " . $this->fieldDisplayName);
     }
 
     public static function max(string $fieldName, ?string $fieldDisplayName = null): FacetAggregationToken

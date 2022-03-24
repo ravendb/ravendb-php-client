@@ -290,7 +290,7 @@ interface AbstractDocumentQueryInterface
     /**
      * Add an AND to the query
      */
-    public function _andAlso(): void;
+    public function _andAlso(bool $wrapPreviousQueryClauses = false): void;
 
 //    /**
 //     * Add an OR to the query

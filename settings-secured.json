@@ -1,0 +1,9 @@
+{
+    "DataDir": "RavenData",
+    "License.Eula.Accepted": true,
+    "Setup.Mode": "None",
+    "Security.UnsecuredAccessAllowed": "PublicNetwork",
+    "ServerUrl": "https://localhost:8081",
+    "ServerUrl.Tcp": "tcp://localhost:38882",
+    "Security.Certificate.Path": "certs/server.pfx"
+}

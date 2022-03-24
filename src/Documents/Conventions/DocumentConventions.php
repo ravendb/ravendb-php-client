@@ -2,25 +2,26 @@
 
 namespace RavenDB\Documents\Conventions;
 
+use Closure;
 use InvalidArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Extensions\EntityMapper;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Http\LoadBalanceBehavior;
+use RavenDB\Http\ReadBalanceBehavior;
 use RavenDB\Type\Duration;
 use RavenDB\Utils\ClassUtils;
 use RavenDB\Utils\StringUtils;
 use ReflectionClass;
 use ReflectionException;
 use RuntimeException;
-use Symfony\Component\Serializer\Serializer;
 use Throwable;
 
 // !status: IN PROGRESS
 class DocumentConventions
 {
-    public static ?DocumentConventions $defaultConventions = null;
-    public static ?DocumentConventions $defaultForServerConventions = null;
+    private static ?DocumentConventions $defaultConventions = null;
+    private static ?DocumentConventions $defaultForServerConventions = null;
 
     public static function getDefaultConventions(): DocumentConventions
     {
@@ -69,18 +70,18 @@ class DocumentConventions
     protected bool $disableAtomicDocumentWritesInClusterWideTransaction = false;
 
     private ?ShouldIgnoreEntityChangesInterface $shouldIgnoreEntityChanges = null;
-//    private Function<PropertyDescriptor, Boolean> _findIdentityProperty;
-//
-//    private Function<String, String> _transformClassCollectionNameToDocumentIdPrefix;
-//    private BiFunction<String, Object, String> _documentIdGenerator;
-//    private Function<String, String> _findIdentityPropertyNameFromCollectionName;
-//    private Function<String, String> _loadBalancerPerSessionContextSelector;
-//
-//    private Function<Class, String> _findCollectionName;
-//
-//    private Function<Class, String> _findJavaClassName;
-//    private BiFunction<String, ObjectNode, String> _findJavaClass;
-//    private Function<String, Class> _findJavaClassByName;
+    private ?Closure $findIdentityProperty = null;
+
+    private ?Closure $transformClassCollectionNameToDocumentIdPrefix = null;
+    private ?Closure $documentIdGenerator = null;
+    private ?Closure $findIdentityPropertyNameFromCollectionName = null;
+    private ?Closure $loadBalancerPerSessionContextSelector = null;
+
+    private ?Closure $findCollectionName = null;
+
+    private ?Closure $findJavaClassName = null;
+    private ?Closure $findJavaClass = null;
+    private ?Closure $findJavaClassByName = null;
 
     private bool $useOptimisticConcurrency = false;
     private bool $throwIfQueryPageSizeIsNotSet = false;
@@ -95,7 +96,7 @@ class DocumentConventions
 
     protected int $loadBalancerContextSeed = 0;
     protected LoadBalanceBehavior $loadBalanceBehavior;
-//    private ReadBalanceBehavior _readBalanceBehavior;
+    private ReadBalanceBehavior $readBalanceBehavior;
     protected int $maxHttpCacheSize;
     protected EntityMapper $entityMapper;
 //    private Boolean _useCompression;
@@ -171,7 +172,7 @@ class DocumentConventions
 
         // @todo: implement this constructor
 
-//        _readBalanceBehavior = ReadBalanceBehavior.NONE;
+        $this->readBalanceBehavior = ReadBalanceBehavior::none();
 //        _findIdentityProperty = q -> q.getName().equals("id");
         $this->identityPartsSeparator = '/';
 //        _findIdentityPropertyNameFromCollectionName = entityName -> "Id";
@@ -380,15 +381,16 @@ class DocumentConventions
         $this->entityMapper = $mapper;
     }
 
-//
-//    public ReadBalanceBehavior getReadBalanceBehavior() {
-//        return _readBalanceBehavior;
-//    }
-//
-//    public void setReadBalanceBehavior(ReadBalanceBehavior readBalanceBehavior) {
-//        assertNotFrozen();
-//        _readBalanceBehavior = readBalanceBehavior;
-//    }
+    public function getReadBalanceBehavior(): ReadBalanceBehavior
+    {
+        return $this->readBalanceBehavior;
+    }
+
+    public function setReadBalanceBehavior(ReadBalanceBehavior $readBalanceBehavior): void
+    {
+        $this->assertNotFrozen();
+        $this->readBalanceBehavior = $readBalanceBehavior;
+    }
 
     public function getLoadBalancerContextSeed(): int
     {
@@ -424,31 +426,25 @@ class DocumentConventions
     }
 
     /**
-     * @return ?int Gets the function that allow to specialize the topology
+     * @return ?Closure Gets the function that allow to specialize the topology
      *  selection for a particular session. Used in load balancing
      *  scenarios
      */
-    public function getLoadBalancerPerSessionContextSelector(): ?int
+    public function getLoadBalancerPerSessionContextSelector(): ?Closure
     {
-        //todo: change return type and implement this function here
-        return null;
+        return $this->loadBalancerPerSessionContextSelector;
     }
-    // @todo: update this method
-//    public Function<String, String> getLoadBalancerPerSessionContextSelector() {
-//        return _loadBalancerPerSessionContextSelector;
-//    }
 
-
-
-//    /**
-//     * Sets the function that allow to specialize the topology
-//     *  selection for a particular session. Used in load balancing
-//     *  scenarios
-//     * @param loadBalancerPerSessionContextSelector selector to use
-//     */
-//    public void setLoadBalancerPerSessionContextSelector(Function<String, String> loadBalancerPerSessionContextSelector) {
-//        _loadBalancerPerSessionContextSelector = loadBalancerPerSessionContextSelector;
-//    }
+    /**
+     * Sets the function that allow to specialize the topology
+     *  selection for a particular session. Used in load balancing
+     *  scenarios
+     * @param Closure loadBalancerPerSessionContextSelector selector to use
+     */
+    public function setLoadBalancerPerSessionContextSelector(Closure $loadBalancerPerSessionContextSelector): void
+    {
+        $this->loadBalancerPerSessionContextSelector = $loadBalancerPerSessionContextSelector;
+    }
 
     public function getMaxHttpCacheSize(): int
     {

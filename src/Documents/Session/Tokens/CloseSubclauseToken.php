@@ -3,6 +3,8 @@
 namespace RavenDB\Documents\Session\Tokens;
 
 // !status: DONE
+use RavenDB\Utils\StringBuilder;
+
 class CloseSubclauseToken extends QueryToken
 {
     private function __construct()
@@ -16,7 +18,6 @@ class CloseSubclauseToken extends QueryToken
         return new CloseSubclauseToken();
     }
 
-
     public function getBoostParameterName(): ?string
     {
         return $this->boostParameterName;
@@ -27,15 +28,13 @@ class CloseSubclauseToken extends QueryToken
         $this->boostParameterName = $boostParameterName;
     }
 
-    public function writeTo(): string {
-        $result = '';
+    public function writeTo(StringBuilder &$writer): void
+    {
         if ($this->boostParameterName != null) {
-            $result .= ", $";
-            $result .= $this->boostParameterName;
+            $writer->append(", $");
+            $writer->append($this->boostParameterName);
         }
 
-        $result .= ")";
-
-        return $result;
+        $writer->append(")");
     }
 }

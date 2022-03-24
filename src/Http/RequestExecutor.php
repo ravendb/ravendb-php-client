@@ -9,6 +9,7 @@ use RavenDB\Auth\AuthOptions;
 use RavenDB\Constants\HttpStatusCode;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Session\SessionInfo;
+use RavenDB\Documents\Session\TopologyUpdatedEventArgs;
 use RavenDB\Exceptions\AllTopologyNodesDownException;
 use RavenDB\Exceptions\Database\DatabaseDoesNotExistException;
 use RavenDB\Exceptions\ExceptionDispatcher;
@@ -19,6 +20,8 @@ use RavenDB\Exceptions\Security\AuthorizationException;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Http\Adapter\HttpClient;
 use RavenDB\Primitives\CleanCloseable;
+use RavenDB\Primitives\ClosureArray;
+use RavenDB\Primitives\EventHelper;
 use RavenDB\Primitives\ExceptionsUtils;
 use RavenDB\Type\Duration;
 use RavenDB\Type\UrlArray;
@@ -112,13 +115,18 @@ class RequestExecutor implements CleanCloseable
     }
 
 
-//    public List<ServerNode> getTopologyNodes() {
+    public function getTopologyNodes(): ?ServerNodeArray
+    {
+        return null;
+
+        // @todo: Check with Marcin what this code does and implement it
+
 //        return Optional.ofNullable(getTopology())
 //                .map(Topology::getNodes)
 //                .map(Collections::unmodifiableList)
 //                .orElse(null);
-//    }
-//
+    }
+
 //    private volatile Timer _updateTopologyTimer;
 
     private ?NodeSelector $nodeSelector = null;
@@ -239,7 +247,7 @@ class RequestExecutor implements CleanCloseable
 //        this._onSucceedRequest.remove(handler);
 //    }
 //
-//    private final List<EventHandler<TopologyUpdatedEventArgs>> _onTopologyUpdated = new ArrayList<>();
+    private  ClosureArray $onTopologyUpdated;
 //
 //    public void addOnTopologyUpdatedListener(EventHandler<TopologyUpdatedEventArgs> handler) {
 //        _onTopologyUpdated.add(handler);
@@ -302,6 +310,11 @@ class RequestExecutor implements CleanCloseable
 //        String[] initialUrls
 
     ) {
+
+        $this->onTopologyUpdated = new ClosureArray();
+
+        // --
+
         $this->numberOfServerRequests = new AtomicInteger(0);
 
 //        cache = new HttpCache(conventions.getMaxHttpCacheSize());
@@ -2149,44 +2162,49 @@ class RequestExecutor implements CleanCloseable
 //
 //        return _nodeSelector.getRequestedNode(nodeTag);
 //    }
-//
-//    public CurrentIndexAndNode getPreferredNode() {
-//        ensureNodeSelector();
-//
-//        return _nodeSelector.getPreferredNode();
-//    }
-//
-//    public CurrentIndexAndNode getNodeBySessionId(int sessionId) {
-//        ensureNodeSelector();
-//
-//        return _nodeSelector.getNodeBySessionId(sessionId);
-//    }
-//
-//    public CurrentIndexAndNode getFastestNode() {
-//        ensureNodeSelector();
-//
-//        return _nodeSelector.getFastestNode();
-//    }
-//
-//    private void ensureNodeSelector() {
-//        if (!_disableTopologyUpdates) {
-//            waitForTopologyUpdate(_firstTopologyUpdate);
-//        }
-//
-//        if (_nodeSelector == null) {
-//            Topology topology = new Topology();
-//
-//            topology.setNodes(new ArrayList<>(getTopologyNodes()));
-//            topology.setEtag(topologyEtag);
-//
-//            _nodeSelector = new NodeSelector(topology, _executorService);
-//        }
-//    }
-//
-//    protected void onTopologyUpdatedInvoke(Topology newTopology) {
-//        EventHelper.invoke(_onTopologyUpdated, this, new TopologyUpdatedEventArgs(newTopology));
-//    }
-//
+
+    public function getPreferredNode(): CurrentIndexAndNode
+    {
+        $this->ensureNodeSelector();
+
+        return $this->nodeSelector->getPreferredNode();
+    }
+
+    public function getNodeBySessionId(int $sessionId): CurrentIndexAndNode
+    {
+        $this->ensureNodeSelector();
+
+        return $this->nodeSelector->getNodeBySessionId($sessionId);
+    }
+
+    public function getFastestNode(): CurrentIndexAndNode
+    {
+        $this->ensureNodeSelector();
+
+        return $this->nodeSelector->getFastestNode();
+    }
+
+    private function ensureNodeSelector(): void
+    {
+        if (!$this->disableTopologyUpdates) {
+//            $this->waitForTopologyUpdate($this->firstTopologyUpdate);
+        }
+
+        if ($this->nodeSelector == null) {
+            $topology = new Topology();
+
+            $topology->setNodes($this->getTopologyNodes());
+            $topology->setEtag($this->topologyEtag);
+
+            $this->nodeSelector = new NodeSelector($topology);
+        }
+    }
+
+    protected function onTopologyUpdatedInvoke(Topology $newTopology): void
+    {
+        EventHelper::invoke($this->onTopologyUpdated, $this, new TopologyUpdatedEventArgs($newTopology));
+    }
+
 //    public static class IndexAndResponse {
 //        public final int index;
 //        public final CloseableHttpResponse response;

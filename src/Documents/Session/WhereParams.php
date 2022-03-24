@@ -3,10 +3,13 @@
 namespace RavenDB\Documents\Session;
 
 // !status: DONE
+use PHPUnit\Framework\MockObject\Rule\MethodName;
+
 class WhereParams
 {
     private string $fieldName;
-    private ?object $value = null;
+    /** @var mixed|MethodName */
+    private $value;
     private bool $allowWildcards;
     private bool $nestedPath;
     private bool $exact;
@@ -27,12 +30,18 @@ class WhereParams
         $this->fieldName = $fieldName;
     }
 
-    public function getValue(): ?object
+    /**
+     * @return mixed|MethodName
+     */
+    public function getValue()
     {
         return $this->value;
     }
 
-    public function setValue(?object $value): void
+    /**
+     * @param object|MethodName $value
+     */
+    public function setValue($value): void
     {
         $this->value = $value;
     }

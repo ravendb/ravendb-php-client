@@ -125,7 +125,8 @@ class NodeSelector implements CleanCloseable
         return new CurrentIndexAndNode (0, $state->nodes[0]);
     }
 
-//    public CurrentIndexAndNode getNodeBySessionId(int sessionId) {
+    public function getNodeBySessionId(int $sessionId): CurrentIndexAndNode
+    {
 //        NodeSelectorState state = _state;
 //
 //        if (state.topology.getNodes().size() == 0) {
@@ -146,10 +147,11 @@ class NodeSelector implements CleanCloseable
 //            }
 //        }
 //
-//        return getPreferredNode();
-//    }
-//
-//    public CurrentIndexAndNode getFastestNode() {
+        return $this->getPreferredNode();
+    }
+
+    public function getFastestNode(): CurrentIndexAndNode
+    {
 //        NodeSelectorState state = _state;
 //        if (state.failures[state.fastest].get() == 0 && state.nodes.get(state.fastest).getServerRole() == ServerNode.Role.MEMBER) {
 //            return new CurrentIndexAndNode(state.fastest, state.nodes.get(state.fastest));
@@ -160,9 +162,9 @@ class NodeSelector implements CleanCloseable
 //        // we'll just use the server preferred node or failover as usual
 //
 //        switchToSpeedTestPhase();
-//        return getPreferredNode();
-//    }
-//
+        return $this->getPreferredNode();
+    }
+
 //    public void restoreNodeIndex(int nodeIndex) {
 //        NodeSelectorState state = _state;
 //        if (state.failures.length <= nodeIndex) {

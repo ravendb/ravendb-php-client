@@ -6,6 +6,10 @@ use InvalidArgumentException;
 use RavenDB\Documents\Session\Operations\QueryOperation;
 use RavenDB\Documents\Session\Tokens\DeclareTokenArray;
 use RavenDB\Documents\Session\Tokens\LoadTokenList;
+use RavenDB\Documents\Session\Tokens\MoreLikeThisToken;
+use RavenDB\Documents\Session\Tokens\QueryToken;
+use RavenDB\Documents\Session\Tokens\QueryTokenList;
+use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Primitives\CleanCloseable;
 
 abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
@@ -47,7 +51,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     protected ?int $pageSize = null;
 
-//    protected List<QueryToken> selectTokens = new LinkedList<>();
+    protected QueryTokenList $selectTokens;
 //
 //    protected final FromToken fromToken;
 //    protected final List<DeclareToken> declareTokens;
@@ -56,15 +60,15 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //
 //    public boolean isProjectInto;
 //
-//    protected List<QueryToken> whereTokens = new LinkedList<>();
-//
-//    protected List<QueryToken> groupByTokens = new LinkedList<>();
-//
-//    protected List<QueryToken> orderByTokens = new LinkedList<>();
-//
-//    protected List<QueryToken> withTokens = new LinkedList<>();
-//
-//    protected QueryToken graphRawQuery;
+    protected QueryTokenList $whereTokens;
+
+    protected QueryTokenList $groupByTokens;
+
+    protected QueryTokenList $orderByTokens;
+
+    protected QueryTokenList $withTokens;
+
+    protected ?QueryToken $graphRawQuery = null;
 
     protected int $start = 0;
 
@@ -130,7 +134,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        return !groupByTokens.isEmpty();
 //    }
 //
-//    private boolean _isInMoreLikeThis;
+    private bool $isInMoreLikeThis = false;
 //
 //    private String _includesAlias;
 //
@@ -149,6 +153,15 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         ?string $fromAlias = null,
         bool $isProjectInto = false
     ) {
+        $this->selectTokens = new QueryTokenList();
+        $this->whereTokens = new QueryTokenList();
+        $this->groupByTokens = new QueryTokenList();
+        $this->orderByTokens = new QueryTokenList();
+        $this->withTokens = new QueryTokenList();
+
+        //
+
+
         $this->className = $className;
 //        rootTypes.add(clazz);
 //        this.isGroupBy = isGroupBy;
@@ -499,65 +512,19 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        List<QueryToken> tokens = getCurrentWhereTokens();
 //        tokens.add(CloseSubclauseToken.create());
 //    }
-//
-//    @Override
-//    public void _whereEquals(String fieldName, Object value) {
-//        _whereEquals(fieldName, value, false);
-//    }
-//
-//    @Override
-//    public void _whereEquals(String fieldName, Object value, boolean exact) {
-//        WhereParams params = new WhereParams();
-//        params.setFieldName(fieldName);
-//        params.setValue(value);
-//        params.setExact(exact);
-//        _whereEquals(params);
-//    }
-//
-//    @Override
-//    public void _whereEquals(String fieldName, MethodCall method) {
-//        _whereEquals(fieldName, method, false);
-//    }
-//
-//    @Override
-//    public void _whereEquals(String fieldName, MethodCall method, boolean exact) {
-//        _whereEquals(fieldName, (Object) method, exact);
-//    }
 
-    public function _whereEquals(...$args): void
+    protected function _whereEquals(string $fieldName, $value, bool $exact = false): void
     {
-        $argsCount = count($args);
-
-        if($argsCount == 0) {
-            throw new InvalidArgumentException('You must set some arguments on whereEquals method call.');
-        }
-
-        if ($argsCount == 1) {
-            $whereParams = $args[0];
-            if (!$whereParams instanceof WhereParams) {
-                throw new InvalidArgumentException('Argument must be instance of WhereParams or there must be more arguments');
-            }
-            $this->_whereEqualsInternal($whereParams);
-            return;
-        }
-
         $whereParams = new WhereParams();
 
-        $whereParams->setFieldName($args[0]);
-
-        $value = $args[1];
-        if ($value instanceof MethodCall) {
-            // @todo: Check with Marcin
-            // @todo: cast args[1] to object if it is MethodCall - do we have to do this or not?
-        }
+        $whereParams->setFieldName($fieldName);
         $whereParams->setValue($value);
+        $whereParams->setExact($exact);
 
-        $whereParams->setExact(count($args) > 2 ? $args[2] : false);
-
-        $this->_whereEqualsInternal($whereParams);
+        $this->_whereEqualsWithParams($whereParams);
     }
 
-    public function _whereEqualsInternal(WhereParams $whereParams): void
+    protected function _whereEqualsWithParams(WhereParams $whereParams): void
     {
         if ($this->negate) {
             $this->negate = false;
@@ -882,7 +849,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //    }
 //
 
-    public function _andAlso(bool $wrapPreviousQueryClauses): void
+    public function _andAlso(bool $wrapPreviousQueryClauses = false): void
     {
 //        List<QueryToken> tokens = getCurrentWhereTokens();
 //        if (tokens.isEmpty()) {
@@ -902,10 +869,11 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        }
     }
 
-//    /**
-//     * Add an OR to the query
-//     */
-//    public void _orElse() {
+    /**
+     * Add an OR to the query
+     */
+    public function _orElse(): void
+    {
 //        List<QueryToken> tokens = getCurrentWhereTokens();
 //        if (tokens.isEmpty()) {
 //            return;
@@ -916,8 +884,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        }
 //
 //        tokens.add(QueryOperatorToken.OR);
-//    }
-//
+    }
+
 //    /**
 //     * Specifies a boost weight to the last where clause.
 //     * The higher the boost factor, the more relevant the term will be.
@@ -1679,25 +1647,28 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        return parameterName;
 //    }
 //
-//    private List<QueryToken> getCurrentWhereTokens() {
-//        if (!_isInMoreLikeThis) {
-//            return whereTokens;
-//        }
-//
-//        if (whereTokens.isEmpty()) {
-//            throw new IllegalStateException("Cannot get MoreLikeThisToken because there are no where token specified.");
-//        }
-//
-//        QueryToken lastToken = whereTokens.get(whereTokens.size() - 1);
-//
-//        if (lastToken instanceof MoreLikeThisToken) {
-//            MoreLikeThisToken moreLikeThisToken = (MoreLikeThisToken) lastToken;
-//            return moreLikeThisToken.whereTokens;
-//        } else {
-//            throw new IllegalStateException("Last token is not MoreLikeThisToken");
-//        }
-//    }
-//
+    private function getCurrentWhereTokens(): QueryTokenList
+    {
+        if (!$this->isInMoreLikeThis) {
+            return $this->whereTokens;
+        }
+
+        if (empty($this->whereTokens)) {
+            throw new IllegalStateException("Cannot get MoreLikeThisToken because there are no where token specified.");
+        }
+
+        /** @var QueryToken $lastToken */
+        $lastToken = end($this->whereTokens);
+
+        if ($lastToken instanceof MoreLikeThisToken) {
+            /** @var MoreLikeThisToken $moreLikeThisToken */
+            $moreLikeThisToken = $lastToken;
+            return $moreLikeThisToken->whereTokens;
+        } else {
+            throw new IllegalStateException("Last token is not MoreLikeThisToken");
+        }
+    }
+
 //    protected void updateFieldsToFetchToken(FieldsToFetchToken fieldsToFetch) {
 //        this.fieldsToFetchToken = fieldsToFetch;
 //

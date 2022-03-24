@@ -296,10 +296,15 @@ class DocumentQuery extends AbstractDocumentQuery
 //        return this;
 //    }
 
-
-    public function whereEquals(...$args): DocumentQueryInterface
+    public function whereEquals(string $fieldName, $value, bool $exact = false): DocumentQueryInterface
     {
-        $this->_whereEquals(...$args);
+        $this->_whereEquals($fieldName, $value, $exact);
+        return $this;
+    }
+
+    public function whereEqualsWithParams(WhereParams $whereParams): DocumentQueryInterface
+    {
+        $this->_whereEqualsWithParams($whereParams);
         return $this;
     }
 
@@ -486,13 +491,12 @@ class DocumentQuery extends AbstractDocumentQuery
         return $this;
     }
 
-//
-//    @Override
-//    public IDocumentQuery<T> orElse() {
-//        _orElse();
-//        return this;
-//    }
-//
+    public function orElse(): DocumentQueryInterface
+    {
+        $this->_orElse();
+        return $this;
+    }
+
 //    @Override
 //    public IDocumentQuery<T> boost(double boost) {
 //        _boost(boost);
