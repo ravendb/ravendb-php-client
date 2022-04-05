@@ -1243,13 +1243,8 @@ class RequestExecutor implements CleanCloseable
         ?SessionInfo $sessionInfo,
         HttpRequestInterface $request
     ): HttpResponseInterface {
-
-        echo '>>> REQUEST ' .PHP_EOL;
-        print_r($request);
         $response = $command->send($this->getHttpClient(), $request);
 
-        echo '>>> RESPONSE ' .PHP_EOL;
-        print_r($response);
         return $response;
     }
 //    private <TResult> CloseableHttpResponse send(ServerNode chosenNode, RavenCommand<TResult> command, SessionInfo sessionInfo, HttpRequestBase request) throws IOException {
