@@ -34,20 +34,6 @@ class HttpClient implements HttpClientInterface
             $options['proxy'] = self::$proxy;
         }
 
-
-        // @todo: Remove this it is security vulnerability
-        $options['verify_peer'] = false;
-        $options['verify_host'] = false;
-
-//        $options['capath'] = __DIR__;// . DIRECTORY_SEPARATOR . 'server.pfx';
-//        $options['cafile'] = __DIR__ . DIRECTORY_SEPARATOR . 'localhost.crt';
-//        $options['cafile'] = __DIR__ . DIRECTORY_SEPARATOR . 'ca.crt';
-
-//        $options['local_cert'] =  '/Users/aleksandar/Projects/ravendb/certs/server.pem';
-//        $options['local_pk'] = __DIR__ . DIRECTORY_SEPARATOR . 'server.pem';
-//        $options['passphrase'] = '';
-
-
         $symfonyResponse =  $this->client->request($request->getMethod(), $request->getUrl(), $options);
 
         return HttpResponseTransformer::fromHttpClientResponse($symfonyResponse);

@@ -572,9 +572,21 @@ class RequestExecutor implements CleanCloseable
                 if (!array_key_exists('local_cert', $requestOptions)) {
                     $requestOptions['local_cert'] = $this->authOptions->getCertificatePath();
                 }
+
                 if (!array_key_exists('passphrase', $requestOptions)) {
                     $requestOptions['passphrase'] = $this->authOptions->getPassword();
                 }
+
+                $caPath = $this->authOptions->getCaPath();
+                if (!array_key_exists('capath', $requestOptions) && !empty($caPath)) {
+                    $requestOptions['capath'] = $caPath;
+                }
+
+                $caFile = $this->authOptions->getCaFile();
+                if (!array_key_exists('cafile', $requestOptions) && !empty($caFile)) {
+                    $requestOptions['cafile'] = $caFile;
+                }
+
                 $request->setOptions($requestOptions);
             }
         }
@@ -1231,8 +1243,13 @@ class RequestExecutor implements CleanCloseable
         ?SessionInfo $sessionInfo,
         HttpRequestInterface $request
     ): HttpResponseInterface {
+
+        echo '>>> REQUEST ' .PHP_EOL;
+        print_r($request);
         $response = $command->send($this->getHttpClient(), $request);
 
+        echo '>>> RESPONSE ' .PHP_EOL;
+        print_r($response);
         return $response;
     }
 //    private <TResult> CloseableHttpResponse send(ServerNode chosenNode, RavenCommand<TResult> command, SessionInfo sessionInfo, HttpRequestBase request) throws IOException {

@@ -94,13 +94,10 @@ class TestSecuredServiceLocator extends RavenServerLocator
             return $options;
         }
 
-        $options = new AuthOptions();
-
-        $options->setType(CertificateType::pem());
-        $options->setCertificatePath($clientCertPath);
-        $options->setPassword($clientCertPass);
-        $options->setCaPath($serverCaCertPath);
-
-        return $options;
+        return AuthOptions::pem(
+            $clientCertPath,
+            $clientCertPass,
+            $serverCaCertPath
+        );
     }
 }
