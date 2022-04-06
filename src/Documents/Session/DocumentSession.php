@@ -62,6 +62,7 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
     /**
      * @throws IllegalStateException
      * @throws \RavenDB\Exceptions\IllegalArgumentException
+     * @throws \RavenDB\Exceptions\ClientVersionMismatchException
      */
     public function saveChanges(): void
     {

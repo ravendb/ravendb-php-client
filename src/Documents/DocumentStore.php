@@ -19,7 +19,7 @@ use RavenDB\Type\UrlArray;
 // !status: IN PROGRESS
 class DocumentStore extends DocumentStoreBase
 {
-//    private ExecutorService executorService = Executors.newCachedThreadPool();
+//    private ExecutorService $executorService = Executors::newCachedThreadPool();
 //
 //    private final ConcurrentMap<DatabaseChangesOptions, IDatabaseChanges> _databaseChanges = new ConcurrentHashMap<>();
 //
@@ -54,8 +54,9 @@ class DocumentStore extends DocumentStoreBase
     }
 
 
-//    public ExecutorService getExecutorService() {
-//        return executorService;
+//    public function getExecutorService(): ExecutorService
+//    {
+//        return $this->executorService;
 //    }
 
     /**
@@ -178,7 +179,7 @@ class DocumentStore extends DocumentStoreBase
         $this->assertInitialized();
         $databaseName = $this->getEffectiveDatabase($databaseName);
 
-        return RequestExecutor::create($this->getUrls(), $databaseName, $this->getConventions());
+        return RequestExecutor::create($this->getUrls(), $databaseName, $this->authOptions, $this->getConventions());
     }
 
 //    @Override

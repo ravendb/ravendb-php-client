@@ -29,7 +29,7 @@ class RequestExecutorTest extends RemoteTestBase
 //                  store.getExecutorService(),
 //                  conventions
 //            );
-            $executor = RequestExecutor::create($store->getUrls(), $store->getDatabase(), $conventions);
+            $executor = RequestExecutor::create($store->getUrls(), $store->getDatabase(), $store->getAuthOptions(), $conventions);
 
             $databaseNamesOperation = new GetDatabaseNamesOperation(0, 20);
 

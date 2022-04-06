@@ -3,6 +3,8 @@
 namespace RavenDB\Documents\Session\Tokens;
 
 // !status: DONE
+use RavenDB\Utils\StringBuilder;
+
 class ExplanationToken extends QueryToken
 {
      private ?string $optionsParameterName = null;
@@ -16,17 +18,12 @@ class ExplanationToken extends QueryToken
         return new ExplanationToken($optionsParameterName);
     }
 
-    public function writeTo(): string
+    public function writeTo(StringBuilder &$writer): void
     {
-        $result = "explanations(";
-
+        $writer->append("explanations(");
         if ($this->optionsParameterName != null) {
-            $result .= "$";
-            $result .= $this->optionsParameterName;
+            $writer->append("$" . $this->optionsParameterName);
         }
-
-        $result .= ")";
-
-        return $result;
+        $writer->append(")");
     }
 }

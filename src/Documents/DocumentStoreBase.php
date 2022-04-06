@@ -2,11 +2,14 @@
 
 namespace RavenDB\Documents;
 
+use Closure;
 use InvalidArgumentException;
+use RavenDB\Auth\AuthOptions;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Http\RequestExecutor;
+use RavenDB\Primitives\ClosureArray;
 use RavenDB\Type\UrlArray;
 use RavenDB\Utils\StringUtils;
 
@@ -16,7 +19,7 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //      private final List<EventHandler<BeforeStoreEventArgs>> onBeforeStore = new ArrayList<>();
 //    private final List<EventHandler<AfterSaveChangesEventArgs>> onAfterSaveChanges = new ArrayList<>();
 //    private final List<EventHandler<BeforeDeleteEventArgs>> onBeforeDelete = new ArrayList<>();
-//    private final List<EventHandler<BeforeQueryEventArgs>> onBeforeQuery = new ArrayList<>();
+    private ClosureArray $onBeforeQuery;
 //    private final List<EventHandler<SessionCreatedEventArgs>> onSessionCreated = new ArrayList<>();
 //    private final List<EventHandler<SessionClosingEventArgs>> onSessionClosing = new ArrayList<>();
 //
@@ -34,6 +37,8 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
     {
         $this->database = '';
         $this->urls = new UrlArray();
+
+        $this->onBeforeQuery = new ClosureArray();
 
 //        $this->subscriptions = new DocumentSubscriptions($this);
     }
@@ -186,6 +191,19 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 
     protected bool $initialized = false;
 
+    protected ?AuthOptions $authOptions = null;
+
+    public function getAuthOptions(): ?AuthOptions
+    {
+        return $this->authOptions;
+    }
+
+    public function setAuthOptions(?AuthOptions $options): void
+    {
+        $this->assertNotInitialized('authOptions');
+        $this->authOptions = $options;
+    }
+
 //    private KeyStore _certificate;
 //    private char[] _certificatePrivateKeyPassword = "".toCharArray();
 //    private KeyStore _trustStore;
@@ -287,9 +305,11 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //        this.onBeforeDelete.remove(handler);
 //    }
 //
-//    public void addBeforeQueryListener(EventHandler<BeforeQueryEventArgs> handler) {
-//        this.onBeforeQuery.add(handler);
-//    }
+//    public function addBeforeQueryListener(EventHandler<BeforeQueryEventArgs> $handler): void
+    public function addBeforeQueryListener(Closure $handler): void
+    {
+        $this->onBeforeQuery->append($handler);
+    }
 //
 //    public void removeBeforeQueryListener(EventHandler<BeforeQueryEventArgs> handler) {
 //        this.onBeforeQuery.remove(handler);
@@ -451,10 +471,26 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //        return aggressivelyCacheFor(conventions.aggressiveCache().getDuration(), database);
 //    }
 
-    protected function registerEvents(InMemoryDocumentSessionOperations $session)
+    /**
+     * @param InMemoryDocumentSessionOperations|RequestExecutor $object
+     */
+    public function registerEvents($object)
     {
-        // todo: implement this
+        if (is_a($object, InMemoryDocumentSessionOperations::class)) {
+            $this->_registerEventsForInMemoryDocumentSessionOperations($object);
+            return;
+        }
 
+        if (is_a($object, RequestExecutor::class)) {
+            $this->_registerEventsForRequestExecutor($object);
+            return;
+        }
+
+        throw new InvalidArgumentException('Passed object must be instance of InMemoryDocumentSessionOperation or RequestExecutor');
+    }
+
+    private function _registerEventsForInMemoryDocumentSessionOperations(InMemoryDocumentSessionOperations $session): void
+    {
 //        for (EventHandler<BeforeStoreEventArgs> handler : onBeforeStore) {
 //            session.addBeforeStoreListener(handler);
 //        }
@@ -492,8 +528,9 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //        }
     }
 
-//
-//    public void registerEvents(RequestExecutor requestExecutor) {
+    private function _registerEventsForRequestExecutor(RequestExecutor $requestExecutor): void
+    {
+
 //        for (EventHandler<FailedRequestEventArgs> handler : onFailedRequest) {
 //            requestExecutor.addOnFailedRequestListener(handler);
 //        }
@@ -509,7 +546,7 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //        for (EventHandler<SucceedRequestEventArgs> handler : onSucceedRequest) {
 //            requestExecutor.addOnSucceedRequestListener(handler);
 //        }
-//    }
+    }
 
     protected function afterSessionCreated(InMemoryDocumentSessionOperations $session): void
     {

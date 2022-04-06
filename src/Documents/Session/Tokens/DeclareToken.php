@@ -3,6 +3,8 @@
 namespace RavenDB\Documents\Session\Tokens;
 
 // !status: DONE
+use RavenDB\Utils\StringBuilder;
+
 class DeclareToken extends QueryToken
 {
     private ?string $name = null;
@@ -27,21 +29,20 @@ class DeclareToken extends QueryToken
         return new DeclareToken($name, $body, $parameters, true);
     }
 
-    public function writeTo(): string
+    public function writeTo(StringBuilder &$writer): void
     {
-        $result = 'declare ';
-        $result .= $this->timeSeries ? "timeseries " : "function ";
-        $result .= $this->name;
-        $result .= "(";
-        $result .= $this->parameters;
-        $result .= ") ";
-        $result .= "{";
-        $result .= PHP_EOL;
-        $result .= $this->body;
-        $result .= PHP_EOL;
-        $result .= "}";
-        $result .= PHP_EOL;
-
-        return $result;
+        $writer
+            ->append('declare ')
+            ->append($this->timeSeries ? "timeseries " : "function ")
+            ->append($this->name)
+            ->append("(")
+            ->append($this->parameters)
+            ->append(") ")
+            ->append("{")
+            ->append(PHP_EOL)
+            ->append($this->body)
+            ->append(PHP_EOL)
+            ->append("}")
+            ->append(PHP_EOL);
     }
 }

@@ -16,7 +16,7 @@ class HttpResponseTransformer
     {
         try {
             $content = $symfonyResponse->getContent(false);
-            $statusCode = $symfonyResponse->getStatusCode(false);
+            $statusCode = $symfonyResponse->getStatusCode();
             $headers = $symfonyResponse->getHeaders(false);
         } catch (\Throwable $e) {
             throw new \Exception($e->getMessage());

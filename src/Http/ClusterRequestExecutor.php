@@ -2,6 +2,7 @@
 
 namespace RavenDB\Http;
 
+use RavenDB\Auth\AuthOptions;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Exceptions\UnsupportedOperationException;
@@ -15,18 +16,14 @@ class ClusterRequestExecutor extends RequestExecutor
 
     protected function __construct(
         ?string $databaseName,
-//        KeyStore certificate,
-//        char[] keyPassword,
-//        KeyStore trustStore,
+        ?AuthOptions $authOptions,
         DocumentConventions $conventions
 //        ExecutorService executorService,
 //        String[] initialUrls
     ) {
         parent::__construct(
             $databaseName,
-//            certificate,
-//            keyPassword,
-//            trustStore,
+            $authOptions,
             $conventions
 //            executorService,
 //            initialUrls
@@ -36,17 +33,13 @@ class ClusterRequestExecutor extends RequestExecutor
     public static function create(
         UrlArray $initialUrls,
         ?string $databaseName = null,
-//        KeyStore certificate,
-//        char[] keyPassword,
-//        KeyStore trustStore,
+        ?AuthOptions $authOptions,
 //        ExecutorService executorService,
         ?DocumentConventions $conventions = null
     ): ClusterRequestExecutor {
         $executor = new ClusterRequestExecutor(
             $databaseName,
-//            certificate,
-//            keyPassword,
-//            trustStore,
+            $authOptions,
             $conventions ?? DocumentConventions::getDefaultConventions(),
 //            executorService,
 //            initialUrls
@@ -63,7 +56,7 @@ class ClusterRequestExecutor extends RequestExecutor
 
         $topology = new Topology();
         $topology->setEtag(-1);
-        $topology->getServerNodes()->append($serverNode);
+        $topology->getNodes()->append($serverNode);
 
         $executor->setNodeSelector(new NodeSelector($topology));
         //-- until here
@@ -93,9 +86,7 @@ class ClusterRequestExecutor extends RequestExecutor
 
     public static function createForSingleNode(
         Url $url,
-//        KeyStore certificate,
-//        char[] keyPassword,
-//        KeyStore trustStore,
+        ?AuthOptions $authOptions,
 //        ExecutorService executorService,
         ?DocumentConventions $conventions = null
     ): ClusterRequestExecutor {
@@ -108,9 +99,7 @@ class ClusterRequestExecutor extends RequestExecutor
 //        ClusterRequestExecutor
         $executor = new ClusterRequestExecutor(
             "",
-//            certificate,
-//            keyPassword,
-//            trustStore,
+            $authOptions,
                 $conventions ?? DocumentConventions::getDefaultConventions()
 //            executorService,
 //            $initialUrls
@@ -124,7 +113,7 @@ class ClusterRequestExecutor extends RequestExecutor
 
         $nodes = new ServerNodeArray();
         $nodes->append($serverNode);
-        $topology->setServerNodes($nodes);
+        $topology->setNodes($nodes);
 
         // @todo: check this line
         $nodeSelector = new NodeSelector($topology); // new NodeSelector($topology, $executorService);

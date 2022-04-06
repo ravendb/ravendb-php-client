@@ -2,22 +2,28 @@
 
 namespace RavenDB\Exceptions;
 
-use Exception;
+use RuntimeException;
+use Throwable;
 
-class RavenException extends Exception
+// !status: DONE
+class RavenException extends RuntimeException
 {
     private bool $reachedLeader = false;
 
-    public function __construct(string $message, ?\Throwable $cause = null)
+    private ?Throwable $cause = null;
+
+    public function __construct(string $message = "", ?Throwable $cause = null)
     {
         parent::__construct($message);
+
+        $this->cause = $cause;
     }
 
-    // if we need this cause then it should be added to constructor
-//    public RavenException(String message, Throwable cause) {
-//        super(message, cause);
-//    }
-//
+    public function getCause(): ?Throwable
+    {
+        return $this->cause;
+    }
+
     public function isReachedLeader(): bool
     {
         return $this->reachedLeader;

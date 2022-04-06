@@ -5,18 +5,21 @@ namespace tests\RavenDB\Driver;
 use PHPUnit\Framework\TestCase;
 use RavenDB\Documents\DocumentStore;
 use RavenDB\Documents\DocumentStoreInterface;
+use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Http\Adapter\HttpClient;
+use RavenDB\Type\Url;
+use RavenDB\Type\UrlArray;
 
 abstract class RavenTestDriver extends TestCase
 {
-      protected bool $disposed = false;
+    protected bool $disposed = false;
 
     public function isDisposed(): bool
     {
         return $this->disposed;
     }
 
-//    public static boolean debug;
+    public static bool $debug = false;
 
 //  @todo: implement method
     protected function hookLeakedConnectionCheck(DocumentStore $store): void
@@ -83,6 +86,37 @@ abstract class RavenTestDriver extends TestCase
         // empty by design
     }
 
+    protected function runServerInternal(RavenServerLocator $locator, Callable $configureStore = null): DocumentStoreInterface
+    {
+        $this->reportInfo('Starting global server');
+
+        $urls = new UrlArray();
+
+        $arguments = $locator->getCommandArguments();
+        $prefix = '--ServerUrl=';
+        foreach ($arguments as $argument) {
+            if (str_starts_with($argument, $prefix)) {
+                $urls->append(new Url(substr($argument, strlen($prefix))));
+            }
+        }
+
+        if (count($urls) == 0) {
+            $this->reportInfo('Url is null');
+            throw new IllegalStateException('Unable to start server');
+        }
+
+        $store = new DocumentStore('test.manager');
+        $store->setUrls($urls);
+        $store->getConventions()->setDisableTopologyUpdates(true);
+
+        if ($configureStore != null) {
+            $configureStore($store);
+        }
+
+        $store->initialize();
+
+        return $store;
+    }
 //    protected IDocumentStore runServerInternal(RavenServerLocator locator, Reference<Process> processReference, Consumer<DocumentStore> configureStore) throws Exception {
 //        Process process = RavenServerRunner.run(locator);
 //        processReference.value = process;

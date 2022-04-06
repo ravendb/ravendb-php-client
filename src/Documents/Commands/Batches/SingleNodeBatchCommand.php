@@ -36,9 +36,9 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
     ) {
         parent::__construct(BatchCommandResult::class);
 
-        $this->conventions = $conventions;
         $this->commands = $commands ?? [];
         $this->options = $options;
+        $this->conventions = $conventions;
         $this->mode = $mode ?? TransactionMode::singleNode();
 
         if ($conventions == null) {
@@ -161,11 +161,7 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
 
     protected function createUrl(ServerNode $serverNode): string
     {
-        $path = $serverNode->getUrl();
-        $path .= '/databases/';
-        $path .= $serverNode->getDatabase();
-        $path .= '/bulk_docs?';
-
+        $path = $serverNode->getUrl() . '/databases/' . $serverNode->getDatabase() . '/bulk_docs?';
         $path .= $this->appendOptions();
 
         return $path;
@@ -213,7 +209,9 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
             throw new IllegalStateException('Got null response from the server after doing a batch, something is very wrong. Probably a garbled response.');
         }
 
-        $this->result = $this->getMapper()->denormalize($response, BatchCommandResult::class);
+        $resultObject = $this->getMapper()->deserialize($response, $this->getResultClass(), 'json');
+
+        $this->setResult($resultObject);
     }
 
     public function isReadRequest(): bool
@@ -226,4 +224,11 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
         // empty
     }
 
+    public function getResult(): ?BatchCommandResult
+    {
+        /** @var BatchCommandResult $result */
+        $result = parent::getResult();
+
+        return $result;
+    }
 }

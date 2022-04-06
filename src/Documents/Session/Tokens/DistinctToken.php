@@ -2,6 +2,8 @@
 
 namespace RavenDB\Documents\Session\Tokens;
 
+use RavenDB\Utils\StringBuilder;
+
 // !status: DONE
 class DistinctToken extends QueryToken
 {
@@ -11,9 +13,9 @@ class DistinctToken extends QueryToken
 
     public static ?DistinctToken $INSTANCE = null;
 
-    public function writeTo(): string
+    public function writeTo(StringBuilder &$writer): void
     {
-        return "distinct";
+        $writer->append("distinct");
     }
 
     public function getInstance(): DistinctToken

@@ -10,7 +10,7 @@ abstract class FacetBase
     private string $displayFieldName;
 
     /** @SerializedName("Options") */
-//    private FacetOptions $options;
+    private FacetOptions $options;
 
     /** @SerializedName("Aggregations") */
 //    private Map<FacetAggregation, Set<FacetAggregationField>> $aggregations;
@@ -29,14 +29,16 @@ abstract class FacetBase
         $this->displayFieldName = $displayFieldName;
     }
 
-//    public FacetOptions getOptions() {
-//        return options;
-//    }
-//
-//    public void setOptions(FacetOptions options) {
-//        this.options = options;
-//    }
-//
+    public function getOptions(): FacetOptions
+    {
+        return $this->options;
+    }
+
+    public function setOptions(FacetOptions $options): void
+    {
+        $this->options = $options;
+    }
+
 //    public Map<FacetAggregation, Set<FacetAggregationField>> getAggregations() {
 //        return aggregations;
 //    }
@@ -45,5 +47,5 @@ abstract class FacetBase
 //        this.aggregations = aggregations;
 //    }
 //
-//    public abstract FacetToken toFacetToken(Function<Object, String> addQueryParameter);
+//    public abstract function toFacetToken(Function<Object, String> $addQueryParameter): FacetToken;
 }

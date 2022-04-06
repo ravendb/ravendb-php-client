@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents;
 
+use RavenDB\Auth\AuthOptions;
 use RavenDB\Documents\Operations\MaintenanceOperationExecutor;
 use RavenDB\Documents\Session\DocumentSession;
 use RavenDB\Documents\Session\DocumentSessionInterface;
@@ -13,6 +14,8 @@ use RavenDB\Documents\Conventions\DocumentConventions;
 // !status: IN PROGRESS
 interface DocumentStoreInterface
 {
+
+    public function getAuthOptions(): ?AuthOptions;
 //  KeyStore getCertificate();
 //
 //    void addBeforeStoreListener(EventHandler<BeforeStoreEventArgs> handler);

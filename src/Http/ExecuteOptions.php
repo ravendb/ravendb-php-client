@@ -5,7 +5,7 @@ namespace RavenDB\Http;
 class ExecuteOptions
 {
     private ?ServerNode $chosenNode;
-    private int $nodeIndex = -1;
+    private ?int $nodeIndex = -1;
     private bool $shouldRetry = true;
 
     public function __construct()
@@ -22,12 +22,12 @@ class ExecuteOptions
         $this->chosenNode = $chosenNode;
     }
 
-    public function getNodeIndex(): int
+    public function getNodeIndex(): ?int
     {
         return $this->nodeIndex;
     }
 
-    public function setNodeIndex(int $nodeIndex): void
+    public function setNodeIndex(?int $nodeIndex): void
     {
         $this->nodeIndex = $nodeIndex;
     }

@@ -4,6 +4,7 @@ namespace RavenDB\Http;
 
 class HttpRequest implements HttpRequestInterface
 {
+    public const GET = 'GET';
     public const PUT = 'PUT';
     public const POST = 'POST';
     public const DELETE = 'DELETE';
@@ -47,5 +48,14 @@ class HttpRequest implements HttpRequestInterface
     public function setOptions(array $options): void
     {
         $this->options = $options;
+    }
+
+    public function addHeader($parameter, $value): void
+    {
+        if (!array_key_exists('headers', $this->options)) {
+            $this->options['headers'] = [];
+        }
+
+        $this->options['headers'][$parameter] = $value;
     }
 }

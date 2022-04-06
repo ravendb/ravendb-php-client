@@ -4,16 +4,21 @@ namespace RavenDB\Documents\Session;
 
 use InvalidArgumentException;
 use RavenDB\Documents\DocumentStoreBase;
+use RavenDB\Http\CurrentIndexAndNode;
+use RavenDB\Http\ReadBalanceBehavior;
+use RavenDB\Http\RequestExecutor;
+use RavenDB\Http\ServerNode;
 
 class SessionInfo
 {
-    private InMemoryDocumentSessionOperations $session;
+    private int $sessionId = 0;
+    private bool $sessionIdUsed = false;
+    private int $loadBalancerContextSeed = 0;
+    private bool $canUseLoadBalanceBehavior = false;
+    private ?InMemoryDocumentSessionOperations $session = null;
 
-    private bool $canUseLoadBalanceBehavior;
-    private int $lastClusterTransactionIndex;
-    private bool $noCaching;
-    private int $loadBalancerContextSeed;
-
+    private int $lastClusterTransactionIndex = 0;
+    private bool $noCaching = false;
 
     /**
      * @throws InvalidArgumentException
@@ -39,8 +44,89 @@ class SessionInfo
         $this->noCaching = $options->isNoCaching();
     }
 
+    //    public void setContext(String sessionKey) {
+//        if (StringUtils.isBlank(sessionKey)) {
+//            throw new InvalidArgumentException("Session key cannot be null or whitespace.");
+//        }
+//
+//      setContextInternal(sessionKey);
+//
+//      _canUseLoadBalanceBehavior =
+//          _canUseLoadBalanceBehavior ||
+//          _session.getConventions().getLoadBalanceBehavior() == LoadBalanceBehavior.USE_SESSION_CONTEXT;
+//  }
+//
+    private function setContextInternal(string $sessionKey):  void
+    {
+//    if (_sessionIdUsed) {
+//        throw new IllegalStateException(
+//              "Unable to set the session context after it has already been used. " .
+//              "The session context can only be modified before it is utilized."
+//        );
+//    }
+//
+//    if (sessionKey == null) {
+//        Integer v = _clientSessionIdCounter.get();
+//            _sessionId = ++v;
+//            _clientSessionIdCounter.set(v);
+//        } else {
+//
+//        byte[] sessionKeyBytes = sessionKey.getBytes();
+//            byte[] bytesToHash = ByteBuffer
+//            .allocate(sessionKeyBytes.length + 4)
+//            .put(sessionKeyBytes)
+//            .putInt(_loadBalancerContextSeed)
+//            .array();
+//            byte[] md5Bytes = DigestUtils.md5(bytesToHash);
+//            _sessionId = ByteBuffer.wrap(md5Bytes)
+//                .getInt();
+//        }
+    }
 
-    public function isCanUseLoadBalanceBehavior(): bool
+
+    public function getCurrentSessionNode(RequestExecutor $requestExecutor): ServerNode
+    {
+        if ($requestExecutor->getConventions()->getLoadBalanceBehavior()->isUseSessionContext()) {
+            if ($this->canUseLoadBalanceBehavior) {
+                $result = $requestExecutor->getNodeBySessionId($this->getSessionId());
+                return $result->currentNode;
+            }
+        }
+
+        switch ($requestExecutor->getConventions()->getReadBalanceBehavior()->getValue()) {
+            case ReadBalanceBehavior::NONE:
+                $result = $requestExecutor->getPreferredNode();
+                break;
+            case ReadBalanceBehavior::ROUND_ROBIN:
+                $result = $requestExecutor->getNodeBySessionId($this->getSessionId());
+                break;
+            case ReadBalanceBehavior::FASTEST_NODE:
+                $result = $requestExecutor->getFastestNode();
+                break;
+            default:
+                throw new InvalidArgumentException(
+                    $requestExecutor->getConventions()->getReadBalanceBehavior()->__toString()
+                );
+        }
+
+        return $result->currentNode;
+    }
+
+    public function getSessionId(): int
+    {
+        if ($this->sessionId == null) {
+            $context = null;
+            $selector = $this->session->getConventions()->getLoadBalancerPerSessionContextSelector();
+            if ($selector != null) {
+                $context = $selector($this->session->getDatabaseName());
+            }
+            $this->setContextInternal($context);
+        }
+        $this->sessionIdUsed = true;
+        return $this->sessionId;
+    }
+
+    public function canUseLoadBalanceBehavior(): bool
     {
         return $this->canUseLoadBalanceBehavior;
     }
@@ -65,84 +151,5 @@ class SessionInfo
         $this->noCaching = $noCaching;
     }
 
-//    public void setContext(String sessionKey) {
-//        if (StringUtils.isBlank(sessionKey)) {
-//            throw new InvalidArgumentException("Session key cannot be null or whitespace.");
-//        }
-//
-//      setContextInternal(sessionKey);
-//
-//      _canUseLoadBalanceBehavior =
-//          _canUseLoadBalanceBehavior ||
-//          _session.getConventions().getLoadBalanceBehavior() == LoadBalanceBehavior.USE_SESSION_CONTEXT;
-//  }
-//
-//private void setContextInternal(String sessionKey) {
-//    if (_sessionIdUsed) {
-//        throw new IllegalStateException(
-//              "Unable to set the session context after it has already been used. " .
-//              "The session context can only be modified before it is utilized."
-//        );
-//    }
-//
-//    if (sessionKey == null) {
-//        Integer v = _clientSessionIdCounter.get();
-//            _sessionId = ++v;
-//            _clientSessionIdCounter.set(v);
-//        } else {
-//
-//        byte[] sessionKeyBytes = sessionKey.getBytes();
-//            byte[] bytesToHash = ByteBuffer
-//            .allocate(sessionKeyBytes.length + 4)
-//            .put(sessionKeyBytes)
-//            .putInt(_loadBalancerContextSeed)
-//            .array();
-//            byte[] md5Bytes = DigestUtils.md5(bytesToHash);
-//            _sessionId = ByteBuffer.wrap(md5Bytes)
-//                .getInt();
-//        }
-//}
-//
-//    public ServerNode getCurrentSessionNode(RequestExecutor requestExecutor) {
-//    CurrentIndexAndNode result;
-//
-//        if (requestExecutor.getConventions().getLoadBalanceBehavior() == LoadBalanceBehavior.USE_SESSION_CONTEXT) {
-//            if (_canUseLoadBalanceBehavior) {
-//                result = requestExecutor.getNodeBySessionId(getSessionId());
-//                return result.currentNode;
-//            }
-//        }
-//
-//        switch (requestExecutor.getConventions().getReadBalanceBehavior()) {
-//            case NONE:
-//                result = requestExecutor.getPreferredNode();
-//                break;
-//            case ROUND_ROBIN:
-//                result = requestExecutor.getNodeBySessionId(getSessionId());
-//                break;
-//            case FASTEST_NODE:
-//                result = requestExecutor.getFastestNode();
-//                break;
-//            default:
-//                throw new InvalidArgumentException(
-//                    requestExecutor.getConventions().getReadBalanceBehavior().toString()
-//                );
-//        }
-//
-//        return result.currentNode;
-//    }
 
-//    public Integer getSessionId() {
-//        if (_sessionId == null) {
-//            String context = null;
-//            Function<String, String> selector =
-//                    _session.getConventions().getLoadBalancerPerSessionContextSelector();
-//            if (selector != null) {
-//                context = selector.apply(_session.getDatabaseName());
-//            }
-//        setContextInternal(context);
-//        }
-//        _sessionIdUsed = true;
-//        return _sessionId;
-//    }
 }

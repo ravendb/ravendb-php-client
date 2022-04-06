@@ -2,15 +2,16 @@
 
 namespace RavenDB\Documents\Session\Tokens;
 
-use _PHPStan_76800bfb5\Nette\NotImplementedException;
 use RavenDB\Documents\Queries\Facets\Facet;
 use RavenDB\Documents\Queries\Facets\FacetAggregation;
 use RavenDB\Documents\Queries\Facets\FacetBase;
+use RavenDB\Documents\Queries\Facets\FacetOptions;
 use RavenDB\Documents\Queries\Facets\GenericRangeFacet;
 use RavenDB\Documents\Queries\Facets\RangeFacet;
 use RavenDB\Documents\Queries\QueryFieldUtil;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Type\StringArray;
+use RavenDB\Utils\StringBuilder;
 
 class FacetToken extends QueryToken
 {
@@ -31,16 +32,16 @@ class FacetToken extends QueryToken
     {
     }
 
-    public static function createForFacetDocumentId(string $facetSetupDocumentId): FacetToken
+    public static function createForFacetSetupDocumentId(string $facetSetupDocumentId): FacetToken
     {
         if (empty($facetSetupDocumentId)) {
             throw new IllegalArgumentException("facetSetupDocumentId cannot be null");
         }
 
-        $facetToken = new FacetToken();
-        $facetToken->facetSetupDocumentId = $facetSetupDocumentId;
+        $token = new FacetToken();
+        $token->facetSetupDocumentId = $facetSetupDocumentId;
 
-        return $facetToken;
+        return $token;
     }
 
     public static function create(Facet $facet, $addQueryParameter): FacetToken
@@ -50,7 +51,7 @@ class FacetToken extends QueryToken
         $token->aggregateByFieldName = QueryFieldUtil::escapeIfNecessary($facet->getFieldName());
         $token->alias = QueryFieldUtil::escapeIfNecessary($facet->getDisplayFieldName());
         $token->ranges = null;
-        $token->optionsParameterName = $this->getOptionsParameterName($facet, $addQueryParameter);
+        $token->optionsParameterName = self::getOptionsParameterName($facet, $addQueryParameter);
         $token->aggregations = new FacetAggregationTokenArray();
 
         self::applyAggregations($facet, $token);
@@ -65,7 +66,7 @@ class FacetToken extends QueryToken
         $token->aggregateByFieldName = null;
         $token->alias = QueryFieldUtil::escapeIfNecessary($facet->getDisplayFieldName());
         $token->ranges = $facet->getRanges();
-        $token->optionsParameterName = $this->getOptionsParameterName($facet, $addQueryParameter);
+        $token->optionsParameterName = self::getOptionsParameterName($facet, $addQueryParameter);
         $token->aggregations = new FacetAggregationTokenArray();
 
         self::applyAggregations($facet, $token);
@@ -85,7 +86,7 @@ class FacetToken extends QueryToken
         $token->aggregateByFieldName = null;
         $token->alias = QueryFieldUtil::escapeIfNecessary($facet->getDisplayFieldName());
         $token->ranges = $ranges;
-        $token->optionsParameterName = $this->getOptionsParameterName($facet, $addQueryParameter);
+        $token->optionsParameterName = self::getOptionsParameterName($facet, $addQueryParameter);
         $token->aggregations = new FacetAggregationTokenArray();
 
         self::applyAggregations($facet, $token);
@@ -99,32 +100,32 @@ class FacetToken extends QueryToken
         return $facet->toFacetToken($addQueryParameter);
     }
 
-    public function writeTo(): string
+    public function writeTo(StringBuilder &$writer): void
     {
-        $result  = "facet(";
+        $writer->append("facet(");
 
         if ($this->facetSetupDocumentId != null) {
-            $result .= "id('";
-            $result .= $this->facetSetupDocumentId;
-            $result .= "'))";
+            $writer->append("id('");
+            $writer->append($this->facetSetupDocumentId);
+            $writer->append("'))");
 
-            return $result;
+            return;
         }
 
         $firstArgument = false;
 
         if ($this->aggregateByFieldName != null) {
-            $result .= $this->aggregateByFieldName;
+            $writer->append($this->aggregateByFieldName);
         } else if ($this->ranges != null) {
             $firstInRange = true;
 
             foreach ($this->ranges as $range) {
                 if (!$firstInRange) {
-                    $result .= ", ";
+                    $writer->append(", ");
                 }
 
                 $firstInRange = false;
-                $result .= $range;
+                $writer->append($range);
             }
         } else {
             $firstArgument = true;
@@ -133,26 +134,24 @@ class FacetToken extends QueryToken
         /** @var FacetAggregationToken $aggregation */
         foreach ($this->aggregations as $aggregation) {
             if (!$firstArgument) {
-                $result .= ", ";
+                $writer->append(", ");
             }
             $firstArgument = false;
-            $result .= $aggregation->writeTo();
+            $aggregation->writeTo(&$writer));
         }
 
         if (!empty($this->optionsParameterName)) {
-            $result .= ", $";
-            $result .= $this->optionsParameterName;
+            $writer->append(", $");
+            $writer->append($this->optionsParameterName);
         }
 
-        $result .= ")";
+        $writer->append(")");
 
         if (empty($this->alias) || ($this->alias == $this->aggregateByFieldName)) {
-            return $result;
+            return;
         }
 
-        $result .= " as " . $this->alias;
-
-        return $result;
+        $writer->append(" as " . $this->alias);
     }
 
     public function addAggregation(FacetAggregationToken $token): void
@@ -191,10 +190,8 @@ class FacetToken extends QueryToken
         }
     }
 
-
     private static function getOptionsParameterName(FacetBase $facet, $addQueryParameter): ?string
     {
         return $facet->getOptions() != null && $facet->getOptions() != FacetOptions::getDefaultOptions() ? $addQueryParameter($facet->getOptions()) : null;
     }
-
 }

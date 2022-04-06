@@ -29,4 +29,13 @@ class HttpResponse implements HttpResponseInterface
     {
         return $this->headers;
     }
+
+    public function getFirstHeader(string $key): ?string
+    {
+        if (!array_key_exists($key, $this->headers)) {
+            return null;
+        }
+
+        return $this->headers[$key];
+    }
 }

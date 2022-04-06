@@ -12,9 +12,9 @@ interface DocumentQueryCustomizationInterface
 
     /**
      * Get current Query
-     * @return Query
+     * @return AbstractDocumentQuery
      */
-//    AbstractDocumentQuery<?, ? ><!-- getQuery();-->
+    public function getQuery(): AbstractDocumentQuery;
 
     /**
      * Allow you to modify the index query before it is executed

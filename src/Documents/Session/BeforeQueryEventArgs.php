@@ -4,6 +4,7 @@ namespace RavenDB\Documents\Session;
 
 use RavenDB\Primitives\EventArgs;
 
+// !status: DONE
 class BeforeQueryEventArgs extends EventArgs
 {
     private InMemoryDocumentSessionOperations $session;
@@ -19,7 +20,8 @@ class BeforeQueryEventArgs extends EventArgs
         return $this->session;
     }
 
-    public function getQueryCustomization(): DocumentQueryCustomizationInterface {
+    public function getQueryCustomization(): DocumentQueryCustomizationInterface
+    {
         return $this->queryCustomization;
     }
 }

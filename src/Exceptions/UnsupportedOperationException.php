@@ -6,8 +6,8 @@ class UnsupportedOperationException extends RavenException
 {
     const MESSAGE = 'Unsupported operation exception';
 
-    public function __construct()
+    public function __construct(?string $message = null)
     {
-        parent::__construct(self::MESSAGE);
+        parent::__construct($message ?? self::MESSAGE);
     }
 }

@@ -3,6 +3,7 @@
 namespace RavenDB\Documents\Session\Tokens;
 
 use RavenDB\Exceptions\IllegalArgumentException;
+use RavenDB\Utils\StringBuilder;
 
 // !status: DONE
 class CompareExchangeValueIncludesToken extends QueryToken
@@ -23,11 +24,10 @@ class CompareExchangeValueIncludesToken extends QueryToken
         return new CompareExchangeValueIncludesToken($path);
     }
 
-    public function writeTo(): string {
-        $result = "cmpxchg('";
-        $result .= $this->path;
-        $result .= "')";
-
-        return $result;
+    public function writeTo(StringBuilder &$writer): void
+    {
+        $writer->append("cmpxchg('");
+        $writer->append($this->path);
+        $writer->append("')");
     }
 }

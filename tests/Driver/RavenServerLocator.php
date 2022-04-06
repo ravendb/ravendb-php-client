@@ -2,21 +2,21 @@
 
 namespace tests\RavenDB\Driver;
 
+use RavenDB\Auth\AuthOptions;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Exceptions\UnsupportedOperationException;
 use RavenDB\Type\StringArray;
 
 class RavenServerLocator
 {
-      public const ENV_SERVER_PATH = "RAVENDB_JAVA_TEST_SERVER_PATH";
+    public const ENV_SERVER_PATH = "RAVENDB_PHP_TEST_SERVER_PATH";
 
     /**
      * @throws IllegalStateException
      */
     public function getServerPath(): string
     {
-        // @todo: load enviroment variable here
-        $path = '';//System.getenv(ENV_SERVER_PATH);
+        $path = getenv(self::ENV_SERVER_PATH);
         if (empty($path)) {
             throw new IllegalStateException("Unable to find RavenDB server path. " .
                     "Please make sure " . self::ENV_SERVER_PATH . " environment variable is set and is valid " .
@@ -46,6 +46,10 @@ class RavenServerLocator
      */
     public function getServerCertificatePath(): string
     {
+        throw new UnsupportedOperationException();
+    }
+
+    public function getClientAuthOptions(): AuthOptions {
         throw new UnsupportedOperationException();
     }
 

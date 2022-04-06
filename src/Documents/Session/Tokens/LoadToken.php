@@ -2,6 +2,8 @@
 
 namespace RavenDB\Documents\Session\Tokens;
 
+use RavenDB\Utils\StringBuilder;
+
 // !status: DONE
 class LoadToken extends QueryToken
 {
@@ -19,12 +21,10 @@ class LoadToken extends QueryToken
         return new LoadToken($argument, $alias);
     }
 
-    public function writeTo(): string
+    public function writeTo(StringBuilder &$writer): void
     {
-        $result = $this->argument;
-        $result .= " as ";
-        $result .= $this->alias;
-
-        return $result;
+        $writer->append($this->argument);
+        $writer->append(" as ");
+        $writer->append($this->alias);
     }
 }
