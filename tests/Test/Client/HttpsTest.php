@@ -195,7 +195,7 @@ class HttpsTest extends RemoteTestBase
     {
         $certificatePath = tempnam(sys_get_temp_dir(), md5(uniqid(microtime(true))) . '.crt');
         try {
-            $certificateRawData->extractCertificateToFile($certificatePath);
+            $certificateRawData->extractCertificateToPem($certificatePath);
             $certificate = file_get_contents($certificatePath);
         } finally {
             unlink($certificatePath);
@@ -204,8 +204,7 @@ class HttpsTest extends RemoteTestBase
         return base64_encode($certificate);
     }
 
-
-    public function aTestShouldThrowAuthorizationExceptionWhenNotAuthorized() {
+    public function testShouldThrowAuthorizationExceptionWhenNotAuthorized() {
         $store = $this->getSecuredDocumentStore();
         try {
             $permissions = new DatabaseAccessArray();
@@ -217,22 +216,26 @@ class HttpsTest extends RemoteTestBase
             );
 
             $certificatePath = tempnam(sys_get_temp_dir(), md5(uniqid(microtime(true))) . '.crt');
-            $certificateRawData->extractCertificateToFile($certificatePath);
+            $certificateRawData->extractCertificateToPem($certificatePath);
 
             $storeWithOutCert = new DocumentStore($store->getDatabase(), $store->getUrls());
 
             try {
                 // using this certificate user won't have an access to current db
-                $storeWithOutCert->setAuthOptions(AuthOptions::pem($certificatePath));
+                $storeWithOutCert->setAuthOptions(AuthOptions::pem(
+                    $certificatePath,
+                    null,
+                    $store->getAuthOptions()->getCaFile() ?? $store->getAuthOptions()->getCaPath()
+                ));
                 $storeWithOutCert->initialize();
 
                 $session = $storeWithOutCert->openSession();
                 try {
-                    // @todo: Check with marcin why I don't have a problem to access to server
-//                    $this->expectException(AuthorizationException::class);
-//                    $this->expectErrorMessage('Forbidden access to ');
+                    $this->expectException(AuthorizationException::class);
+                    $this->expectErrorMessage('Forbidden access to ');
 
                     $user1 = $session->load(User::class, "users/1");
+
                 } finally {
                     $session->close();
                 }
@@ -256,7 +259,7 @@ class HttpsTest extends RemoteTestBase
             );
 
             $certificatePath = tempnam(sys_get_temp_dir(), md5(uniqid(microtime(true))) . '.crt');
-            $certificateRawData->extractCertificateToFile($certificatePath);
+            $certificateRawData->extractCertificateToPem($certificatePath);
 
             $storeWithOutCert = new DocumentStore($store->getDatabase(), $store->getUrls());
 

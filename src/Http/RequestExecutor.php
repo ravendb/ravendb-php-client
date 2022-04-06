@@ -569,12 +569,15 @@ class RequestExecutor implements CleanCloseable
         if ($this->authOptions != null) {
             if ($this->authOptions->getType()->isPem()) {
                 $requestOptions = $request->getOptions();
-                if (!array_key_exists('local_cert', $requestOptions)) {
-                    $requestOptions['local_cert'] = $this->authOptions->getCertificatePath();
+
+                $certificatePath = $this->authOptions->getCertificatePath();
+                if (!array_key_exists('local_cert', $requestOptions) && !empty($certificatePath)) {
+                    $requestOptions['local_cert'] = $certificatePath;
                 }
 
-                if (!array_key_exists('passphrase', $requestOptions)) {
-                    $requestOptions['passphrase'] = $this->authOptions->getPassword();
+                $password = $this->authOptions->getPassword();
+                if (!array_key_exists('passphrase', $requestOptions) && !empty($password)) {
+                    $requestOptions['passphrase'] = $password;
                 }
 
                 $caPath = $this->authOptions->getCaPath();
@@ -608,6 +611,7 @@ class RequestExecutor implements CleanCloseable
 
 //        CompletableFuture<Void> refreshTask = refreshIfNeeded(chosenNode, response);
 //
+
         $command->setStatusCode($response->getStatusCode());
 
         $responseDispose = ResponseDisposeHandling::automatic();
@@ -1541,6 +1545,7 @@ class RequestExecutor implements CleanCloseable
                     return true;
 
                 case HttpStatusCode::FORBIDDEN:
+
                     $msg = $this->tryGetResponseOfError($response);
 
                     $errorMessage = "Forbidden access to ";
@@ -1563,6 +1568,7 @@ class RequestExecutor implements CleanCloseable
                     $errorMessage .= $msg;
 
                     throw new AuthorizationException($errorMessage);
+
 
 //                case HttpStatus.SC_GONE: // request not relevant for the chosen node - the database has been moved to a different one
 //                    if (!shouldRetry) {

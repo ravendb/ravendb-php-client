@@ -20,7 +20,7 @@ class CertificateRawData implements ResultInterface
         $this->rawData = $rawData;
     }
 
-    public function extractCertificateToFile(string $certFilePath, string $certType = 'crt')
+    public function extractCertificateToPem(string $certFilePath)
     {
         $tmpZipPath = tempnam(sys_get_temp_dir(), md5(uniqid(microtime(true))));
 
@@ -31,19 +31,27 @@ class CertificateRawData implements ResultInterface
             if (true === $zip->open($tmpZipPath)) {
 
                 $certFileName = '';
+                $keyFileName = '';
 
                 for( $i = 0; $i < $zip->numFiles; $i++ ){
                     $stat = $zip->statIndex( $i );
-                    if (str_ends_with($stat['name'], '.' . $certType)) {
+                    if (str_ends_with($stat['name'], '.crt')) {
                         $certFileName = $stat['name'];
+                    }
+                    if (str_ends_with($stat['name'], '.key')) {
+                        $keyFileName = $stat['name'];
                     }
                 }
 
-                if (empty($certFileName)) {
+                if (empty($certFileName) || empty($keyFileName)) {
                     throw new \Exception('Adequate file can not be found in downloaded certificate.');
                 }
 
-                if($certData = $zip->getFromName($certFileName)) {
+                $certData = $zip->getFromName($certFileName);
+                $certData .= PHP_EOL;
+                $certData .= $zip->getFromName($keyFileName);
+
+                if(!empty($certData)) {
                     file_put_contents($certFilePath, $certData);
                 }
             }

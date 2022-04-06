@@ -2,11 +2,11 @@
 
 namespace RavenDB\Exceptions;
 
-use Exception;
+use RuntimeException;
 use Throwable;
 
 // !status: DONE
-class RavenException extends Exception
+class RavenException extends RuntimeException
 {
     private bool $reachedLeader = false;
 
