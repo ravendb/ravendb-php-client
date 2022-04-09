@@ -2,6 +2,8 @@
 
 namespace RavenDB\Documents\Session;
 
+use RavenDB\Documents\Queries\SearchOperator;
+
 interface DocumentQueryInterface
     extends DocumentQueryBaseInterface, DocumentQueryBaseSingleInterface, EnumerableQueryInterface
 {
@@ -119,4 +121,9 @@ interface DocumentQueryInterface
     public function whereEquals(string $fieldName, $value, bool $exact = false): DocumentQueryInterface;
 
     public function whereEqualsWithParams(WhereParams $whereParams): DocumentQueryInterface;
+
+
+    public function search(string $fieldName, string $searchTerms, ?SearchOperator $operator = null): DocumentQueryInterface;
+
+    public function toString(bool $compatibilityMode = false): string;
 }

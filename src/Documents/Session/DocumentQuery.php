@@ -2,26 +2,27 @@
 
 namespace RavenDB\Documents\Session;
 
+use RavenDB\Documents\Queries\SearchOperator;
+use RavenDB\Documents\Session\Tokens\DeclareTokenArray;
+use RavenDB\Documents\Session\Tokens\LoadTokenList;
+
 class DocumentQuery extends AbstractDocumentQuery
     implements DocumentQueryInterface, AbstractDocumentQueryImplInterface
 {
-//    public DocumentQuery(Class<T> clazz, InMemoryDocumentSessionOperations session, String indexName,
-//                         String collectionName, boolean isGroupBy) {
-//        this(clazz, session, indexName, collectionName, isGroupBy, null, null, null, null);
-//    }
-//
-//    public DocumentQuery(Class<T> clazz, InMemoryDocumentSessionOperations session, String indexName,
-//                         String collectionName, boolean isGroupBy,
-//                         List<DeclareToken> declareTokens, List<LoadToken> loadTokens, String fromAlias) {
-//        this(clazz, session, indexName, collectionName, isGroupBy, declareTokens, loadTokens, fromAlias, null);
-//    }
-//
-//    public DocumentQuery(Class<T> clazz, InMemoryDocumentSessionOperations session, String indexName,
-//                         String collectionName, boolean isGroupBy, List<DeclareToken> declareTokens,
-//                         List<LoadToken> loadTokens, String fromAlias, Boolean isProjectInto) {
-//        super(clazz, session, indexName, collectionName, isGroupBy, declareTokens, loadTokens, fromAlias, isProjectInto);
-//    }
-//
+    public function __construct(
+        string $className,
+        InMemoryDocumentSessionOperations $session,
+        ?string $indexName,
+        ?string $collectionName,
+        bool $isGroupBy,
+        ?DeclareTokenArray $declareTokens = null,
+        ?LoadTokenList $loadTokens = null,
+        ?string $fromAlias = null,
+        bool $isProjectInto = false
+    ) {
+        parent::__construct($className, $session, $indexName, $collectionName, $isGroupBy, $declareTokens, $loadTokens, $fromAlias, $isProjectInto);
+    }
+
 //    public <TProjection> IDocumentQuery<TProjection> selectFields(Class<TProjection> projectionClass) {
 //        return selectFields(projectionClass, ProjectionBehavior.DEFAULT);
 //    }
@@ -190,21 +191,15 @@ class DocumentQuery extends AbstractDocumentQuery
 //        _negateNext();
 //        return this;
 //    }
-//
-//    @Override
-//    public IDocumentQuery<T> search(String fieldName, String searchTerms) {
-//        _search(fieldName, searchTerms);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> search(String fieldName, String searchTerms, SearchOperator operator) {
-//        _search(fieldName, searchTerms, operator);
-//        return this;
-//    }
-//
-//    //TBD expr public IDocumentQuery<T> Search<TValue>(Expression<Func<T, TValue>> propertySelector, string searchTerms, SearchOperator @operator)
-//
+
+    public function search(string $fieldName, string $searchTerms, ?SearchOperator $operator = null): DocumentQueryInterface
+    {
+        $this->_search($fieldName, $searchTerms, $operator);
+        return $this;
+    }
+
+    //TBD expr public IDocumentQuery<T> Search<TValue>(Expression<Func<T, TValue>> propertySelector, string searchTerms, SearchOperator @operator)
+
 //    @Override
 //    public IDocumentQuery<T> intersect() {
 //        _intersect();

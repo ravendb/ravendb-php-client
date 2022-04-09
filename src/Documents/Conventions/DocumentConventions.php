@@ -77,7 +77,7 @@ class DocumentConventions
     private ?Closure $findIdentityPropertyNameFromCollectionName = null;
     private ?Closure $loadBalancerPerSessionContextSelector = null;
 
-    private ?Closure $findCollectionName = null;
+    private ?string $findCollectionName = null;
 
     private ?Closure $findJavaClassName = null;
     private ?Closure $findJavaClass = null;
@@ -198,7 +198,7 @@ class DocumentConventions
 //        _transformClassCollectionNameToDocumentIdPrefix =
 //          collectionName -> defaultTransformCollectionNameToDocumentIdPrefix(collectionName);
 //
-//        _findCollectionName = type -> defaultGetCollectionName(type);
+        $this->findCollectionName = 'defaultGetCollectionName';
 //
         $this->maxNumberOfRequestsPerSession = 30;
 //        _bulkInsert = new BulkInsertConventions(this);
@@ -323,16 +323,17 @@ class DocumentConventions
 //        assertNotFrozen();
 //        _waitForIndexesAfterSaveChangesTimeout = waitForIndexesAfterSaveChangesTimeout;
 //    }
-//
-//    /**
-//     * Get the default timeout for DocumentSession waitForNonStaleResults methods.
-//     * Default: 15 seconds
-//     * @return wait timeout
-//     */
-//    public Duration getWaitForNonStaleResultsTimeout() {
-//        return _waitForNonStaleResultsTimeout;
-//    }
-//
+
+    /**
+     * Get the default timeout for DocumentSession waitForNonStaleResults methods.
+     * Default: 15 seconds
+     * @return Duration wait timeout
+     */
+    public function getWaitForNonStaleResultsTimeout(): Duration
+    {
+        return $this->waitForNonStaleResultsTimeout;
+    }
+
 //    /**
 //     * Sets the default timeout for DocumentSession waitForNonStaleResults methods.
 //     * @param waitForNonStaleResultsTimeout wait timeout
@@ -719,14 +720,25 @@ class DocumentConventions
 
     /**
      * Gets the collection name for a given type.
+     *
+     * @param string|object|null $entity
+     *
+     * @return string|null
+     *
+     * @throws ReflectionException
      */
-    public function getCollectionName(?object $entity): ?string
+    public function getCollectionName($entity): ?string
     {
-        if ($entity == null) {
+        if (empty($entity)) {
             return null;
         }
 
-        return $this->getCollectionNameForClass(get_class($entity));
+        $className = $entity;
+        if (is_object($entity)) {
+            $className = get_class($entity);
+        }
+
+        return $this->getCollectionNameForClass($className);
     }
 
     /**
@@ -735,8 +747,11 @@ class DocumentConventions
      */
     public function getCollectionNameForClass(string $className): string
     {
-        // @todo: implement _findCollectionName call and function saving
-        $collectionName = null;//$this->_findCollectionName.apply(clazz);
+        $collectionName = null;
+        if (!empty($this->findCollectionName)) {
+            $methodName = $this->findCollectionName;
+            $collectionName = $this->$methodName($className);
+        }
 
         if ($collectionName != null) {
             return $collectionName;
@@ -745,14 +760,17 @@ class DocumentConventions
         return $this->defaultGetCollectionName($className);
     }
 
-//    /**
-//     * Generates the document id.
-//     * @param databaseName Database name
-//     * @param entity Entity
-//     * @return document id
-//     */
-//    @SuppressWarnings("unchecked")
-//    public String generateDocumentId(String databaseName, Object entity) {
+    /**
+     * Generates the document id.
+     *
+     * @param string $databaseName Database name
+     * @param Object|null $entity Entity
+     * @return string document id
+     */
+    public function generateDocumentId(string $databaseName, ?object $entity): string
+    {
+        return '12345';
+        // @todo: implement this mehotd
 //        Class<? > clazz = entity.getClass();
     //
     //        for (Tuple<Class, BiFunction<String, Object, String>> listOfRegisteredIdConvention : _listOfRegisteredIdConventions) {
@@ -762,8 +780,8 @@ class DocumentConventions
     //        }
     //
     //        return _documentIdGenerator.apply(databaseName, entity);
-    //    }
-    //
+    }
+
     //    /**
     //     * Register an id convention for a single type (and all of its derived types.
     //     * Note that you can still fall back to the DocumentIdGenerator if you want.

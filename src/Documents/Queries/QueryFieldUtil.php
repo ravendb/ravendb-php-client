@@ -52,7 +52,7 @@ class QueryFieldUtil
             return $name;
         }
 
-        if (!$this->shouldEscape($name, $isPath)) {
+        if (!self::shouldEscape($name, $isPath)) {
             return $name;
         }
 

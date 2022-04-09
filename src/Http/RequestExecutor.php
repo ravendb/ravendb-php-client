@@ -1350,7 +1350,7 @@ class RequestExecutor implements CleanCloseable
 
     private function throwFailedToContactAllNodes(RavenCommand $command, HttpRequestInterface $request): void
     {
-        if (($command->getFailedNodes() == null) || $command->getFailedNodes()->count() == 0) { //precaution, should never happen at this point
+        if (($command->getFailedNodes() == null) || $command->getFailedNodes()->isEmpty()) { //precaution, should never happen at this point
             throw new IllegalStateException("Received unsuccessful response and couldn't recover from it. " .
                     "Also, no record of exceptions per failed nodes. This is weird and should not happen.");
         }

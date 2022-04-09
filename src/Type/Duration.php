@@ -3,6 +3,7 @@
 namespace RavenDB\Type;
 
 use DateInterval;
+use RavenDB\Utils\HashUtils;
 
 class Duration
 {
@@ -23,5 +24,17 @@ class Duration
     {
         // @todo: implement this
         return new Duration();
+    }
+
+    public function hashCode(): int
+    {
+        return HashUtils::hashCode($this->interval->format(\DateTimeInterface::RFC3339_EXTENDED));
+    }
+
+    public function equals(Duration &$that): bool
+    {
+
+        // @todo: implement this method
+        return true;
     }
 }

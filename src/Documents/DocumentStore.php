@@ -68,7 +68,7 @@ class DocumentStore extends DocumentStoreBase
             return $this->identifier;
         }
 
-        if ($this->urls->count() == 0) {
+        if ($this->urls->isEmpty()) {
             return null;
         }
 
@@ -276,7 +276,7 @@ class DocumentStore extends DocumentStoreBase
      */
     private function assertValidConfiguration()
     {
-        if ($this->urls == null || $this->urls->count() == 0) {
+        if ($this->urls == null || $this->urls->isEmpty()) {
             throw new InvalidArgumentException("Document store URLs cannot be empty");
         }
     }

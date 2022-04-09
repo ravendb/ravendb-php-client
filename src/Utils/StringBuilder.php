@@ -6,7 +6,7 @@ class StringBuilder
 {
     private string $s;
 
-    public function __construct(string $value)
+    public function __construct(string $value = '')
     {
         $this->s = $value;
     }

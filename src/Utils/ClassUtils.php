@@ -2,10 +2,17 @@
 
 namespace RavenDB\Utils;
 
+use ReflectionClass;
+
 class ClassUtils
 {
     public static function getSimpleClassName(string $className): string
     {
-        return $className;
+        try {
+            $reflect = new ReflectionClass($className);
+            return $reflect->getShortName();
+        } catch (\Exception $exception) {
+            return '';
+        }
     }
 }

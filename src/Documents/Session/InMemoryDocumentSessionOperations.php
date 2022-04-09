@@ -31,6 +31,7 @@ use RavenDB\Primitives\ClosureArray;
 use RavenDB\Primitives\EventHelper;
 use RavenDB\Type\StringArray;
 use RavenDB\Utils\AtomicInteger;
+use RavenDB\Utils\StringUtils;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 
 use DS\Map as DSMap;
@@ -2482,7 +2483,22 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //        AfterConversionToEntityEventArgs eventArgs = new AfterConversionToEntityEventArgs(this, id, document, entity);
 //        EventHelper.invoke(onAfterConversionToEntity, this, eventArgs);
 //    }
-//
+
+    protected function processQueryParameters(string $className, ?string $indexName, ?string $collectionName, DocumentConventions $conventions): array
+    {
+        $isIndex = StringUtils::isNotBlank($indexName);
+        $isCollection = StringUtils::isNotEmpty($collectionName);
+
+        if ($isIndex && $isCollection) {
+            throw new IllegalStateException('Parameters indexName and collectionName are mutually exclusive. Please specify only one of them.');
+        }
+
+        if (!$isIndex && !$isCollection) {
+            $collectionName = $conventions->getCollectionName($className) ?? Metadata::ALL_DOCUMENTS_COLLECTION;
+        }
+
+        return [$indexName, $collectionName];
+    }
 //    protected Tuple<String, String> processQueryParameters(Class clazz, String indexName, String collectionName, DocumentConventions conventions) {
 //        boolean isIndex = StringUtils.isNotBlank(indexName);
 //        boolean isCollection = StringUtils.isNotEmpty(collectionName);
@@ -2499,7 +2515,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //
 //        return Tuple.create(indexName, collectionName);
 //    }
-//
+
 //    public static class SaveChangesData {
 //        private final List<ICommandData> deferredCommands;
 //        private final Map<IdTypeAndName, ICommandData> deferredCommandsMap;

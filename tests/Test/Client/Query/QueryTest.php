@@ -2,7 +2,7 @@
 
 namespace tests\RavenDB\Test\Client\Query;
 
-use RavenDB\Documents\Session\AbstractDocumentQuery;
+use RavenDB\Documents\Queries\SearchOperator;
 use RavenDB\Documents\Session\BeforeQueryEventArgs;
 use RavenDB\Documents\Session\DocumentQueryInterface;
 use tests\RavenDB\RemoteTestBase;
@@ -47,22 +47,20 @@ class QueryTest extends RemoteTestBase
                     $queryToBeExecuted->whereEquals("deleted", true);
                 });
 
-//                $query = $session->query(Article::class)
-//                    .search('title', 'foo')
-//                    .search('description', 'bar', SearchSeparator::or())
-//                ;
-//
-//                $result = $query->toList();
-//
+                $query = $session->query(Article::class)
+                    ->search('title', 'foo')
+                    ->search('description', 'bar',  SearchOperator::or())
+                ;
+
+                $result = $query->toList();
+
 //                $this->assertEquals(
-//                    "from 'Articles' where (search(title, $p0) or search(description, $p1)) and deleted = $p2".
+//                    "from 'Articles' where (search(title, \$p0) or search(description, \$p1)) and deleted = \$p2",
 //                    $query->toString()
 //                );
-//
+
 //                $this->assertCount(1, $result);
 
-                // todo: remove this assert
-                $this->assertTrue(true);
             } finally {
                 $session->close();
             }

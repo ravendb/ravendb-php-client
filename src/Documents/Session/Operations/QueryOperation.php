@@ -2,19 +2,25 @@
 
 namespace RavenDB\Documents\Session\Operations;
 
+use RavenDB\Documents\Queries\IndexQuery;
+use RavenDB\Documents\Queries\QueryResult;
+use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
+use RavenDB\Documents\Session\Tokens\FieldsToFetchToken;
+use RavenDB\Exceptions\IllegalStateException;
+
 class QueryOperation
 {
-//    private final InMemoryDocumentSessionOperations _session;
-//    private final String _indexName;
-//    private final IndexQuery _indexQuery;
-//    private final boolean _metadataOnly;
-//    private final boolean _indexEntriesOnly;
-//    private final boolean _isProjectInto;
-//    private QueryResult _currentQueryResults;
-//    private final FieldsToFetchToken _fieldsToFetch;
+    private ?InMemoryDocumentSessionOperations $session = null;
+    private ?string $indexName = null;
+    private IndexQuery $indexQuery;
+    private bool $metadataOnly = false;
+    private bool $indexEntriesOnly = false;
+    private bool $isProjectInto = false;
+    private QueryResult $currentQueryResults;
+    private ?FieldsToFetchToken $fieldsToFetch = null;
 //    private Stopwatch _sp;
-//    private boolean _noTracking;
-//
+    private bool $noTracking;
+
 //    private static final Log logger = LogFactory.getLog(QueryOperation.class);
 //    private static PropertyDescriptor[] _facetResultFields;
 //
@@ -27,22 +33,29 @@ class QueryOperation
 //            // ignore
 //        }
 //    }
-//
-//    public QueryOperation(InMemoryDocumentSessionOperations session, String indexName, IndexQuery indexQuery,
-//                          FieldsToFetchToken fieldsToFetch, boolean disableEntitiesTracking, boolean metadataOnly, boolean indexEntriesOnly,
-//                          boolean isProjectInto) {
-//        _session = session;
-//        _indexName = indexName;
-//        _indexQuery = indexQuery;
-//        _fieldsToFetch = fieldsToFetch;
-//        _noTracking = disableEntitiesTracking;
-//        _metadataOnly = metadataOnly;
-//        _indexEntriesOnly = indexEntriesOnly;
-//        _isProjectInto = isProjectInto;
-//
-//        assertPageSizeSet();
-//    }
-//
+
+    public function __construct(
+        ?InMemoryDocumentSessionOperations $session,
+        ?string $indexName,
+        IndexQuery $indexQuery,
+        ?FieldsToFetchToken $fieldsToFetch,
+        bool $disableEntitiesTracking,
+        bool $metadataOnly,
+        bool $indexEntriesOnly,
+        bool $isProjectInto
+    ) {
+        $this->session = $session;
+        $this->indexName = $indexName;
+        $this->indexQuery = $indexQuery;
+        $this->fieldsToFetch = $fieldsToFetch;
+        $this->noTracking = $disableEntitiesTracking;
+        $this->metadataOnly = $metadataOnly;
+        $this->indexEntriesOnly = $indexEntriesOnly;
+        $this->isProjectInto = $isProjectInto;
+
+        $this->assertPageSizeSet();
+    }
+
 //    public QueryCommand createRequest() {
 //        _session.incrementRequestCount();
 //
@@ -58,19 +71,20 @@ class QueryOperation
 //    public void setResult(QueryResult queryResult) {
 //        ensureIsAcceptableAndSaveResult(queryResult);
 //    }
-//
-//    private void assertPageSizeSet() {
-//        if (!_session.getConventions().isThrowIfQueryPageSizeIsNotSet()) {
-//            return;
-//        }
-//
-//        if (_indexQuery.isPageSizeSet()) {
-//            return;
-//        }
-//
-//        throw new IllegalStateException("Attempt to query without explicitly specifying a page size. " +
-//                "You can use .take() methods to set maximum number of results. By default the page size is set to Integer.MAX_VALUE and can cause severe performance degradation.");
-//    }
+
+    private function assertPageSizeSet(): void
+    {
+        if (!$this->session->getConventions()->isThrowIfQueryPageSizeIsNotSet()) {
+            return;
+        }
+
+        if ($this->indexQuery->isPageSizeSet()) {
+            return;
+        }
+
+        throw new IllegalStateException("Attempt to query without explicitly specifying a page size. " .
+                "You can use .take() methods to set maximum number of results. By default the page size is set to Integer.MAX_VALUE and can cause severe performance degradation.");
+    }
 //
 //    private void startTiming() {
 //        _sp = Stopwatch.createStarted();
@@ -297,8 +311,9 @@ class QueryOperation
 //            throw new TimeoutException(msg);
 //        }
 //    }
-//
-//    public IndexQuery getIndexQuery() {
-//        return _indexQuery;
-//    }
+
+    public function getIndexQuery(): IndexQuery
+    {
+        return $this->indexQuery;
+    }
 }

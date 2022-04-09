@@ -3,6 +3,8 @@
 namespace RavenDB\Documents\Session;
 
 // @todo: implement this interface
+use RavenDB\Documents\Queries\Query;
+
 interface DocumentSessionInterface
 {
 
@@ -115,16 +117,14 @@ interface DocumentSessionInterface
 //     */
 //    <TResult> Map<String, TResult> load(Class<TResult> clazz, Collection<String> ids, Consumer<IIncludeBuilder> includes);
 
+    /**
+     * @param string $className
+     * @param Query|null|string $collectionOrIndexName
+     *
+     * @return DocumentQueryInterface
+     */
+    public function query(string $className, $collectionOrIndexName = null): DocumentQueryInterface;
 
-
-
-
-//    <T> IDocumentQuery<T> query(Class<T> clazz);
-//
-//    <T> IDocumentQuery<T> query(Class<T> clazz, Query collectionOrIndexName);
-//
-//    <T, TIndex extends AbstractCommonApiForIndexes> IDocumentQuery<T> query(Class<T> clazz, Class<TIndex> indexClazz);
-//
 //    ISessionDocumentCounters countersFor(String documentId);
 //
 //    ISessionDocumentCounters countersFor(Object entity);

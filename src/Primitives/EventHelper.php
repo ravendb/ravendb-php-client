@@ -11,10 +11,10 @@ class EventHelper
      *
      * @param ClosureArray $delegates      Event delegates
      * @param object $sender        Event sender
-     * @param EventArgs $event      Event to send
+     * @param ?EventArgs $event      Event to send
      *
      */
-    public static function invoke(ClosureArray $delegates, object $sender, EventArgs $event): void
+    public static function invoke(ClosureArray $delegates, object $sender, ?EventArgs $event = null): void
     {
         /* * @var Closure $delegate */
         foreach ($delegates as $delegate) {

@@ -2,15 +2,44 @@
 
 namespace RavenDB\Documents\Session;
 
-use InvalidArgumentException;
+use RavenDB\Constants\DocumentIndexingFields;
+use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Documents\Queries\IndexQuery;
+use RavenDB\Documents\Queries\QueryFieldUtil;
+use RavenDB\Documents\Queries\QueryOperator;
+use RavenDB\Documents\Queries\QueryResult;
+use RavenDB\Documents\Queries\SearchOperator;
+use RavenDB\Documents\Queries\Timings\QueryTimings;
 use RavenDB\Documents\Session\Operations\QueryOperation;
+use RavenDB\Documents\Session\Tokens\CloseSubclauseToken;
+use RavenDB\Documents\Session\Tokens\CompareExchangeValueIncludesTokenArray;
+use RavenDB\Documents\Session\Tokens\CounterIncludesTokenArray;
 use RavenDB\Documents\Session\Tokens\DeclareTokenArray;
+use RavenDB\Documents\Session\Tokens\DistinctToken;
+use RavenDB\Documents\Session\Tokens\ExplanationToken;
+use RavenDB\Documents\Session\Tokens\FieldsToFetchToken;
+use RavenDB\Documents\Session\Tokens\FromToken;
+use RavenDB\Documents\Session\Tokens\HighlightingTokenArray;
 use RavenDB\Documents\Session\Tokens\LoadTokenList;
 use RavenDB\Documents\Session\Tokens\MoreLikeThisToken;
+use RavenDB\Documents\Session\Tokens\NegateToken;
+use RavenDB\Documents\Session\Tokens\OpenSubclauseToken;
+use RavenDB\Documents\Session\Tokens\QueryOperatorToken;
 use RavenDB\Documents\Session\Tokens\QueryToken;
 use RavenDB\Documents\Session\Tokens\QueryTokenList;
+use RavenDB\Documents\Session\Tokens\TimeSeriesIncludesTokenArray;
+use RavenDB\Documents\Session\Tokens\TimingsToken;
+use RavenDB\Documents\Session\Tokens\TrueToken;
+use RavenDB\Documents\Session\Tokens\WhereOperator;
+use RavenDB\Documents\Session\Tokens\WhereOptions;
+use RavenDB\Documents\Session\Tokens\WhereToken;
 use RavenDB\Exceptions\IllegalStateException;
-use RavenDB\Primitives\CleanCloseable;
+use RavenDB\Parameters;
+use RavenDB\Primitives\ClosureArray;
+use RavenDB\Primitives\EventHelper;
+use RavenDB\Type\Duration;
+use RavenDB\Type\StringSet;
+use RavenDB\Utils\StringBuilder;
 
 abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 {
@@ -18,48 +47,50 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
 //    private final Map<String, String> _aliasToGroupByFieldName = new HashMap<>();
 //
-//    protected QueryOperator defaultOperator = QueryOperator.AND;
-//
-//    protected Set<Class> rootTypes = new HashSet<>();
+    protected QueryOperator $defaultOperator;
+
+    protected StringSet $rootTypes;
 
     /**
      * Whether to negate the next operation
      */
     protected bool $negate = false;
 
-//    private final String indexName;
-//    private final String collectionName;
-//    private int _currentClauseDepth;
+    private ?string $indexName = null;
+    private ?string $collectionName = null;
+    private int $currentClauseDepth = 0;
 
     protected string $queryRaw = '';
 
-//    public String getIndexName() {
-//        return indexName;
-//    }
-//
-//    public String getCollectionName() {
-//        return collectionName;
-//    }
-//
-//    protected Parameters queryParameters = new Parameters();
-//
-//    protected boolean isIntersect;
-//
-//    protected boolean isGroupBy;
+    public function getIndexName(): ?string
+    {
+        return $this->indexName;
+    }
+
+    public function getCollectionName(): ?string
+    {
+        return $this->collectionName;
+    }
+
+    protected ?Parameters $queryParameters = null;
+
+    protected bool $isIntersect = false;
+
+    protected bool $isGroupBy = false;
 
     protected InMemoryDocumentSessionOperations $theSession;
 
     protected ?int $pageSize = null;
 
     protected QueryTokenList $selectTokens;
-//
-//    protected final FromToken fromToken;
-//    protected final List<DeclareToken> declareTokens;
-//    protected final List<LoadToken> loadTokens;
-//    protected FieldsToFetchToken fieldsToFetchToken;
-//
-//    public boolean isProjectInto;
-//
+
+    protected FromToken $fromToken;
+    protected ?DeclareTokenArray $declareTokens = null;
+    protected ?LoadTokenList $loadTokens = null;
+    protected ?FieldsToFetchToken $fieldsToFetchToken = null;
+
+    public bool $isProjectInto = false;
+
     protected QueryTokenList $whereTokens;
 
     protected QueryTokenList $groupByTokens;
@@ -72,79 +103,87 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     protected int $start = 0;
 
-//    private final DocumentConventions _conventions;
-//
-//    protected Duration timeout;
-//
-//    protected boolean theWaitForNonStaleResults;
-//
-//    protected Set<String> documentIncludes = new HashSet<>();
-//
-//    /**
-//     * Holds the query stats
-//     */
+    private DocumentConventions $conventions;
+
+    protected ?Duration $timeout = null;
+
+    protected bool $theWaitForNonStaleResults = false;
+
+    protected StringSet $documentIncludes;
+
+    /**
+     * Holds the query stats
+     */
 //    protected QueryStatistics queryStats = new QueryStatistics();
-//
-//    protected boolean disableEntitiesTracking;
-//
-//    protected boolean disableCaching;
-//
+
+    protected bool $disableEntitiesTracking = false;
+
+    protected bool $disableCaching = false;
+
 //    protected ProjectionBehavior projectionBehavior;
-//
-//    private String parameterPrefix = "p";
-//
-//    public boolean isDistinct() {
-//        return !selectTokens.isEmpty() && selectTokens.get(0) instanceof DistinctToken;
-//    }
-//
-//    public FieldsToFetchToken getFieldsToFetchToken() {
-//        return fieldsToFetchToken;
-//    }
-//
-//    public void setFieldsToFetchToken(FieldsToFetchToken fieldsToFetchToken) {
-//        this.fieldsToFetchToken = fieldsToFetchToken;
-//    }
-//
-//    public boolean isProjectInto() {
-//        return isProjectInto;
-//    }
-//
-//    public void setProjectInto(boolean projectInto) {
-//        isProjectInto = projectInto;
-//    }
-//
-//    /**
-//     * Gets the document convention from the query session
-//     */
-//    @Override
-//    public DocumentConventions getConventions() {
-//        return _conventions;
-//    }
-//
-//    /**
-//     * Gets the session associated with this document query
-//     * @return session
-//     */
-//    public IDocumentSession getSession() {
-//        return (IDocumentSession) theSession;
-//    }
-//
-//    @Override
-//    public boolean isDynamicMapReduce() {
-//        return !groupByTokens.isEmpty();
-//    }
-//
+
+    private string $parameterPrefix = "p";
+
+    public function isDistinct(): bool
+    {
+        return ($this->selectTokens->isNotEmpty()) && ($this->selectTokens->offsetGet(0) instanceof DistinctToken);
+    }
+
+    public function getFieldsToFetchToken(): FieldsToFetchToken
+    {
+        return $this->fieldsToFetchToken;
+    }
+
+    public function setFieldsToFetchToken(FieldsToFetchToken $fieldsToFetchToken): void
+    {
+        $this->fieldsToFetchToken = $fieldsToFetchToken;
+    }
+
+    public function isProjectInto(): bool
+    {
+        return $this->isProjectInto;
+    }
+
+    public function setProjectInto(bool $projectInto): void {
+        $this->isProjectInto = $projectInto;
+    }
+
+    /**
+     * Gets the document convention from the query session
+     */
+    public function getConventions(): DocumentConventions
+    {
+        return $this->conventions;
+    }
+
+    /**
+     * Gets the session associated with this document query
+     * @return DocumentSessionInterface session
+     */
+    public function getSession(): DocumentSessionInterface
+    {
+        /** @var DocumentSessionInterface $session */
+        $session = $this->theSession;
+        return $session;
+    }
+
+    public function isDynamicMapReduce(): bool
+    {
+        return !empty($this->groupByTokens);
+    }
+
     private bool $isInMoreLikeThis = false;
-//
-//    private String _includesAlias;
-//
-//    private Duration getDefaultTimeout() {
-//        return _conventions.getWaitForNonStaleResultsTimeout();
-//    }
+
+    private string $includesAlias;
+
+    private function getDefaultTimeout(): Duration
+    {
+        return $this->conventions->getWaitForNonStaleResultsTimeout();
+    }
 
     protected function __construct(
         string $className,
-        InMemoryDocumentSessionOperations $session,
+        ?InMemoryDocumentSessionOperations $session,
         ?string $indexName,
         ?string $collectionName,
         bool $isGroupBy,
@@ -153,45 +192,60 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         ?string $fromAlias = null,
         bool $isProjectInto = false
     ) {
+        $this->queryParameters = new Parameters();
+
+        $this->beforeQueryExecutedCallback = new ClosureArray();
+        $this->afterQueryExecutedCallback = new ClosureArray();
+        $this->afterStreamExecutedCallback = new ClosureArray();
+
+
         $this->selectTokens = new QueryTokenList();
         $this->whereTokens = new QueryTokenList();
         $this->groupByTokens = new QueryTokenList();
         $this->orderByTokens = new QueryTokenList();
         $this->withTokens = new QueryTokenList();
 
-        //
+        $this->documentIncludes = new StringSet();
+        $this->highlightingTokens = new HighlightingTokenArray();
 
+        $this->rootTypes = new StringSet();
+
+        $this->defaultOperator = QueryOperator::and();
+        //
+        //--
 
         $this->className = $className;
-//        rootTypes.add(clazz);
-//        this.isGroupBy = isGroupBy;
-//        this.indexName = indexName;
-//        this.collectionName = collectionName;
-//        this.fromToken = FromToken.create(indexName, collectionName, fromAlias);
-//        this.declareTokens = declareTokens;
-//        this.loadTokens = loadTokens;
+        $this->rootTypes->append($className);
+        $this->isGroupBy = $isGroupBy;
+        $this->indexName = $indexName;
+        $this->collectionName = $collectionName;
+        $this->fromToken = FromToken::create($indexName, $collectionName, $fromAlias);
+        $this->declareTokens = $declareTokens;
+        $this->loadTokens = $loadTokens;
         $this->theSession = $session;
 //        _addAfterQueryExecutedListener(this::updateStatsHighlightingsAndExplanations);
-//        _conventions = session == null ? new DocumentConventions() : session.getConventions();
-//        this.isProjectInto = isProjectInto != null ? isProjectInto : false;
+        $this->conventions = $session == null ? new DocumentConventions() : $session->getConventions();
+        $this->isProjectInto = $isProjectInto;
     }
 
-//    public Class<T> getQueryClass() {
-//        return clazz;
-//    }
-//
-//    public QueryToken getGraphRawQuery() {
-//        return graphRawQuery;
-//    }
-//
-//    public void _usingDefaultOperator(QueryOperator operator) {
-//        if (!whereTokens.isEmpty()) {
-//            throw new IllegalStateException("Default operator can only be set before any where clause is added.");
-//        }
-//
-//        defaultOperator = operator;
-//    }
-//
+    public function getQueryClass(): string
+    {
+        return $this->className;
+    }
+
+    public function getGraphRawQuery(): QueryToken
+    {
+        return $this->graphRawQuery;
+    }
+
+    public function _usingDefaultOperator(QueryOperator $operator) {
+        if (!$this->whereTokens->isEmpty()) {
+            throw new IllegalStateException("Default operator can only be set before any where clause is added.");
+        }
+
+        $this->defaultOperator = $operator;
+    }
+
 //    /**
 //     * Instruct the query to wait for non stale result for the specified wait timeout.
 //     * This shouldn't be used outside of unit tests unless you are well aware of the implications
@@ -222,36 +276,37 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     public function initializeQueryOperation(): QueryOperation
     {
         $beforeQueryExecutedEventArgs = new BeforeQueryEventArgs($this->theSession, new DocumentQueryCustomizationDelegate($this));
-//        $this->theSession->onBeforeQueryInvoke($beforeQueryExecutedEventArgs);
-//
-//        $indexQuery = $this->getIndexQuery();
-//
-//        return new QueryOperation(
-//            $this->theSession,
-//            $his->indexName,
-//            $indexQuery,
-//            $this->fieldsToFetchToken,
-//            $this->disableEntitiesTracking,
-//            false,
-//            false,
-//            $this->isProjectInto
-//        );
+        $this->theSession->onBeforeQueryInvoke($beforeQueryExecutedEventArgs);
+
+        $indexQuery = $this->getIndexQuery();
+
+        return new QueryOperation(
+            $this->theSession,
+            $this->indexName,
+            $indexQuery,
+            $this->fieldsToFetchToken,
+            $this->disableEntitiesTracking,
+            false,
+            false,
+            $this->isProjectInto
+        );
     }
 
-//    public IndexQuery getIndexQuery() {
-//        String serverVersion = null;
-//        if (theSession != null && theSession.getRequestExecutor() != null) {
-//            serverVersion = theSession.getRequestExecutor().getLastServerVersion();
-//        }
-//
-//        boolean compatibilityMode = serverVersion != null && serverVersion.compareTo("4.2") < 0;
-//
-//        String query = toString(compatibilityMode);
-//        IndexQuery indexQuery = generateIndexQuery(query);
-//        invokeBeforeQueryExecuted(indexQuery);
-//        return indexQuery;
-//    }
-//
+    public function getIndexQuery(): IndexQuery
+    {
+        $serverVersion = null;
+        if (($this->theSession != null) && ($this->theSession->getRequestExecutor() != null)) {
+            $serverVersion = $this->theSession->getRequestExecutor()->getLastServerVersion();
+        }
+
+        $compatibilityMode = ($serverVersion != null) && version_compare($serverVersion, "4.2", "<");
+
+        $query = $this->toString($compatibilityMode);
+        $indexQuery = $this->generateIndexQuery($query);
+        $this->invokeBeforeQueryExecuted($indexQuery);
+        return $indexQuery;
+    }
+
 //    /**
 //     * Gets the fields for projection
 //     * @return list of projected fields
@@ -302,13 +357,14 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //    protected void addGroupByAlias(String fieldName, String projectedName) {
 //        _aliasToGroupByFieldName.put(projectedName, fieldName);
 //    }
-//
-//    private void assertNoRawQuery() {
-//        if (queryRaw != null) {
-//            throw new IllegalStateException("RawQuery was called, cannot modify this query by calling on operations that would modify the query (such as Where, Select, OrderBy, GroupBy, etc)");
-//        }
-//    }
-//
+
+    private function assertNoRawQuery(): void
+    {
+        if ($this->queryRaw != null) {
+            throw new IllegalStateException("RawQuery was called, cannot modify this query by calling on operations that would modify the query (such as Where, Select, OrderBy, GroupBy, etc)");
+        }
+    }
+
 //    public void _graphQuery(String query) {
 //        graphRawQuery = new GraphQueryToken(query);
 //    }
@@ -404,15 +460,16 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //
 //        selectTokens.add(GroupByCountToken.create(projectedName));
 //    }
-//
-//    @Override
-//    public void _whereTrue() {
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//        negateIfNeeded(tokens, null);
-//
-//        tokens.add(TrueToken.INSTANCE);
-//    }
+
+
+    public function _whereTrue(): void
+    {
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+        $this->negateIfNeeded($tokens, null);
+
+        $tokens->append(TrueToken::instance());
+    }
 //
 //
 //    public MoreLikeThisScope _moreLikeThis() {
@@ -851,22 +908,22 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     public function _andAlso(bool $wrapPreviousQueryClauses = false): void
     {
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        if (tokens.isEmpty()) {
-//            return;
-//        }
-//
-//        if (tokens.get(tokens.size() - 1) instanceof QueryOperatorToken) {
-//            throw new IllegalStateException("Cannot add AND, previous token was already an operator token.");
-//        }
-//
-//        if (wrapPreviousQueryClauses) {
-//            tokens.add(0, OpenSubclauseToken.create());
-//            tokens.add(CloseSubclauseToken.create());
-//            tokens.add(QueryOperatorToken.AND);
-//        } else {
-//            tokens.add(QueryOperatorToken.AND);
-//        }
+        $tokens = $this->getCurrentWhereTokens();
+        if ($tokens->isEmpty()) {
+            return;
+        }
+
+        if (end($tokens) instanceof QueryOperatorToken) {
+            throw new IllegalStateException("Cannot add AND, previous token was already an operator token.");
+        }
+
+        if ($wrapPreviousQueryClauses) {
+            $tokens->prepend(OpenSubclauseToken::create());
+            $tokens->append(CloseSubclauseToken::create());
+            $tokens->append(QueryOperatorToken::and());
+        } else {
+            $tokens->append(QueryOperatorToken::and());
+        }
     }
 
     /**
@@ -1081,31 +1138,35 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //    public void _statistics(Reference<QueryStatistics> stats) {
 //        stats.value = queryStats;
 //    }
-//
-//    /**
-//     * Called externally to raise the after query executed callback
-//     * @param result Query result
-//     */
-//    public void invokeAfterQueryExecuted(QueryResult result) {
-//        EventHelper.invoke(afterQueryExecutedCallback, result);
+
+    /**
+     * Called externally to raise the after query executed callback
+     * @param QueryResult $result Query result
+     */
+    public function invokeAfterQueryExecuted(QueryResult $result): void
+    {
+        EventHelper::invoke($this->afterQueryExecutedCallback, $result);
+    }
+
+    public function invokeBeforeQueryExecuted(IndexQuery $query): void
+    {
+        EventHelper::invoke($this->beforeQueryExecutedCallback, $query);
+    }
+
+//    public function invokeAfterStreamExecuted(ObjectNode $result): void {
+//        EventHelper::invoke($this->afterStreamExecutedCallback, $result);
 //    }
-//
-//    public void invokeBeforeQueryExecuted(IndexQuery query) {
-//        EventHelper.invoke(beforeQueryExecutedCallback, query);
-//    }
-//
-//    public void invokeAfterStreamExecuted(ObjectNode result) {
-//        EventHelper.invoke(afterStreamExecutedCallback, result);
-//    }
-//
-//    /**
-//     * Generates the index query.
-//     * @param query Query
-//     * @return Index query
-//     */
+
+    /**
+     * Generates the index query.
+     * @param string $query Query
+     *
+     * @return IndexQuery Index query
+     */
 //    @SuppressWarnings("deprecation")
-//    protected IndexQuery generateIndexQuery(String query) {
-//        IndexQuery indexQuery = new IndexQuery();
+    protected function generateIndexQuery(string $query): IndexQuery
+    {
+        $indexQuery = new IndexQuery();
 //        indexQuery.setQuery(query);
 //        indexQuery.setStart(start);
 //        indexQuery.setWaitForNonStaleResults(theWaitForNonStaleResults);
@@ -1117,170 +1178,162 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        if (pageSize != null) {
 //            indexQuery.setPageSize(pageSize);
 //        }
-//        return indexQuery;
-//    }
-//
-//    /**
-//     * Perform a search for documents which fields that match the searchTerms.
-//     * If there is more than a single term, each of them will be checked independently.
-//     * @param fieldName Field name
-//     * @param searchTerms Search terms
-//     */
-//    @Override
-//    public void _search(String fieldName, String searchTerms) {
-//        _search(fieldName, searchTerms, SearchOperator.OR);
-//    }
-//
-//    /**
-//     * Perform a search for documents which fields that match the searchTerms.
-//     * If there is more than a single term, each of them will be checked independently.
-//     * @param fieldName Field name
-//     * @param searchTerms Search terms
-//     * @param operator Search operator
-//     */
-//    @Override
-//    public void _search(String fieldName, String searchTerms, SearchOperator operator) {
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//
-//        fieldName = ensureValidFieldName(fieldName, false);
-//        negateIfNeeded(tokens, fieldName);
-//
-//        WhereToken whereToken = WhereToken.create(WhereOperator.SEARCH, fieldName, addQueryParameter(searchTerms), new WhereToken.WhereOptions(operator));
-//        tokens.add(whereToken);
-//    }
-//
-//    private String toString(boolean compatibilityMode) {
-//        if (queryRaw != null) {
-//            return queryRaw;
-//        }
-//
-//        if (_currentClauseDepth != 0) {
-//            throw new IllegalStateException("A clause was not closed correctly within this query, current clause depth = " + _currentClauseDepth);
-//        }
-//
-//        StringBuilder queryText = new StringBuilder();
-//
-//        buildDeclare(queryText);
-//        if (graphRawQuery != null) {
-//            buildWith(queryText);
-//            buildGraphQuery(queryText);
-//        } else {
-//            buildFrom(queryText);
-//        }
-//        buildGroupBy(queryText);
-//        buildWhere(queryText);
-//        buildOrderBy(queryText);
-//
-//        buildLoad(queryText);
-//        buildSelect(queryText);
-//        buildInclude(queryText);
-//
-//        if (!compatibilityMode) {
-//            buildPagination(queryText);
-//        }
-//
-//        return queryText.toString();
-//    }
-//
-//    private void buildGraphQuery(StringBuilder queryText) {
-//        graphRawQuery.writeTo(queryText);
-//    }
-//
-//    private void buildWith(StringBuilder queryText) {
-//        for (QueryToken with : withTokens) {
-//            with.writeTo(queryText);
-//            queryText.append(System.lineSeparator());
-//        }
-//    }
-//
-//    @Override
-//    public String toString() {
-//        return toString(false);
-//    }
-//
-//    private void buildPagination(StringBuilder queryText) {
-//        if (start > 0 || pageSize != null) {
-//            queryText
-//                    .append(" limit $")
-//                    .append(addQueryParameter(start))
-//                    .append(", $")
-//                    .append(addQueryParameter(pageSize));
-//        }
-//    }
-//
-//    @SuppressWarnings("UnusedAssignment")
-//    private void buildInclude(StringBuilder queryText) {
-//        if (documentIncludes.isEmpty() &&
-//                highlightingTokens.isEmpty() &&
-//                explanationToken == null &&
-//                queryTimings == null &&
-//                counterIncludesTokens == null &&
-//                timeSeriesIncludesTokens == null &&
-//                compareExchangeValueIncludesTokens == null) {
-//            return;
-//        }
-//
-//        queryText.append(" include ");
-//        Reference<Boolean> firstRef = new Reference<>(true);
-//        for (String include : documentIncludes) {
-//            if (!firstRef.value) {
-//                queryText.append(",");
-//            }
-//            firstRef.value = false;
-//
-//            Reference<String> escapedIncludeRef = new Reference<>();
-//
-//            if (IncludesUtil.requiresQuotes(include, escapedIncludeRef)) {
-//                queryText
-//                        .append("'")
-//                        .append(escapedIncludeRef.value)
-//                        .append("'");
-//            } else {
-//                queryText.append(include);
-//            }
-//        }
-//
-//        writeIncludeTokens(counterIncludesTokens, firstRef, queryText);
-//        writeIncludeTokens(timeSeriesIncludesTokens, firstRef, queryText);
-//        writeIncludeTokens(compareExchangeValueIncludesTokens, firstRef, queryText);
-//        writeIncludeTokens(highlightingTokens, firstRef, queryText);
-//
-//        if (explanationToken != null) {
-//            if (!firstRef.value) {
-//                queryText.append(",");
-//            }
-//
-//            firstRef.value = false;
-//            explanationToken.writeTo(queryText);
-//        }
-//
-//        if (queryTimings != null) {
-//            if (!firstRef.value) {
-//                queryText.append(",");
-//            }
-//            firstRef.value = false;
-//
-//
-//            TimingsToken.INSTANCE.writeTo(queryText);
-//        }
-//    }
-//
-//    <TToken extends QueryToken> void writeIncludeTokens(Collection<TToken> tokens, Reference<Boolean> firstRef, StringBuilder queryText) {
-//        if (tokens == null) {
-//            return;
-//        }
-//
-//        for (TToken token : tokens) {
-//            if (!firstRef.value) {
-//                queryText.append(",");
-//            }
-//            firstRef.value = false;
-//
-//            token.writeTo(queryText);
-//        }
-//    }
-//
+        return $indexQuery;
+    }
+
+    /**
+     * Perform a search for documents which fields that match the searchTerms.
+     * If there is more than a single term, each of them will be checked independently.
+     * @param string $fieldName Field name
+     * @param string $searchTerms Search terms
+     * @param ?SearchOperator $operator Search operator
+     */
+    public function _search(string $fieldName, string $searchTerms, ?SearchOperator $operator = null): void
+    {
+        if ($operator == null) {
+            $operator = SearchOperator::or();
+        }
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+
+        $fieldName = $this->ensureValidFieldName($fieldName, false);
+        $this->negateIfNeeded($tokens, $fieldName);
+
+        $whereToken = WhereToken::create(WhereOperator::search(), $fieldName, $this->addQueryParameter($searchTerms), new WhereOptions($operator));
+        $tokens->append($whereToken);
+    }
+
+    public function toString(bool $compatibilityMode = false): string
+    {
+        if ($this->queryRaw != null) {
+            return $this->queryRaw;
+        }
+
+        if ($this->currentClauseDepth != 0) {
+            throw new IllegalStateException("A clause was not closed correctly within this query, current clause depth = " . $this->currentClauseDepth);
+        }
+
+        $queryText = new StringBuilder();
+
+        $this->buildDeclare($queryText);
+        if ($this->graphRawQuery != null) {
+            $this->buildWith($queryText);
+            $this->buildGraphQuery($queryText);
+        } else {
+            $this->buildFrom($queryText);
+        }
+        $this->buildGroupBy($queryText);
+        $this->buildWhere($queryText);
+        $this->buildOrderBy($queryText);
+
+        $this->buildLoad($queryText);
+        $this->buildSelect($queryText);
+        $this->buildInclude($queryText);
+
+        if (!$compatibilityMode) {
+            $this->buildPagination($queryText);
+        }
+
+        return $queryText->__toString();
+    }
+
+    private function buildGraphQuery(StringBuilder $queryText): void
+    {
+        $this->graphRawQuery->writeTo($queryText);
+    }
+
+    private function buildWith(StringBuilder $queryText): void
+    {
+        foreach ($this->withTokens as $with) {
+            $with->writeTo($queryText);
+            $queryText->append(PHP_EOL);
+        }
+    }
+
+    private function buildPagination(StringBuilder $queryText): void
+    {
+        if ($this->start > 0 || $this->pageSize != null) {
+            $queryText
+                    ->append(" limit $")
+                    ->append($this->addQueryParameter($this->start))
+                    ->append(", $")
+                    ->append($this->addQueryParameter($this->pageSize));
+        }
+    }
+
+    private function buildInclude(StringBuilder $queryText): void
+    {
+        if ($this->documentIncludes->isEmpty() &&
+                $this->highlightingTokens->isEmpty() &&
+                $this->explanationToken == null &&
+                $this->queryTimings == null &&
+                $this->counterIncludesTokens == null &&
+                $this->timeSeriesIncludesTokens == null &&
+                $this->compareExchangeValueIncludesTokens == null) {
+            return;
+        }
+
+        $queryText->append(" include ");
+        $firstRef = true;
+        foreach ($this->documentIncludes as $include) {
+            if (!$firstRef) {
+                $queryText->append(",");
+            }
+            $firstRef = false;
+
+            $escapedIncludeRef = null;
+
+            if (IncludesUtil::requiresQuotes($include, $escapedIncludeRef)) {
+                $queryText
+                        ->append("'")
+                        ->append($escapedIncludeRef)
+                        ->append("'");
+            } else {
+                $queryText->append($include);
+            }
+        }
+
+        $this->writeIncludeTokens($this->counterIncludesTokens, $firstRef, $queryText);
+        $this->writeIncludeTokens($this->timeSeriesIncludesTokens, $firstRef, $queryText);
+        $this->writeIncludeTokens($this->compareExchangeValueIncludesTokens, $firstRef, $queryText);
+        $this->writeIncludeTokens($this->highlightingTokens, $firstRef, $queryText);
+
+        if ($this->explanationToken != null) {
+            if (!$firstRef) {
+                $queryText->append(",");
+            }
+
+            $firstRef = false;
+            $this->explanationToken->writeTo($queryText);
+        }
+
+        if ($this->queryTimings != null) {
+            if (!$firstRef) {
+                $queryText->append(",");
+            }
+            $firstRef = false;
+
+            TimingsToken::instance()->writeTo($queryText);
+        }
+    }
+
+    protected function writeIncludeTokens(?QueryTokenList $tokens, bool &$firstRef, StringBuilder $queryText): void
+    {
+        if ($tokens == null) {
+            return;
+        }
+
+        foreach($tokens as $token) {
+            if (!$firstRef) {
+                $queryText->append(",");
+            }
+            $firstRef = false;
+
+            $token->writeTo($queryText);
+        }
+    }
+
 //    @Override
 //    public void _intersect() {
 //        List<QueryToken> tokens = getCurrentWhereTokens();
@@ -1296,16 +1349,16 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //
 //        throw new IllegalStateException("Cannot add INTERSECT at this point.");
 //    }
-//
-//    public void _whereExists(String fieldName) {
-//        fieldName = ensureValidFieldName(fieldName, false);
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//        negateIfNeeded(tokens, null);
-//
-//        tokens.add(WhereToken.create(WhereOperator.EXISTS, fieldName, null));
-//    }
+
+    public function _whereExists(string $fieldName): void {
+        $fieldName = $this->ensureValidFieldName($fieldName, false);
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+        $this->negateIfNeeded($tokens, null);
+
+        $tokens->append(WhereToken::create(WhereOperator::exists(), $fieldName, null));
+    }
 //
 //    @Override
 //    public void _containsAny(String fieldName, Collection< ? > values) {
@@ -1360,166 +1413,172 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //            selectTokens.add(0, DistinctToken.INSTANCE);
 //        }
 //    }
-//
-//    private void updateStatsHighlightingsAndExplanations(QueryResult queryResult) {
-//        queryStats.updateQueryStats(queryResult);
-//        queryHighlightings.update(queryResult);
-//        if (explanations != null) {
-//            explanations.update(queryResult);
+
+    private function updateStatsHighlightingsAndExplanations(QueryResult $queryResult): void
+    {
+//        $this->queryStats->updateQueryStats($queryResult);
+//        $this->queryHighlightings->update($queryResult);
+//        if ($this->explanations != null) {
+//            $this->explanations->update($queryResult);
 //        }
-//        if (queryTimings != null) {
-//            queryTimings.update(queryResult);
+//        if ($this->queryTimings != null) {
+//            $this->queryTimings->update($queryResult);
 //        }
-//    }
-//
-//    private void buildSelect(StringBuilder writer) {
-//        if (selectTokens.isEmpty()) {
-//            return;
-//        }
-//
-//        writer.append(" select ");
-//        if (selectTokens.size() == 1 && selectTokens.get(0) instanceof DistinctToken) {
-//            selectTokens.get(0).writeTo(writer);
-//            writer.append(" *");
-//
-//            return;
-//        }
-//
-//        for (int i = 0; i < selectTokens.size(); i++) {
-//            QueryToken token = selectTokens.get(i);
-//            if (i > 0 && !(selectTokens.get(i - 1) instanceof DistinctToken)) {
-//                writer.append(",");
-//            }
-//
-//            DocumentQueryHelper.addSpaceIfNeeded(i > 0 ? selectTokens.get(i - 1) : null, token, writer);
-//
-//            token.writeTo(writer);
-//        }
-//    }
-//
-//    private void buildFrom(StringBuilder writer) {
-//        fromToken.writeTo(writer);
-//    }
-//
-//    private void buildDeclare(StringBuilder writer) {
-//        if (declareTokens == null) {
-//            return;
-//        }
-//
-//        for (DeclareToken token : declareTokens) {
-//            token.writeTo(writer);
-//        }
-//    }
-//
-//    private void buildLoad(StringBuilder writer) {
-//        if (loadTokens == null || loadTokens.isEmpty()) {
-//            return;
-//        }
-//
-//        writer.append(" load ");
-//
-//        for (int i = 0; i < loadTokens.size(); i++) {
-//            if (i != 0) {
-//                writer.append(", ");
-//            }
-//
-//            loadTokens.get(i).writeTo(writer);
-//        }
-//    }
-//
-//    private void buildWhere(StringBuilder writer) {
-//        if (whereTokens.isEmpty()) {
-//            return;
-//        }
-//
-//        writer
-//                .append(" where ");
-//
-//        if (isIntersect) {
-//            writer
-//                    .append("intersect(");
-//        }
-//
-//        for (int i = 0; i < whereTokens.size(); i++) {
-//            DocumentQueryHelper.addSpaceIfNeeded(i > 0 ? whereTokens.get(i - 1) : null, whereTokens.get(i), writer);
-//            whereTokens.get(i).writeTo(writer);
-//        }
-//
-//        if (isIntersect) {
-//            writer.append(") ");
-//        }
-//    }
-//
-//    private void buildGroupBy(StringBuilder writer) {
-//        if (groupByTokens.isEmpty()) {
-//            return;
-//        }
-//
-//        writer
-//                .append(" group by ");
-//
-//        boolean isFirst = true;
-//
-//        for (QueryToken token : groupByTokens) {
-//            if (!isFirst) {
-//                writer.append(", ");
-//            }
-//
-//            token.writeTo(writer);
-//            isFirst = false;
-//        }
-//    }
-//
-//    private void buildOrderBy(StringBuilder writer) {
-//        if (orderByTokens.isEmpty()) {
-//            return;
-//        }
-//
-//        writer
-//                .append(" order by ");
-//
-//        boolean isFirst = true;
-//
-//        for (QueryToken token : orderByTokens) {
-//            if (!isFirst) {
-//                writer.append(", ");
-//            }
-//
-//            token.writeTo(writer);
-//            isFirst = false;
-//        }
-//    }
-//
-//    private void appendOperatorIfNeeded(List<QueryToken> tokens) {
-//        assertNoRawQuery();
-//
-//        if (tokens.isEmpty()) {
-//            return;
-//        }
-//
-//        QueryToken lastToken = tokens.get(tokens.size() - 1);
-//        if (!(lastToken instanceof WhereToken) && !(lastToken instanceof CloseSubclauseToken)) {
-//            return;
-//        }
-//
-//        WhereToken lastWhere = null;
-//
-//        for (int i = tokens.size() - 1; i >= 0; i--) {
-//            if (tokens.get(i) instanceof WhereToken) {
-//                lastWhere = (WhereToken) tokens.get(i);
-//                break;
-//            }
-//        }
-//
-//        QueryOperatorToken token = defaultOperator == QueryOperator.AND ? QueryOperatorToken.AND : QueryOperatorToken.OR;
-//
-//        if (lastWhere != null && lastWhere.getOptions().getSearchOperator() != null) {
-//            token = QueryOperatorToken.OR; // default to OR operator after search if AND was not specified explicitly
-//        }
-//
-//        tokens.add(token);
-//    }
-//
+    }
+
+    private function buildSelect(StringBuilder $writer): void
+    {
+        if ($this->selectTokens->isEmpty()) {
+            return;
+        }
+
+        $writer->append(" select ");
+        if ($this->selectTokens->count() == 1 && ($this->selectTokens->offsetGet(0) instanceof DistinctToken)) {
+            $this->selectTokens->offsetGet(0)->writeTo($writer);
+            $writer->append(" *");
+
+            return;
+        }
+
+        $prevToken = null;
+        foreach ($this->selectTokens as $currentToken) {
+            if (($prevToken != null) && !is_a($prevToken,  DistinctToken::class)) {
+                $writer->append(",");
+            }
+
+            DocumentQueryHelper::addSpaceIfNeeded($prevToken, $currentToken, $writer);
+            $currentToken->writeTo($writer);
+        }
+    }
+
+    private function buildFrom(StringBuilder $writer): void
+    {
+        $this->fromToken->writeTo($writer);
+    }
+
+    private function buildDeclare(StringBuilder $writer): void
+    {
+        if ($this->declareTokens == null) {
+            return;
+        }
+
+        foreach ($this->declareTokens as $token) {
+            $token->writeTo($writer);
+        }
+    }
+
+    private function buildLoad(StringBuilder $writer): void
+    {
+        if (($this->loadTokens == null) || ($this->loadTokens->isEmpty())) {
+            return;
+        }
+
+        $writer->append(" load ");
+
+        foreach ($this->loadTokens as $key => $loadToken) {
+            if ($key !== array_key_first($this->loadTokens->getArrayCopy())) {
+                $writer->append(", ");
+            }
+            $loadToken->writeTo($writer);
+        }
+    }
+
+    private function buildWhere(StringBuilder $writer): void
+    {
+        if ($this->whereTokens->isEmpty()) {
+            return;
+        }
+
+        $writer->append(" where ");
+
+        if ($this->isIntersect) {
+            $writer->append("intersect(");
+        }
+
+        $prevToken = null;
+        foreach ($this->whereTokens as $currentToken) {
+            DocumentQueryHelper::addSpaceIfNeeded($prevToken, $currentToken, $writer);
+            $currentToken->writeTo($writer);
+            $prevToken = $currentToken;
+        }
+
+        if ($this->isIntersect) {
+            $writer->append(") ");
+        }
+    }
+
+    private function buildGroupBy(StringBuilder $writer): void
+    {
+        if ($this->groupByTokens->isEmpty()) {
+            return;
+        }
+
+        $writer->append(" group by ");
+
+        $isFirst = true;
+
+        foreach ($this->groupByTokens as $token) {
+            if (!$isFirst) {
+                $writer->append(", ");
+            }
+            $token->writeTo($writer);
+            $isFirst = false;
+        }
+    }
+
+    private function buildOrderBy(StringBuilder $writer): void
+    {
+        if ($this->orderByTokens->isEmpty()) {
+            return;
+        }
+
+        $writer->append(" order by ");
+
+        $isFirst = true;
+
+        foreach ($this->orderByTokens as $token) {
+            if (!$isFirst) {
+                $writer->append(", ");
+            }
+
+            $token->writeTo($writer);
+            $isFirst = false;
+        }
+    }
+
+    private function appendOperatorIfNeeded(QueryTokenList $tokens): void
+    {
+        $this->assertNoRawQuery();
+
+        if ($tokens->isEmpty()) {
+            return;
+        }
+
+        $lastToken = end($tokens);
+        if (!($lastToken instanceof WhereToken) && !($lastToken instanceof CloseSubclauseToken)) {
+            return;
+        }
+
+        /** @var ?WhereToken $lastWhere */
+        $lastWhere = null;
+
+        foreach (array_reverse($tokens->getArrayCopy()) as $token) {
+            if ($token instanceof WhereToken) {
+                $lastToken = $token;
+                break;
+            }
+        }
+
+        /** QueryOperatorToken */
+        $token = $this->defaultOperator->isAnd() ? QueryOperatorToken::and() : QueryOperatorToken::or() ;
+
+        if ($lastWhere != null && $lastWhere->getOptions()->getSearchOperator() != null) {
+            $token = QueryOperatorToken::or(); // default to OR operator after search if AND was not specified explicitly
+        }
+
+        $tokens->append($token);
+    }
+
 //    private Collection< ? > transformCollection(String fieldName, Collection< ? > values) {
 //        List<Object> result = new ArrayList<>();
 //        for (Object value : values) {
@@ -1536,26 +1595,27 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        }
 //        return result;
 //    }
-//
-//    private void negateIfNeeded(List<QueryToken> tokens, String fieldName) {
-//        if (!negate) {
-//            return;
-//        }
-//
-//        negate = false;
-//
-//        if (tokens.isEmpty() || tokens.get(tokens.size() - 1) instanceof OpenSubclauseToken) {
-//            if (fieldName != null) {
-//                _whereExists(fieldName);
-//            } else {
-//                _whereTrue();
-//            }
-//            _andAlso();
-//        }
-//
-//        tokens.add(NegateToken.INSTANCE);
-//    }
-//
+
+    private function negateIfNeeded(QueryTokenList $tokens, ?string $fieldName = null): void
+    {
+        if (!$this->negate) {
+            return;
+        }
+
+        $this->negate = false;
+
+        if ($tokens->isEmpty() || end($tokens) instanceof OpenSubclauseToken) {
+            if ($fieldName != null) {
+                $this->_whereExists($fieldName);
+            } else {
+                $this->_whereTrue();
+            }
+            $this->_andAlso();
+        }
+
+        $tokens->append(NegateToken::instance());
+    }
+
 //    private static Collection< ? > unpackCollection(Collection< ? > items) {
 //        List<Object> results = new ArrayList<>();
 //
@@ -1569,21 +1629,22 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //
 //        return results;
 //    }
-//
-//    private String ensureValidFieldName(String fieldName, boolean isNestedPath) {
-//        if (theSession == null || theSession.getConventions() == null || isNestedPath || isGroupBy) {
-//            return QueryFieldUtil.escapeIfNecessary(fieldName, isNestedPath);
-//        }
-//
-//        for (Class rootType : rootTypes) {
-//            Field identityProperty = theSession.getConventions().getIdentityProperty(rootType);
-//            if (identityProperty != null && identityProperty.getName().equals(fieldName)) {
-//                return Constants.Documents.Indexing.Fields.DOCUMENT_ID_FIELD_NAME;
-//            }
-//        }
-//
-//        return QueryFieldUtil.escapeIfNecessary(fieldName);
-//    }
+
+    private function ensureValidFieldName(string $fieldName, bool $isNestedPath): string
+    {
+        if ($this->theSession == null || $this->theSession->getConventions() == null || $isNestedPath || $this->isGroupBy) {
+            return QueryFieldUtil::escapeIfNecessary($fieldName, $isNestedPath);
+        }
+
+        foreach ($this->rootTypes as $rootType) {
+            $identityProperty = $this->theSession->getConventions()->getIdentityProperty($rootType);
+            if ($identityProperty != null && strcmp($identityProperty, $fieldName) == 0) {
+                return DocumentIndexingFields::DOCUMENT_ID_FIELD_NAME;
+            }
+        }
+
+        return QueryFieldUtil::escapeIfNecessary($fieldName);
+    }
 
     private function transformValue(WhereParams $whereParams, bool $forRange = false): ?object
     {
@@ -1640,13 +1701,14 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
         return $whereParams->getValue();
     }
-//
-//    private String addQueryParameter(Object value) {
-//        String parameterName = getParameterPrefix() + queryParameters.size();
-//        queryParameters.put(parameterName, value);
-//        return parameterName;
-//    }
-//
+
+    private function addQueryParameter($value): string
+    {
+        $parameterName = $this->getParameterPrefix() . $this->queryParameters->count();
+        $this->queryParameters->offsetSet($parameterName, $value);
+        return $parameterName;
+    }
+
     private function getCurrentWhereTokens(): QueryTokenList
     {
         if (!$this->isInMoreLikeThis) {
@@ -1765,12 +1827,12 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        String[] projections = new String[] { Constants.TimeSeries.QUERY_FUNCTION } ;
 //        return new QueryData(fields, projections);
 //    }
-//
-//    protected List<Consumer<IndexQuery>> beforeQueryExecutedCallback = new ArrayList<>();
-//
-//    protected List<Consumer<QueryResult>> afterQueryExecutedCallback = new ArrayList<>();
-//
-//    protected List<Consumer<ObjectNode>> afterStreamExecutedCallback = new ArrayList<>();
+
+    protected ClosureArray $beforeQueryExecutedCallback;
+
+    protected ClosureArray $afterQueryExecutedCallback;
+
+    protected ClosureArray $afterStreamExecutedCallback;
 
     protected ?QueryOperation $queryOperation = null;
 
@@ -1810,9 +1872,9 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //    public void _noCaching() {
 //        disableCaching = true;
 //    }
-//
-//    protected QueryTimings queryTimings;
-//
+
+    protected ?QueryTimings $queryTimings = null;
+
 //    public void _includeTimings(Reference<QueryTimings> timingsReference) {
 //        if (queryTimings != null) {
 //            timingsReference.value = queryTimings;
@@ -1822,7 +1884,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        queryTimings = timingsReference.value = new QueryTimings();
 //    }
 //
-//    protected List<HighlightingToken> highlightingTokens = new ArrayList<>();
+    protected HighlightingTokenArray $highlightingTokens;
 //
 //    protected QueryHighlightings queryHighlightings = new QueryHighlightings();
 //
@@ -2023,10 +2085,11 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         return $this->executeQueryOperation(null);
     }
 
-//    public T[] toArray() {
-//        return executeQueryOperationAsArray(null);
-//    }
-//
+    public function toArray(): array
+    {
+        return $this->executeQueryOperationAsArray(null);
+    }
+
 //    public QueryResult getQueryResult() {
 //        initSync();
 //
@@ -2203,7 +2266,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //
 //    protected Explanations explanations;
 //
-//    protected ExplanationToken explanationToken;
+    protected ?ExplanationToken $explanationToken = null;
 //
 //    public void _includeExplanations(ExplanationOptions options, Reference<Explanations> explanationsReference) {
 //        if (explanationToken != null) {
@@ -2214,13 +2277,13 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        explanationToken = ExplanationToken.create(optionsParameterName);
 //        this.explanations = explanationsReference.value = new Explanations();
 //    }
-//
-//    protected List<TimeSeriesIncludesToken> timeSeriesIncludesTokens;
-//
-//    protected List<CounterIncludesToken> counterIncludesTokens;
-//
-//    protected List<CompareExchangeValueIncludesToken> compareExchangeValueIncludesTokens;
-//
+
+    protected ?TimeSeriesIncludesTokenArray $timeSeriesIncludesTokens = null;
+
+    protected ?CounterIncludesTokenArray $counterIncludesTokens = null;
+
+    protected ?CompareExchangeValueIncludesTokenArray $compareExchangeValueIncludesTokens = null;
+
 //    protected void _includeCounters(String alias, Map<String, Tuple<Boolean, Set<String>>> counterToIncludeByDocId) {
 //        if (counterToIncludeByDocId == null || counterToIncludeByDocId.isEmpty()) {
 //            return;
@@ -2261,14 +2324,13 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //            }
 //        }
 //    }
-//
-//    @Override
-//    public String getParameterPrefix() {
-//        return parameterPrefix;
-//    }
-//
-//    @Override
-//    public void setParameterPrefix(String parameterPrefix) {
-//        this.parameterPrefix = parameterPrefix;
-//    }
+
+    public function getParameterPrefix(): string
+    {
+        return $this->parameterPrefix;
+    }
+
+    public function setParameterPrefix(string $parameterPrefix): void {
+        $this->$parameterPrefix = $parameterPrefix;
+    }
 }

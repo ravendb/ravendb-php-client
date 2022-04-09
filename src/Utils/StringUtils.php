@@ -7,22 +7,22 @@ use Doctrine\Inflector\InflectorFactory;
 class StringUtils
 {
     // @todo: Implement this as explained here: https://stackoverflow.com/questions/23419087/stringutils-isblank-vs-string-isempty
-    public static function isBlank(string $value): bool
+    public static function isBlank(?string $value): bool
     {
         return !$value;
     }
 
-    public static function isNotBlank(string $value): bool
+    public static function isNotBlank(?string $value): bool
     {
         return !self::isBlank($value);
     }
 
-    public static function isEmpty(string $value): bool
+    public static function isEmpty(?string $value): bool
     {
         return empty($value);
     }
 
-    public static function isNotEmpty(string $value): bool
+    public static function isNotEmpty(?string $value): bool
     {
         return !self::isEmpty($value);
     }

@@ -33,6 +33,16 @@ class StringArray extends \ArrayObject implements \JsonSerializable
         parent::offsetSet($key, $value);
     }
 
+    public function isEmpty(): bool
+    {
+        return $this->count() == 0;
+    }
+
+    public function isNotEmpty(): bool
+    {
+        return $this->count() > 0;
+    }
+
     public function jsonSerialize(): array
     {
         return $this->getArrayCopy();
