@@ -2,7 +2,7 @@
 
 namespace RavenDB\Constants;
 
-class Metadata
+class DocumentsMetadata
 {
     public const COLLECTION = "@collection";
     public const PROJECTION = "@projection";

@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Session\Tokens;
 
+use Closure;
 use RavenDB\Documents\Queries\Facets\Facet;
 use RavenDB\Documents\Queries\Facets\FacetAggregation;
 use RavenDB\Documents\Queries\Facets\FacetBase;
@@ -10,9 +11,11 @@ use RavenDB\Documents\Queries\Facets\GenericRangeFacet;
 use RavenDB\Documents\Queries\Facets\RangeFacet;
 use RavenDB\Documents\Queries\QueryFieldUtil;
 use RavenDB\Exceptions\IllegalArgumentException;
+use RavenDB\Exceptions\NotImplementedException;
 use RavenDB\Type\StringArray;
 use RavenDB\Utils\StringBuilder;
 
+// !stataus: DONE - TEST REQUIRED
 class FacetToken extends QueryToken
 {
     private ?string $facetSetupDocumentId = null;
@@ -44,7 +47,7 @@ class FacetToken extends QueryToken
         return $token;
     }
 
-    public static function create(Facet $facet, $addQueryParameter): FacetToken
+    public static function create(Facet $facet, Closure $addQueryParameter): FacetToken
     {
         $token = new FacetToken();
 
@@ -137,7 +140,7 @@ class FacetToken extends QueryToken
                 $writer->append(", ");
             }
             $firstArgument = false;
-            $aggregation->writeTo(&$writer));
+            $aggregation->writeTo($writer);
         }
 
         if (!empty($this->optionsParameterName)) {
@@ -190,8 +193,9 @@ class FacetToken extends QueryToken
         }
     }
 
-    private static function getOptionsParameterName(FacetBase $facet, $addQueryParameter): ?string
+    // @todo: check validity of this method with tests in the future when we implement/check Facets
+    private static function getOptionsParameterName(FacetBase $facet, Closure $addQueryParameter): ?string
     {
-        return $facet->getOptions() != null && $facet->getOptions() != FacetOptions::getDefaultOptions() ? $addQueryParameter($facet->getOptions()) : null;
+        return ($facet->getOptions() != null) && $facet->getOptions() != FacetOptions::getDefaultOptions() ? $addQueryParameter($facet->getOptions()) : null;
     }
 }

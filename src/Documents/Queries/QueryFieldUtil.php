@@ -2,7 +2,7 @@
 
 namespace RavenDB\Documents\Queries;
 
-use RavenDB\Constants\DocumentIndexingFields;
+use RavenDB\Constants\DocumentsIndexingFields;
 
 class QueryFieldUtil
 {
@@ -43,11 +43,11 @@ class QueryFieldUtil
     public static function escapeIfNecessary(string $name, bool $isPath = false): string
     {
         if (empty($name) || in_array($name, [
-                DocumentIndexingFields::DOCUMENT_ID_FIELD_NAME,
-                DocumentIndexingFields::REDUCE_KEY_HASH_FIELD_NAME,
-                DocumentIndexingFields::REDUCE_KEY_KEY_VALUE_FIELD_NAME,
-                DocumentIndexingFields::VALUE_FIELD_NAME,
-                DocumentIndexingFields::SPATIAL_SHAPE_FIELD_NAME
+                DocumentsIndexingFields::DOCUMENT_ID_FIELD_NAME,
+                DocumentsIndexingFields::REDUCE_KEY_HASH_FIELD_NAME,
+                DocumentsIndexingFields::REDUCE_KEY_KEY_VALUE_FIELD_NAME,
+                DocumentsIndexingFields::VALUE_FIELD_NAME,
+                DocumentsIndexingFields::SPATIAL_SHAPE_FIELD_NAME
             ])) {
             return $name;
         }

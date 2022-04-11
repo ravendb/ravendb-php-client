@@ -2,7 +2,7 @@
 
 namespace RavenDB\Documents\Session;
 
-use RavenDB\Constants\DocumentIndexingFields;
+use RavenDB\Constants\DocumentsIndexingFields;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Queries\IndexQuery;
 use RavenDB\Documents\Queries\QueryFieldUtil;
@@ -589,22 +589,23 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
             return;
         }
 
-//        whereParams.setFieldName(ensureValidFieldName(whereParams.getFieldName(), whereParams.isNestedPath()));
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//
-//        if (ifValueIsMethod(WhereOperator.EQUALS, whereParams, tokens)) {
-//            return;
-//        }
-//
-//        Object transformToEqualValue = transformValue(whereParams);
-//        String addQueryParameter = addQueryParameter(transformToEqualValue);
-//        WhereToken whereToken = WhereToken.create(WhereOperator.EQUALS, whereParams.getFieldName(), addQueryParameter, new WhereToken.WhereOptions(whereParams.isExact()));
-//        tokens.add(whereToken);
+        $whereParams->setFieldName($this->ensureValidFieldName($whereParams->getFieldName(), $whereParams->isNestedPath()));
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+
+        if ($this->ifValueIsMethod(WhereOperator::equals(), $whereParams, $tokens)) {
+            return;
+        }
+
+        $transformToEqualValue = $this->transformValue($whereParams);
+        $addQueryParameter = $this->addQueryParameter($transformToEqualValue);
+        $whereToken = WhereToken::create(WhereOperator::equals(), $whereParams->getFieldName(), $addQueryParameter, new WhereOptions($whereParams->isExact()));
+        $tokens->append($whereToken);
     }
-//
-//    private boolean ifValueIsMethod(WhereOperator op, WhereParams whereParams, List<QueryToken> tokens) {
+
+    private function ifValueIsMethod(WhereOperator $op, WhereParams $whereParams, QueryTokenList $tokens): bool
+    {
 //        if (whereParams.getValue() instanceof MethodCall) {
 //            MethodCall mc = (MethodCall) whereParams.getValue();
 //
@@ -625,9 +626,9 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //            return true;
 //        }
 //
-//        return false;
-//    }
-//
+        return false;
+    }
+
 //    public void _whereNotEquals(String fieldName, Object value) {
 //        _whereNotEquals(fieldName, value, false);
 //    }
@@ -655,26 +656,27 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     {
         if ($this->negate) {
             $this->negate = false;
-            $this->_whereEqualsInternal($whereParams);
+            // @todo: chech why we don't have this method!?
+//            $this->_whereEqualsInternal($whereParams);
             return;
         }
 
         /** @var object $transformToEqualValue */
         $transformToEqualValue = $this->transformValue($whereParams);
 
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//
-//        whereParams.setFieldName(ensureValidFieldName(whereParams.getFieldName(), whereParams.isNestedPath()));
-//
-//        if (ifValueIsMethod(WhereOperator.NOT_EQUALS, whereParams, tokens)) {
-//            return;
-//        }
-//
-//        WhereToken whereToken = WhereToken.create(WhereOperator.NOT_EQUALS, whereParams.getFieldName(), addQueryParameter(transformToEqualValue), new WhereToken.WhereOptions(whereParams.isExact()));
-//        tokens.add(whereToken);
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+
+        $whereParams->setFieldName($this->ensureValidFieldName($whereParams->getFieldName(), $whereParams->isNestedPath()));
+
+        if ($this->ifValueIsMethod(WhereOperator::notEquals(), $whereParams, $tokens)) {
+            return;
+        }
+
+        $whereToken = WhereToken::create(WhereOperator::notEquals(), $whereParams->getFieldName(), $this->addQueryParameter($transformToEqualValue), new WhereOptions($whereParams->isExact()));
+        $tokens->append($whereToken);
     }
-//
+
 //    @Override
 //    public void _negateNext() {
 //        negate = !negate;
@@ -931,16 +933,16 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
      */
     public function _orElse(): void
     {
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        if (tokens.isEmpty()) {
-//            return;
-//        }
-//
-//        if (tokens.get(tokens.size() - 1) instanceof QueryOperatorToken) {
-//            throw new IllegalStateException("Cannot add OR, previous token was already an operator token.");
-//        }
-//
-//        tokens.add(QueryOperatorToken.OR);
+        $tokens = $this->getCurrentWhereTokens();
+        if ($tokens->isEmpty()) {
+            return;
+        }
+
+        if ($tokens->last() instanceof QueryOperatorToken) {
+            throw new IllegalStateException("Cannot add OR, previous token was already an operator token.");
+        }
+
+        $tokens->append(QueryOperatorToken::or());
     }
 
 //    /**
@@ -1554,7 +1556,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
             return;
         }
 
-        $lastToken = end($tokens);
+        $lastToken = $tokens->last();
         if (!($lastToken instanceof WhereToken) && !($lastToken instanceof CloseSubclauseToken)) {
             return;
         }
@@ -1564,7 +1566,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
         foreach (array_reverse($tokens->getArrayCopy()) as $token) {
             if ($token instanceof WhereToken) {
-                $lastToken = $token;
+                $lastWhere = $token;
                 break;
             }
         }
@@ -1604,7 +1606,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
         $this->negate = false;
 
-        if ($tokens->isEmpty() || end($tokens) instanceof OpenSubclauseToken) {
+        if ($tokens->isEmpty() || $tokens->last() instanceof OpenSubclauseToken) {
             if ($fieldName != null) {
                 $this->_whereExists($fieldName);
             } else {
@@ -1639,23 +1641,22 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         foreach ($this->rootTypes as $rootType) {
             $identityProperty = $this->theSession->getConventions()->getIdentityProperty($rootType);
             if ($identityProperty != null && strcmp($identityProperty, $fieldName) == 0) {
-                return DocumentIndexingFields::DOCUMENT_ID_FIELD_NAME;
+                return DocumentsIndexingFields::DOCUMENT_ID_FIELD_NAME;
             }
         }
 
         return QueryFieldUtil::escapeIfNecessary($fieldName);
     }
 
-    private function transformValue(WhereParams $whereParams, bool $forRange = false): ?object
+    private function transformValue(WhereParams $whereParams, bool $forRange = false): ?string
     {
-        if ($whereParams->getValue() == null) {
+        if ($whereParams->getValue() === null) {
             return null;
         }
 
-        // ??
-//        if ($whereParams->getValue() == "") {
-//            return "";
-//        }
+        if ($whereParams->getValue() === "") {
+            return "";
+        }
 
 //        Reference<Object> objValueReference = new Reference<>();
 //        if (_conventions.tryConvertValueToObjectForQuery(whereParams.getFieldName(), whereParams.getValue(), forRange, objValueReference)) {
@@ -1720,7 +1721,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         }
 
         /** @var QueryToken $lastToken */
-        $lastToken = end($this->whereTokens);
+        $lastToken = $this->whereTokens->last();
 
         if ($lastToken instanceof MoreLikeThisToken) {
             /** @var MoreLikeThisToken $moreLikeThisToken */

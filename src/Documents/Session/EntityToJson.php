@@ -2,7 +2,7 @@
 
 namespace RavenDB\Documents\Session;
 
-use RavenDB\Constants\Metadata;
+use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use Symfony\Component\Serializer\Serializer;
@@ -128,11 +128,11 @@ class EntityToJson
 
         if ($documentInfo->getCollection() != null) {
             $setMetadata = true;
-            $metadataNode[Metadata::COLLECTION] = $mapper->normalize($documentInfo->getCollection());
+            $metadataNode[DocumentsMetadata::COLLECTION] = $mapper->normalize($documentInfo->getCollection());
         }
 
         if ($setMetadata) {
-            $jsonNode[Metadata::KEY] = $metadataNode;
+            $jsonNode[DocumentsMetadata::KEY] = $metadataNode;
         }
     }
 }

@@ -54,10 +54,10 @@ class QueryTest extends RemoteTestBase
 
                 $result = $query->toList();
 
-//                $this->assertEquals(
-//                    "from 'Articles' where (search(title, \$p0) or search(description, \$p1)) and deleted = \$p2",
-//                    $query->toString()
-//                );
+                $this->assertEquals(
+                    "from 'Articles' where (search(title, \$p0) or search(description, \$p1)) and deleted = \$p2",
+                    $query->toString()
+                );
 
 //                $this->assertCount(1, $result);
 

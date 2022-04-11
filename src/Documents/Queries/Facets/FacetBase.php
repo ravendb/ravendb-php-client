@@ -2,8 +2,11 @@
 
 namespace RavenDB\Documents\Queries\Facets;
 
+use Closure;
+use RavenDB\Documents\Session\Tokens\FacetToken;
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
+// !status: DONE
 abstract class FacetBase
 {
     /** @SerializedName("DisplayFieldName") */
@@ -13,11 +16,12 @@ abstract class FacetBase
     private FacetOptions $options;
 
     /** @SerializedName("Aggregations") */
-//    private Map<FacetAggregation, Set<FacetAggregationField>> $aggregations;
+    private AggregationArray $aggregations;
 
-//    public FacetBase() {
-//        aggregations = new HashMap<>();
-//    }
+    public function __construct()
+    {
+        $this->aggregations = new AggregationArray();
+    }
 
     public function getDisplayFieldName(): string
     {
@@ -39,13 +43,15 @@ abstract class FacetBase
         $this->options = $options;
     }
 
-//    public Map<FacetAggregation, Set<FacetAggregationField>> getAggregations() {
-//        return aggregations;
-//    }
-//
-//    public void setAggregations(Map<FacetAggregation, Set<FacetAggregationField>> aggregations) {
-//        this.aggregations = aggregations;
-//    }
-//
-//    public abstract function toFacetToken(Function<Object, String> $addQueryParameter): FacetToken;
+    public function getAggregations(): AggregationArray
+    {
+        return $this->aggregations;
+    }
+
+    public function setAggregations(AggregationArray $aggregations): void
+    {
+        $this->aggregations = $aggregations;
+    }
+
+    public abstract function toFacetToken(Closure $addQueryParameter): FacetToken;
 }

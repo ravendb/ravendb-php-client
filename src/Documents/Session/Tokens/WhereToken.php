@@ -2,23 +2,16 @@
 
 namespace RavenDB\Documents\Session\Tokens;
 
+use RavenDB\Constants\DocumentsIndexingSpatial;
+use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Utils\StringBuilder;
 
+// !status: DONE
 class WhereToken extends QueryToken
 {
-//  protected WhereToken() {
-//    }
-//
-//    @UseSharpEnum
-//    public enum MethodsType {
-//        CMP_X_CHG
-//    }
-//
-//    public static class WhereMethodCall {
-//        public MethodsType methodType;
-//        public String[] parameters;
-//        public String property;
-//    }
+    protected function __construct()
+    {
+    }
 
     private string $fieldName;
     private WhereOperator $whereOperator;
@@ -35,30 +28,36 @@ class WhereToken extends QueryToken
         $token->options = $options ?? WhereOptions::defaultOptions();
         return $token;
     }
-//
-//    public String getFieldName() {
-//        return fieldName;
-//    }
-//
-//    public void setFieldName(String fieldName) {
-//        this.fieldName = fieldName;
-//    }
-//
-//    public WhereOperator getWhereOperator() {
-//        return whereOperator;
-//    }
-//
-//    public void setWhereOperator(WhereOperator whereOperator) {
-//        this.whereOperator = whereOperator;
-//    }
-//
-//    public String getParameterName() {
-//        return parameterName;
-//    }
-//
-//    public void setParameterName(String parameterName) {
-//        this.parameterName = parameterName;
-//    }
+
+    public function getFieldName(): string
+    {
+        return $this->fieldName;
+    }
+
+    public function setFieldName(string $fieldName): void
+    {
+        $this->fieldName = $fieldName;
+    }
+
+    public function getWhereOperator(): WhereOperator
+    {
+        return $this->whereOperator;
+    }
+
+    public function setWhereOperator(WhereOperator $whereOperator): void
+    {
+        $this->whereOperator = $whereOperator;
+    }
+
+    public function getParameterName(): string
+    {
+        return $$this->parameterName;
+    }
+
+    public function setParameterName(string $parameterName): void
+    {
+        $this->parameterName = $parameterName;
+    }
 
     public function getOptions(): WhereOptions
     {
@@ -70,233 +69,239 @@ class WhereToken extends QueryToken
         $this->options = $options;
     }
 
-//    public WhereToken addAlias(String alias) {
-//        if ("id()".equals(fieldName)) {
-//            return this;
-//        }
-//
-//        WhereToken whereToken = new WhereToken();
-//        whereToken.setFieldName(alias + "." + fieldName);
-//        whereToken.setParameterName(parameterName);
-//        whereToken.setWhereOperator(whereOperator);
-//        whereToken.setOptions(options);
-//
-//        return whereToken;
-//    }
-//
-//    private boolean writeMethod(StringBuilder writer) {
-//        if (options.getMethod() != null) {
-//            switch (options.getMethod().methodType) {
-//                case CMP_X_CHG:
-//                    writer.append("cmpxchg(");
-//                    break;
-//                default:
-//                    throw new IllegalArgumentException("Unsupported method: " + options.getMethod().methodType);
-//            }
-//
-//            boolean first = true;
-//            for (String parameter : options.getMethod().parameters) {
-//                if (!first) {
-//                    writer.append(",");
-//                }
-//                first = false;
-//                writer.append("$");
-//                writer.append(parameter);
-//            }
-//            writer.append(")");
-//
-//            if (options.getMethod().property != null) {
-//                writer.append(".")
-//                        .append(options.getMethod().property);
-//            }
-//            return true;
-//        }
-//
-//        return false;
-//    }
-//
+    public function addAlias(string $alias): WhereToken
+    {
+        if ("id()" == $this->fieldName) {
+            return $this;
+        }
+
+        $whereToken = new WhereToken();
+        $whereToken->setFieldName($alias . "." . $$this->fieldName);
+        $whereToken->setParameterName($this->parameterName);
+        $whereToken->setWhereOperator($this->whereOperator);
+        $whereToken->setOptions($this->options);
+
+        return $whereToken;
+    }
+
+    private function writeMethod(StringBuilder $writer): bool
+    {
+        if ($this->options->getMethod() != null) {
+            switch ($this->options->getMethod()->methodType->getValue()) {
+                case MethodsType::CMP_X_CHG:
+                    $writer->append("cmpxchg(");
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unsupported method: " . $this->options->getMethod()->methodType);
+            }
+
+            $first = true;
+            foreach ($this->options->getMethod()->parameters as $parameter) {
+                if (!$first) {
+                    $writer->append(",");
+                }
+                $first = false;
+                $writer->append("$");
+                $writer->append($parameter);
+            }
+            $writer->append(")");
+
+            if ($this->options->getMethod()->property != null) {
+                $writer
+                    ->append(".")
+                    ->append($this->options->getMethod()->property);
+            }
+            return true;
+        }
+
+        return false;
+    }
+
 
     public function writeTo(StringBuilder &$writer): void
     {
-//        if (options.boost != null) {
-//            writer.append("boost(");
-//        }
-//
-//        if (options.fuzzy != null) {
-//            writer.append("fuzzy(");
-//        }
-//
-//        if (options.proximity != null) {
-//            writer.append("proximity(");
-//        }
-//
-//        if (options.exact) {
-//            writer.append("exact(");
-//        }
-//
-//        switch (whereOperator) {
-//            case SEARCH:
-//                writer.append("search(");
-//                break;
-//            case LUCENE:
-//                writer.append("lucene(");
-//                break;
-//            case STARTS_WITH:
-//                writer.append("startsWith(");
-//                break;
-//            case ENDS_WITH:
-//                writer.append("endsWith(");
-//                break;
-//            case EXISTS:
-//                writer.append("exists(");
-//                break;
-//            case SPATIAL_WITHIN:
-//                writer.append("spatial.within(");
-//                break;
-//            case SPATIAL_CONTAINS:
-//                writer.append("spatial.contains(");
-//                break;
-//            case SPATIAL_DISJOINT:
-//                writer.append("spatial.disjoint(");
-//                break;
-//            case SPATIAL_INTERSECTS:
-//                writer.append("spatial.intersects(");
-//                break;
-//            case REGEX:
-//                writer.append("regex(");
-//                break;
-//        }
-//
-//        writeInnerWhere(writer);
-//
-//        if (options.exact) {
-//            writer.append(")");
-//        }
-//
-//        if (options.proximity != null) {
-//            writer
-//                    .append(", ")
-//                    .append(options.proximity)
-//                    .append(")");
-//        }
-//
-//        if (options.fuzzy != null) {
-//            writer
-//                    .append(", ")
-//                    .append(options.fuzzy)
-//                    .append(")");
-//        }
-//
-//        if (options.boost != null) {
-//            writer
-//                    .append(", ")
-//                    .append(options.boost)
-//                    .append(")");
-//        }
+        if ($this->options->getBoost() !== null) {
+            $writer->append("boost(");
+        }
+
+        if ($this->options->getFuzzy() != null) {
+            $writer->append("fuzzy(");
+        }
+
+        if ($this->options->getProximity() != null) {
+            $writer->append("proximity(");
+        }
+
+        if ($this->options->isExact()) {
+            $writer->append("exact(");
+        }
+
+        switch ($this->whereOperator->getValue()) {
+            case WhereOperator::SEARCH:
+                $writer->append("search(");
+                break;
+            case WhereOperator::LUCENE:
+                $writer->append("lucene(");
+                break;
+            case WhereOperator::STARTS_WITH:
+                $writer->append("startsWith(");
+                break;
+            case WhereOperator::ENDS_WITH:
+                $writer->append("endsWith(");
+                break;
+            case WhereOperator::EXISTS:
+                $writer->append("exists(");
+                break;
+            case WhereOperator::SPATIAL_WITHIN:
+                $writer->append("spatial.within(");
+                break;
+            case WhereOperator::SPATIAL_CONTAINS:
+                $writer->append("spatial.contains(");
+                break;
+            case WhereOperator::SPATIAL_DISJOINT:
+                $writer->append("spatial.disjoint(");
+                break;
+            case WhereOperator::SPATIAL_INTERSECTS:
+                $writer->append("spatial.intersects(");
+                break;
+            case WhereOperator::REGEX:
+                $writer->append("regex(");
+                break;
+        }
+
+        $this->writeInnerWhere($writer);
+
+        if ($this->options->isExact()) {
+            $writer->append(")");
+        }
+
+        if ($this->options->getProximity() != null) {
+            $writer
+                    ->append(", ")
+                    ->append($this->options->getProximity())
+                    ->append(")");
+        }
+
+        if ($this->options->getFuzzy() != null) {
+            $writer
+                    ->append(", ")
+                    ->append($this->options->getFuzzy())
+                    ->append(")");
+        }
+
+        if ($this->options->getBoost() != null) {
+            $writer
+                    ->append(", ")
+                    ->append($this->options->getBoost())
+                    ->append(")");
+        }
     }
-//
-//    private void writeInnerWhere(StringBuilder writer) {
-//
-//        writeField(writer, fieldName);
-//
-//        switch (whereOperator) {
-//            case EQUALS:
-//                writer
-//                        .append(" = ");
-//                break;
-//
-//            case NOT_EQUALS:
-//                writer
-//                        .append(" != ");
-//                break;
-//            case GREATER_THAN:
-//                writer
-//                        .append(" > ");
-//                break;
-//            case GREATER_THAN_OR_EQUAL:
-//                writer
-//                        .append(" >= ");
-//                break;
-//            case LESS_THAN:
-//                writer
-//                        .append(" < ");
-//                break;
-//            case LESS_THAN_OR_EQUAL:
-//                writer
-//                        .append(" <= ");
-//                break;
-//            default:
-//                specialOperator(writer);
-//                return;
-//        }
-//
-//        if (!writeMethod(writer)) {
-//            writer.append("$").append(parameterName);
-//        }
-//    }
-//
-//    private void specialOperator(StringBuilder writer) {
-//        switch (whereOperator)
-//        {
-//            case IN:
-//                writer
-//                        .append(" in ($")
-//                        .append(parameterName)
-//                        .append(")");
-//                break;
-//            case ALL_IN:
-//                writer
-//                        .append(" all in ($")
-//                        .append(parameterName)
-//                        .append(")");
-//                break;
-//            case BETWEEN:
-//                writer
-//                        .append(" between $")
-//                        .append(options.fromParameterName)
-//                        .append(" and $")
-//                        .append(options.toParameterName);
-//                break;
-//
-//            case SEARCH:
-//                writer
-//                        .append(", $")
-//                        .append(parameterName);
-//                if (options.searchOperator == SearchOperator.AND) {
-//                    writer.append(", and");
-//                }
-//                writer.append(")");
-//                break;
-//            case LUCENE:
-//            case STARTS_WITH:
-//            case ENDS_WITH:
-//            case REGEX:
-//                writer
-//                        .append(", $")
-//                        .append(parameterName)
-//                        .append(")");
-//                break;
-//            case EXISTS:
-//                writer
-//                        .append(")");
-//                break;
-//            case SPATIAL_WITHIN:
-//            case SPATIAL_CONTAINS:
-//            case SPATIAL_DISJOINT:
-//            case SPATIAL_INTERSECTS:
-//                writer
-//                        .append(", ");
-//                options.whereShape.writeTo(writer);
-//
-//                if (Math.abs(options.distanceErrorPct - Constants.Documents.Indexing.Spatial.DEFAULT_DISTANCE_ERROR_PCT) > 1e-40) {
-//                    writer.append(", ");
-//                    writer.append(options.distanceErrorPct);
-//                }
-//                writer
-//                        .append(")");
-//                break;
-//            default:
-//                throw new IllegalArgumentException();
-//        }
-//    }
+
+    private function writeInnerWhere(StringBuilder $writer): void
+    {
+
+        $this->writeField($writer, $this->fieldName);
+
+        switch ($this->whereOperator->getValue()) {
+            case WhereOperator::EQUALS:
+                $writer
+                    ->append(" = ");
+                break;
+
+            case WhereOperator::NOT_EQUALS:
+                $writer
+                    ->append(" != ");
+                break;
+            case WhereOperator::GREATER_THAN:
+                $writer
+                    ->append(" > ");
+                break;
+            case WhereOperator::GREATER_THAN_OR_EQUAL:
+                $writer
+                    ->append(" >= ");
+                break;
+            case WhereOperator::LESS_THAN:
+                $writer
+                    ->append(" < ");
+                break;
+            case WhereOperator::LESS_THAN_OR_EQUAL:
+                $writer
+                    ->append(" <= ");
+                break;
+            default:
+                $this->specialOperator($writer);
+                return;
+        }
+
+        if (!$this->writeMethod($writer)) {
+            $writer
+                ->append("$")
+                ->append($this->parameterName);
+        }
+    }
+
+    private function specialOperator(StringBuilder $writer): void
+    {
+        switch ($this->whereOperator->getValue())
+        {
+            case WhereOperator::IN:
+                $writer
+                    ->append(" in ($")
+                    ->append($this->parameterName)
+                    ->append(")");
+                break;
+            case WhereOperator::ALL_IN:
+                $writer
+                    ->append(" all in ($")
+                    ->append($this->parameterName)
+                    ->append(")");
+                break;
+            case WhereOperator::BETWEEN:
+                $writer
+                    ->append(" between $")
+                    ->append($this->options->getFromParameterName())
+                    ->append(" and $")
+                    ->append($this->options->getToParameterName());
+                break;
+            case WhereOperator::SEARCH:
+                $writer
+                    ->append(", $")
+                    ->append($this->parameterName);
+                if ($this->options->getSearchOperator()->isAnd()) {
+                    $writer->append(", and");
+                }
+                $writer->append(")");
+                break;
+            case WhereOperator::LUCENE:
+            case WhereOperator::STARTS_WITH:
+            case WhereOperator::ENDS_WITH:
+            case WhereOperator::REGEX:
+                $writer
+                    ->append(", $")
+                    ->append($this->parameterName)
+                    ->append(")");
+                break;
+            case WhereOperator::EXISTS:
+                $writer
+                    ->append(")");
+                break;
+            case WhereOperator::SPATIAL_WITHIN:
+            case WhereOperator::SPATIAL_CONTAINS:
+            case WhereOperator::SPATIAL_DISJOINT:
+            case WhereOperator::SPATIAL_INTERSECTS:
+                $writer
+                    ->append(", ");
+                $this->options->getWhereShape()->writeTo($writer);
+
+                if (abs($this->options->getDistanceErrorPct() - DocumentsIndexingSpatial::DEFAULT_DISTANCE_ERROR_PCT) > 1e-40) {
+                    $writer->append(", ");
+                    $writer->append($this->options->getDistanceErrorPct());
+                }
+                $writer
+                    ->append(")");
+                break;
+            default:
+                throw new IllegalArgumentException();
+        }
+    }
 }

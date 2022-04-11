@@ -2,7 +2,7 @@
 
 namespace RavenDB\Json;
 
-use RavenDB\Constants\Metadata;
+use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Documents\Session\ChangeType;
 use RavenDB\Documents\Session\DocumentInfo;
 use RavenDB\Documents\Session\DocumentsChanges;
@@ -89,10 +89,10 @@ class JsonOperation
         }
 
         foreach ($newJsonProps as $prop) {
-            if ($prop === Metadata::LAST_MODIFIED ||
-                $prop === Metadata::COLLECTION ||
-                $prop === Metadata::CHANGE_VECTOR ||
-                $prop === Metadata::ID) {
+            if ($prop === DocumentsMetadata::LAST_MODIFIED ||
+                $prop === DocumentsMetadata::COLLECTION ||
+                $prop === DocumentsMetadata::CHANGE_VECTOR ||
+                $prop === DocumentsMetadata::ID) {
                 continue;
             }
 
@@ -162,10 +162,10 @@ class JsonOperation
         }
 
         foreach ($newJsonProps as $prop) {
-            if ($prop === Metadata::LAST_MODIFIED ||
-                $prop === Metadata::COLLECTION ||
-                $prop === Metadata::CHANGE_VECTOR ||
-                $prop === Metadata::ID) {
+            if ($prop === DocumentsMetadata::LAST_MODIFIED ||
+                $prop === DocumentsMetadata::COLLECTION ||
+                $prop === DocumentsMetadata::CHANGE_VECTOR ||
+                $prop === DocumentsMetadata::ID) {
                 continue;
             }
 

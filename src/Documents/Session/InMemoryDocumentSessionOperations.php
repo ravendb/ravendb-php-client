@@ -5,7 +5,7 @@ namespace RavenDB\Documents\Session;
 use Closure;
 use InvalidArgumentException;
 use Ramsey\Uuid\UuidInterface;
-use RavenDB\Constants\Metadata;
+use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Documents\Commands\Batches\BatchOptions;
 use RavenDB\Documents\Commands\Batches\CommandDataInterface;
 use RavenDB\Documents\Commands\Batches\CommandType;
@@ -967,7 +967,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $metadata = [];
 
         if ($collectionName != null) {
-            $metadata[Metadata::COLLECTION] = $mapper->normalize($collectionName, 'json');
+            $metadata[DocumentsMetadata::COLLECTION] = $mapper->normalize($collectionName, 'json');
         }
 
         // @todo: Check why do we need this for
@@ -2494,7 +2494,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
 
         if (!$isIndex && !$isCollection) {
-            $collectionName = $conventions->getCollectionName($className) ?? Metadata::ALL_DOCUMENTS_COLLECTION;
+            $collectionName = $conventions->getCollectionName($className) ?? DocumentsMetadata::ALL_DOCUMENTS_COLLECTION;
         }
 
         return [$indexName, $collectionName];

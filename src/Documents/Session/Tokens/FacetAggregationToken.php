@@ -6,6 +6,7 @@ use RavenDB\Documents\Queries\Facets\FacetAggregation;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Utils\StringBuilder;
 
+// !status: DONE
 class FacetAggregationToken extends QueryToken
 {
     private string $fieldName;

@@ -2,7 +2,7 @@
 
 namespace RavenDB\Documents\Session;
 
-use RavenDB\Constants\Metadata;
+use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Exceptions\IllegalStateException;
 
 class DocumentInfo
@@ -39,15 +39,15 @@ class DocumentInfo
 
         $metadata = $document['@metadata']; // todo: update from constant Constants.Documents.Metadata.KEY
 
-        if (!array_key_exists(Metadata::ID, $metadata)) {
+        if (!array_key_exists(DocumentsMetadata::ID, $metadata)) {
             throw new IllegalStateException("Document must have an id");
         }
-        $id = $metadata[Metadata::ID];
+        $id = $metadata[DocumentsMetadata::ID];
 
-        if (!array_key_exists(Metadata::CHANGE_VECTOR, $metadata)) {
+        if (!array_key_exists(DocumentsMetadata::CHANGE_VECTOR, $metadata)) {
             throw new IllegalStateException("Document " . $id . " must have a Change Vector");
         }
-        $changeVector = $metadata[Metadata::CHANGE_VECTOR];
+        $changeVector = $metadata[DocumentsMetadata::CHANGE_VECTOR];
 
         $newDocumentInfo = new DocumentInfo();
         $newDocumentInfo->setId($id);

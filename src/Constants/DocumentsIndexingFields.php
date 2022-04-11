@@ -2,7 +2,7 @@
 
 namespace RavenDB\Constants;
 
-class DocumentIndexingFields
+class DocumentsIndexingFields
 {
     public const DOCUMENT_ID_FIELD_NAME = "id()";
     public const SOURCE_DOCUMENT_ID_FIELD_NAME = "sourceDocId()";

@@ -78,6 +78,16 @@ class TypedArray extends \ArrayObject implements TypedArrayInterface, \JsonSeria
         return $this->count() > 0;
     }
 
+    public function first()
+    {
+        return $this->offsetGet(array_key_first($this->getArrayCopy()));
+    }
+
+    public function last()
+    {
+        return $this->offsetGet(array_key_last($this->getArrayCopy()));
+    }
+
     public function jsonSerialize(): array
     {
         return $this->getArrayCopy();

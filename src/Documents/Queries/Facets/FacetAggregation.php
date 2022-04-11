@@ -4,6 +4,7 @@ namespace RavenDB\Documents\Queries\Facets;
 
 use RavenDB\Type\ValueObjectInterface;
 
+// !status: DONE
 class FacetAggregation implements ValueObjectInterface
 {
     public const NONE = "NONE";
