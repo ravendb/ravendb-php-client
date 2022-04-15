@@ -2,16 +2,18 @@
 
 namespace RavenDB\Documents\Queries;
 
+use RavenDB\Extensions\EntityMapper;
+
 class HashCalculator
 {
 
-    public function write(string $x): void
+    public function write($value, ?EntityMapper $mapper = null): void
     {
         // @todo: impement
     }
 
     public function getHash(): string
     {
-        return '1234567890';
+        return '1234567890222';
     }
 }

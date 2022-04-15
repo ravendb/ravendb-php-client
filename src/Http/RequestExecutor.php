@@ -1526,7 +1526,6 @@ class RequestExecutor implements CleanCloseable
 //        boolean shouldRetry
     ): bool
     {
-
         try {
             switch ($response->getStatusCode()) {
                 case HttpStatusCode::NOT_FOUND:

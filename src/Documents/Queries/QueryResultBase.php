@@ -2,10 +2,19 @@
 
 namespace RavenDB\Documents\Queries;
 
+use DateTimeInterface;
+use RavenDB\Documents\Queries\Timings\QueryTimings;
+use RavenDB\Http\ResultInterface;
+use RavenDB\Type\StringArray;
+
+use Symfony\Component\Serializer\Annotation\SerializedName;
+
 class QueryResultBase
 {
-//  private TResult results;
-//
+    /** @SerializedName ("Results") */
+    private ?array $results = null;
+
+    /** @ SerializedName ("Includes") */
 //    private TInclude includes;
 //
 //    private ObjectNode counterIncludes;
@@ -15,39 +24,53 @@ class QueryResultBase
 //    private ObjectNode timeSeriesIncludes;
 //
 //    private ObjectNode compareExchangeValueIncludes;
-//
-//    private String[] includedPaths;
-//
-//    private boolean isStale;
-//
-//    private Date indexTimestamp;
-//
-//    private String indexName;
-//
-//    private Long resultEtag;
-//
-//    private Date lastQueryTime;
-//
-//    private String nodeTag;
-//
-//    private QueryTimings timings;
-//
-//    /**
-//     * Gets the document resulting from this query.
-//     * @return Query results
-//     */
-//    public TResult getResults() {
-//        return results;
-//    }
-//
-//    /**
-//     * Sets the document resulting from this query.
-//     * @param results Sets the query results
-//     */
-//    public void setResults(TResult results) {
-//        this.results = results;
-//    }
-//
+
+    /** @SerializedName ("IncludedPaths") */
+    private StringArray $includedPaths;
+
+    /** @SerializedName ("IsStale") */
+    private bool $isStale = false;
+
+    /** @SerializedName ("IndexTimestamp") */
+    private ?DateTimeInterface $indexTimestamp = null;
+
+    /** @SerializedName ("IndexName") */
+    private string $indexName;
+
+    /** @SerializedName ("ResultEtag") */
+    private int $resultEtag = 0;
+
+    /** @SerializedName ("LastQueryTime") */
+    private ?DateTimeInterface $lastQueryTime = null;
+
+    /** @SerializedName ("NodeTag") */
+    private string $nodeTag;
+
+    private ?QueryTimings $timings = null;
+
+    public function __construct()
+    {
+        $this->includedPaths = new StringArray();
+    }
+
+    /**
+     * Gets the document resulting from this query.
+     * @return array Query results
+     */
+    public function getResults(): array
+    {
+        return $this->results;
+    }
+
+    /**
+     * Sets the document resulting from this query.
+     * @param array $results Sets the query results
+     */
+    public function setResults(array $results): void
+    {
+        $this->results = $results;
+    }
+
 //    /**
 //     * Gets the document included in the result.
 //     * @return Query includes
@@ -119,132 +142,146 @@ class QueryResultBase
 //    public void setCompareExchangeValueIncludes(ObjectNode compareExchangeValueIncludes) {
 //        this.compareExchangeValueIncludes = compareExchangeValueIncludes;
 //    }
-//
-//    /**
-//     * The paths that the server included in the results
-//     * @return Included paths
-//     */
-//    public String[] getIncludedPaths() {
-//        return includedPaths;
-//    }
-//
-//    /**
-//     * The paths that the server included in the results
-//     * @param includedPaths Sets the value
-//     */
-//    public void setIncludedPaths(String[] includedPaths) {
-//        this.includedPaths = includedPaths;
-//    }
-//
-//    /**
-//     * Gets a value indicating whether the index is stale.
-//     * @return true if index results are stale
-//     */
-//    public boolean isStale() {
-//        return isStale;
-//    }
-//
-//    /**
-//     * Sets a value indicating whether the index is stale.
-//     * @param stale Sets the value
-//     */
-//    public void setStale(boolean stale) {
-//        isStale = stale;
-//    }
-//
-//    /**
-//     * The last time the index was updated.
-//     * This can be used to determine the freshness of the data.
-//     * @return index timestamp
-//     */
-//    public Date getIndexTimestamp() {
-//        return indexTimestamp;
-//    }
-//
-//    /**
-//     * The last time the index was updated.
-//     * This can be used to determine the freshness of the data.
-//     * @param indexTimestamp Sets the value
-//     */
-//    public void setIndexTimestamp(Date indexTimestamp) {
-//        this.indexTimestamp = indexTimestamp;
-//    }
-//
-//    /**
-//     * The index used to answer this query
-//     * @return Used index name
-//     */
-//    public String getIndexName() {
-//        return indexName;
-//    }
-//
-//    /**
-//     * The index used to answer this query
-//     * @param indexName Sets the value
-//     */
-//    public void setIndexName(String indexName) {
-//        this.indexName = indexName;
-//    }
-//
-//    /**
-//     * The ETag value for this index current state, which include what docs were indexed,
-//     * what document were deleted, etc.
-//     * @return result etag
-//     */
-//    public Long getResultEtag() {
-//        return resultEtag;
-//    }
-//
-//    /**
-//     * The ETag value for this index current state, which include what docs were indexed,
-//     * what document were deleted, etc.
-//     * @param resultEtag Sets the value
-//     */
-//    public void setResultEtag(Long resultEtag) {
-//        this.resultEtag = resultEtag;
-//    }
-//
-//    /**
-//     * The timestamp of the last time the index was queried
-//     * @return Last query time
-//     */
-//    public Date getLastQueryTime() {
-//        return lastQueryTime;
-//    }
-//
-//    /**
-//     * The timestamp of the last time the index was queried
-//     * @param lastQueryTime Sets the value
-//     */
-//    public void setLastQueryTime(Date lastQueryTime) {
-//        this.lastQueryTime = lastQueryTime;
-//    }
-//
-//    /**
-//     * @return Tag of a cluster node which responded to the query
-//     */
-//    public String getNodeTag() {
-//        return nodeTag;
-//    }
-//
-//    /**
-//     * @param nodeTag Tag of a cluster node which responded to the query
-//     */
-//    public void setNodeTag(String nodeTag) {
-//        this.nodeTag = nodeTag;
-//    }
-//
-//    /**
-//     * @return Detailed timings for various parts of a query (Lucene search, loading documents, transforming results) - if requested.
-//     */
-//    public QueryTimings getTimings() {
-//        return timings;
-//    }
-//
-//    /**
-//     * @param timings Detailed timings for various parts of a query (Lucene search, loading documents, transforming results) - if requested.
-//     */
-//    public void setTimings(QueryTimings timings) {
-//        this.timings = timings;
-//    }
+
+    /**
+     * The paths that the server included in the results
+     * @return StringArray Included paths
+     */
+    public function getIncludedPaths(): StringArray
+    {
+        return $this->includedPaths;
+    }
+
+    /**
+     * The paths that the server included in the results
+     * @param StringArray $includedPaths Sets the value
+     */
+    public function setIncludedPaths(StringArray $includedPaths): void
+    {
+        $this->includedPaths = $includedPaths;
+    }
+
+    /**
+     * Gets a value indicating whether the index is stale.
+     * @return bool true if index results are stale
+     */
+    public function isStale(): bool
+    {
+        return $this->isStale;
+    }
+
+    /**
+     * Sets a value indicating whether the index is stale.
+     * @param bool $stale Sets the value
+     */
+    public function setStale(bool $stale): void
+    {
+        $this->isStale = $stale;
+    }
+
+    /**
+     * The last time the index was updated.
+     * This can be used to determine the freshness of the data.
+     * @return DateTimeInterface index timestamp
+     */
+    public function getIndexTimestamp(): DateTimeInterface
+    {
+        return $this->indexTimestamp;
+    }
+
+    /**
+     * The last time the index was updated.
+     * This can be used to determine the freshness of the data.
+     * @param DateTimeInterface $indexTimestamp Sets the value
+     */
+    public function setIndexTimestamp(DateTimeInterface $indexTimestamp): void
+    {
+        $this->indexTimestamp = $indexTimestamp;
+    }
+
+    /**
+     * The index used to answer this query
+     * @return string Used index name
+     */
+    public function getIndexName(): string
+    {
+        return $this->indexName;
+    }
+
+    /**
+     * The index used to answer this query
+     * @param string $indexName Sets the value
+     */
+    public function setIndexName(string $indexName): void
+    {
+        $this->indexName = $indexName;
+    }
+
+    /**
+     * The ETag value for this index current state, which include what docs were indexed,
+     * what document were deleted, etc.
+     * @return int result etag
+     */
+    public function getResultEtag(): int
+    {
+        return $this->resultEtag;
+    }
+
+    /**
+     * The ETag value for this index current state, which include what docs were indexed,
+     * what document were deleted, etc.
+     * @param int $resultEtag Sets the value
+     */
+    public function setResultEtag(int $resultEtag): void
+    {
+        $this->resultEtag = $resultEtag;
+    }
+
+    /**
+     * The timestamp of the last time the index was queried
+     * @return DateTimeInterface Last query time
+     */
+    public function getLastQueryTime(): ?DateTimeInterface
+    {
+        return $this->lastQueryTime;
+    }
+
+    /**
+     * The timestamp of the last time the index was queried
+     * @param ?DateTimeInterface $lastQueryTime Sets the value
+     */
+    public function setLastQueryTime(?DateTimeInterface $lastQueryTime): void {
+        $this->lastQueryTime = $lastQueryTime;
+    }
+
+    /**
+     * @return string Tag of a cluster node which responded to the query
+     */
+    public function getNodeTag(): string
+    {
+        return $this->nodeTag;
+    }
+
+    /**
+     * @param string $nodeTag Tag of a cluster node which responded to the query
+     */
+    public function setNodeTag(string $nodeTag): void
+    {
+        $this->nodeTag = $nodeTag;
+    }
+
+    /**
+     * @return ?QueryTimings Detailed timings for various parts of a query (Lucene search, loading documents, transforming results) - if requested.
+     */
+    public function getTimings(): ?QueryTimings
+    {
+        return $this->timings;
+    }
+
+    /**
+     * @param ?QueryTimings $timings Detailed timings for various parts of a query (Lucene search, loading documents, transforming results) - if requested.
+     */
+    public function setTimings(?QueryTimings $timings) {
+        $this->timings = $timings;
+    }
 }

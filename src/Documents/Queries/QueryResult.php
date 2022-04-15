@@ -2,15 +2,18 @@
 
 namespace RavenDB\Documents\Queries;
 
-class QueryResult
+use RavenDB\Http\ResultInterface;
+
+class QueryResult extends GenericQueryResult implements ResultInterface
 {
-//  /**
-//     * Creates a snapshot of the query results
-//     * @return returns snapshot of query result
-//     */
-//    public QueryResult createSnapshot() {
-//        QueryResult queryResult = new QueryResult();
-//        queryResult.setResults(getResults());
+  /**
+     * Creates a snapshot of the query results
+     * @return QueryResult returns snapshot of query result
+     */
+    public function createSnapshot(): QueryResult
+    {
+        $queryResult = new QueryResult();
+        $queryResult->setResults($this->getResults());
 //        queryResult.setIncludes(getIncludes());
 //        queryResult.setIndexName(getIndexName());
 //        queryResult.setIndexTimestamp(getIndexTimestamp());
@@ -30,6 +33,6 @@ class QueryResult
 //        queryResult.setIncludedCounterNames(getIncludedCounterNames());
 //        queryResult.setTimeSeriesIncludes(getTimeSeriesIncludes());
 //        queryResult.setCompareExchangeValueIncludes(getCompareExchangeValueIncludes());
-//        return queryResult;
-//    }
+        return $queryResult;
+    }
 }

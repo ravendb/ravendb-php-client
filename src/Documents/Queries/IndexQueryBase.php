@@ -11,12 +11,12 @@ class IndexQueryBase implements IndexQueryInterface
 {
     private int $pageSize = PHP_INT_MAX;
     private bool $pageSizeSet = false;
-    private ?string $query;
-    private Parameters $queryParameters;
-    private ProjectionBehavior $projectionBehavior;
-    private int $start;
+    private ?string $query = null;
+    private ?Parameters $queryParameters = null;
+    private ?ProjectionBehavior $projectionBehavior = null;
+    private int $start = 0;
     private bool $waitForNonStaleResults = false;
-    private Duration $waitForNonStaleResultsTimeout;
+    private ?Duration $waitForNonStaleResultsTimeout = null;
 
     /**
      * Whether the page size was explicitly set or still at its default value
@@ -45,7 +45,7 @@ class IndexQueryBase implements IndexQueryInterface
         $this->query = $query;
     }
 
-    public function getQueryParameters(): Parameters
+    public function getQueryParameters(): ?Parameters
     {
         return $this->queryParameters;
     }
@@ -55,7 +55,7 @@ class IndexQueryBase implements IndexQueryInterface
         $this->queryParameters = $queryParameters;
     }
 
-    public function getProjectionBehavior(): ProjectionBehavior
+    public function getProjectionBehavior(): ?ProjectionBehavior
     {
         return $this->projectionBehavior;
     }
@@ -124,12 +124,12 @@ class IndexQueryBase implements IndexQueryInterface
         $this->waitForNonStaleResults = $waitForNonStaleResults;
     }
 
-    public function getWaitForNonStaleResultsTimeout(): Duration
+    public function getWaitForNonStaleResultsTimeout(): ?Duration
     {
         return $this->waitForNonStaleResultsTimeout;
     }
 
-    public function setWaitForNonStaleResultsTimeout(Duration $waitForNonStaleResultsTimeout): void
+    public function setWaitForNonStaleResultsTimeout(?Duration $waitForNonStaleResultsTimeout): void
     {
         $this->waitForNonStaleResultsTimeout = $waitForNonStaleResultsTimeout;
     }
@@ -154,14 +154,15 @@ class IndexQueryBase implements IndexQueryInterface
         return $this->waitForNonStaleResultsTimeout != null ? $this->waitForNonStaleResultsTimeout->equals($that->waitForNonStaleResultsTimeout) : $that->waitForNonStaleResultsTimeout == null;
     }
 
-    public function hashCode(): int
-    {
-        $result = $this->pageSize;
-        $result = 31 * $result + ($this->pageSizeSet ? 1 : 0);
-        $result = 31 * $result + ($this->query != null ? HashUtils::hashCode($this->query) : 0);
-        $result = 31 * $result + $this->start;
-        $result = 31 * $result + ($this->waitForNonStaleResults ? 1 : 0);
-        $result = 31 * $result + ($this->waitForNonStaleResultsTimeout != null ? $this->waitForNonStaleResultsTimeout->hashCode() : 0);
-        return $result;
-    }
+//    @ignore this method
+//    public function hashCode(): int
+//    {
+//        $result = $this->pageSize;
+//        $result = 31 * $result + ($this->pageSizeSet ? 1 : 0);
+//        $result = 31 * $result + ($this->query != null ? HashUtils::hashCode($this->query) : 0);
+//        $result = 31 * $result + $this->start;
+//        $result = 31 * $result + ($this->waitForNonStaleResults ? 1 : 0);
+//        $result = 31 * $result + ($this->waitForNonStaleResultsTimeout != null ? $this->waitForNonStaleResultsTimeout->hashCode() : 0);
+//        return $result;
+//    }
 }

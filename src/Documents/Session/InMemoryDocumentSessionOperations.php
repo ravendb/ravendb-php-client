@@ -2457,17 +2457,18 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         );
     }
 
-//    public void onAfterConversionToDocumentInvoke(String id, Object entity, Reference<ObjectNode> document) {
-//        if (!onAfterConversionToDocument.isEmpty()) {
-//            AfterConversionToDocumentEventArgs eventArgs = new AfterConversionToDocumentEventArgs(this, id, entity, document);
-//            EventHelper.invoke(onAfterConversionToDocument, this, eventArgs);
-//
-//            if (eventArgs.getDocument().value != null && eventArgs.getDocument().value != document.value) {
-//                document.value = eventArgs.getDocument().value;
-//            }
-//        }
-//    }
-//
+    public function onAfterConversionToDocumentInvoke(string $id, object $entity, &$document): void
+    {
+        if (!$this->onAfterConversionToDocument->isEmpty()) {
+            $eventArgs = new AfterConversionToDocumentEventArgs($this, $id, $entity, $document);
+            EventHelper::invoke($this->onAfterConversionToDocument, $this, $eventArgs);
+
+            if ($eventArgs->getDocument() != null && $eventArgs->getDocument() != $document) {
+                $document = $eventArgs->getDocument();
+            }
+        }
+    }
+
 //    public void onBeforeConversionToEntityInvoke(String id, Class clazz, Reference<ObjectNode> document) {
 //        if (!onBeforeConversionToEntity.isEmpty()) {
 //            BeforeConversionToEntityEventArgs eventArgs = new BeforeConversionToEntityEventArgs(this, id, clazz, document);

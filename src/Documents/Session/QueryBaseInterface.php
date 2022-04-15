@@ -47,27 +47,25 @@ interface QueryBaseInterface
 //     */
 //    TSelf timings(Reference<QueryTimings> timings);
 //
-//    /**
-//     * Skips the specified count.
-//     * @param count Items to skip
-//     * @return Query instance
-//     */
-//    TSelf skip(int count);
-//
+    /**
+     * Skips the specified count.
+     * @param int $count Items to skip
+     */
+    function skip(int $count);
+
 //    /**
 //     * Provide statistics about the query, such as total count of matching records
 //     * @param stats Output parameter for query stats
 //     * @return Query instance
 //     */
 //    TSelf statistics(Reference<QueryStatistics> stats);
-//
-//    /**
-//     * Takes the specified count.
-//     * @param count Amount of items to take
-//     * @return Query instance
-//     */
-//    TSelf take(int count);
-//
+
+    /**
+     * Takes the specified count.
+     * @param int $count Amount of items to take
+     */
+    function take(int $count);
+
 //    /**
 //     * Select the default operator to use for this query
 //     * @param queryOperator Query operator to use

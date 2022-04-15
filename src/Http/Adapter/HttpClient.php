@@ -34,14 +34,17 @@ class HttpClient implements HttpClientInterface
             $options['proxy'] = self::$proxy;
         }
 
-        $symfonyResponse =  $this->client->request($request->getMethod(), $request->getUrl(), $options);
+//        print_r($request);
 
-        return HttpResponseTransformer::fromHttpClientResponse($symfonyResponse);
+        $serverResponse =  $this->client->request($request->getMethod(), $request->getUrl(), $options);
+
+//        print_r($serverResponse->getContent());
+
+        return HttpResponseTransformer::fromHttpClientResponse($serverResponse);
     }
 
     public static function useProxy(string $proxy): void
     {
-
         self::$proxy = $proxy;
     }
 }

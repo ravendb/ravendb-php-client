@@ -81,4 +81,17 @@ class StringUtils
 
         return strlen(trim($value)) == 0;
     }
+
+    public static function stripStart(?string $string, ?string $stripChars = null): ?string
+    {
+        if (empty($string)) {
+            return $string;
+        }
+
+        if (empty($stripChars)) {
+            return ltrim($string);
+        }
+
+        return ltrim ($string, $stripChars);
+    }
 }

@@ -2,6 +2,8 @@
 
 namespace RavenDB\Documents\Session;
 
+use RavenDB\Type\Duration;
+
 interface AbstractDocumentQueryInterface
 {
 //  String getIndexName();
@@ -13,19 +15,19 @@ interface AbstractDocumentQueryInterface
 //     * @return document conventions
 //     */
 //    DocumentConventions getConventions();
-//
-//    /**
-//     * Determines if it is a dynamic map-reduce query
-//     * @return true if it is dynamic query
-//     */
-//    boolean isDynamicMapReduce();
-//
-//    /**
-//     * Instruct the query to wait for non stale result for the specified wait timeout.
-//     * @param waitTimeout Wait timeout
-//     */
-//    void _waitForNonStaleResults(Duration waitTimeout);
-//
+
+    /**
+     * Determines if it is a dynamic map-reduce query
+     * @return bool true if it is dynamic query
+     */
+    function isDynamicMapReduce(): bool;
+
+    /**
+     * Instruct the query to wait for non stale result for the specified wait timeout.
+     * @param Duration $waitTimeout Wait timeout
+     */
+    function _waitForNonStaleResults(?Duration $waitTimeout = null);
+
 //    /**
 //     * Gets the fields for projection
 //     * @return list of projection fields
@@ -61,19 +63,19 @@ interface AbstractDocumentQueryInterface
 //    void _include(IncludeBuilderBase includes);
 //
 //    // TBD expr linq void Include(Expression<Func<T, object>> path);
-//
-//    /**
-//     * Takes the specified count.
-//     * @param count Items to take
-//     */
-//    void _take(int count);
-//
-//    /**
-//     * Skips the specified count.
-//     * @param count Items to skip
-//     */
-//    void _skip(int count);
-//
+
+    /**
+     * Takes the specified count.
+     * @param int $count Items to take
+     */
+    function _take(int $count): void;
+
+    /**
+     * Skips the specified count.
+     * @param int $count Items to skip
+     */
+    function _skip(int $count): void;
+
 //    /**
 //     * Matches value
 //     * @param fieldName Field name
@@ -175,54 +177,32 @@ interface AbstractDocumentQueryInterface
 //     * @param exact Use exact matcher
 //     */
 //    void _whereIn(String fieldName, Collection< ? > values, boolean exact);
-//
-//    /**
-//     * Matches fields which starts with the specified value.
-//     * @param fieldName Field name
-//     * @param value to match
-//     */
-//    void _whereStartsWith(String fieldName, Object value);
-//
-//    /**
-//     * Matches fields which starts with the specified value.
-//     * @param fieldName Field name
-//     * @param value to match
-//     * @param exact Use exact matcher
-//     */
-//    void _whereStartsWith(String fieldName, Object value, boolean exact);
-//
-//    /**
-//     * Matches fields which ends with the specified value.
-//     * @param fieldName Field name
-//     * @param value Value to match
-//     */
-//    void _whereEndsWith(String fieldName, Object value);
-//
-//    /**
-//     * Matches fields which ends with the specified value.
-//     * @param fieldName Field name
-//     * @param value Value to match
-//     * @param exact Use exact matcher
-//     */
-//    void _whereEndsWith(String fieldName, Object value, boolean exact);
-//
-//    /**
-//     * Matches fields where the value is between the specified start and end, inclusive
-//     * @param fieldName Field name
-//     * @param start Range start
-//     * @param end Range end
-//     */
-//    void _whereBetween(String fieldName, Object start, Object end);
-//
-//    /**
-//     * Matches fields where the value is between the specified start and end, inclusive
-//     * @param fieldName Field name
-//     * @param start Range start
-//     * @param end Range end
-//     * @param exact Use exact matcher
-//     */
-//    void _whereBetween(String fieldName, Object start, Object end, boolean exact);
-//
+
+    /**
+     * Matches fields which starts with the specified value.
+     * @param string $fieldName Field name
+     * @param mixed $value to match
+     * @param bool $exact Use exact matcher
+     */
+    function _whereStartsWith(string $fieldName, $value, bool $exact = false): void;
+
+    /**
+     * Matches fields which ends with the specified value.
+     * @param string $fieldName Field name
+     * @param mixed $value Value to match
+     * @param bool $exact Use exact matcher
+     */
+    function _whereEndsWith(string $fieldName, $value, bool $exact): void;
+
+    /**
+     * Matches fields where the value is between the specified start and end, inclusive
+     * @param string $fieldName Field name
+     * @param mixed $start Range start
+     * @param mixed $end Range end
+     * @param bool $exact Use exact matcher
+     */
+    function _whereBetween(string $fieldName, $start, $end, bool $exact = false): void;
+
 //    /**
 //     * Matches fields where the value is greater than the specified value
 //     * @param fieldName Field name

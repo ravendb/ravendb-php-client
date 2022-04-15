@@ -5,6 +5,7 @@ namespace RavenDB\Documents\Session;
 use RavenDB\Constants\DocumentsIndexingFields;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Queries\IndexQuery;
+use RavenDB\Documents\Queries\ProjectionBehavior;
 use RavenDB\Documents\Queries\QueryFieldUtil;
 use RavenDB\Documents\Queries\QueryOperator;
 use RavenDB\Documents\Queries\QueryResult;
@@ -19,6 +20,7 @@ use RavenDB\Documents\Session\Tokens\DistinctToken;
 use RavenDB\Documents\Session\Tokens\ExplanationToken;
 use RavenDB\Documents\Session\Tokens\FieldsToFetchToken;
 use RavenDB\Documents\Session\Tokens\FromToken;
+use RavenDB\Documents\Session\Tokens\GraphQueryToken;
 use RavenDB\Documents\Session\Tokens\HighlightingTokenArray;
 use RavenDB\Documents\Session\Tokens\LoadTokenList;
 use RavenDB\Documents\Session\Tokens\MoreLikeThisToken;
@@ -35,11 +37,13 @@ use RavenDB\Documents\Session\Tokens\WhereOptions;
 use RavenDB\Documents\Session\Tokens\WhereToken;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Parameters;
+use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Primitives\ClosureArray;
 use RavenDB\Primitives\EventHelper;
 use RavenDB\Type\Duration;
 use RavenDB\Type\StringSet;
 use RavenDB\Utils\StringBuilder;
+use RavenDB\Utils\StringUtils;
 
 abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 {
@@ -246,25 +250,25 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->defaultOperator = $operator;
     }
 
-//    /**
-//     * Instruct the query to wait for non stale result for the specified wait timeout.
-//     * This shouldn't be used outside of unit tests unless you are well aware of the implications
-//     * @param waitTimeout Wait timeout
-//     */
-//    @Override
-//    public void _waitForNonStaleResults(Duration waitTimeout) {
-//        //Graph queries may set this property multiple times
-//        if (theWaitForNonStaleResults) {
-//            if (timeout == null || waitTimeout != null && timeout.getSeconds() < waitTimeout.getSeconds()) {
-//                timeout = waitTimeout;
-//            }
-//            return;
-//        }
-//
-//        theWaitForNonStaleResults = true;
-//        timeout = ObjectUtils.firstNonNull(waitTimeout, getDefaultTimeout());
-//    }
-//
+    /**
+     * Instruct the query to wait for non stale result for the specified wait timeout.
+     * This shouldn't be used outside of unit tests unless you are well aware of the implications
+     * @param ?Duration $waitTimeout Wait timeout
+     */
+    public function _waitForNonStaleResults(?Duration $waitTimeout = null): void
+    {
+        //Graph queries may set this property multiple times
+        if ($this->theWaitForNonStaleResults) {
+            if ($this->timeout == null || $waitTimeout != null && $this->timeout->getSeconds() < $waitTimeout->getSeconds()) {
+                $timeout = $waitTimeout;
+            }
+            return;
+        }
+
+        $this->theWaitForNonStaleResults = true;
+        $$this->timeout = $waitTimeout ?? $this->getDefaultTimeout();
+    }
+
 //    protected LazyQueryOperation<T> getLazyQueryOperation() {
 //        if (queryOperation == null) {
 //            queryOperation = initializeQueryOperation();
@@ -347,12 +351,13 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //
 //    //TBD 4.1 public void _customSortUsing(String typeName)
 //    //TBD 4.1 public void _customSortUsing(String typeName, boolean descending)
-//
-//
-//    protected void _projection(ProjectionBehavior projectionBehavior) {
-//        this.projectionBehavior = projectionBehavior;
-//    }
-//
+
+
+    protected function _projection(ProjectionBehavior $projectionBehavior): void
+    {
+        $this->projectionBehavior = $projectionBehavior;
+    }
+
 //    @SuppressWarnings("unused")
 //    protected void addGroupByAlias(String fieldName, String projectedName) {
 //        _aliasToGroupByFieldName.put(projectedName, fieldName);
@@ -365,19 +370,21 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         }
     }
 
-//    public void _graphQuery(String query) {
-//        graphRawQuery = new GraphQueryToken(query);
-//    }
-//
-//    public void _addParameter(String name, Object value) {
-//        name = StringUtils.stripStart(name, "$");
-//        if (queryParameters.containsKey(name)) {
-//            throw new IllegalStateException("The parameter " + name + " was already added");
-//        }
-//
-//        queryParameters.put(name, value);
-//    }
-//
+    public function _graphQuery(string $query): void
+    {
+        $this->graphRawQuery = new GraphQueryToken($query);
+    }
+
+    public function _addParameter(string $name, $value): void
+    {
+        $name = StringUtils::stripStart($name, "$");
+        if ($this->queryParameters->offsetExists($name)) {
+            throw new IllegalStateException("The parameter " . name . " was already added");
+        }
+
+        $this->queryParameters->offsetSet($name, $value);
+    }
+
 //    @Override
 //    public void _groupBy(String fieldName, String... fieldNames) {
 //        GroupBy[] mapping = Arrays.stream(fieldNames)
@@ -516,35 +523,35 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        }
 //    }
 
-    public function take(int $count): void
+    public function _take(int $count): void
     {
         $this->pageSize = $count;
     }
 
-    public function skip(int $count): void
+    public function _skip(int $count): void
     {
         $this->start = $count;
     }
 
-//    /**
-//     * Filter the results from the index using the specified where clause.
-//     * @param fieldName Field name
-//     * @param whereClause Where clause
-//     * @param exact Use exact matcher
-//     */
-//    @SuppressWarnings("ConstantConditions")
-//    public void _whereLucene(String fieldName, String whereClause, boolean exact) {
-//        fieldName = ensureValidFieldName(fieldName, false);
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//        negateIfNeeded(tokens, fieldName);
-//
-//        WhereToken.WhereOptions options = exact ? new WhereToken.WhereOptions(exact) : null;
-//        WhereToken whereToken = WhereToken.create(WhereOperator.LUCENE, fieldName, addQueryParameter(whereClause), options);
-//        tokens.add(whereToken);
-//    }
-//
+    /**
+     * Filter the results from the index using the specified where clause.
+     * @param string $fieldName Field name
+     * @param string $whereClause Where clause
+     * @param bool $exact Use exact matcher
+     */
+    public function _whereLucene(string $fieldName, string $whereClause, bool $exact): void
+    {
+        $fieldName = $this->ensureValidFieldName($fieldName, false);
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+        $this->negateIfNeeded($tokens, $fieldName);
+
+        $options = $exact ? new WhereOptions($exact) : null;
+        $whereToken = WhereToken::create(WhereOperator::lucene(), $fieldName, $this->addQueryParameter($whereClause), $options);
+        $tokens->append($whereToken);
+    }
+
 //    /**
 //     * Simplified method for opening a new clause within the query
 //     */
@@ -677,11 +684,12 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $tokens->append($whereToken);
     }
 
-//    @Override
-//    public void _negateNext() {
-//        negate = !negate;
-//    }
-//
+
+    public function _negateNext(): void
+    {
+        $this->negate = !$this->negate;
+    }
+
 //    /**
 //     * Check that the field has one of the specified value
 //     * @param fieldName Field name to use
@@ -709,91 +717,81 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        WhereToken whereToken = WhereToken.create(WhereOperator.IN, fieldName, addQueryParameter(transformCollection(fieldName, unpackCollection(values))));
 //        tokens.add(whereToken);
 //    }
-//
-//    public void _whereStartsWith(String fieldName, Object value) {
-//        _whereStartsWith(fieldName, value, false);
-//    }
-//
-//    public void _whereStartsWith(String fieldName, Object value, boolean exact) {
-//        WhereParams whereParams = new WhereParams();
-//        whereParams.setFieldName(fieldName);
-//        whereParams.setValue(value);
-//        whereParams.setAllowWildcards(true);
-//
-//        Object transformToEqualValue = transformValue(whereParams);
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//
-//        whereParams.setFieldName(ensureValidFieldName(whereParams.getFieldName(), whereParams.isNestedPath()));
-//        negateIfNeeded(tokens, whereParams.getFieldName());
-//
-//        WhereToken whereToken = WhereToken.create(WhereOperator.STARTS_WITH, whereParams.getFieldName(), addQueryParameter(transformToEqualValue), new WhereToken.WhereOptions(exact));
-//        tokens.add(whereToken);
-//    }
-//
-//    public void _whereEndsWith(String fieldName, Object value) {
-//        _whereEndsWith(fieldName, value, false);
-//    }
-//
-//    /**
-//     * Matches fields which ends with the specified value.
-//     * @param fieldName Field name to use
-//     * @param value Values to find
-//     */
-//    public void _whereEndsWith(String fieldName, Object value, boolean exact) {
-//        WhereParams whereParams = new WhereParams();
-//        whereParams.setFieldName(fieldName);
-//        whereParams.setValue(value);
-//        whereParams.setAllowWildcards(true);
-//
-//        Object transformToEqualValue = transformValue(whereParams);
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//
-//        whereParams.setFieldName(ensureValidFieldName(whereParams.getFieldName(), whereParams.isNestedPath()));
-//        negateIfNeeded(tokens, whereParams.getFieldName());
-//
-//        WhereToken whereToken = WhereToken.create(WhereOperator.ENDS_WITH, whereParams.getFieldName(), addQueryParameter(transformToEqualValue), new WhereToken.WhereOptions(exact));
-//        tokens.add(whereToken);
-//    }
-//
-//    @Override
-//    public void _whereBetween(String fieldName, Object start, Object end) {
-//        _whereBetween(fieldName, start, end, false);
-//    }
-//
-//    /**
-//     * Matches fields where the value is between the specified start and end, inclusive
-//     * @param fieldName Field name to use
-//     * @param start Range start
-//     * @param end Range end
-//     * @param exact Use exact matcher
-//     */
-//    @Override
-//    public void _whereBetween(String fieldName, Object start, Object end, boolean exact) {
-//        fieldName = ensureValidFieldName(fieldName, false);
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//        negateIfNeeded(tokens, fieldName);
-//
-//        WhereParams startParams = new WhereParams();
-//        startParams.setValue(start);
-//        startParams.setFieldName(fieldName);
-//
-//        WhereParams endParams = new WhereParams();
-//        endParams.setValue(end);
-//        endParams.setFieldName(fieldName);
-//
-//        String fromParameterName = addQueryParameter(start == null ? "*" : transformValue(startParams, true));
-//        String toParameterName = addQueryParameter(end == null ? "NULL" : transformValue(endParams, true));
-//
-//        WhereToken whereToken = WhereToken.create(WhereOperator.BETWEEN, fieldName, null, new WhereToken.WhereOptions(exact, fromParameterName, toParameterName));
-//        tokens.add(whereToken);
-//    }
-//
+
+    public function _whereStartsWith(string $fieldName, $value, bool $exact = false): void
+    {
+        $whereParams = new WhereParams();
+        $whereParams->setFieldName($fieldName);
+        $whereParams->setValue($value);
+        $whereParams->setAllowWildcards(true);
+
+        $transformToEqualValue = $this->transformValue($whereParams);
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+
+        $whereParams->setFieldName($this->ensureValidFieldName($whereParams->getFieldName(), $whereParams->isNestedPath()));
+        $this->negateIfNeeded($tokens, $whereParams->getFieldName());
+
+        $whereToken = WhereToken::create(WhereOperator::startsWith(), $whereParams->getFieldName(), $this->addQueryParameter($transformToEqualValue), new WhereOptions($exact));
+        $tokens->append($whereToken);
+    }
+
+    /**
+     * Matches fields which ends with the specified value.
+     * @param string $fieldName Field name to use
+     * @param mixed $value Values to find
+     * @param bool $exact
+     */
+    public function _whereEndsWith(string $fieldName, $value, bool $exact = false): void
+    {
+        $whereParams = new WhereParams();
+        $whereParams->setFieldName($fieldName);
+        $whereParams->setValue($value);
+        $whereParams->setAllowWildcards(true);
+
+        $transformToEqualValue = $this->transformValue($whereParams);
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+
+        $whereParams->setFieldName($this->ensureValidFieldName($whereParams->getFieldName(), $whereParams->isNestedPath()));
+        $this->negateIfNeeded($tokens, $whereParams->getFieldName());
+
+        $whereToken = WhereToken::create(WhereOperator::endsWith(), $whereParams->getFieldName(), $this->addQueryParameter($transformToEqualValue), new WhereOptions($exact));
+        $tokens->append($whereToken);
+    }
+
+    /**
+     * Matches fields where the value is between the specified start and end, inclusive
+     * @param string $fieldName Field name to use
+     * @param mixed $start Range start
+     * @param mixed $end Range end
+     * @param bool $exact Use exact matcher
+     */
+    public function _whereBetween(string $fieldName, $start, $end, bool $exact = false): void
+    {
+        $fieldName = $this->ensureValidFieldName($fieldName, false);
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+        $this->negateIfNeeded($tokens, $fieldName);
+
+        $startParams = new WhereParams();
+        $startParams->setValue($start);
+        $startParams->setFieldName($fieldName);
+
+        $endParams = new WhereParams();
+        $endParams->setValue($end);
+        $endParams->setFieldName($fieldName);
+
+        $fromParameterName = $this->addQueryParameter($start == null ? "*" : $this->transformValue($startParams, true));
+        $toParameterName = $this->addQueryParameter($end == null ? "NULL" : $this->transformValue($endParams, true));
+
+        $whereToken = WhereToken::create(WhereOperator::between(), $fieldName, null, new WhereOptions($exact, $fromParameterName, $toParameterName));
+        $tokens->append($whereToken);
+    }
+
 //    public void _whereGreaterThan(String fieldName, Object value) {
 //        _whereGreaterThan(fieldName, value, false);
 //    }
@@ -1132,14 +1130,15 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        assertNoRawQuery();
 //        orderByTokens.add(OrderByToken.scoreDescending);
 //    }
-//
-//    /**
-//     * Provide statistics about the query, such as total count of matching records
-//     * @param stats Output parameter for query statistics
-//     */
-//    public void _statistics(Reference<QueryStatistics> stats) {
-//        stats.value = queryStats;
-//    }
+
+    /**
+     * Provide statistics about the query, such as total count of matching records
+     * @param QueryStatistics $stats Output parameter for query statistics
+     */
+    public function _statistics(QueryStatistics &$stats): void
+    {
+        $stats = $queryStats;
+    }
 
     /**
      * Called externally to raise the after query executed callback
@@ -1165,21 +1164,21 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
      *
      * @return IndexQuery Index query
      */
-//    @SuppressWarnings("deprecation")
     protected function generateIndexQuery(string $query): IndexQuery
     {
         $indexQuery = new IndexQuery();
-//        indexQuery.setQuery(query);
-//        indexQuery.setStart(start);
-//        indexQuery.setWaitForNonStaleResults(theWaitForNonStaleResults);
-//        indexQuery.setWaitForNonStaleResultsTimeout(timeout);
-//        indexQuery.setQueryParameters(queryParameters);
-//        indexQuery.setDisableCaching(disableCaching);
-//        indexQuery.setProjectionBehavior(projectionBehavior);
-//
-//        if (pageSize != null) {
-//            indexQuery.setPageSize(pageSize);
-//        }
+        $indexQuery->setQuery($query);
+        $indexQuery->setStart($this->start);
+        $indexQuery->setWaitForNonStaleResults($this->theWaitForNonStaleResults);
+        $indexQuery->setWaitForNonStaleResultsTimeout($this->timeout);
+        $indexQuery->setQueryParameters($this->queryParameters);
+        $indexQuery->setDisableCaching($this->disableCaching);
+        // @todo: implement this
+//        $indexQuery->setProjectionBehavior($this->projectionBehavior);
+
+        if ($this->pageSize != null) {
+            $indexQuery->setPageSize($this->pageSize);
+        }
         return $indexQuery;
     }
 
@@ -1691,11 +1690,11 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        if (Duration.class.equals(clazz)) {
 //            return ((Duration) whereParams.getValue()).toNanos() / 100;
 //        }
-//
-//        if (Boolean.class.equals(clazz)) {
-//            return whereParams.getValue();
-//        }
-//
+
+        if (is_bool($whereParams->getValue())) {
+            return $whereParams->getValue() ? 'true' : 'false';
+        }
+
 //        if (clazz.isEnum()) {
 //            return whereParams.getValue();
 //        }
@@ -1865,26 +1864,28 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //    public void _removeAfterStreamExecutedListener(Consumer<ObjectNode> action) {
 //        afterStreamExecutedCallback.remove(action);
 //    }
-//
-//    public void _noTracking() {
-//        disableEntitiesTracking = true;
-//    }
-//
-//    public void _noCaching() {
-//        disableCaching = true;
-//    }
+
+    public function _noTracking(): void
+    {
+        $this->disableEntitiesTracking = true;
+    }
+
+    public function _noCaching(): void
+    {
+        $this->disableCaching = true;
+    }
 
     protected ?QueryTimings $queryTimings = null;
 
-//    public void _includeTimings(Reference<QueryTimings> timingsReference) {
-//        if (queryTimings != null) {
-//            timingsReference.value = queryTimings;
-//            return;
-//        }
-//
-//        queryTimings = timingsReference.value = new QueryTimings();
-//    }
-//
+    public function _includeTimings(QueryTimings &$timingsReference): void {
+        if ($this->queryTimings != null) {
+            $this->timingsReference = $queryTimings;
+            return;
+        }
+
+        $queryTimings = $timingsReference = new QueryTimings();
+    }
+
     protected HighlightingTokenArray $highlightingTokens;
 //
 //    protected QueryHighlightings queryHighlightings = new QueryHighlightings();
@@ -2062,18 +2063,22 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     private function executeActualQuery(): void
     {
-//        /** @var CleanCloseable $context */
-//        $context = $this->queryOperation->enterQueryContext();
-//        try {
-//            /** QueryCommand */
-//            $command = $this->queryOperation->createRequest();
-//            $this->theSession->getRequestExecutor()->execute($command, $this->theSession->sessionInfo);
-//            $this->queryOperation->setResult($command->getResult());
-//        } finally {
-//            $context->close();
-//        }
-//
-//        $this->invokeAfterQueryExecuted($this->queryOperation->getCurrentQueryResults());
+        /** @var ?CleanCloseable $context */
+        $context = $this->queryOperation->enterQueryContext();
+        try {
+            /** QueryCommand */
+            $command = $this->queryOperation->createRequest();
+            $this->theSession->getRequestExecutor()->execute($command, $this->theSession->getSessionInfo());
+            /** @var QueryResult $queryResult */
+            $queryResult = $command->getResult();
+            $this->queryOperation->setResult($queryResult);
+        } finally {
+            if($context) {
+                $context->close();
+            }
+        }
+
+        $this->invokeAfterQueryExecuted($this->queryOperation->getCurrentQueryResults());
     }
 
 //    @Override
@@ -2156,7 +2161,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     {
         $this->executeQueryOperationInternal($take);
 
-        return [];//$this->queryOperation->complete($this->className);
+        return $this->queryOperation->complete($this->className);
     }
 
     private function executeQueryOperationAsArray(?int $take): array

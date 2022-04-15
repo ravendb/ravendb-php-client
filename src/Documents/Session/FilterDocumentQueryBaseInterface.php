@@ -94,22 +94,15 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
 //
 //    //TBD expr TSelf Search<TValue>(Expression<Func<T, TValue>> propertySelector, string searchTerms, SearchOperator @operator = SearchOperator.Or);
 //
-//    /**
-//     * Filter the results from the index using the specified where clause.
-//     * @param fieldName Field name
-//     * @param whereClause Where clause
-//     * @return Query instance
-//     */
-//    TSelf whereLucene(String fieldName, String whereClause);
-//
-//    /**
-//     * Filter the results from the index using the specified where clause.
-//     * @param fieldName Field name
-//     * @param whereClause Where clause
-//     * @param exact Use exact matcher
-//     * @return Query instance
-//     */
-//    TSelf whereLucene(String fieldName, String whereClause, boolean exact);
+
+    /**
+     * Filter the results from the index using the specified where clause.
+     * @param string $fieldName Field name
+     * @param string $whereClause Where clause
+     * @param bool $exact Use exact matcher
+     */
+    function whereLucene(string $fieldName, string $whereClause, bool $exact = false);
+
 //
 //    /**
 //     * Matches fields where the value is between the specified start and end, inclusive

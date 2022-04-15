@@ -10,7 +10,9 @@ use RavenDB\Documents\Session\DocumentSession;
 use RavenDB\Documents\Session\DocumentSessionInterface;
 use RavenDB\Documents\Session\SessionOptions;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Http\AggressiveCacheOptions;
 use RavenDB\Http\RequestExecutor;
+use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Primitives\ClosureArray;
 use RavenDB\Primitives\EventArgs;
 use RavenDB\Primitives\EventHelper;
@@ -281,34 +283,24 @@ class DocumentStore extends DocumentStoreBase
         }
     }
 
-
-//    /**
-//     * Setup the context for no aggressive caching
-//     * <p>
-//     * This is mainly useful for internal use inside RavenDB, when we are executing
-//     * queries that have been marked with WaitForNonStaleResults, we temporarily disable
-//     * aggressive caching.
-//     */
-//    public CleanCloseable disableAggressiveCaching() {
-//        return disableAggressiveCaching(null);
-//    }
-//
-//    /**
-//     * Setup the context for no aggressive caching
-//     * <p>
-//     * This is mainly useful for internal use inside RavenDB, when we are executing
-//     * queries that have been marked with WaitForNonStaleResults, we temporarily disable
-//     * aggressive caching.
-//     */
-//    public CleanCloseable disableAggressiveCaching(String databaseName) {
-//        assertInitialized();
-//        RequestExecutor re = getRequestExecutor(getEffectiveDatabase(databaseName));
-//        AggressiveCacheOptions old = re.aggressiveCaching.get();
-//        re.aggressiveCaching.set(null);
-//
+    /**
+     * Setup the context for no aggressive caching
+     *
+     * This is mainly useful for internal use inside RavenDB, when we are executing
+     * queries that have been marked with WaitForNonStaleResults, we temporarily disable
+     * aggressive caching.
+     */
+    public function disableAggressiveCaching(string $databaseName = ''): CleanCloseable
+    {
+        $this->assertInitialized();
+        $re = $this->getRequestExecutor($this->getEffectiveDatabase($databaseName));
+        /** @var AggressiveCacheOptions $old */
+//        $old = $re->aggressiveCaching->get();
+//        $re->aggressiveCaching->set(null);
 //        return () -> re.aggressiveCaching.set(old);
-//    }
-//
+
+    }
+
 //    @Override
 //    public IDatabaseChanges changes() {
 //        return changes(null, null);

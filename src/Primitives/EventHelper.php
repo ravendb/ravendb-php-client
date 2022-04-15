@@ -24,6 +24,7 @@ class EventHelper
 
     public static function invokeActions(array $actions, object $argument): void
     {
+
 //        for (Consumer<T> action : actions) {
 //            action.accept(argument);
 //        }

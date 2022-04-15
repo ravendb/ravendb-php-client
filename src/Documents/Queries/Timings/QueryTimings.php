@@ -2,36 +2,49 @@
 
 namespace RavenDB\Documents\Queries\Timings;
 
+use RavenDB\Documents\Queries\QueryResult;
+
+// !status: DONE
 class QueryTimings
 {
-//  private long durationInMs;
-//    private Map<String, QueryTimings> timings;
-//
-//    public long getDurationInMs() {
-//        return durationInMs;
-//    }
-//
-//    public void setDurationInMs(long durationInMs) {
-//        this.durationInMs = durationInMs;
-//    }
-//
-//    public Map<String, QueryTimings> getTimings() {
-//        return timings;
-//    }
-//
-//    public void setTimings(Map<String, QueryTimings> timings) {
-//        this.timings = timings;
-//    }
-//
-//    public void update(QueryResult queryResult) {
-//        durationInMs = 0;
-//        timings = null;
-//
-//        if (queryResult.getTimings() == null) {
-//            return;
-//        }
-//
-//        durationInMs = queryResult.getTimings().getDurationInMs();
-//        timings = queryResult.getTimings().getTimings();
-//    }
+    private int $durationInMs = 0;
+    private ?QueryTimingsArray $timings = null;
+
+    public function __construct()
+    {
+        $this->timings = new QueryTimingsArray();
+    }
+
+    public function getDurationInMs(): int
+    {
+        return $this->durationInMs;
+    }
+
+    public function setDurationInMs(int $durationInMs): void
+    {
+        $this->durationInMs = $durationInMs;
+    }
+
+    public function getTimings(): ?QueryTimingsArray
+    {
+        return $this->timings;
+    }
+
+    public function setTimings(?QueryTimingsArray $timings): void
+    {
+        $this->timings = $timings;
+    }
+
+    public function update(QueryResult $queryResult): void
+    {
+        $this->durationInMs = 0;
+        $this->timings = null;
+
+        if ($queryResult->getTimings() == null) {
+            return;
+        }
+
+        $this->durationInMs = $queryResult->getTimings()->getDurationInMs();
+        $this->timings = $queryResult->getTimings()->getTimings();
+    }
 }

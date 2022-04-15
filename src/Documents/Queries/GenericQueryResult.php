@@ -2,17 +2,31 @@
 
 namespace RavenDB\Documents\Queries;
 
+use Symfony\Component\Serializer\Annotation\SerializedName;
+
 class GenericQueryResult extends QueryResultBase
 {
-//  private int totalResults;
-//    private long longTotalResults;
-//    private Integer cappedMaxResults;
-//    private int skippedResults;
+    /** @SerializedName("TotalResults"); */
+    private int $totalResults;
+
+    /** @SerializedName("LongTotalResults"); */
+    private int $longTotalResults;
+
+    private int $cappedMaxResults;
+
+    /** @SerializedName("SkippedResults"); */
+    private int $skippedResults;
+
 //    private Map<String, Map<String, String[]>> highlightings;
+
 //    private Map<String, String[]> explanations;
-//    private long durationInMs;
-//    private long resultSize;
-//
+
+    /** @SerializedName("DurationInMs"); */
+    private int $durationInMs;
+
+    /** @ SerializedName("ResultSize"); */
+    private int $resultSize;
+
 //    /**
 //     * Gets the total results for this query
 //     * @return Total results for given query

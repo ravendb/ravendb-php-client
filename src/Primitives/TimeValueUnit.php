@@ -7,9 +7,9 @@ use RavenDB\Type\ValueObjectInterface;
 // !status: DONE
 class TimeValueUnit implements ValueObjectInterface
 {
-    public const NONE = 'NONE';
-    public const SECOND = 'SECOND';
-    public const MONTH = 'MONTH';
+    public const NONE = 'None';
+    public const SECOND = 'Second';
+    public const MONTH = 'Month';
 
     private string $value;
 

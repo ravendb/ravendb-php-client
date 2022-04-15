@@ -12,7 +12,7 @@ class AfterConversionToDocumentEventArgs extends EventArgs
     private array $document;
     private InMemoryDocumentSessionOperations $session;
 
-    public function __construct(string $id, object $entity, array $document, InMemoryDocumentSessionOperations $session)
+    public function __construct(InMemoryDocumentSessionOperations $session, string $id, object $entity, array $document)
     {
         $this->id = $id;
         $this->entity = $entity;

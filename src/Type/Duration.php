@@ -37,4 +37,14 @@ class Duration
         // @todo: implement this method
         return true;
     }
+
+    public function toMillis(): int
+    {
+        return 0;
+    }
+
+    public function getSeconds(): int
+    {
+        return 0;
+    }
 }

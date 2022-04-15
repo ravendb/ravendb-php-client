@@ -125,6 +125,14 @@ interface DocumentSessionInterface
      */
     public function query(string $className, $collectionOrIndexName = null): DocumentQueryInterface;
 
+    /**
+     * @param string $className
+     * @param string $query
+     *
+     * @return RawDocumentQueryInterface
+     */
+    public function rawQuery(string $className, string $query): RawDocumentQueryInterface;
+
 //    ISessionDocumentCounters countersFor(String documentId);
 //
 //    ISessionDocumentCounters countersFor(Object entity);

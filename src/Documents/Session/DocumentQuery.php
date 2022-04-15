@@ -186,11 +186,12 @@ class DocumentQuery extends AbstractDocumentQuery
 //        return this;
 //    }
 //
-//    @Override
-//    public IDocumentQuery<T> negateNext() {
-//        _negateNext();
-//        return this;
-//    }
+
+    public function negateNext(): DocumentQueryInterface
+    {
+        $this->_negateNext();
+        return $this;
+    }
 
     public function search(string $fieldName, string $searchTerms, ?SearchOperator $operator = null): DocumentQueryInterface
     {
@@ -262,34 +263,30 @@ class DocumentQuery extends AbstractDocumentQuery
 //
 //    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.Include(Expression<Func<T, object>> path)
 //
-//    @Override
-//    public IDocumentQuery<T> not() {
-//        negateNext();
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> take(int count) {
-//        _take(count);
-//        return this;
-//    }
-//
-//    public IDocumentQuery<T> skip(int count) {
-//        _skip(count);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> whereLucene(String fieldName, String whereClause) {
-//        _whereLucene(fieldName, whereClause, false);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> whereLucene(String fieldName, String whereClause, boolean exact) {
-//        _whereLucene(fieldName, whereClause, exact);
-//        return this;
-//    }
+
+    public function not(): DocumentQueryInterface
+    {
+        $this->negateNext();
+        return $this;
+    }
+
+    public function take(int $count): DocumentQueryInterface
+    {
+        $this->_take($count);
+        return $this;
+    }
+
+    public function skip(int $count): DocumentQueryInterface
+    {
+        $this->_skip($count);
+        return $this;
+    }
+
+    public function whereLucene(string $fieldName, string $whereClause, bool $exact = false): DocumentQueryInterface
+    {
+        $this->_whereLucene($fieldName, $whereClause, $exact);
+        return $this;
+    }
 
     public function whereEquals(string $fieldName, $value, bool $exact = false): DocumentQueryInterface
     {
@@ -382,43 +379,29 @@ class DocumentQuery extends AbstractDocumentQuery
 //
 //    //TBD expr public IDocumentQuery<T> WhereIn<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values, bool exact = false)
 //
-//    @Override
-//    public IDocumentQuery<T> whereStartsWith(String fieldName, Object value) {
-//        return whereStartsWith(fieldName, value, false);
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> whereStartsWith(String fieldName, Object value, boolean exact) {
-//        _whereStartsWith(fieldName, value, exact);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> whereEndsWith(String fieldName, Object value) {
-//        return whereEndsWith(fieldName, value, false);
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> whereEndsWith(String fieldName, Object value, boolean exact) {
-//        _whereEndsWith(fieldName, value, exact);
-//        return this;
-//    }
-//
-//    //TBD expr public IDocumentQuery<T> WhereEndsWith<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value)
-//
-//    @Override
-//    public IDocumentQuery<T> whereBetween(String fieldName, Object start, Object end) {
-//        return whereBetween(fieldName, start, end, false);
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> whereBetween(String fieldName, Object start, Object end, boolean exact) {
-//        _whereBetween(fieldName, start, end, exact);
-//        return this;
-//    }
-//
-//    //TBD expr public IDocumentQuery<T> WhereBetween<TValue>(Expression<Func<T, TValue>> propertySelector, TValue start, TValue end, bool exact = false)
-//
+
+    public function whereStartsWith(string $fieldName, $value, bool $exact = false): DocumentQueryInterface
+    {
+        $this->_whereStartsWith($fieldName, $value, $exact);
+        return $this;
+    }
+
+    public function whereEndsWith(string $fieldName, $value, bool $exact = false): DocumentQueryInterface
+    {
+        $this->_whereEndsWith($fieldName, $value, $exact);
+        return $this;
+    }
+
+    //TBD expr public IDocumentQuery<T> WhereEndsWith<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value)
+
+    public function whereBetween(string $fieldName, $start, $end, bool $exact = false): DocumentQueryInterface
+    {
+        $this->_whereBetween($fieldName, $start, $end, $exact);
+        return $this;
+    }
+
+    //TBD expr public IDocumentQuery<T> WhereBetween<TValue>(Expression<Func<T, TValue>> propertySelector, TValue start, TValue end, bool exact = false)
+
 //    @Override
 //    public IDocumentQuery<T> whereGreaterThan(String fieldName, Object value) {
 //        return whereGreaterThan(fieldName, value, false);

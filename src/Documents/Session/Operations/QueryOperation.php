@@ -2,11 +2,21 @@
 
 namespace RavenDB\Documents\Session\Operations;
 
+use RavenDB\Constants\DocumentsMetadata;
+use RavenDB\Documents\Commands\QueryCommand;
 use RavenDB\Documents\Queries\IndexQuery;
 use RavenDB\Documents\Queries\QueryResult;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Documents\Session\Tokens\FieldsToFetchToken;
+use RavenDB\Exceptions\Documents\Indexes\IndexDoesNotExistException;
+use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Exceptions\TimeoutException;
+use RavenDB\Primitives\CleanCloseable;
+use RavenDB\Type\Duration;
+use RavenDB\Utils\Stopwatch;
+use RuntimeException;
+use Throwable;
 
 class QueryOperation
 {
@@ -16,9 +26,9 @@ class QueryOperation
     private bool $metadataOnly = false;
     private bool $indexEntriesOnly = false;
     private bool $isProjectInto = false;
-    private QueryResult $currentQueryResults;
+    private ?QueryResult $currentQueryResults = null;
     private ?FieldsToFetchToken $fieldsToFetch = null;
-//    private Stopwatch _sp;
+    private ?Stopwatch $sp = null;
     private bool $noTracking;
 
 //    private static final Log logger = LogFactory.getLog(QueryOperation.class);
@@ -56,21 +66,24 @@ class QueryOperation
         $this->assertPageSizeSet();
     }
 
-//    public QueryCommand createRequest() {
-//        _session.incrementRequestCount();
-//
-//        logQuery();
-//
-//        return new QueryCommand(_session, _indexQuery, _metadataOnly, _indexEntriesOnly);
-//    }
-//
-//    public QueryResult getCurrentQueryResults() {
-//        return _currentQueryResults;
-//    }
-//
-//    public void setResult(QueryResult queryResult) {
-//        ensureIsAcceptableAndSaveResult(queryResult);
-//    }
+    public function createRequest(): QueryCommand
+    {
+        $this->session->incrementRequestCount();
+
+        $this->logQuery();
+
+        return new QueryCommand($this->session, $this->indexQuery, $this->metadataOnly, $this->indexEntriesOnly);
+    }
+
+    public function getCurrentQueryResults(): ?QueryResult
+    {
+        return $this->currentQueryResults;
+    }
+
+    public function setResult(?QueryResult $queryResult): void
+    {
+        $this->ensureIsAcceptableAndSaveResult($queryResult);
+    }
 
     private function assertPageSizeSet(): void
     {
@@ -85,27 +98,33 @@ class QueryOperation
         throw new IllegalStateException("Attempt to query without explicitly specifying a page size. " .
                 "You can use .take() methods to set maximum number of results. By default the page size is set to Integer.MAX_VALUE and can cause severe performance degradation.");
     }
-//
-//    private void startTiming() {
-//        _sp = Stopwatch.createStarted();
-//    }
-//
-//    public void logQuery() {
+
+    private function startTiming(): void
+    {
+        $this->sp = Stopwatch::createStarted();
+    }
+
+    public function logQuery(): void
+    {
+        // @todo: uncomment this - logging
 //        if (logger.isInfoEnabled()) {
 //            logger.info("Executing query " + _indexQuery.getQuery() + " on index " + _indexName + " in " + _session.storeIdentifier());
 //        }
-//    }
-//
-//    public CleanCloseable enterQueryContext() {
-//        startTiming();
-//
-//        if (!_indexQuery.isWaitForNonStaleResults()) {
-//            return null;
-//        }
-//
-//        return _session.getDocumentStore().disableAggressiveCaching(_session.getDatabaseName());
-//    }
-//
+    }
+
+    public function enterQueryContext(): ?CleanCloseable
+    {
+        $this->startTiming();
+
+        if (!$this->indexQuery->isWaitForNonStaleResults()) {
+            return null;
+        }
+
+//        @todo: uncomment this if aggressive cashing is added
+        return null;
+//        return $this->session->getDocumentStore()->disableAggressiveCaching($this->session->getDatabaseName());
+    }
+
 //    @SuppressWarnings("unchecked")
 //    public <T> T[] completeAsArray(Class<T> clazz) {
 //        QueryResult queryResult = _currentQueryResults.createSnapshot();
@@ -115,36 +134,38 @@ class QueryOperation
 //
 //        return result;
 //    }
-//
-//    public <T> List<T> complete(Class<T> clazz) {
-//        QueryResult queryResult = _currentQueryResults.createSnapshot();
-//
-//        List<T> result = new ArrayList<>(queryResult.getResults().size());
-//
-//        completeInternal(clazz, queryResult, result::add);
-//
-//        return result;
-//    }
-//
-//    private <T> void completeInternal(Class<T> clazz, QueryResult queryResult, BiConsumer<Integer, T> addToResult) {
-//        if (!_noTracking) {
-//            _session.registerIncludes(queryResult.getIncludes());
-//        }
-//
-//        try {
-//            for (int i = 0; i < queryResult.getResults().size(); i++) {
-//                JsonNode document = queryResult.getResults().get(i);
-//                ObjectNode metadata = (ObjectNode) document.get(Constants.Documents.Metadata.KEY);
-//                try {
-//                    JsonNode idNode = metadata.get(Constants.Documents.Metadata.ID);
-//
-//                    String id = null;
-//                    if (idNode != null && idNode.isTextual()) {
-//                        id = idNode.asText();
-//                    }
-//
-//                    addToResult.accept(i, deserialize(clazz, id, (ObjectNode) document, metadata, _fieldsToFetch, _noTracking, _session, _isProjectInto));
-//                } catch (NullPointerException e) {
+
+    public function complete(string $className): array
+    {
+        $queryResult = $this->currentQueryResults->createSnapshot();
+
+        return $this->completeInternal($className, $queryResult);
+    }
+
+    private function completeInternal(string $className, QueryResult $queryResult): array
+    {
+        if (!$this->noTracking) {
+//            $this->session->registerIncludes($queryResult->getIncludes());
+        }
+
+        $resultItems = [];
+
+        try {
+
+            foreach ($queryResult->getResults() as $document) {
+
+                $metadata = array_key_exists(DocumentsMetadata::KEY, $document) ? $document[DocumentsMetadata::KEY] : null;
+                try {
+                    $idNode = array_key_exists(DocumentsMetadata::ID, $metadata) ? $metadata[DocumentsMetadata::ID] : NULL;
+
+                    $id = null;
+                    if ($idNode != null && is_string($idNode)) {
+                        $id = $idNode;
+                    }
+
+                    $resultItems[] = self::deserialize($className, $id, $document, $metadata, $this->fieldsToFetch, $this->noTracking, $this->session, $this->isProjectInto);
+                } catch (Throwable $e) {
+//                } catch (NullPointerException $e) {
 //                    if (document.size() != _facetResultFields.length) {
 //                        throw e;
 //                    }
@@ -155,13 +176,13 @@ class QueryOperation
 //                        }
 //                    }
 //
-//                    throw new IllegalArgumentException("Raw query with aggregation by facet should be called by executeAggregation method.");
-//                }
-//            }
-//        } catch (JsonProcessingException e) {
-//            throw new RuntimeException("Unable to read json: " + e.getMessage(), e);
-//        }
-//
+                    throw new IllegalArgumentException("Raw query with aggregation by facet should be called by executeAggregation method.");
+                }
+            }
+        } catch (Throwable $e) {
+            throw new RuntimeException("Unable to read json: " . $e->getMessage(), 0, $e);
+        }
+
 //        if (!_noTracking) {
 //            _session.registerMissingIncludes(queryResult.getResults(), queryResult.getIncludes(), queryResult.getIncludedPaths());
 //
@@ -175,10 +196,12 @@ class QueryOperation
 //                _session.getClusterSession().registerCompareExchangeValues(queryResult.getCompareExchangeValueIncludes());
 //            }
 //        }
-//    }
-//
-//    @SuppressWarnings("unchecked")
-//    public static <T> T deserialize(Class<T> clazz, String id, ObjectNode document, ObjectNode metadata, FieldsToFetchToken fieldsToFetch, boolean disableEntitiesTracking, InMemoryDocumentSessionOperations session, boolean isProjectInto) throws JsonProcessingException {
+
+        return $resultItems;
+    }
+
+    public static function deserialize(string $className, string $id, array $document, array $metadata, ?FieldsToFetchToken $fieldsToFetch, bool $disableEntitiesTracking, InMemoryDocumentSessionOperations $session, bool $isProjectInto): object
+    {
 //        JsonNode projection = metadata.get("@projection");
 //        if (projection == null || !projection.asBoolean()) {
 //            return (T)session.trackEntity(clazz, id, document, metadata, disableEntitiesTracking);
@@ -230,43 +253,45 @@ class QueryOperation
 //        session.onBeforeConversionToEntityInvoke(id, clazz, documentRef);
 //        document = documentRef.value;
 //
-//        T result = session.getConventions().getEntityMapper().treeToValue(document, clazz);
+        $result = $session->getConventions()->getEntityMapper()->denormalize($document, $className);
 //
 //        session.onAfterConversionToEntityInvoke(id, document, result);
 //
-//        return result;
-//    }
-//
-//    public boolean isNoTracking() {
-//        return _noTracking;
-//    }
-//
-//    public void setNoTracking(boolean noTracking) {
-//        _noTracking = noTracking;
-//    }
-//
-//    public void ensureIsAcceptableAndSaveResult(QueryResult result) {
-//        if (_sp == null) {
-//            ensureIsAcceptableAndSaveResult(result, null);
-//        } else {
-//            _sp.stop();
-//            ensureIsAcceptableAndSaveResult(result, _sp.elapsed());
-//        }
-//    }
-//
-//    public void ensureIsAcceptableAndSaveResult(QueryResult result, Duration duration) {
-//        if (result == null) {
-//            throw new IndexDoesNotExistException("Could not find index " + _indexName);
-//        }
-//
-//        ensureIsAcceptable(result, _indexQuery.isWaitForNonStaleResults(), duration, _session);
-//
-//        saveQueryResult(result);
-//    }
-//
-//    private void saveQueryResult(QueryResult result) {
-//        _currentQueryResults = result;
-//
+        return $result;
+    }
+
+    public function isNoTracking(): bool
+    {
+        return $this->noTracking;
+    }
+
+    public function setNoTracking(bool $noTracking): void
+    {
+        $this->noTracking = $noTracking;
+    }
+
+    public function ensureIsAcceptableAndSaveResult(?QueryResult $result, ?Duration $duration = null): void
+    {
+        if ($duration == null) {
+            if ($this->sp != null) {
+                $this->sp->stop();
+                $duration = $this->sp->elapsed();
+            }
+        }
+
+        if ($result == null) {
+            throw new IndexDoesNotExistException("Could not find index " . $this->indexName);
+        }
+
+        self::ensureIsAcceptable($result, $this->indexQuery->isWaitForNonStaleResults(), $duration, $this->session);
+
+        $this->saveQueryResult($result);
+    }
+
+    private function saveQueryResult(QueryResult $result): void
+    {
+        $this->currentQueryResults = $result;
+
 //        if (logger.isInfoEnabled()) {
 //            String isStale = result.isStale() ? " stale " : " ";
 //
@@ -293,24 +318,27 @@ class QueryOperation
 //
 //            logger.info("Query " + _indexQuery.getQuery() + " " + parameters.toString() + "returned " + result.getResults().size() + isStale + "results (total index results: " + result.getTotalResults() + ")");
 //        }
-//    }
-//
-//    public static void ensureIsAcceptable(QueryResult result, boolean waitForNonStaleResults, Stopwatch duration, InMemoryDocumentSessionOperations session) {
-//        if (duration == null) {
-//            ensureIsAcceptable(result, waitForNonStaleResults, (Duration)null, session);
-//        } else {
-//            duration.stop();
-//            ensureIsAcceptable(result, waitForNonStaleResults, duration.elapsed(), session);
-//        }
-//    }
-//
-//    public static void ensureIsAcceptable(QueryResult result, boolean waitForNonStaleResults, Duration duration, InMemoryDocumentSessionOperations session) {
-//        if (waitForNonStaleResults && result.isStale()) {
-//            String elapsed = duration == null ? "" : " " + duration.toMillis() + " ms";
-//            String msg = "Waited" + elapsed + " for the query to return non stale result.";
-//            throw new TimeoutException(msg);
-//        }
-//    }
+    }
+
+    /**
+     * @param QueryResult $result
+     * @param bool $waitForNonStaleResults
+     * @param Stopwatch|Duration|null $duration
+     * @param InMemoryDocumentSessionOperations $session
+     */
+    public static function ensureIsAcceptable(QueryResult $result, bool $waitForNonStaleResults, $duration, InMemoryDocumentSessionOperations $session): void
+    {
+        if ($duration instanceof Stopwatch) {
+            $duration->stop();
+            $duration = $duration->elapsed();
+        }
+
+        if ($waitForNonStaleResults && $result->isStale()) {
+            $elapsed = $duration == null ? "" : " " . $duration->toMillis() . " ms";
+            $msg = "Waited" . $elapsed . " for the query to return non stale result.";
+            throw new TimeoutException($msg);
+        }
+    }
 
     public function getIndexQuery(): IndexQuery
     {

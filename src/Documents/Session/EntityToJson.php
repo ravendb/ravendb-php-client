@@ -9,17 +9,21 @@ use Symfony\Component\Serializer\Serializer;
 
 use Ds\Map as DSMap;
 
+// @todo: rewrite this class
 class EntityToJson
 {
     private InMemoryDocumentSessionOperations $session;
 
-    private ?DSMap $missingDictionary = null;
-
-
+    /**
+     * All the listeners for this session
+     * @param InMemoryDocumentSessionOperations $session Session to use
+     */
     public function __construct(InMemoryDocumentSessionOperations $session)
     {
         $this->session = $session;
     }
+
+    private ?DSMap $missingDictionary = null;
 
     public function getMissingDictionary(): ?DSMap
     {
@@ -46,66 +50,45 @@ class EntityToJson
         $document = $this->convertEntityToJsonInternal($entity, $this->session->getConventions(), $documentInfo);
 
         if ($documentInfo != null) {
-//            Reference<ObjectNode> documentReference = new Reference<>(document);
-//            _session.onAfterConversionToDocumentInvoke(documentInfo.getId(), entity, documentReference);
-//            document = documentReference.value;
+            $this->session->onAfterConversionToDocumentInvoke($documentInfo->getId(), $entity,$document);
         }
 
         return $document;
     }
 
-//        if (documentInfo != null) {
-//            Reference<ObjectNode> documentReference = new Reference<>(document);
-//            _session.onAfterConversionToDocumentInvoke(documentInfo.getId(), entity, documentReference);
-//            document = documentReference.value;
-//        }
-
-
-    private function convertEntityToJsonInternal(
+    private static function convertEntityToJsonInternal(
         object $entity,
         DocumentConventions $conventions,
-        DocumentInfo $documentInfo,
+        ?DocumentInfo $documentInfo,
         bool $removeIdentityProperty = true
     ): array {
         $mapper = $conventions->getEntityMapper();
 
         $jsonNode = $mapper->normalize($entity);
 
-        // @todo: implement this method
-        $this->writeMetadata($mapper, $jsonNode, $documentInfo);
+        self::writeMetadata($mapper, $jsonNode, $documentInfo);
 
         if ($removeIdentityProperty) {
-            $this->tryRemoveIdentityProperty($jsonNode, get_class($entity), $conventions);
+            self::tryRemoveIdentityProperty($jsonNode, get_class($entity), $conventions);
         }
 
         return $jsonNode;
     }
 
-
-    /**
-     * @throws ExceptionInterface
-     */
-    public function convertToEntity(string $entityType, string $id, array $document, bool $trackEntity)
-    {
-        return $this->session->getConventions()->getEntityMapper()->denormalize($document, $entityType, 'json');
-    }
-
-    private function tryRemoveIdentityProperty($document, string $className, DocumentConventions $conventions): bool
-    {
-        $identityProperty = $conventions->getIdentityProperty($className);
-
-        if ($identityProperty == null) {
-            return false;
+    public static function convertEntityToJsonStatic(
+        object $entity,
+        DocumentConventions $conventions,
+        ?DocumentInfo $documentInfo,
+        bool $removeIdentityProperty = true
+    ): array {
+        if (is_array($entity)) {
+            return $entity;
         }
 
-        if (array_key_exists($identityProperty, $document)) {
-            unset($document[$identityProperty]);
-        }
-
-        return true;
+        return self::convertEntityToJsonInternal($entity, $conventions, $documentInfo, $removeIdentityProperty);
     }
 
-    private function writeMetadata(Serializer $mapper, array &$jsonNode, ?DocumentInfo $documentInfo): void
+    private static function writeMetadata(Serializer $mapper, array &$jsonNode, ?DocumentInfo $documentInfo): void
     {
         if ($documentInfo == null) {
             return;
@@ -134,5 +117,145 @@ class EntityToJson
         if ($setMetadata) {
             $jsonNode[DocumentsMetadata::KEY] = $metadataNode;
         }
+    }
+
+    /**
+     * Converts a json object to an entity.
+     * @param string $entityType Class of entity
+     * @param string $id ID of entity
+     * @param array $document Raw entity
+     * @param bool $trackEntity Track entity
+     * @return object Entity instance
+     *
+     * @throws ExceptionInterface
+     */
+    public function convertToEntity(string $entityType, string $id, array $document, bool $trackEntity): object
+    {
+        // @todo: implement method
+        // note: this method is not implemented at all, just made to work somehow
+        $entity = $this->session->getConventions()->getEntityMapper()->denormalize($document, $entityType, 'json');
+
+        return $entity;
+    }
+
+//    @SuppressWarnings("unchecked")
+//    public Object convertToEntity(Class entityType, String id, ObjectNode document, boolean trackEntity) {
+//        try {
+//            if (ObjectNode.class.equals(entityType)) {
+//                return document;
+//            }
+//
+//            Reference<ObjectNode> documentRef = new Reference<>(document);
+//            _session.onBeforeConversionToEntityInvoke(id, entityType, documentRef);
+//            document = documentRef.value;
+//
+//            Object defaultValue = InMemoryDocumentSessionOperations.getDefaultValue(entityType);
+//            Object entity = defaultValue;
+//
+//            //TODO: if track! -> RegisterMissingProperties
+//
+//            String documentType =_session.getConventions().getJavaClass(id, document);
+//            if (documentType != null) {
+//                Class type = _session.getConventions().getJavaClassByName(documentType);
+//                if (entityType.isAssignableFrom(type)) {
+//                    entity = _session.getConventions().getEntityMapper().treeToValue(document, type);
+//                }
+//            }
+//
+//            if (entity == defaultValue) {
+//                entity = _session.getConventions().getEntityMapper().treeToValue(document, entityType);
+//            }
+//
+//            JsonNode projectionNode = document.get(Constants.Documents.Metadata.PROJECTION);
+//            boolean isProjection = projectionNode != null && projectionNode.isBoolean() && projectionNode.asBoolean();
+//
+//            if (id != null) {
+//                _session.getGenerateEntityIdOnTheClient().trySetIdentity(entity, id, isProjection);
+//            }
+//
+//            _session.onAfterConversionToEntityInvoke(id, document, entity);
+//
+//            return entity;
+//        } catch (Exception e) {
+//            throw new IllegalStateException("Could not convert document " + id + " to entity of type " + entityType.getName(), e);
+//        }
+//    }
+//
+//    public void populateEntity(Object entity, String id, ObjectNode document) {
+//        if (id == null) {
+//            throw new IllegalArgumentException("Id cannot be null");
+//        }
+//
+//        populateEntity(entity, document, _session.getConventions().getEntityMapper());
+//
+//        _session.getGenerateEntityIdOnTheClient().trySetIdentity(entity, id);
+//    }
+//
+//    public static void populateEntity(Object entity, ObjectNode document, ObjectMapper objectMapper) {
+//        if (entity == null) {
+//            throw new IllegalArgumentException("Entity cannot be null");
+//        }
+//        if (document == null) {
+//            throw new IllegalArgumentException("Document cannot be null");
+//        }
+//        if (objectMapper == null) {
+//            throw new IllegalArgumentException("ObjectMapper cannot be null");
+//        }
+//
+//        try {
+//            objectMapper.updateValue(entity, document);
+//        } catch (IOException e) {
+//            throw new IllegalStateException("Could not populate entity", e);
+//        }
+//    }
+
+    private static function tryRemoveIdentityProperty(array $document, string $className, DocumentConventions $conventions): bool
+    {
+        $identityProperty = $conventions->getIdentityProperty($className);
+
+        if ($identityProperty == null) {
+            return false;
+        }
+
+        if (array_key_exists($identityProperty, $document)) {
+            unset($document[$identityProperty]);
+        }
+
+        return true;
+    }
+
+//    @SuppressWarnings("UnnecessaryLocalVariable")
+//    public static Object convertToEntity(Class< ? > entityClass, String id, ObjectNode document, DocumentConventions conventions) {
+//        try {
+//
+//            Object defaultValue = InMemoryDocumentSessionOperations.getDefaultValue(entityClass);
+//
+//            Object entity = defaultValue;
+//
+//            String documentType = conventions.getJavaClass(id, document);
+//            if (documentType != null) {
+//                Class<? > clazz = class.forName(documentType);
+//                if (clazz != null && entityClass.isAssignableFrom(clazz)) {
+//                    entity = conventions.getEntityMapper().treeToValue(document, clazz);
+//                }
+//            }
+//
+//            if (entity == null) {
+//                entity = conventions.getEntityMapper().treeToValue(document, entityClass);
+//            }
+//
+//            return entity;
+//        } catch (Exception e) {
+//            throw new IllegalStateException("Could not convert document " + id + " to entity of type " + entityClass, e);
+//        }
+//    }
+//
+//    public void removeFromMissing(Object entity) {
+//        _missingDictionary.remove(entity);
+//    }
+
+    public function clear(): void
+    {
+        $this->missingDictionary->clear();
     }
 }

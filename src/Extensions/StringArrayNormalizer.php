@@ -11,8 +11,10 @@ class StringArrayNormalizer implements DenormalizerInterface
     {
         $object = new $type();
 
-        foreach ($data as $key => $item) {
-            $object->offsetSet($key, $item);
+        if ($data) {
+            foreach ($data as $key => $item) {
+                $object->offsetSet($key, $item);
+            }
         }
 
         return $object;
