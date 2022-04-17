@@ -786,7 +786,7 @@ class QueryTest extends RemoteTestBase
 //    }
 
     /** @todo uncoment all commented code in this test */
-    public function testQueryWithDuration(): void
+    public function atestQueryWithDuration(): void
     {
         $store = $this->getDocumentStore();
         try {
