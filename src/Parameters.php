@@ -2,9 +2,9 @@
 
 namespace RavenDB;
 
-use RavenDB\Type\StringArray;
+use RavenDB\Type\ExtendedArrayObject;
 
-class Parameters extends StringArray
+class Parameters extends ExtendedArrayObject
 {
 
 }

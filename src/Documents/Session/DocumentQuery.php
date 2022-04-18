@@ -288,84 +288,56 @@ class DocumentQuery extends AbstractDocumentQuery
         return $this;
     }
 
+    /**
+     * @param string $fieldName
+     * @param mixed|MethodCall $value
+     * @param bool $exact
+     * @return DocumentQueryInterface
+     */
     public function whereEquals(string $fieldName, $value, bool $exact = false): DocumentQueryInterface
     {
         $this->_whereEquals($fieldName, $value, $exact);
         return $this;
     }
 
+    /**
+     * @param WhereParams $whereParams
+     * @return DocumentQueryInterface
+     */
     public function whereEqualsWithParams(WhereParams $whereParams): DocumentQueryInterface
     {
         $this->_whereEqualsWithParams($whereParams);
         return $this;
     }
 
-//    @Override
-//    public IDocumentQuery<T> whereEquals(String fieldName, Object value) {
-//        _whereEquals(fieldName, value, false);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> whereEquals(String fieldName, Object value, boolean exact) {
-//        _whereEquals(fieldName, value, exact);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> whereEquals(String fieldName, MethodCall method) {
-//        _whereEquals(fieldName, method);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> whereEquals(String fieldName, MethodCall method, boolean exact) {
-//        _whereEquals(fieldName, method, exact);
-//        return this;
-//    }
-//
-//    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.WhereEquals<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact)
-//    //TBD expr IDocumentQuery<T> IFilterDocumentQueryBase<T, IDocumentQuery<T>>.WhereEquals<TValue>(Expression<Func<T, TValue>> propertySelector, MethodCall value, bool exact)
-//
-//    @Override
-//    public IDocumentQuery<T> whereEquals(WhereParams whereParams) {
-//        _whereEquals(whereParams);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> whereNotEquals(String fieldName, Object value) {
-//        _whereNotEquals(fieldName, value);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> whereNotEquals(String fieldName, Object value, boolean exact) {
-//        _whereNotEquals(fieldName, value, exact);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> whereNotEquals(String fieldName, MethodCall method) {
-//        _whereNotEquals(fieldName, method);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> whereNotEquals(String fieldName, MethodCall method, boolean exact) {
-//        _whereNotEquals(fieldName, method, exact);
-//        return this;
-//    }
-//
-//    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.WhereNotEquals<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact)
-//    //TBD expr IDocumentQuery<T> IFilterDocumentQueryBase<T, IDocumentQuery<T>>.WhereNotEquals<TValue>(Expression<Func<T, TValue>> propertySelector, MethodCall value, bool exact)
-//
-//    @Override
-//    public IDocumentQuery<T> whereNotEquals(WhereParams whereParams) {
-//        _whereNotEquals(whereParams);
-//        return this;
-//    }
-//
+    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.WhereEquals<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact)
+    //TBD expr IDocumentQuery<T> IFilterDocumentQueryBase<T, IDocumentQuery<T>>.WhereEquals<TValue>(Expression<Func<T, TValue>> propertySelector, MethodCall value, bool exact)
+
+    /**
+     * @param string $fieldName
+     * @param mixed|MethodCall $value
+     * @param bool $exact
+     * @return DocumentQueryInterface
+     */
+    public function whereNotEquals(string $fieldName, $value, bool $exact = false): DocumentQueryInterface
+    {
+        $this->_whereNotEquals($fieldName, $value, $exact);
+        return $this;
+    }
+
+    /**
+     * @param WhereParams $whereParams
+     * @return DocumentQueryInterface
+     */
+    public function whereNotEqualsWithParams(WhereParams $whereParams): DocumentQueryInterface
+    {
+        $this->_whereNotEqualsWithParams($whereParams);
+        return $this;
+    }
+
+    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.WhereNotEquals<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact)
+    //TBD expr IDocumentQuery<T> IFilterDocumentQueryBase<T, IDocumentQuery<T>>.WhereNotEquals<TValue>(Expression<Func<T, TValue>> propertySelector, MethodCall value, bool exact)
+
 //    @Override
 //    public IDocumentQuery<T> whereIn(String fieldName, Collection< ? > values) {
 //        return whereIn(fieldName, values, false);
@@ -376,9 +348,8 @@ class DocumentQuery extends AbstractDocumentQuery
 //        _whereIn(fieldName, values, exact);
 //        return this;
 //    }
-//
-//    //TBD expr public IDocumentQuery<T> WhereIn<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values, bool exact = false)
-//
+
+    //TBD expr public IDocumentQuery<T> WhereIn<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values, bool exact = false)
 
     public function whereStartsWith(string $fieldName, $value, bool $exact = false): DocumentQueryInterface
     {
@@ -402,66 +373,52 @@ class DocumentQuery extends AbstractDocumentQuery
 
     //TBD expr public IDocumentQuery<T> WhereBetween<TValue>(Expression<Func<T, TValue>> propertySelector, TValue start, TValue end, bool exact = false)
 
-//    @Override
-//    public IDocumentQuery<T> whereGreaterThan(String fieldName, Object value) {
-//        return whereGreaterThan(fieldName, value, false);
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> whereGreaterThan(String fieldName, Object value, boolean exact) {
-//        _whereGreaterThan(fieldName, value, exact);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> whereGreaterThanOrEqual(String fieldName, Object value) {
-//        return whereGreaterThanOrEqual(fieldName, value, false);
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> whereGreaterThanOrEqual(String fieldName, Object value, boolean exact) {
-//        _whereGreaterThanOrEqual(fieldName, value, exact);
-//        return this;
-//    }
-//
-//    //TBD expr public IDocumentQuery<T> WhereGreaterThan<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false)
-//    //TBD expr public IDocumentQuery<T> WhereGreaterThanOrEqual<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false)
-//
-//    public IDocumentQuery<T> whereLessThan(String fieldName, Object value) {
-//        return whereLessThan(fieldName, value, false);
-//    }
-//
-//    public IDocumentQuery<T> whereLessThan(String fieldName, Object value, boolean exact) {
-//        _whereLessThan(fieldName, value, exact);
-//        return this;
-//    }
-//
-//    //TBD expr public IDocumentQuery<T> WhereLessThanOrEqual<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false)
-//
-//    public IDocumentQuery<T> whereLessThanOrEqual(String fieldName, Object value) {
-//        return whereLessThanOrEqual(fieldName, value, false);
-//    }
-//
-//    public IDocumentQuery<T> whereLessThanOrEqual(String fieldName, Object value, boolean exact) {
-//        _whereLessThanOrEqual(fieldName, value, exact);
-//        return this;
-//    }
-//
-//    //TBD expr public IDocumentQuery<T> WhereLessThanOrEqual<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false)
-//    //TBD expr public IDocumentQuery<T> WhereExists<TValue>(Expression<Func<T, TValue>> propertySelector)
-//
-//    @Override
-//    public IDocumentQuery<T> whereExists(String fieldName) {
-//        _whereExists(fieldName);
-//        return this;
-//    }
-//
+
+    public function whereGreaterThan(string $fieldName, $value, bool $exact = false): DocumentQueryInterface
+    {
+        $this->_whereGreaterThan($fieldName, $value, $exact);
+        return $this;
+    }
+
+    public function whereGreaterThanOrEqual(string $fieldName, $value, bool $exact = false): DocumentQueryInterface
+    {
+        $this->_whereGreaterThanOrEqual($fieldName, $value, $exact);
+        return $this;
+    }
+
+    //TBD expr public IDocumentQuery<T> WhereGreaterThan<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false)
+    //TBD expr public IDocumentQuery<T> WhereGreaterThanOrEqual<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false)
+
+    public function whereLessThan(string $fieldName, $value, bool $exact): DocumentQueryInterface
+    {
+        $this->_whereLessThan($fieldName, $value, $exact);
+        return $this;
+    }
+
+    //TBD expr public IDocumentQuery<T> WhereLessThanOrEqual<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false)
+
+    public function whereLessThanOrEqual(string $fieldName, $value, bool $exact): DocumentQueryInterface
+    {
+        $this->_whereLessThanOrEqual($fieldName, $value, $exact);
+        return $this;
+    }
+
+    //TBD expr public IDocumentQuery<T> WhereLessThanOrEqual<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false)
+    //TBD expr public IDocumentQuery<T> WhereExists<TValue>(Expression<Func<T, TValue>> propertySelector)
+
+    public function whereExists(string $fieldName): DocumentQueryInterface
+    {
+        $this->_whereExists($fieldName);
+        return $this;
+    }
+
 //    //TBD expr IDocumentQuery<T> IFilterDocumentQueryBase<T, IDocumentQuery<T>>.WhereRegex<TValue>(Expression<Func<T, TValue>> propertySelector, string pattern)
-//    @Override
-//    public IDocumentQuery<T> whereRegex(String fieldName, String pattern) {
-//        _whereRegex(fieldName, pattern);
-//        return this;
-//    }
+
+    public function whereRegex(string $fieldName, string $pattern): DocumentQueryInterface
+    {
+        $this->_whereRegex($fieldName, $pattern);
+        return $this;
+    }
 
     public function andAlso(bool $wrapPreviousQueryClauses = false): DocumentQueryInterface
     {
@@ -492,21 +449,15 @@ class DocumentQuery extends AbstractDocumentQuery
 //        _proximity(proximity);
 //        return this;
 //    }
-//
-//    @Override
-//    public IDocumentQuery<T> randomOrdering() {
-//        _randomOrdering();
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> randomOrdering(String seed) {
-//        _randomOrdering(seed);
-//        return this;
-//    }
-//
-//    //TBD 4.1 public IDocumentQuery<T> customSortUsing(String typeName, boolean descending)
-//
+
+    public function randomOrdering(?string $seed = null): DocumentQueryInterface
+    {
+        $this->_randomOrdering($seed);
+        return $this;
+    }
+
+    //TBD 4.1 public IDocumentQuery<T> customSortUsing(String typeName, boolean descending)
+
 //    @Override
 //    public IGroupByDocumentQuery<T> groupBy(String fieldName, String... fieldNames) {
 //        _groupBy(fieldName, fieldNames);
@@ -525,25 +476,25 @@ class DocumentQuery extends AbstractDocumentQuery
 //    public <TResult> IDocumentQuery<TResult> ofType(Class<TResult> tResultClass) {
 //        return createDocumentQueryInternal(tResultClass);
 //    }
-//
-//    public IDocumentQuery<T> orderBy(String field) {
-//        return orderBy(field, OrderingType.STRING);
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> orderBy(String field, String sorterName) {
-//        _orderBy(field, sorterName);
-//        return this;
-//    }
-//
-//    public IDocumentQuery<T> orderBy(String field, OrderingType ordering) {
-//        _orderBy(field, ordering);
-//        return this;
-//    }
-//
-//    //TBD expr public IDocumentQuery<T> OrderBy<TValue>(params Expression<Func<T, TValue>>[] propertySelectors)
-//
-//
+
+    /**
+     * Order the results by the specified fields
+     * The fields are the names of the fields to sort, defaulting to sorting by ascending.
+     * You can prefix a field name with '-' to indicate sorting by descending or '+' to sort by ascending
+     *
+     * @param string $field
+     * @param OrderingType|string|null $sorterNameOrOrdering
+     *
+     * @return DocumentQueryInterface
+     */
+    function orderBy(string $field, $sorterNameOrOrdering = null): DocumentQueryInterface
+    {
+        $this->_orderBy($field, $sorterNameOrOrdering);
+        return $this;
+    }
+
+    //TBD expr public IDocumentQuery<T> OrderBy<TValue>(params Expression<Func<T, TValue>>[] propertySelectors)
+
 //    @Override
 //    public IDocumentQuery<T> orderByDescending(String field, String sorterName) {
 //        _orderByDescending(field, sorterName);

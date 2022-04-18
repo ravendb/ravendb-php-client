@@ -9,17 +9,17 @@ use RavenDB\Utils\StringBuilder;
 // !status: DONE
 class WhereToken extends QueryToken
 {
+    private string $fieldName;
+    private WhereOperator $whereOperator;
+    private ?string $parameterName = null;
+    private WhereOptions $options;
+
     protected function __construct()
     {
     }
 
-    private string $fieldName;
-    private WhereOperator $whereOperator;
-    private string $parameterName;
-    private WhereOptions $options;
-
     public static function create(
-        WhereOperator $op, string $fieldName, string $parameterName, ?WhereOptions $options = null
+        WhereOperator $op, string $fieldName, ?string $parameterName, ?WhereOptions $options = null
     ): WhereToken {
         $token = new WhereToken();
         $token->fieldName = $fieldName;
@@ -49,12 +49,12 @@ class WhereToken extends QueryToken
         $this->whereOperator = $whereOperator;
     }
 
-    public function getParameterName(): string
+    public function getParameterName(): ?string
     {
-        return $$this->parameterName;
+        return $this->parameterName;
     }
 
-    public function setParameterName(string $parameterName): void
+    public function setParameterName(?string $parameterName): void
     {
         $this->parameterName = $parameterName;
     }

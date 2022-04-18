@@ -36,7 +36,7 @@ class MethodsType implements ValueObjectInterface
         return $this->value == self::CMP_X_CHG;
     }
 
-    public function cmpXChg(): MethodsType
+    public static function cmpXChg(): MethodsType
     {
         return new MethodsType(self::CMP_X_CHG);
     }

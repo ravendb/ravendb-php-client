@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Session;
 
+use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use RavenDB\Constants\DocumentsIndexingFields;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Queries\IndexQuery;
@@ -23,9 +24,11 @@ use RavenDB\Documents\Session\Tokens\FromToken;
 use RavenDB\Documents\Session\Tokens\GraphQueryToken;
 use RavenDB\Documents\Session\Tokens\HighlightingTokenArray;
 use RavenDB\Documents\Session\Tokens\LoadTokenList;
+use RavenDB\Documents\Session\Tokens\MethodsType;
 use RavenDB\Documents\Session\Tokens\MoreLikeThisToken;
 use RavenDB\Documents\Session\Tokens\NegateToken;
 use RavenDB\Documents\Session\Tokens\OpenSubclauseToken;
+use RavenDB\Documents\Session\Tokens\OrderByToken;
 use RavenDB\Documents\Session\Tokens\QueryOperatorToken;
 use RavenDB\Documents\Session\Tokens\QueryToken;
 use RavenDB\Documents\Session\Tokens\QueryTokenList;
@@ -35,13 +38,16 @@ use RavenDB\Documents\Session\Tokens\TrueToken;
 use RavenDB\Documents\Session\Tokens\WhereOperator;
 use RavenDB\Documents\Session\Tokens\WhereOptions;
 use RavenDB\Documents\Session\Tokens\WhereToken;
+use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Parameters;
 use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Primitives\ClosureArray;
 use RavenDB\Primitives\EventHelper;
 use RavenDB\Type\Duration;
+use RavenDB\Type\StringArray;
 use RavenDB\Type\StringSet;
+use RavenDB\Utils\DefaultsUtils;
 use RavenDB\Utils\StringBuilder;
 use RavenDB\Utils\StringUtils;
 
@@ -319,36 +325,23 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //    public List<String> getProjectionFields() {
 //        return fieldsToFetchToken != null && fieldsToFetchToken.projections != null ? Arrays.asList(fieldsToFetchToken.projections) : Collections.emptyList();
 //    }
-//
-//    /**
-//     * Order the search results randomly
-//     */
-//    @Override
-//    public void _randomOrdering() {
-//        assertNoRawQuery();
-//
-//        _noCaching();
-//        orderByTokens.add(OrderByToken.random);
-//    }
-//
-//    /**
-//     * Order the search results randomly using the specified seed
-//     * this is useful if you want to have repeatable random queries
-//     * @param seed Seed to use
-//     */
-//    @Override
-//    public void _randomOrdering(String seed) {
-//        assertNoRawQuery();
-//
-//        if (StringUtils.isBlank(seed)) {
-//            _randomOrdering();
-//            return;
-//        }
-//
-//        _noCaching();
-//        orderByTokens.add(OrderByToken.createRandom(seed));
-//    }
-//
+
+    /**
+     * Order the search results randomly using the specified seed
+     * this is useful if you want to have repeatable random queries
+     * @param ?string $seed Seed to use
+     */
+    public function _randomOrdering(?string $seed = null): void
+    {
+        $this->assertNoRawQuery();
+
+        $this->_noCaching();
+
+        $token = StringUtils::isBlank($seed) ? OrderByToken::random() : OrderByToken::createRandom($seed);
+
+        $this->orderByTokens->append($token);
+    }
+
 //    //TBD 4.1 public void _customSortUsing(String typeName)
 //    //TBD 4.1 public void _customSortUsing(String typeName, boolean descending)
 
@@ -552,30 +545,30 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $tokens->append($whereToken);
     }
 
-//    /**
-//     * Simplified method for opening a new clause within the query
-//     */
-//    @Override
-//    public void _openSubclause() {
-//        _currentClauseDepth++;
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//        negateIfNeeded(tokens, null);
-//
-//        tokens.add(OpenSubclauseToken.create());
-//    }
-//
-//    /**
-//     * Simplified method for closing a clause within the query
-//     */
-//    @Override
-//    public void _closeSubclause() {
-//        _currentClauseDepth--;
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        tokens.add(CloseSubclauseToken.create());
-//    }
+    /**
+     * Simplified method for opening a new clause within the query
+     */
+    public function _openSubclause(): void
+    {
+        $this->currentClauseDepth++;
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+        $this->negateIfNeeded($tokens, null);
+
+        $tokens->append(OpenSubclauseToken::create());
+    }
+
+    /**
+     * Simplified method for closing a clause within the query
+     */
+    public function _closeSubclause(): void
+    {
+        $this->currentClauseDepth--;
+
+        $tokens = $this->getCurrentWhereTokens();
+        $tokens->append(CloseSubclauseToken::create());
+    }
 
     protected function _whereEquals(string $fieldName, $value, bool $exact = false): void
     {
@@ -592,7 +585,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     {
         if ($this->negate) {
             $this->negate = false;
-            $this->_whereNotEqualsInternal($whereParams);
+            $this->_whereNotEqualsWithParams($whereParams);
             return;
         }
 
@@ -613,77 +606,62 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     private function ifValueIsMethod(WhereOperator $op, WhereParams $whereParams, QueryTokenList $tokens): bool
     {
-//        if (whereParams.getValue() instanceof MethodCall) {
-//            MethodCall mc = (MethodCall) whereParams.getValue();
-//
-//            String[] args = new String[mc.args.length];
-//            for (int i = 0; i < mc.args.length; i++) {
-//                args[i] = addQueryParameter(mc.args[i]);
-//            }
-//
-//            WhereToken token;
-//            Class<? extends MethodCall> type = mc.getClass();
-//            if (CmpXchg.class.equals(type)) {
-//                token = WhereToken.create(op, whereParams.getFieldName(), null, new WhereToken.WhereOptions(WhereToken.MethodsType.CMP_X_CHG, args, mc.accessPath, whereParams.isExact()));
-//            } else {
-//                throw new IllegalArgumentException("Unknown method " + type);
-//            }
-//
-//            tokens.add(token);
-//            return true;
-//        }
-//
+        if ($whereParams->getValue() instanceof MethodCall) {
+            /** @var MethodCall $mc */
+            $mc = $whereParams->getValue();
+
+            $args = new StringArray();
+            foreach ($mc->args as $arg) {
+                $args[] = $this->addQueryParameter($arg);
+            }
+
+            $type = get_class($mc);
+            if ($type == CmpXchg::class) {
+                $token = WhereToken::create($op, $whereParams->getFieldName(), null, new WhereOptions(MethodsType::cmpXChg(), $args, $mc->accessPath, $whereParams->isExact()));
+            } else {
+                throw new IllegalArgumentException("Unknown method " . $type);
+            }
+
+            $tokens->append($token);
+            return true;
+        }
+
         return false;
     }
 
-//    public void _whereNotEquals(String fieldName, Object value) {
-//        _whereNotEquals(fieldName, value, false);
-//    }
-//
-//    public void _whereNotEquals(String fieldName, Object value, boolean exact) {
-//        WhereParams params = new WhereParams();
-//        params.setFieldName(fieldName);
-//        params.setValue(value);
-//        params.setExact(exact);
-//
-//        _whereNotEquals(params);
-//    }
-//
-//    @Override
-//    public void _whereNotEquals(String fieldName, MethodCall method) {
-//        _whereNotEquals(fieldName, (Object) method);
-//    }
-//
-//    @Override
-//    public void _whereNotEquals(String fieldName, MethodCall method, boolean exact) {
-//        _whereNotEquals(fieldName, (Object) method, exact);
-//    }
-//
-    public function _whereNotEqualsInternal(WhereParams $whereParams): void
+    protected function _whereNotEquals(string $fieldName, $value, bool $exact = false): void
+    {
+        $whereParams = new WhereParams();
+
+        $whereParams->setFieldName($fieldName);
+        $whereParams->setValue($value);
+        $whereParams->setExact($exact);
+
+        $this->_whereNotEqualsWithParams($whereParams);
+    }
+
+    protected function _whereNotEqualsWithParams(WhereParams $whereParams): void
     {
         if ($this->negate) {
             $this->negate = false;
-            // @todo: chech why we don't have this method!?
-//            $this->_whereEqualsInternal($whereParams);
+            $this->_whereEqualsWithParams($whereParams);
             return;
         }
 
-        /** @var object $transformToEqualValue */
-        $transformToEqualValue = $this->transformValue($whereParams);
+        $whereParams->setFieldName($this->ensureValidFieldName($whereParams->getFieldName(), $whereParams->isNestedPath()));
 
         $tokens = $this->getCurrentWhereTokens();
         $this->appendOperatorIfNeeded($tokens);
-
-        $whereParams->setFieldName($this->ensureValidFieldName($whereParams->getFieldName(), $whereParams->isNestedPath()));
 
         if ($this->ifValueIsMethod(WhereOperator::notEquals(), $whereParams, $tokens)) {
             return;
         }
 
-        $whereToken = WhereToken::create(WhereOperator::notEquals(), $whereParams->getFieldName(), $this->addQueryParameter($transformToEqualValue), new WhereOptions($whereParams->isExact()));
+        $transformToEqualValue = $this->transformValue($whereParams);
+        $addQueryParameter = $this->addQueryParameter($transformToEqualValue);
+        $whereToken = WhereToken::create(WhereOperator::notEquals(), $whereParams->getFieldName(), $addQueryParameter, new WhereOptions($whereParams->isExact()));
         $tokens->append($whereToken);
     }
-
 
     public function _negateNext(): void
     {
@@ -792,119 +770,108 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $tokens->append($whereToken);
     }
 
-//    public void _whereGreaterThan(String fieldName, Object value) {
-//        _whereGreaterThan(fieldName, value, false);
-//    }
-//
-//    /**
-//     * Matches fields where the value is greater than the specified value
-//     * @param fieldName Field name to use
-//     * @param value Value to compare
-//     * @param exact Use exact matcher
-//     */
-//    public void _whereGreaterThan(String fieldName, Object value, boolean exact) {
-//        fieldName = ensureValidFieldName(fieldName, false);
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//        negateIfNeeded(tokens, fieldName);
-//        WhereParams whereParams = new WhereParams();
-//        whereParams.setValue(value);
-//        whereParams.setFieldName(fieldName);
-//
-//        String parameter = addQueryParameter(value == null ? "*" : transformValue(whereParams, true));
-//        WhereToken whereToken = WhereToken.create(WhereOperator.GREATER_THAN, fieldName, parameter, new WhereToken.WhereOptions(exact));
-//        tokens.add(whereToken);
-//    }
-//
-//    public void _whereGreaterThanOrEqual(String fieldName, Object value) {
-//        _whereGreaterThanOrEqual(fieldName, value, false);
-//    }
-//
-//    /**
-//     * Matches fields where the value is greater than or equal to the specified value
-//     * @param fieldName Field name to use
-//     * @param value Value to compare
-//     * @param exact Use exact matcher
-//     */
-//    public void _whereGreaterThanOrEqual(String fieldName, Object value, boolean exact) {
-//        fieldName = ensureValidFieldName(fieldName, false);
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//        negateIfNeeded(tokens, fieldName);
-//        WhereParams whereParams = new WhereParams();
-//        whereParams.setValue(value);
-//        whereParams.setFieldName(fieldName);
-//
-//        String parameter = addQueryParameter(value == null ? "*" : transformValue(whereParams, true));
-//        WhereToken whereToken = WhereToken.create(WhereOperator.GREATER_THAN_OR_EQUAL, fieldName, parameter, new WhereToken.WhereOptions(exact));
-//        tokens.add(whereToken);
-//    }
-//
-//    public void _whereLessThan(String fieldName, Object value) {
-//        _whereLessThan(fieldName, value, false);
-//    }
-//
-//    public void _whereLessThan(String fieldName, Object value, boolean exact) {
-//        fieldName = ensureValidFieldName(fieldName, false);
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//        negateIfNeeded(tokens, fieldName);
-//
-//        WhereParams whereParams = new WhereParams();
-//        whereParams.setValue(value);
-//        whereParams.setFieldName(fieldName);
-//
-//        String parameter = addQueryParameter(value == null ? "NULL" : transformValue(whereParams, true));
-//        WhereToken whereToken = WhereToken.create(WhereOperator.LESS_THAN, fieldName, parameter, new WhereToken.WhereOptions(exact));
-//        tokens.add(whereToken);
-//    }
-//
-//    public void _whereLessThanOrEqual(String fieldName, Object value) {
-//        _whereLessThanOrEqual(fieldName, value, false);
-//    }
-//
-//    public void _whereLessThanOrEqual(String fieldName, Object value, boolean exact) {
-//        fieldName = ensureValidFieldName(fieldName, false);
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//        negateIfNeeded(tokens, fieldName);
-//
-//        WhereParams whereParams = new WhereParams();
-//        whereParams.setValue(value);
-//        whereParams.setFieldName(fieldName);
-//
-//        String parameter = addQueryParameter(value == null ? "NULL" : transformValue(whereParams, true));
-//        WhereToken whereToken = WhereToken.create(WhereOperator.LESS_THAN_OR_EQUAL, fieldName, parameter, new WhereToken.WhereOptions(exact));
-//        tokens.add(whereToken);
-//    }
-//
-//    /**
-//     * Matches fields where Regex.IsMatch(filedName, pattern)
-//     * @param fieldName Field name to use
-//     * @param pattern Regexp pattern
-//     */
-//    @Override
-//    public void _whereRegex(String fieldName, String pattern) {
-//        fieldName = ensureValidFieldName(fieldName, false);
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//        negateIfNeeded(tokens, fieldName);
-//
-//        WhereParams whereParams = new WhereParams();
-//        whereParams.setValue(pattern);
-//        whereParams.setFieldName(fieldName);
-//
-//        String parameter = addQueryParameter(transformValue(whereParams));
-//
-//        WhereToken whereToken = WhereToken.create(WhereOperator.REGEX, fieldName, parameter);
-//        tokens.add(whereToken);
-//    }
-//
+    /**
+     * Matches fields where the value is greater than the specified value
+     * @param string $fieldName Field name to use
+     * @param mixed $value Value to compare
+     * @param bool $exact Use exact matcher
+     */
+    public function _whereGreaterThan(string $fieldName, $value, bool $exact): void
+    {
+        $fieldName = $this->ensureValidFieldName($fieldName, false);
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+        $this->negateIfNeeded($tokens, $fieldName);
+        $whereParams = new WhereParams();
+        $whereParams->setValue($value);
+        $whereParams->setFieldName($fieldName);
+
+        $parameter = $this->addQueryParameter($value == null ? "*" : $this->transformValue($whereParams, true));
+        $whereToken = WhereToken::create(WhereOperator::greaterThan(), $fieldName, $parameter, new WhereOptions($exact));
+        $tokens->append($whereToken);
+    }
+
+
+    /**
+     * Matches fields where the value is greater than or equal to the specified value
+     * @param string $fieldName Field name
+     * @param mixed $value Value to use
+     * @param bool $exact Use exact matcher
+     */
+    public function _whereGreaterThanOrEqual(string $fieldName, $value, bool $exact = false): void
+    {
+        $fieldName = $this->ensureValidFieldName($fieldName, false);
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+        $this->negateIfNeeded($tokens, $fieldName);
+        $whereParams = new WhereParams();
+        $whereParams->setValue($value);
+        $whereParams->setFieldName($fieldName);
+
+        $parameter = $this->addQueryParameter($value == null ? "*" : $this->transformValue($whereParams, true));
+        $whereToken = WhereToken::create(WhereOperator::greaterThanOrEqual(), $fieldName, $parameter, new WhereOptions($exact));
+        $tokens->append($whereToken);
+    }
+
+    public function _whereLessThan(string $fieldName, $value, bool $exact = false): void
+    {
+        $fieldName = $this->ensureValidFieldName($fieldName, false);
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+        $this->negateIfNeeded($tokens, $fieldName);
+
+        $whereParams = new WhereParams();
+        $whereParams->setValue($value);
+        $whereParams->setFieldName($fieldName);
+
+        $parameter = $this->addQueryParameter($value == null ? "NULL" : $this->transformValue($whereParams, true));
+        $whereToken = WhereToken::create(WhereOperator::lessThan(), $fieldName, $parameter, new WhereOptions($exact));
+        $tokens->append($whereToken);
+    }
+
+    public function _whereLessThanOrEqual(string $fieldName, $value, bool $exact): void
+    {
+        $fieldName = $this->ensureValidFieldName($fieldName, false);
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+        $this->negateIfNeeded($tokens, $fieldName);
+
+        $whereParams = new WhereParams();
+        $whereParams->setValue($value);
+        $whereParams->setFieldName($fieldName);
+
+        $parameter = $this->addQueryParameter($value == null ? "NULL" : $this->transformValue($whereParams, true));
+        $whereToken = WhereToken::create(WhereOperator::lessThanOrEqual(), $fieldName, $parameter, new WhereOptions($exact));
+        $tokens->append($whereToken);
+    }
+
+    /**
+     * Matches fields where Regex.IsMatch(filedName, pattern)
+     * @param string $fieldName Field name to use
+     * @param string $pattern Regexp pattern
+     */
+
+    public function _whereRegex(string $fieldName, string $pattern): void
+    {
+        $fieldName = $this->ensureValidFieldName($fieldName, false);
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+        $this->negateIfNeeded($tokens, $fieldName);
+
+        $whereParams = new WhereParams();
+        $whereParams->setValue($pattern);
+        $whereParams->setFieldName($fieldName);
+
+        $parameter = $this->addQueryParameter($this->transformValue($whereParams));
+
+        $whereToken = WhereToken::create(WhereOperator::regex(), $fieldName, $parameter);
+        $tokens->append($whereToken);
+    }
 
     public function _andAlso(bool $wrapPreviousQueryClauses = false): void
     {
@@ -1053,40 +1020,26 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //
 //        ((WhereToken) whereToken).getOptions().setProximity(proximity);
 //    }
-//
-//    public void _orderBy(String field, String sorterName) {
-//        if (StringUtils.isBlank(sorterName)) {
-//            throw new IllegalArgumentException("SorterName cannot be null or whitespace.");
-//        }
-//
-//        assertNoRawQuery();
-//        String f = ensureValidFieldName(field, false);
-//        orderByTokens.add(OrderByToken.createAscending(f, sorterName));
-//    }
-//
-//    /**
-//     * Order the results by the specified fields
-//     * The fields are the names of the fields to sort, defaulting to sorting by ascending.
-//     * You can prefix a field name with '-' to indicate sorting by descending or '+' to sort by ascending
-//     * @param field field to use in order
-//     */
-//    public void _orderBy(String field) {
-//        _orderBy(field, OrderingType.STRING);
-//    }
-//
-//    /**
-//     * Order the results by the specified fields
-//     * The fields are the names of the fields to sort, defaulting to sorting by ascending.
-//     * You can prefix a field name with '-' to indicate sorting by descending or '+' to sort by ascending
-//     * @param field field to use in order
-//     * @param ordering Ordering type
-//     */
-//    public void _orderBy(String field, OrderingType ordering) {
-//        assertNoRawQuery();
-//        String f = ensureValidFieldName(field, false);
-//        orderByTokens.add(OrderByToken.createAscending(f, ordering));
-//    }
-//
+
+    /**
+     * Order the results by the specified fields
+     * The fields are the names of the fields to sort, defaulting to sorting by ascending.
+     * You can prefix a field name with '-' to indicate sorting by descending or '+' to sort by ascending
+     *
+     * @param string $field
+     * @param OrderingType|string|null $sorterNameOrOrdering
+     */
+    public function _orderBy(string $field, $sorterNameOrOrdering = null): void
+    {
+        if ($sorterNameOrOrdering == null) {
+            $sorterNameOrOrdering = OrderingType::string();
+        }
+
+        $this->assertNoRawQuery();
+        $f = $this->ensureValidFieldName($field, false);
+        $this->orderByTokens->append(OrderByToken::createAscending($f, $sorterNameOrOrdering));
+    }
+
 //    public void _orderByDescending(String field, String sorterName) {
 //        if (StringUtils.isBlank(sorterName)) {
 //            throw new IllegalArgumentException("SorterName cannot be null or whitespace.");
@@ -2101,39 +2054,62 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //
 //        return queryOperation.getCurrentQueryResults().createSnapshot();
 //    }
-//
-//    public T first() {
-//        Collection<T> result = executeQueryOperation(1);
-//        if (result.isEmpty()) {
-//            throw new IllegalStateException("Expected at least one result");
-//        }
-//        return result.stream().findFirst().get();
-//    }
-//
-//    public T firstOrDefault() {
-//        Collection<T> result = executeQueryOperation(1);
-//        return result.stream().findFirst().orElseGet(() -> Defaults.defaultValue(clazz));
-//    }
-//
-//    public T single() {
-//        Collection<T> result = executeQueryOperation(2);
-//        if (result.size() != 1) {
-//            throw new IllegalStateException("Expected single result, got: " + result.size());
-//        }
-//        return result.stream().findFirst().get();
-//    }
-//
-//    public T singleOrDefault() {
-//        Collection<T> result = executeQueryOperation(2);
-//        if (result.size() > 1) {
-//            throw new IllegalStateException("Expected single result, got: " + result.size());
-//        }
-//        if (result.isEmpty()) {
-//            return Defaults.defaultValue(clazz);
-//        }
-//        return result.stream().findFirst().get();
-//    }
-//
+
+    /**
+     * @return mixed
+     */
+    public function first()
+    {
+        $result = $this->executeQueryOperation(1);
+        if (empty($result)) {
+            throw new IllegalStateException("Expected at least one result");
+        }
+        return $result[array_key_first($result)];
+    }
+
+    /**
+     * @return mixed
+     */
+    public function firstOrDefault()
+    {
+        $result = $this->executeQueryOperation(1);
+
+        $firstKey = array_key_first($result);
+
+        if ($firstKey === null) {
+            return DefaultsUtils::defaultValue($this->className);
+        }
+
+        return $result[$firstKey];
+    }
+
+    /**
+     * @return mixed
+     */
+    public function single()
+    {
+        $result = $this->executeQueryOperation(2);
+        if (count($result) != 1) {
+            throw new IllegalStateException("Expected single result, got: " . count($result));
+        }
+        return $result[array_key_first($result)];
+    }
+
+    /**
+     * @return mixed
+     */
+    public function singleOrDefault()
+    {
+        $result = $this->executeQueryOperation(2);
+        if (count($result) > 1) {
+            throw new IllegalStateException("Expected single result, got: " . count($result));
+        }
+        if (empty($result)) {
+            return DefaultsUtils::defaultValue($this->className);
+        }
+        return $result[array_key_first($result)];
+    }
+
 //    public int count() {
 //        _take(0);
 //        QueryResult queryResult = getQueryResult();

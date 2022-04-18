@@ -34,7 +34,7 @@ class HttpClient implements HttpClientInterface
             $options['proxy'] = self::$proxy;
         }
 
-//        print_r($request);
+//        print_r($options);
 
         $serverResponse =  $this->client->request($request->getMethod(), $request->getUrl(), $options);
 

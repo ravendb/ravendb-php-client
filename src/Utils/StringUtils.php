@@ -94,4 +94,9 @@ class StringUtils
 
         return ltrim ($string, $stripChars);
     }
+
+    public static function repeat(string $string, int $times): string
+    {
+        return str_repeat($string, $times);
+    }
 }

@@ -7,13 +7,14 @@ use RavenDB\Documents\Queries\Query;
 use RavenDB\Documents\Queries\SearchOperator;
 use RavenDB\Documents\Session\BeforeQueryEventArgs;
 use RavenDB\Documents\Session\DocumentQueryInterface;
+use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Utils\DateUtils;
+use RavenDB\Utils\StringUtils;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\Infrastructure\Entity\Order;
 use tests\RavenDB\RemoteTestBase;
 use tests\RavenDB\Test\Client\Query\Entity\Article;
-
-
+use function PHPUnit\Framework\assertNotNull;
 
 class QueryTest extends RemoteTestBase
 {
@@ -47,7 +48,7 @@ class QueryTest extends RemoteTestBase
 
             $session = $store->openSession();
             try {
-                $session->advanced()->addBeforeQueryListener(function($sender, BeforeQueryEventArgs $event) {
+                $session->advanced()->addBeforeQueryListener(function ($sender, BeforeQueryEventArgs $event) {
                     /** @var DocumentQueryInterface $queryToBeExecuted */
                     $queryToBeExecuted = $event->getQueryCustomization()->getQuery();
                     $queryToBeExecuted->andAlso(true);
@@ -56,8 +57,7 @@ class QueryTest extends RemoteTestBase
 
                 $query = $session->query(Article::class)
                     ->search('title', 'foo')
-                    ->search('description', 'bar',  SearchOperator::or())
-                ;
+                    ->search('description', 'bar', SearchOperator::or());
 
                 $result = $query->toList();
 
@@ -225,16 +225,16 @@ class QueryTest extends RemoteTestBase
                 $session->saveChanges();
 
                 $queryResult = $session->query(User::class, Query::collection("users"))
-                        ->whereStartsWith("name", "J")
-                        ->toList();
+                    ->whereStartsWith("name", "J")
+                    ->toList();
 
                 $queryResult2 = $session->query(User::class, Query::collection("users"))
-                        ->whereEquals("name", "Tarzan")
-                        ->toList();
+                    ->whereEquals("name", "Tarzan")
+                    ->toList();
 
                 $queryResult3 = $session->query(User::class, Query::collection("users"))
-                        ->whereEndsWith("name", "n")
-                        ->toList();
+                    ->whereEndsWith("name", "n")
+                    ->toList();
 
                 $this->assertCount(2, $queryResult);
 
@@ -385,28 +385,32 @@ class QueryTest extends RemoteTestBase
 //            }
 //        }
 //    }
-//
-//    @Test
-//    public void queryWithWhereBetween() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            addUsers(store);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//
-//                List<User> users = session.query(User.class)
-//                        .whereBetween("age", 4, 5)
-//                        .toList();
-//
-//                assertThat(users)
-//                        .hasSize(1);
-//
-//                assertThat(users.get(0).getName())
-//                        .isEqualTo("John");
-//
-//            }
-//        }
-//    }
-//
+
+    public function testQueryWithWhereBetween(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $this->addUsers($store);
+
+            $session = $store->openSession();
+            try {
+
+                $users = $session->query(User::class)
+                    ->whereBetween("age", 4, 5)
+                    ->toList();
+
+                $this->assertCount(1, $users);
+
+                $this->assertEquals("John", $users[0]->getName());
+
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
 //    @Test
 //    public void queryWithWhereLessThan() throws Exception {
 //        try (IDocumentStore store = getDocumentStore()) {
@@ -445,28 +449,32 @@ class QueryTest extends RemoteTestBase
 //            }
 //        }
 //    }
-//
-//    @Test
-//    public void queryWithWhereGreaterThan() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            addUsers(store);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//
-//                List<User> users = session.query(User.class)
-//                        .whereGreaterThan("age", 3)
-//                        .toList();
-//
-//                assertThat(users)
-//                        .hasSize(1);
-//
-//                assertThat(users.get(0).getName())
-//                        .isEqualTo("John");
-//
-//            }
-//        }
-//    }
-//
+
+    public function testQueryWithWhereGreaterThan(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $this->addUsers($store);
+
+            $session = $store->openSession();
+            try {
+
+                $users = $session->query(User::class)
+                    ->whereGreaterThan("age", 3)
+                    ->toList();
+
+                $this->assertCount(1, $users);
+
+                $this->assertEquals("John", $users[0]->getName());
+
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();;
+        }
+    }
+
 //    @Test
 //    public void queryWithWhereGreaterThanOrEqual() throws Exception {
 //        try (IDocumentStore store = getDocumentStore()) {
@@ -584,10 +592,8 @@ class QueryTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $uniqueNames = $session->query(User::class)
-                        ->search("name", "Tarzan John", SearchOperator::or())
-                        ->toList();
-
-                print_r($uniqueNames);
+                    ->search("name", "Tarzan John", SearchOperator::or())
+                    ->toList();
 
                 $this->assertCount(3, $uniqueNames);
             } finally {
@@ -620,29 +626,35 @@ class QueryTest extends RemoteTestBase
 //        }
 //    }
 //
-//    @Test
-//    public void querySkipTake() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            addUsers(store);
-//
-//            try (DocumentSession session = (DocumentSession) store.openSession()) {
-//                List<User> users = session.query(User.class)
-//                        .orderBy("name")
-//                        .skip(2)
-//                        .take(1)
-//                        .toList();
-//
-//                assertThat(users)
-//                        .hasSize(1);
-//
-//                assertThat(users.get(0).getName())
-//                        .isEqualTo("Tarzan");
-//            }
-//        }
-//    }
-//
 
-    public function testRawQuerySkipTake(): void {
+    public function testQuerySkipTake(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $this->addUsers($store);
+
+            $session = $store->openSession();
+            try {
+                $users = $session->query(User::class)
+                    ->orderBy("name")
+                    ->skip(2)
+                    ->take(1)
+                    ->toList();
+
+                $this->assertCount(1, $users);
+
+                $this->assertEquals("Tarzan", $users[0]->getName());
+
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testRawQuerySkipTake(): void
+    {
         $store = $this->getDocumentStore();
         try {
             $this->addUsers($store);
@@ -650,11 +662,11 @@ class QueryTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $users = $session->rawQuery(User::class, "from users")
-                        ->skip(2)
-                        ->take(1)
-                        ->toList();
+                    ->skip(2)
+                    ->take(1)
+                    ->toList();
 
-                $this->assertCount(1,$users);
+                $this->assertCount(1, $users);
 
                 $this->assertEquals("Tarzan", $users[0]->getName());
             } finally {
@@ -687,14 +699,14 @@ class QueryTest extends RemoteTestBase
     public function testQueryLucene(): void
     {
         $store = $this->getDocumentStore();
-        try  {
+        try {
             $this->addUsers($store);
 
             $session = $store->openSession();
             try {
                 $users = $session->query(User::class)
-                        ->whereLucene("name", "Tarzan")
-                        ->toList();
+                    ->whereLucene("name", "Tarzan")
+                    ->toList();
 
                 $this->assertCount(1, $users);
 
@@ -709,61 +721,76 @@ class QueryTest extends RemoteTestBase
         }
     }
 
-//    @Test
-//    public void queryWhereExact() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            addUsers(store);
-//
-//            try (DocumentSession session = (DocumentSession) store.openSession()) {
-//                List<User> users = session.query(User.class)
-//                        .whereEquals("name", "tarzan")
-//                        .toList();
-//
-//                assertThat(users)
-//                        .hasSize(1);
-//
-//                users = session.query(User.class)
-//                        .whereEquals("name", "tarzan", true)
-//                        .toList();
-//
-//                assertThat(users)
-//                        .hasSize(0); // we queried for tarzan with exact
-//
-//                users = session.query(User.class)
-//                        .whereEquals("name", "Tarzan", true)
-//                        .toList();
-//
-//                assertThat(users)
-//                        .hasSize(1); // we queried for Tarzan with exact
-//            }
-//        }
-//    }
-//
-//    @Test
-//    public void queryWhereNot() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            addUsers(store);
-//
-//            try (DocumentSession session = (DocumentSession) store.openSession()) {
-//                assertThat(session.query(User.class)
-//                        .not()
-//                        .whereEquals("name", "tarzan")
-//                        .toList())
-//                        .hasSize(2);
-//
-//                assertThat(session.query(User.class)
-//                        .whereNotEquals("name", "tarzan")
-//                        .toList())
-//                        .hasSize(2);
-//
-//                assertThat(session.query(User.class)
-//                        .whereNotEquals("name", "Tarzan", true)
-//                        .toList())
-//                        .hasSize(2);
-//            }
-//        }
-//    }
-//
+    public function testQueryWhereExact(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $this->addUsers($store);
+
+            $session = $store->openSession();
+            try {
+                $users = $session->query(User::class)
+                    ->whereEquals("name", "tarzan")
+                    ->toList();
+
+                $this->assertCount(1, $users);
+
+                $users = $session->query(User::class)
+                    ->whereEquals("name", "tarzan", true)
+                    ->toList();
+
+                $this->assertCount(0, $users); // we queried for tarzan with exact
+
+                $users = $session->query(User::class)
+                    ->whereEquals("name", "Tarzan", true)
+                    ->toList();
+
+                $this->assertCount(1, $users); // we queried for Tarzan with exact
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testQueryWhereNot(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $this->addUsers($store);
+
+            $session = $store->openSession();
+            try {
+                $this->assertCount(
+                    2,
+                    $session->query(User::class)
+                        ->not()
+                        ->whereEquals("name", "tarzan")
+                        ->toList()
+                );
+
+                $this->assertCount(
+                    2,
+                    $session->query(User::class)
+                        ->whereNotEquals("name", "tarzan")
+                        ->toList()
+                );
+
+                $this->assertCount(
+                    2,
+                    $session->query(User::class)
+                        ->whereNotEquals("name", "Tarzan", true)
+                        ->toList()
+                );
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
 //    public static class OrderTime extends AbstractIndexCreationTask {
 //        public static class Result {
 //            private long delay;
@@ -853,32 +880,39 @@ class QueryTest extends RemoteTestBase
         }
     }
 
-//    @Test
-//    public void queryFirst() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            addUsers(store);
-//
-//            try (DocumentSession session = (DocumentSession) store.openSession()) {
-//
-//                User first = session.query(User.class)
-//                        .first();
-//
-//                assertThat(first)
-//                        .isNotNull();
-//
-//                assertThat(session.query(User.class)
-//                        .whereEquals("name", "Tarzan")
-//                        .single())
-//                        .isNotNull();
-//
-//                assertThat(first)
-//                        .isNotNull();
-//
-//                assertThatThrownBy(() -> session.query(User.class).single())
-//                        .isExactlyInstanceOf(IllegalStateException.class);
-//            }
-//        }
-//    }
+    public function testQueryFirst(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $this->addUsers($store);
+
+            $session = $store->openSession();
+
+            try {
+                $first = $session->query(User::class)
+                    ->first();
+
+                $this->assertNotNull($first);
+
+                $this->assertNotNull(
+                    $session->query(User::class)
+                        ->whereEquals("name", "Tarzan")
+                        ->single()
+                );
+
+                $this->assertNotNull($first);
+
+                $this->expectException(IllegalStateException::class);
+                $session->query(User::class)
+                    ->single();
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+
+    }
 //
 //    @Test
 //    public void queryParameters() throws Exception {
@@ -894,27 +928,31 @@ class QueryTest extends RemoteTestBase
 //            }
 //        }
 //    }
-//
-//    @Test
-//    public void queryRandomOrder() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            addUsers(store);
-//
-//            try (DocumentSession session = (DocumentSession) store.openSession()) {
-//
-//                assertThat(session.query(User.class)
-//                        .randomOrdering()
-//                        .toList())
-//                        .hasSize(3);
-//
-//                assertThat(session.query(User.class)
-//                        .randomOrdering("123")
-//                        .toList())
-//                        .hasSize(3);
-//            }
-//        }
-//    }
-//
+
+    public function testQueryRandomOrder(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $this->addUsers($store);
+
+            $session = $store->openSession();
+            try {
+
+                $this->assertCount(3, $session->query(User::class)
+                    ->randomOrdering()
+                    ->toList());
+
+                $this->assertCount(3, $session->query(User::class)
+                    ->randomOrdering("123")
+                    ->toList());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
 //    @Test
 //    public void queryWhereExists() throws Exception {
 //        try (IDocumentStore store = getDocumentStore()) {
@@ -1168,30 +1206,35 @@ class QueryTest extends RemoteTestBase
 //
 //        newSession.store(dog8, "docs/8");
 //    }
-//
-//    @Test
-//    public void queryLongRequest() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            try (IDocumentSession newSession = store.openSession()) {
-//                String longName = StringUtils.repeat('x', 2048);
-//                User user = new User();
-//                user.setName(longName);
-//                newSession.store(user, "users/1");
-//
-//                newSession.saveChanges();
-//
-//                List<User> queryResult = newSession
-//                        .advanced()
-//                        .documentQuery(User.class, null, "Users", false)
-//                        .whereEquals("name", longName)
-//                        .toList();
-//
-//                assertThat(queryResult)
-//                        .hasSize(1);
-//            }
-//        }
-//    }
-//
+
+    public function testQueryLongRequest(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $newSession = $store->openSession();
+            try {
+                $longName = StringUtils::repeat('x', 2048);
+                $user = new User();
+                $user->setName($longName);
+                $newSession->store($user, "users/1");
+
+                $newSession->saveChanges();
+
+                $queryResult = $newSession
+                    ->advanced()
+                    ->documentQuery(User::class, null, "Users", false)
+                    ->whereEquals("name", $longName)
+                    ->toList();
+
+                $this->assertCount(1, $queryResult);
+            } finally {
+                $newSession->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
 //    @Test
 //    public void queryByIndex() throws Exception {
 //        try (IDocumentStore store = getDocumentStore()) {
