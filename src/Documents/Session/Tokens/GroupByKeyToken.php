@@ -10,7 +10,7 @@ class GroupByKeyToken extends QueryToken
     private ?string $projectedName = null;
     private ?string $fieldName = null;
 
-    private function __construct(string $fieldName, ?string $projectedName = null)
+    private function __construct(?string $fieldName, ?string $projectedName = null)
     {
         $this->fieldName = $fieldName;
         $this->projectedName = $projectedName;

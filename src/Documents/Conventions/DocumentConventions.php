@@ -90,9 +90,9 @@ class DocumentConventions
     private Duration $requestTimeout;
     private ?Duration $firstBroadcastAttemptTimeout = null;
     private ?Duration $secondBroadcastAttemptTimeout = null;
-    private Duration $waitForIndexesAfterSaveChangesTimeout;
-    private Duration $waitForReplicationAfterSaveChangesTimeout;
-    private Duration $waitForNonStaleResultsTimeout;
+    private ?Duration $waitForIndexesAfterSaveChangesTimeout = null;
+    private ?Duration $waitForReplicationAfterSaveChangesTimeout = null;
+    private ?Duration $waitForNonStaleResultsTimeout = null;
 
     protected int $loadBalancerContextSeed = 0;
     protected LoadBalanceBehavior $loadBalanceBehavior;
@@ -327,9 +327,9 @@ class DocumentConventions
     /**
      * Get the default timeout for DocumentSession waitForNonStaleResults methods.
      * Default: 15 seconds
-     * @return Duration wait timeout
+     * @return ?Duration wait timeout
      */
-    public function getWaitForNonStaleResultsTimeout(): Duration
+    public function getWaitForNonStaleResultsTimeout(): ?Duration
     {
         return $this->waitForNonStaleResultsTimeout;
     }

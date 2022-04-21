@@ -567,13 +567,13 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
      */
     public function getEffectiveDatabase(?string $database = null): string
     {
-        return $this->getEffectiveDatabaseForStore($this, $database);
+        return self::getEffectiveDatabaseForStore($this, $database);
     }
 
     /**
      * @throws InvalidArgumentException
      */
-    public function getEffectiveDatabaseForStore(DocumentStoreInterface $store, ?string $database = null): string
+    public static function getEffectiveDatabaseForStore(DocumentStoreInterface $store, ?string $database = null): string
     {
         if ($database == null) {
             $database = $store->getDatabase();

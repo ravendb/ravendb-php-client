@@ -99,4 +99,9 @@ class StringUtils
     {
         return str_repeat($string, $times);
     }
+
+    public static function equalsIgnoreCase(string $first, string $second): bool
+    {
+        return strcasecmp($first, $second) == 0;
+    }
 }

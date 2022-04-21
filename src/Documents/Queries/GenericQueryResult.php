@@ -7,10 +7,10 @@ use Symfony\Component\Serializer\Annotation\SerializedName;
 class GenericQueryResult extends QueryResultBase
 {
     /** @SerializedName("TotalResults"); */
-    private int $totalResults;
+    private int $totalResults = 0;
 
     /** @SerializedName("LongTotalResults"); */
-    private int $longTotalResults;
+    private int $longTotalResults = 0;
 
     private int $cappedMaxResults;
 
@@ -27,38 +27,42 @@ class GenericQueryResult extends QueryResultBase
     /** @ SerializedName("ResultSize"); */
     private int $resultSize;
 
-//    /**
-//     * Gets the total results for this query
-//     * @return Total results for given query
-//     */
-//    public int getTotalResults() {
-//        return totalResults;
-//    }
-//
-//    /**
-//     * Sets the total results for this query
-//     * @param totalResults Sets the total results
-//     */
-//    public void setTotalResults(int totalResults) {
-//        this.totalResults = totalResults;
-//    }
-//
-//    /**
-//     * Gets the total results as long for this query
-//     * @return Total results as long for this query
-//     */
-//    public long getLongTotalResults() {
-//        return longTotalResults;
-//    }
-//
-//    /**
-//     * Sets the total results as long for this query
-//     * @param longTotalResults Total result as long for this query
-//     */
-//    public void setLongTotalResults(long longTotalResults) {
-//        this.longTotalResults = longTotalResults;
-//    }
-//
+    /**
+     * Gets the total results for this query
+     * @return int Total results for given query
+     */
+    public function getTotalResults(): int
+    {
+        return $this->totalResults;
+    }
+
+    /**
+     * Sets the total results for this query
+     * @param int $totalResults Sets the total results
+     */
+    public function setTotalResults(int $totalResults): void
+    {
+        $this->totalResults = $totalResults;
+    }
+
+    /**
+     * Gets the total results as long for this query
+     * @return int Total results as long for this query
+     */
+    public function getLongTotalResults(): int
+    {
+        return $this->longTotalResults;
+    }
+
+    /**
+     * Sets the total results as long for this query
+     * @param int $longTotalResults Total result as long for this query
+     */
+    public function setLongTotalResults(int $longTotalResults): void
+    {
+        $this->longTotalResults = $longTotalResults;
+    }
+
 //    /**
 //     * Gets the total results for the query, taking into account the
 //     * offset / limit clauses for this query

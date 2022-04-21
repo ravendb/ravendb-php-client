@@ -102,35 +102,17 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
     //TBD expr TSelf OrderBy<TValue>(params Expression<Func<T, TValue>>[] propertySelectors);
     //TBD expr TSelf OrderBy<TValue>(Expression<Func<T, TValue>> propertySelector, string sorterName);
 
-//    /**
-//     * Order the results by the specified fields
-//     * The field is the name of the field to sort, defaulting to sorting by descending.
-//     * @param field Field to use in order by
-//     * @return Query instance
-//     */
-//    TSelf orderByDescending(String field);
-//
-//    /**
-//     * Order the results by the specified fields
-//     * The field is the name of the field to sort using sorterName
-//     * @param field Field to use in order by
-//     * @param sorterName Sorter to use
-//     * @return Query instance
-//     */
-//    TSelf orderByDescending(String field, String sorterName);
-//
-//    /**
-//     * Order the results by the specified fields
-//     * The field is the name of the field to sort, defaulting to sorting by descending.
-//     * @param field Field to use in order by
-//     * @param ordering Ordering type
-//     * @return Query instance
-//     */
-//    TSelf orderByDescending(String field, OrderingType ordering);
-//
-//    //TBD expr TSelf OrderByDescending<TValue>(params Expression<Func<T, TValue>>[] propertySelectors);
-//    //TBD expr TSelf OrderByDescending<TValue>(Expression<Func<T, TValue>> propertySelector, string sorterName);
-//
+    /**
+     * Order the results by the specified fields
+     * The field is the name of the field to sort, defaulting to sorting by descending.
+     * @param string $field Field to use in order by
+     * @param string|OrderingType|null $sorterNameOrOrdering Sorter to use
+     */
+    function orderByDescending(string $field, $sorterNameOrOrdering = null);
+
+    //TBD expr TSelf OrderByDescending<TValue>(params Expression<Func<T, TValue>>[] propertySelectors);
+    //TBD expr TSelf OrderByDescending<TValue>(Expression<Func<T, TValue>> propertySelector, string sorterName);
+
 //    /**
 //     * Adds an ordering by score for a specific field to the query
 //     * @return Query instance

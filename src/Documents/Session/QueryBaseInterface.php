@@ -2,6 +2,10 @@
 
 namespace RavenDB\Documents\Session;
 
+use RavenDB\Documents\Queries\IndexQuery;
+use RavenDB\Documents\Queries\QueryResult;
+use RavenDB\Type\Duration;
+
 interface QueryBaseInterface
 {
 //    /**
@@ -21,9 +25,9 @@ interface QueryBaseInterface
 //    TSelf addAfterStreamExecutedListener(Consumer<ObjectNode> action);
 //
 //    TSelf removeAfterStreamExecutedListener(Consumer<ObjectNode> action);
-//
-//    void invokeAfterQueryExecuted(QueryResult result);
-//
+
+    function invokeAfterQueryExecuted(QueryResult $result): void;
+
 //    void invokeAfterStreamExecuted(ObjectNode result);
 //
 //    /**
@@ -72,33 +76,24 @@ interface QueryBaseInterface
 //     * @return Query instance
 //     */
 //    TSelf usingDefaultOperator(QueryOperator queryOperator);
-//
-//    /**
-//     * EXPERT ONLY: Instructs the query to wait for non stale results for the specified wait timeout.
-//     * This shouldn't be used outside of unit tests unless you are well aware of the implications
-//     * @return Query instance
-//     */
-//    TSelf waitForNonStaleResults();
-//
-//    /**
-//     * EXPERT ONLY: Instructs the query to wait for non stale results for the specified wait timeout.
-//     * This shouldn't be used outside of unit tests unless you are well aware of the implications
-//     * @param waitTimeout Max wait timeout
-//     * @return Query instance
-//     */
-//    TSelf waitForNonStaleResults(Duration waitTimeout);
-//
-//    /**
-//     * Create the index query object for this query
-//     * @return index query
-//     */
-//    IndexQuery getIndexQuery();
-//
-//    /**
-//     * Add a named parameter to the query
-//     * @param name Parameter name
-//     * @param value Parameter value
-//     * @return Query instance
-//     */
-//    TSelf addParameter(String name, Object value);
+
+    /**
+     * EXPERT ONLY: Instructs the query to wait for non stale results for the specified wait timeout.
+     * This shouldn't be used outside of unit tests unless you are well aware of the implications
+     * @param ?Duration $waitTimeout Max wait timeout
+     */
+    function waitForNonStaleResults(?Duration $waitTimeout = null);
+
+    /**
+     * Create the index query object for this query
+     * @return IndexQuery index query
+     */
+    function getIndexQuery(): IndexQuery;
+
+    /**
+     * Add a named parameter to the query
+     * @param string $name Parameter name
+     * @param mixed $value Parameter value
+     */
+    function addParameter(string $name, $value);
 }

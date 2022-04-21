@@ -25,7 +25,7 @@ class GroupByToken extends QueryToken
         return new GroupByToken($fieldName, $method);
     }
 
-    public function writeTo(StringBuilder $writer): void
+    public function writeTo(StringBuilder &$writer): void
     {
         if (!$this->method->isNone()) {
             $writer->append("Array(");

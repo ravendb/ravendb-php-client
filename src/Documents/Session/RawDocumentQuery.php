@@ -2,12 +2,14 @@
 
 namespace RavenDB\Documents\Session;
 
-// !status: IN PROGRESS
+use RavenDB\Documents\Queries\Facets\AggregationRawDocumentQuery;
+use RavenDB\Documents\Queries\Facets\FacetResultArray;
 use RavenDB\Documents\Queries\ProjectionBehavior;
 use RavenDB\Documents\Queries\QueryOperator;
 use RavenDB\Documents\Queries\Timings\QueryTimings;
 use RavenDB\Type\Duration;
 
+// !status: IN PROGRESS
 class RawDocumentQuery extends AbstractDocumentQuery implements RawDocumentQueryInterface
 {
     public function __construct(string $className, InMemoryDocumentSessionOperations $session, string $rawQuery)
@@ -107,11 +109,11 @@ class RawDocumentQuery extends AbstractDocumentQuery implements RawDocumentQuery
         return $this;
     }
 
-//    @Override
-//    public Map<String, FacetResult> executeAggregation() {
-//        AggregationRawDocumentQuery<T> query = new AggregationRawDocumentQuery<>(this, theSession);
-//        return query.execute();
-//    }
+    public function executeAggregation(): FacetResultArray
+    {
+        $query = new AggregationRawDocumentQuery($this, $this->theSession);
+        return $query->execute();
+    }
 
     public function projection(ProjectionBehavior $projectionBehavior): RawDocumentQuery
     {

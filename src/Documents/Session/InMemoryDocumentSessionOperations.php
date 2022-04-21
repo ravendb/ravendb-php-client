@@ -17,6 +17,7 @@ use RavenDB\Documents\DocumentStoreBase;
 use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Documents\Identity\GenerateEntityIdOnTheClient;
 use RavenDB\Documents\IdTypeAndName;
+use RavenDB\Documents\Queries\IncludeInterface;
 use RavenDB\Exceptions\Documents\Session\NonUniqueObjectException;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
@@ -1679,7 +1680,13 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $this->knownMissingIds = array_merge($this->knownMissingIds, $ids->getArrayCopy());
     }
 
-    public function registerIncludes(array $includes): void
+    /**
+     * @todo: this includes should be of type IncludeInterface but at the moment I didn't implement it
+     * because I don't know what side-effects this can cause
+     *
+     * @param mixed $includes
+     */
+    public function registerIncludes($includes): void
     {
         if ($this->noTracking) {
             return;

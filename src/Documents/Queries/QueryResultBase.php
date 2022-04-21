@@ -15,8 +15,8 @@ class QueryResultBase
     private ?array $results = null;
 
     /** @ SerializedName ("Includes") */
-//    private TInclude includes;
-//
+    private ?IncludesArray $includes = null;
+
 //    private ObjectNode counterIncludes;
 //
 //    private Map<String, String[]> includedCounterNames;
@@ -71,22 +71,24 @@ class QueryResultBase
         $this->results = $results;
     }
 
-//    /**
-//     * Gets the document included in the result.
-//     * @return Query includes
-//     */
-//    public TInclude getIncludes() {
-//        return includes;
-//    }
-//
-//    /**
-//     * Sets the document included in the result.
-//     * @param includes Sets the value
-//     */
-//    public void setIncludes(TInclude includes) {
-//        this.includes = includes;
-//    }
-//
+    /**
+     * Gets the document included in the result.
+     * @return ?IncludesArray Query includes
+     */
+    public function getIncludes(): ?IncludesArray
+    {
+        return $this->includes;
+    }
+
+    /**
+     * Sets the document included in the result.
+     * @param ?IncludesArray $includes Sets the value
+     */
+    public function setIncludes(?IncludesArray $includes): void
+    {
+        $this->includes = $includes;
+    }
+
 //    /**
 //     * @return Gets the Counters included in the result.
 //     */

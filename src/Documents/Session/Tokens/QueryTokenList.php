@@ -7,14 +7,28 @@ use RavenDB\Type\TypedArray;
 
 class QueryTokenList extends TypedArray
 {
-    public function __construct(string $childClass = null)
+    /**
+     * @param string|QueryTokenList|null $childClassOrList
+     */
+    public function __construct($childClassOrList = null)
     {
-        if ($childClass !== null) {
-            if (!is_a($childClass, QueryToken::class, true)) {
-                throw new InvalidArgumentException("Class must extends QueryToken class.");
-            }
+        if ($childClassOrList == null) {
+            parent::__construct(QueryToken::class);
+            return;
         }
 
-        parent::__construct($childClass ?? QueryToken::class);
+        if (is_string($childClassOrList)) {
+            if (!is_a($childClassOrList, QueryToken::class, true)) {
+                throw new InvalidArgumentException("Class must extends QueryToken class.");
+            }
+            parent::__construct($childClassOrList);
+            return;
+        }
+
+        parent::__construct($childClassOrList->getType());
+
+        foreach ($childClassOrList as $item) {
+            $this->append($item);
+        }
     }
 }

@@ -60,7 +60,7 @@ class IndexQueryBase implements IndexQueryInterface
         return $this->projectionBehavior;
     }
 
-    public function setProjectionBehavior(ProjectionBehavior $projectionBehavior): void
+    public function setProjectionBehavior(?ProjectionBehavior $projectionBehavior): void
     {
         $this->projectionBehavior = $projectionBehavior;
     }

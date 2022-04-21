@@ -2,6 +2,9 @@
 
 namespace RavenDB\Documents\Session;
 
+use RavenDB\Documents\Queries\SearchOperator;
+use RavenDB\Type\Collection;
+
 interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
 {
     /**
@@ -9,19 +12,12 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      */
     function not();
 
-//    /**
-//     *  Add an AND to the query
-//     *  @return Query instance
-//     */
-//    TSelf andAlso();
-//
-//    /**
-//     * Add an AND to the query
-//     * @param wrapPreviousQueryClauses wrap previous query clauses
-//     * @return Query instance
-//     */
-//    TSelf andAlso(boolean wrapPreviousQueryClauses);
-//
+    /**
+     * Add an AND to the query
+     * @param bool $wrapPreviousQueryClauses wrap previous query clauses
+     */
+    public function andAlso(bool $wrapPreviousQueryClauses = false);
+
 //    /**
 //     * Simplified method for closing a clause within the query
 //     * @return Query instance
@@ -60,39 +56,24 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
 //     */
 //    TSelf openSubclause();
 //
-//    /**
-//     * Add an OR to the query
-//     * @return Query instance
-//     */
-//    TSelf orElse();
-//
-//    /**
-//     * Perform a search for documents which fields that match the searchTerms.
-//     * If there is more than a single term, each of them will be checked independently.
-//     *
-//     * Space separated terms e.g. 'John Adam' means that we will look in selected field for 'John'
-//     * or 'Adam'.
-//     * @param fieldName Field name
-//     * @param searchTerms Search terms
-//     * @return Query instance
-//     */
-//    TSelf search(String fieldName, String searchTerms);
-//
-//    /**
-//     * Perform a search for documents which fields that match the searchTerms.
-//     * If there is more than a single term, each of them will be checked independently.
-//     *
-//     * Space separated terms e.g. 'John Adam' means that we will look in selected field for 'John'
-//     * or 'Adam'.
-//     * @param fieldName Field name
-//     * @param searchTerms Search terms
-//     * @param operator Search operator
-//     * @return Query instance
-//     */
-//    TSelf search(String fieldName, String searchTerms, SearchOperator operator);
-//
-//    //TBD expr TSelf Search<TValue>(Expression<Func<T, TValue>> propertySelector, string searchTerms, SearchOperator @operator = SearchOperator.Or);
-//
+    /**
+     * Add an OR to the query
+     */
+    public function orElse();
+
+    /**
+     * Perform a search for documents which fields that match the searchTerms.
+     * If there is more than a single term, each of them will be checked independently.
+     *
+     * Space separated terms e.g. 'John Adam' means that we will look in selected field for 'John'
+     * or 'Adam'.
+     * @param string $fieldName Field name
+     * @param string $searchTerms Search terms
+     * @param SearchOperator $operator Search operator
+     */
+    public function search(string $fieldName, string $searchTerms, ?SearchOperator $operator = null);
+
+    //TBD expr TSelf Search<TValue>(Expression<Func<T, TValue>> propertySelector, string searchTerms, SearchOperator @operator = SearchOperator.Or);
 
     /**
      * Filter the results from the index using the specified where clause.
@@ -113,24 +94,15 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
 
     //TBD expr TSelf WhereBetween<TValue>(Expression<Func<T, TValue>> propertySelector, TValue start, TValue end, bool exact = false);
 
-//    /**
-//     * Matches fields which ends with the specified value.
-//     * @param fieldName Field name
-//     * @param value Value to use
-//     * @return Query instance
-//     */
-//    TSelf whereEndsWith(String fieldName, Object value);
-//
-//    /**
-//     * Matches fields which ends with the specified value.
-//     * @param fieldName Field name
-//     * @param value Value to use
-//     * @param exact Use exact matcher
-//     * @return Query instance
-//     */
-//    TSelf whereEndsWith(String fieldName, Object value, boolean exact);
-//
-//    //TBD expr TSelf WhereEndsWith<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value);
+    /**
+     * Matches fields which ends with the specified value.
+     * @param string $fieldName Field name
+     * @param mixed $value Value to use
+     * @param bool $exact Use exact matcher
+     */
+    function whereEndsWith(string $fieldName, $value, bool $exact = false);
+
+    //TBD expr TSelf WhereEndsWith<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value);
 
     /**
      * @param string $fieldName
@@ -183,24 +155,15 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
 
     //TBD expr TSelf WhereGreaterThanOrEqual<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
 
-//    /**
-//     * Check that the field has one of the specified values
-//     * @param fieldName Field name
-//     * @param values Values to use
-//     * @return Query instance
-//     */
-//    TSelf whereIn(String fieldName, Collection< ? > values);
-//
-//    /**
-//     * Check that the field has one of the specified values
-//     * @param fieldName Field name
-//     * @param values Values to use
-//     * @param exact Use exact matcher
-//     * @return Query instance
-//     */
-//    TSelf whereIn(String fieldName, Collection<? > values, boolean exact);
-//
-//    //TBD expr TSelf WhereIn<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values, bool exact = false);
+    /**
+     * Check that the field has one of the specified values
+     * @param string $fieldName Field name
+     * @param Collection $values Values to use
+     * @param bool $exact Use exact matcher
+     */
+    function whereIn(string $fieldName, Collection $values, bool $exact = false);
+
+    //TBD expr TSelf WhereIn<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values, bool exact = false);
 
     /**
      * Matches fields where the value is less than the specified value
@@ -208,7 +171,7 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param mixed $value Value to use
      * @param bool $exact Use exact matcher
      */
-    function whereLessThan(string $fieldName, $value, bool $exact);
+    function whereLessThan(string $fieldName, $value, bool $exact = false);
 
     //TBD expr TSelf WhereLessThan<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
 
@@ -218,7 +181,7 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param mixed $value Value to use
      * @param bool $exact Use exact matcher
      */
-    function whereLessThanOrEqual(string $fieldName, $value, bool $exact);
+    function whereLessThanOrEqual(string $fieldName, $value, bool $exact = false);
 
     //TBD expr TSelf WhereLessThanOrEqual<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
 
@@ -228,7 +191,7 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param mixed $value Value to use
      * @param bool $exact Use exact matcher
      */
-    function whereStartsWith(string $fieldName, $value, bool $exact);
+    function whereStartsWith(string $fieldName, $value, bool $exact = false);
 
     //TBD expr TSelf WhereStartsWith<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value);
 

@@ -2,15 +2,20 @@
 
 namespace RavenDB\Documents\Indexes;
 
-class AbstractCommonApiForIndexes
+use RavenDB\Type\StringArray;
+use RavenDB\Utils\ClassUtils;
+
+// !status: DONE
+abstract class AbstractCommonApiForIndexes
 {
-//    private Map<String, String> additionalSources;
-//    private Set<AdditionalAssembly> additionalAssemblies;
-//    private IndexConfiguration configuration;
-//
-//    protected AbstractCommonApiForIndexes() {
-//        configuration = new IndexConfiguration();
-//    }
+    private ?StringArray $additionalSources = null;
+    private ?AdditionalAssemblySet $additionalAssemblies = null;
+    private IndexConfiguration $configuration;
+
+    protected function __construct()
+    {
+        $this->configuration = new IndexConfiguration();
+    }
 
     /**
      * Gets a value indicating whether this instance is map reduce index definition
@@ -29,31 +34,37 @@ class AbstractCommonApiForIndexes
      */
     public function getIndexName(): string
     {
-        //@todo: implement this method
-        return 'simpleClassName'; //getClass().getSimpleName().replaceAll("_", "/");
+        $simpleClassName = ClassUtils::getSimpleClassName(get_class($this));
+        return str_replace('_', '/', $simpleClassName);
     }
 
-//    public Map<String, String> getAdditionalSources() {
-//        return additionalSources;
-//    }
-//
-//    public void setAdditionalSources(Map<String, String> additionalSources) {
-//        this.additionalSources = additionalSources;
-//    }
-//
-//    public Set<AdditionalAssembly> getAdditionalAssemblies() {
-//        return additionalAssemblies;
-//    }
-//
-//    public void setAdditionalAssemblies(Set<AdditionalAssembly> additionalAssemblies) {
-//        this.additionalAssemblies = additionalAssemblies;
-//    }
-//
-//    public IndexConfiguration getConfiguration() {
-//        return configuration;
-//    }
-//
-//    public void setConfiguration(IndexConfiguration configuration) {
-//        this.configuration = configuration;
-//    }
+    public function getAdditionalSources(): ?StringArray
+    {
+        return $this->additionalSources;
+    }
+
+    public function setAdditionalSources(?StringArray $additionalSources): void
+    {
+        $this->additionalSources = $additionalSources;
+    }
+
+    public function getAdditionalAssemblies(): ?AdditionalAssemblySet
+    {
+        return $this->additionalAssemblies;
+    }
+
+    public function setAdditionalAssemblies(?AdditionalAssemblySet $additionalAssemblies): void
+    {
+        $this->additionalAssemblies = $additionalAssemblies;
+    }
+
+    public function getConfiguration(): IndexConfiguration
+    {
+        return $this->configuration;
+    }
+
+    public function setConfiguration(IndexConfiguration $configuration): void
+    {
+        $this->configuration = $configuration;
+    }
 }

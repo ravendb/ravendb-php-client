@@ -2,11 +2,12 @@
 
 namespace RavenDB\Documents\Session;
 
-use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use RavenDB\Constants\DocumentsIndexingFields;
 use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Documents\Queries\GroupBy;
 use RavenDB\Documents\Queries\IndexQuery;
 use RavenDB\Documents\Queries\ProjectionBehavior;
+use RavenDB\Documents\Queries\QueryData;
 use RavenDB\Documents\Queries\QueryFieldUtil;
 use RavenDB\Documents\Queries\QueryOperator;
 use RavenDB\Documents\Queries\QueryResult;
@@ -22,7 +23,12 @@ use RavenDB\Documents\Session\Tokens\ExplanationToken;
 use RavenDB\Documents\Session\Tokens\FieldsToFetchToken;
 use RavenDB\Documents\Session\Tokens\FromToken;
 use RavenDB\Documents\Session\Tokens\GraphQueryToken;
+use RavenDB\Documents\Session\Tokens\GroupByCountToken;
+use RavenDB\Documents\Session\Tokens\GroupByKeyToken;
+use RavenDB\Documents\Session\Tokens\GroupBySumToken;
+use RavenDB\Documents\Session\Tokens\GroupByToken;
 use RavenDB\Documents\Session\Tokens\HighlightingTokenArray;
+use RavenDB\Documents\Session\Tokens\LoadToken;
 use RavenDB\Documents\Session\Tokens\LoadTokenList;
 use RavenDB\Documents\Session\Tokens\MethodsType;
 use RavenDB\Documents\Session\Tokens\MoreLikeThisToken;
@@ -44,6 +50,7 @@ use RavenDB\Parameters;
 use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Primitives\ClosureArray;
 use RavenDB\Primitives\EventHelper;
+use RavenDB\Type\Collection;
 use RavenDB\Type\Duration;
 use RavenDB\Type\StringArray;
 use RavenDB\Type\StringSet;
@@ -55,8 +62,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 {
     protected string $className;
 
-//    private final Map<String, String> _aliasToGroupByFieldName = new HashMap<>();
-//
+    private StringArray $aliasToGroupByFieldName;
+
     protected QueryOperator $defaultOperator;
 
     protected StringSet $rootTypes;
@@ -124,13 +131,13 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     /**
      * Holds the query stats
      */
-//    protected QueryStatistics queryStats = new QueryStatistics();
+    protected QueryStatistics $queryStats;
 
     protected bool $disableEntitiesTracking = false;
 
     protected bool $disableCaching = false;
 
-//    protected ProjectionBehavior projectionBehavior;
+    protected ?ProjectionBehavior $projectionBehavior = null;
 
     private string $parameterPrefix = "p";
 
@@ -186,7 +193,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     private string $includesAlias;
 
-    private function getDefaultTimeout(): Duration
+    private function getDefaultTimeout(): ?Duration
     {
         return $this->conventions->getWaitForNonStaleResultsTimeout();
     }
@@ -203,6 +210,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         bool $isProjectInto = false
     ) {
         $this->queryParameters = new Parameters();
+        $this->aliasToGroupByFieldName = new StringArray();
 
         $this->beforeQueryExecutedCallback = new ClosureArray();
         $this->afterQueryExecutedCallback = new ClosureArray();
@@ -221,6 +229,9 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->rootTypes = new StringSet();
 
         $this->defaultOperator = QueryOperator::and();
+
+        $this->queryStats = new QueryStatistics();
+
         //
         //--
 
@@ -272,7 +283,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         }
 
         $this->theWaitForNonStaleResults = true;
-        $$this->timeout = $waitTimeout ?? $this->getDefaultTimeout();
+        $this->timeout = $waitTimeout ?? $this->getDefaultTimeout();
     }
 
 //    protected LazyQueryOperation<T> getLazyQueryOperation() {
@@ -351,10 +362,10 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->projectionBehavior = $projectionBehavior;
     }
 
-//    @SuppressWarnings("unused")
-//    protected void addGroupByAlias(String fieldName, String projectedName) {
-//        _aliasToGroupByFieldName.put(projectedName, fieldName);
-//    }
+    protected function addGroupByAlias(string $fieldName, string $projectedName = null): void
+    {
+        $this->aliasToGroupByFieldName[$projectedName] = $fieldName;
+    }
 
     private function assertNoRawQuery(): void
     {
@@ -378,89 +389,83 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->queryParameters->offsetSet($name, $value);
     }
 
-//    @Override
-//    public void _groupBy(String fieldName, String... fieldNames) {
-//        GroupBy[] mapping = Arrays.stream(fieldNames)
-//                .map(GroupBy::field)
-//                .toArray(GroupBy[]::new);
-//
-//        _groupBy(GroupBy.field(fieldName), mapping);
-//    }
-//
-//    @Override
-//    public void _groupBy(GroupBy field, GroupBy... fields) {
-//        if (!fromToken.isDynamic()) {
-//            throw new IllegalStateException("groupBy only works with dynamic queries");
-//        }
-//
-//        assertNoRawQuery();
-//        isGroupBy = true;
-//
-//        String fieldName = ensureValidFieldName(field.getField(), false);
-//
-//        groupByTokens.add(GroupByToken.create(fieldName, field.getMethod()));
-//
-//        if (fields == null || fields.length <= 0) {
-//            return;
-//        }
-//
-//        for (GroupBy item : fields) {
-//            fieldName = ensureValidFieldName(item.getField(), false);
-//            groupByTokens.add(GroupByToken.create(fieldName, item.getMethod()));
-//        }
-//    }
-//
-//    @Override
-//    public void _groupByKey(String fieldName) {
-//        _groupByKey(fieldName, null);
-//    }
-//
-//    @SuppressWarnings("UnnecessaryLocalVariable")
-//    @Override
-//    public void _groupByKey(String fieldName, String projectedName) {
-//        assertNoRawQuery();
-//        isGroupBy = true;
-//
-//        if (projectedName != null && _aliasToGroupByFieldName.containsKey(projectedName)) {
-//            String aliasedFieldName = _aliasToGroupByFieldName.get(projectedName);
-//            if (fieldName == null || fieldName.equalsIgnoreCase(projectedName)) {
-//                fieldName = aliasedFieldName;
-//            }
-//        } else if (fieldName != null && _aliasToGroupByFieldName.containsValue(fieldName)) {
-//            String aliasedFieldName = _aliasToGroupByFieldName.get(fieldName);
-//            fieldName = aliasedFieldName;
-//        }
-//
-//        selectTokens.add(GroupByKeyToken.create(fieldName, projectedName));
-//    }
-//
-//    @Override
-//    public void _groupBySum(String fieldName) {
-//        _groupBySum(fieldName, null);
-//    }
-//
-//    @Override
-//    public void _groupBySum(String fieldName, String projectedName) {
-//        assertNoRawQuery();
-//        isGroupBy = true;
-//
-//        fieldName = ensureValidFieldName(fieldName, false);
-//        selectTokens.add(GroupBySumToken.create(fieldName, projectedName));
-//    }
-//
-//    @Override
-//    public void _groupByCount() {
-//        _groupByCount(null);
-//    }
-//
-//    @Override
-//    public void _groupByCount(String projectedName) {
-//        assertNoRawQuery();
-//        isGroupBy = true;
-//
-//        selectTokens.add(GroupByCountToken.create(projectedName));
-//    }
+    /**
+     * @param string|GroupBy $fieldName
+     * @param string|GroupBy ...$fieldNames
+     */
+    public function _groupBy($fieldName, ...$fieldNames): void
+    {
+        $field = is_string($fieldName) ? GroupBy::field($fieldName) : $fieldName;
 
+        $mapping = [];
+        if (is_string($fieldName)) {
+            foreach ($fieldNames as $fn) {
+                $mapping[] = GroupBy::field($fn);
+            }
+        } else {
+            $mapping = $fieldNames;
+        }
+
+        $this->_groupByField($field, ...$mapping);
+    }
+
+    public function _groupByField(GroupBy $field, GroupBy ...$fields): void
+    {
+        if (!$this->fromToken->isDynamic()) {
+            throw new IllegalStateException("groupBy only works with dynamic queries");
+        }
+
+        $this->assertNoRawQuery();
+        $this->isGroupBy = true;
+
+        $fieldName = $this->ensureValidFieldName($field->getField(), false);
+
+        $this->groupByTokens->append(GroupByToken::create($fieldName, $field->getMethod()));
+
+        if ($fields == null || count($fields) <= 0) {
+            return;
+        }
+
+        foreach ($fields as $item) {
+            $fieldName = $this->ensureValidFieldName($item->getField(), false);
+            $this->groupByTokens->append(GroupByToken::create($fieldName, $item->getMethod()));
+        }
+    }
+
+    public function _groupByKey(?string $fieldName = null, ?string $projectedName = null): void
+    {
+        $this->assertNoRawQuery();
+        $this->isGroupBy = true;
+
+        if ($projectedName != null && array_key_exists($projectedName, $this->aliasToGroupByFieldName)) {
+            $aliasedFieldName = $this->aliasToGroupByFieldName->offsetGet($projectedName);
+            if ($fieldName == null || strcasecmp($fieldName, $projectedName) == 0) {
+                $fieldName = $aliasedFieldName;
+            }
+        } else if ($fieldName != null && $this->aliasToGroupByFieldName->hasValue($fieldName)) {
+            $aliasedFieldName = $this->aliasToGroupByFieldName->offsetGet($fieldName);
+            $fieldName = $aliasedFieldName;
+        }
+
+        $this->selectTokens->append(GroupByKeyToken::create($fieldName, $projectedName));
+    }
+
+    public function _groupBySum(?string $fieldName = null, ?string $projectedName = null): void
+    {
+        $this->assertNoRawQuery();
+        $this->isGroupBy = true;
+
+        $fieldName = $this->ensureValidFieldName($fieldName, false);
+        $this->selectTokens->append(GroupBySumToken::create($fieldName, $projectedName));
+    }
+
+    public function _groupByCount(?string $projectedName = null): void
+    {
+        $this->assertNoRawQuery();
+        $this->isGroupBy = true;
+
+        $this->selectTokens->append(GroupByCountToken::create($projectedName));
+    }
 
     public function _whereTrue(): void
     {
@@ -668,24 +673,15 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->negate = !$this->negate;
     }
 
-//    /**
-//     * Check that the field has one of the specified value
-//     * @param fieldName Field name to use
-//     * @param values Values to find
-//     */
-//    @Override
-//    public void _whereIn(String fieldName, Collection< ? > values) {
-//        _whereIn(fieldName, values, false);
-//    }
-//
-//    /**
-//     * Check that the field has one of the specified value
-//     * @param fieldName Field name to use
-//     * @param values Values to find
-//     * @param exact Use exact matcher
-//     */
-//    @Override
-//    public void _whereIn(String fieldName, Collection< ? > values, boolean exact) {
+
+    /**
+     * Check that the field has one of the specified value
+     * @param string $fieldName Field name to use
+     * @param Collection $values Values to find
+     * @param bool $exact Use exact matcher
+     */
+    public function _whereIn(string $fieldName, Collection $values, bool $exact = false): void
+    {
 //        fieldName = ensureValidFieldName(fieldName, false);
 //
 //        List<QueryToken> tokens = getCurrentWhereTokens();
@@ -694,7 +690,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //
 //        WhereToken whereToken = WhereToken.create(WhereOperator.IN, fieldName, addQueryParameter(transformCollection(fieldName, unpackCollection(values))));
 //        tokens.add(whereToken);
-//    }
+    }
 
     public function _whereStartsWith(string $fieldName, $value, bool $exact = false): void
     {
@@ -788,6 +784,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $whereParams->setFieldName($fieldName);
 
         $parameter = $this->addQueryParameter($value == null ? "*" : $this->transformValue($whereParams, true));
+
         $whereToken = WhereToken::create(WhereOperator::greaterThan(), $fieldName, $parameter, new WhereOptions($exact));
         $tokens->append($whereToken);
     }
@@ -910,67 +907,66 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $tokens->append(QueryOperatorToken::or());
     }
 
-//    /**
-//     * Specifies a boost weight to the last where clause.
-//     * The higher the boost factor, the more relevant the term will be.
-//     * <p>
-//     * boosting factor where 1.0 is default, less than 1.0 is lower weight, greater than 1.0 is higher weight
-//     * <p>
-//     * http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Boosting%20a%20Term
-//     *
-//     * @param boost Boost value
-//     */
-//    @Override
-//    public void _boost(double boost) {
-//        if (boost == 1.0) {
-//            return;
-//        }
-//
-//        if (boost < 0.0) {
-//            throw new IllegalArgumentException("Boost factor must be a non-negative number");
-//        }
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//
-//        QueryToken last = tokens.isEmpty() ? null : tokens.get(tokens.size() - 1);
-//
-//        if (last instanceof WhereToken) {
-//            WhereToken whereToken = (WhereToken) last;
-//            whereToken.getOptions().setBoost(boost);
-//        } else if (last instanceof CloseSubclauseToken) {
-//            CloseSubclauseToken close = (CloseSubclauseToken) last;
-//
-//            String parameter = addQueryParameter(boost);
-//
-//            int index = tokens.indexOf(last);
-//
-//            while (last != null && index > 0) {
-//                index--;
-//                last = tokens.get(index); // find the previous option
-//
-//                if (last instanceof OpenSubclauseToken) {
-//                    OpenSubclauseToken open = (OpenSubclauseToken) last;
-//
-//                    open.setBoostParameterName(parameter);
-//                    close.setBoostParameterName(parameter);
-//                    return;
-//                }
-//            }
-//        } else {
-//            throw new IllegalStateException("Cannot apply boost");
-//        }
-//    }
-//
-//    /**
-//     * Specifies a fuzziness factor to the single word term in the last where clause
-//     * <p>
-//     * 0.0 to 1.0 where 1.0 means closer match
-//     * <p>
-//     * http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Fuzzy%20Searches
-//     * @param fuzzy Fuzzy value
-//     */
-//    @Override
-//    public void _fuzzy(double fuzzy) {
+    /**
+     * Specifies a boost weight to the last where clause.
+     * The higher the boost factor, the more relevant the term will be.
+     * <p>
+     * boosting factor where 1.0 is default, less than 1.0 is lower weight, greater than 1.0 is higher weight
+     * <p>
+     * http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Boosting%20a%20Term
+     *
+     * @param float $boost Boost value
+     */
+    public function _boost(float $boost): void
+    {
+        if ($boost == 1.0) {
+            return;
+        }
+
+        if ($boost < 0.0) {
+            throw new IllegalArgumentException("Boost factor must be a non-negative number");
+        }
+
+        $tokens = $this->getCurrentWhereTokens();
+
+        $last = $tokens->isEmpty() ? null : $tokens->last();
+
+        if ($last instanceof WhereToken) {
+            $whereToken = $last;
+
+            $whereOptions = $whereToken->getOptions();
+            $whereOptions->setBoost($boost);
+            $whereToken->setOptions($whereOptions);
+        } else if ($last instanceof CloseSubclauseToken) {
+            $close = $last;
+
+            $parameter = $this->addQueryParameter($boost);
+            foreach ( array_reverse($tokens->getArrayCopy()) as $token ) {
+                $last = $token; // find the previous option
+
+                if ($last instanceof OpenSubclauseToken) {
+                    $open = $last;
+
+                    $open->setBoostParameterName($parameter);
+                    $close->setBoostParameterName($parameter);
+                    return;
+                }
+            }
+        } else {
+            throw new IllegalStateException("Cannot apply boost");
+        }
+    }
+
+    /**
+     * Specifies a fuzziness factor to the single word term in the last where clause
+     * <p>
+     * 0.0 to 1.0 where 1.0 means closer match
+     * <p>
+     * http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Fuzzy%20Searches
+     * @param float $fuzzy Fuzzy value
+     */
+    public function _fuzzy(float $fuzzy): void
+    {
 //        List<QueryToken> tokens = getCurrentWhereTokens();
 //        if (tokens.isEmpty()) {
 //            throw new IllegalStateException("Fuzzy can only be used right after where clause");
@@ -990,16 +986,16 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        }
 //
 //        ((WhereToken) whereToken).getOptions().setFuzzy(fuzzy);
-//    }
-//
-//    /**
-//     * Specifies a proximity distance for the phrase in the last search clause
-//     * <p>
-//     * http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Proximity%20Searches
-//     * @param proximity Proximity value
-//     */
-//    @Override
-//    public void _proximity(int proximity) {
+    }
+
+    /**
+     * Specifies a proximity distance for the phrase in the last search clause
+     * <p>
+     * http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Proximity%20Searches
+     * @param int $proximity Proximity value
+     */
+    public function _proximity(int $proximity): void
+    {
 //        List<QueryToken> tokens = getCurrentWhereTokens();
 //        if (tokens.isEmpty()) {
 //            throw new IllegalStateException("Proximity can only be used right after search clause");
@@ -1019,7 +1015,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        }
 //
 //        ((WhereToken) whereToken).getOptions().setProximity(proximity);
-//    }
+    }
 
     /**
      * Order the results by the specified fields
@@ -1040,49 +1036,32 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->orderByTokens->append(OrderByToken::createAscending($f, $sorterNameOrOrdering));
     }
 
-//    public void _orderByDescending(String field, String sorterName) {
-//        if (StringUtils.isBlank(sorterName)) {
-//            throw new IllegalArgumentException("SorterName cannot be null or whitespace.");
-//        }
-//
-//        assertNoRawQuery();
-//        String f = ensureValidFieldName(field, false);
-//        orderByTokens.add(OrderByToken.createDescending(f, sorterName));
-//    }
-//
-//    /**
-//     * Order the results by the specified fields
-//     * The fields are the names of the fields to sort, defaulting to sorting by descending.
-//     * You can prefix a field name with '-' to indicate sorting by descending or '+' to sort by ascending
-//     * @param field Field to use
-//     */
-//    public void _orderByDescending(String field) {
-//        _orderByDescending(field, OrderingType.STRING);
-//    }
-//
-//    /**
-//     * Order the results by the specified fields
-//     * The fields are the names of the fields to sort, defaulting to sorting by descending.
-//     * You can prefix a field name with '-' to indicate sorting by descending or '+' to sort by ascending
-//     * @param field Field to use
-//     * @param ordering Ordering type
-//     */
-//    public void _orderByDescending(String field, OrderingType ordering) {
-//        assertNoRawQuery();
-//        String f = ensureValidFieldName(field, false);
-//        orderByTokens.add(OrderByToken.createDescending(f, ordering));
-//    }
-//
-//    public void _orderByScore() {
-//        assertNoRawQuery();
-//
-//        orderByTokens.add(OrderByToken.scoreAscending);
-//    }
-//
-//    public void _orderByScoreDescending() {
-//        assertNoRawQuery();
-//        orderByTokens.add(OrderByToken.scoreDescending);
-//    }
+    /**
+     * Order the results by the specified fields
+     * The fields are the names of the fields to sort, defaulting to sorting by descending.
+     * You can prefix a field name with '-' to indicate sorting by descending or '+' to sort by ascending
+     * @param string $field Field to use
+     * @param string|OrderingType|null $sorterNameOrOrdering Sorter to use
+     */
+    public function _orderByDescending(string $field, $sorterNameOrOrdering = null): void
+    {
+        $this->assertNoRawQuery();
+        $f = $this->ensureValidFieldName($field, false);
+        $this->orderByTokens->append(OrderByToken::createDescending($f, $sorterNameOrOrdering ?? OrderingType::string()));
+    }
+
+    public function _orderByScore(): void
+    {
+        $this->assertNoRawQuery();
+
+        $this->orderByTokens->append(OrderByToken::scoreAscending());
+    }
+
+    public function _orderByScoreDescending(): void
+    {
+        $this->assertNoRawQuery();
+        $this->orderByTokens->append(OrderByToken::scoreDescending());
+    }
 
     /**
      * Provide statistics about the query, such as total count of matching records
@@ -1090,7 +1069,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
      */
     public function _statistics(QueryStatistics &$stats): void
     {
-        $stats = $queryStats;
+        $stats = $this->queryStats;
     }
 
     /**
@@ -1126,8 +1105,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $indexQuery->setWaitForNonStaleResultsTimeout($this->timeout);
         $indexQuery->setQueryParameters($this->queryParameters);
         $indexQuery->setDisableCaching($this->disableCaching);
-        // @todo: implement this
-//        $indexQuery->setProjectionBehavior($this->projectionBehavior);
+        $indexQuery->setProjectionBehavior($this->projectionBehavior);
 
         if ($this->pageSize != null) {
             $indexQuery->setPageSize($this->pageSize);
@@ -1402,6 +1380,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
             DocumentQueryHelper::addSpaceIfNeeded($prevToken, $currentToken, $writer);
             $currentToken->writeTo($writer);
+            $prevToken = $currentToken;
         }
     }
 
@@ -1600,7 +1579,12 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         return QueryFieldUtil::escapeIfNecessary($fieldName);
     }
 
-    private function transformValue(WhereParams $whereParams, bool $forRange = false): ?string
+    /**
+     * @param WhereParams $whereParams
+     * @param bool $forRange
+     * @return mixed
+     */
+    private function transformValue(WhereParams $whereParams, bool $forRange = false)
     {
         if ($whereParams->getValue() === null) {
             return null;
@@ -1684,25 +1668,31 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         }
     }
 
-//    protected void updateFieldsToFetchToken(FieldsToFetchToken fieldsToFetch) {
-//        this.fieldsToFetchToken = fieldsToFetch;
-//
-//        if (selectTokens.isEmpty()) {
-//            selectTokens.add(fieldsToFetch);
-//        } else {
-//            Optional<QueryToken> fetchToken = selectTokens.stream()
-//                    .filter(x -> x instanceof FieldsToFetchToken)
-//                    .findFirst();
-//
-//            if (fetchToken.isPresent()) {
-//                int idx = selectTokens.indexOf(fetchToken.get());
-//                selectTokens.set(idx, fieldsToFetch);
-//            } else {
-//                selectTokens.add(fieldsToFetch);
-//            }
-//        }
-//    }
-//
+    protected function updateFieldsToFetchToken(FieldsToFetchToken $fieldsToFetch): void
+    {
+        $this->fieldsToFetchToken = $fieldsToFetch;
+
+        if ($this->selectTokens->isEmpty()) {
+            $this->selectTokens->append($fieldsToFetch);
+        } else {
+            $fetchToken = null;
+            $idx = null;
+            foreach ($this->selectTokens as $index => $token) {
+                if ($token instanceof FieldsToFetchToken) {
+                    $fetchToken = $token;
+                    $idx = $index;
+                    break;
+                }
+            }
+
+            if ($fetchToken) {
+                $this->selectTokens->offsetSet($idx, $fieldsToFetch);
+            } else {
+                $this->selectTokens->append($fieldsToFetch);
+            }
+        }
+    }
+
 //    public void addFromAliasToWhereTokens(String fromAlias) {
 //        if (StringUtils.isEmpty(fromAlias)) {
 //            throw new IllegalArgumentException("Alias cannot be null or empty");
@@ -1741,37 +1731,44 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //
 //        return fromAlias;
 //    }
-//
-//    @SuppressWarnings("unused")
-//    protected static <T> void getSourceAliasIfExists(Class< T > clazz, QueryData queryData, String[] fields, Reference<String> sourceAlias) {
-//        sourceAlias.value = null;
-//
-//        if (fields.length != 1 || fields[0] == null) {
-//            return;
-//        }
-//
-//        int indexOf = fields[0].indexOf(".");
-//        if (indexOf == -1) {
-//            return;
-//        }
-//
-//        String possibleAlias = fields[0].substring(0, indexOf);
-//        if (queryData.getFromAlias() != null && queryData.getFromAlias().equals(possibleAlias)) {
-//            sourceAlias.value = possibleAlias;
-//            return;
-//        }
-//
-//        if (queryData.getLoadTokens() == null || queryData.getLoadTokens().size() == 0) {
-//            return;
-//        }
-//
-//        if (queryData.getLoadTokens().stream().noneMatch(x -> x.alias.equals(possibleAlias))) {
-//            return;
-//        }
-//
-//        sourceAlias.value = possibleAlias;
-//    }
-//
+
+    protected static function getSourceAliasIfExists(string $className, QueryData $queryData, StringArray $fields, string &$sourceAlias): void
+    {
+        $sourceAlias = null;
+
+        if ($fields->count() != 1 || $fields[0] == null) {
+            return;
+        }
+
+        $indexOf = strpos($fields[0], '.');
+        if ($indexOf == -1) {
+            return;
+        }
+
+        $possibleAlias = substr($fields[0], 0, $indexOf);
+        if ($queryData->getFromAlias() != null && strcmp($queryData->getFromAlias(), $possibleAlias) == 0) {
+            $sourceAlias = $possibleAlias;
+            return;
+        }
+
+        if ($queryData->getLoadTokens() == null || $queryData->getLoadTokens()->isEmpty()) {
+            return;
+        }
+
+        $noneMatch = true;
+        /** @var LoadToken $token */
+        foreach ($queryData->getLoadTokens() as $token) {
+            if ($token->alias == $possibleAlias) {
+                $noneMatch = false;
+            }
+        }
+        if ($noneMatch) {
+            return;
+        }
+
+        $sourceAlias = $possibleAlias;
+    }
+
 //    protected QueryData createTimeSeriesQueryData(Consumer<ITimeSeriesQueryBuilder> timeSeriesQuery) {
 //        TimeSeriesQueryBuilder builder = new TimeSeriesQueryBuilder();
 //        timeSeriesQuery.accept(builder);
@@ -2049,11 +2046,12 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         return $this->executeQueryOperationAsArray(null);
     }
 
-//    public QueryResult getQueryResult() {
-//        initSync();
-//
-//        return queryOperation.getCurrentQueryResults().createSnapshot();
-//    }
+    public function getQueryResult(): QueryResult
+    {
+        $this->initSync();
+
+        return $this->queryOperation->getCurrentQueryResults()->createSnapshot();
+    }
 
     /**
      * @return mixed
@@ -2110,18 +2108,20 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         return $result[array_key_first($result)];
     }
 
-//    public int count() {
-//        _take(0);
-//        QueryResult queryResult = getQueryResult();
-//        return queryResult.getTotalResults();
-//    }
-//
-//    public long longCount() {
-//        _take(0);
-//        QueryResult queryResult = getQueryResult();
-//        return queryResult.getLongTotalResults();
-//    }
-//
+    public function count(): int
+    {
+        $this->_take(0);
+        $queryResult = $this->getQueryResult();
+        return $queryResult->getTotalResults();
+    }
+
+    public function longCount(): int
+    {
+        $this->_take(0);
+        $queryResult = $this->getQueryResult();
+        return $queryResult->getLongTotalResults();
+    }
+
 //    public boolean any() {
 //        if (isDistinct()) {
 //            // for distinct it is cheaper to do count 1

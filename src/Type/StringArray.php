@@ -2,7 +2,7 @@
 
 namespace RavenDB\Type;
 
-class StringArray extends \ArrayObject implements \JsonSerializable
+class StringArray extends ExtendedArrayObject implements \JsonSerializable
 {
     public static function withValue(string $id): StringArray
     {
@@ -41,6 +41,11 @@ class StringArray extends \ArrayObject implements \JsonSerializable
     public function isNotEmpty(): bool
     {
         return $this->count() > 0;
+    }
+
+    public function hasValue(string $fieldName): bool
+    {
+        return in_array($fieldName, $this->getArrayCopy());
     }
 
     public function jsonSerialize(): array

@@ -2,9 +2,18 @@
 
 namespace RavenDB\Documents\Session;
 
+use RavenDB\Constants\DocumentsIndexingFields;
+use RavenDB\Documents\Queries\GroupBy;
+use RavenDB\Documents\Queries\QueryData;
 use RavenDB\Documents\Queries\SearchOperator;
 use RavenDB\Documents\Session\Tokens\DeclareTokenArray;
+use RavenDB\Documents\Session\Tokens\FieldsToFetchToken;
 use RavenDB\Documents\Session\Tokens\LoadTokenList;
+use RavenDB\Documents\Session\Tokens\QueryTokenList;
+use RavenDB\Parameters;
+use RavenDB\Type\Collection;
+use RavenDB\Type\Duration;
+use RavenDB\Type\StringSet;
 
 class DocumentQuery extends AbstractDocumentQuery
     implements DocumentQueryInterface, AbstractDocumentQueryImplInterface
@@ -63,13 +72,13 @@ class DocumentQuery extends AbstractDocumentQuery
 //        _distinct();
 //        return this;
 //    }
-//
-//    @Override
-//    public IDocumentQuery<T> orderByScore() {
-//        _orderByScore();
-//        return this;
-//    }
-//
+
+    public function orderByScore(): DocumentQueryInterface
+    {
+        $this->_orderByScore();
+        return $this;
+    }
+
 //    @Override
 //    public IDocumentQuery<T> orderByScoreDescending() {
 //        _orderByScoreDescending();
@@ -114,25 +123,19 @@ class DocumentQuery extends AbstractDocumentQuery
 //        queryData.setProjectInto(true);
 //        return createDocumentQueryInternal(projectionClass, queryData);
 //    }
-//
-//    @Override
-//    public IDocumentQuery<T> waitForNonStaleResults() {
-//        _waitForNonStaleResults(null);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> waitForNonStaleResults(Duration waitTimeout) {
-//        _waitForNonStaleResults(waitTimeout);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> addParameter(String name, Object value) {
-//        _addParameter(name, value);
-//        return this;
-//    }
-//
+
+    public function waitForNonStaleResults(?Duration $waitTimeout = null): DocumentQueryInterface
+    {
+        $this->_waitForNonStaleResults($waitTimeout);
+        return $this;
+    }
+
+    public function addParameter(string $name, $value): DocumentQueryInterface
+    {
+        $this->_addParameter($name, $value);
+        return $this;
+    }
+
 //    @Override
 //    public IDocumentQuery<T> addOrder(String fieldName, boolean descending) {
 //        return addOrder(fieldName, descending, OrderingType.STRING);
@@ -338,16 +341,11 @@ class DocumentQuery extends AbstractDocumentQuery
     //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.WhereNotEquals<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact)
     //TBD expr IDocumentQuery<T> IFilterDocumentQueryBase<T, IDocumentQuery<T>>.WhereNotEquals<TValue>(Expression<Func<T, TValue>> propertySelector, MethodCall value, bool exact)
 
-//    @Override
-//    public IDocumentQuery<T> whereIn(String fieldName, Collection< ? > values) {
-//        return whereIn(fieldName, values, false);
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> whereIn(String fieldName, Collection< ? > values, boolean exact) {
-//        _whereIn(fieldName, values, exact);
-//        return this;
-//    }
+    public function whereIn(string $fieldName, Collection $values, bool $exact = false)
+    {
+        $this->_whereIn($fieldName, $values, $exact);
+        return $this;
+    }
 
     //TBD expr public IDocumentQuery<T> WhereIn<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values, bool exact = false)
 
@@ -389,7 +387,7 @@ class DocumentQuery extends AbstractDocumentQuery
     //TBD expr public IDocumentQuery<T> WhereGreaterThan<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false)
     //TBD expr public IDocumentQuery<T> WhereGreaterThanOrEqual<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false)
 
-    public function whereLessThan(string $fieldName, $value, bool $exact): DocumentQueryInterface
+    public function whereLessThan(string $fieldName, $value, bool $exact = false): DocumentQueryInterface
     {
         $this->_whereLessThan($fieldName, $value, $exact);
         return $this;
@@ -397,7 +395,7 @@ class DocumentQuery extends AbstractDocumentQuery
 
     //TBD expr public IDocumentQuery<T> WhereLessThanOrEqual<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false)
 
-    public function whereLessThanOrEqual(string $fieldName, $value, bool $exact): DocumentQueryInterface
+    public function whereLessThanOrEqual(string $fieldName, $value, bool $exact = false): DocumentQueryInterface
     {
         $this->_whereLessThanOrEqual($fieldName, $value, $exact);
         return $this;
@@ -432,23 +430,23 @@ class DocumentQuery extends AbstractDocumentQuery
         return $this;
     }
 
-//    @Override
-//    public IDocumentQuery<T> boost(double boost) {
-//        _boost(boost);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> fuzzy(double fuzzy) {
-//        _fuzzy(fuzzy);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> proximity(int proximity) {
-//        _proximity(proximity);
-//        return this;
-//    }
+    public function boost(float $boost): DocumentQueryInterface
+    {
+        $this->_boost($boost);
+        return $this;
+    }
+
+    public function fuzzy(float $fuzzy): DocumentQueryInterface
+    {
+        $this->_fuzzy($fuzzy);
+        return $this;
+    }
+
+    public function proximity(int $proximity): DocumentQueryInterface
+    {
+        $this->_proximity($proximity);
+        return $this;
+    }
 
     public function randomOrdering(?string $seed = null): DocumentQueryInterface
     {
@@ -458,24 +456,20 @@ class DocumentQuery extends AbstractDocumentQuery
 
     //TBD 4.1 public IDocumentQuery<T> customSortUsing(String typeName, boolean descending)
 
-//    @Override
-//    public IGroupByDocumentQuery<T> groupBy(String fieldName, String... fieldNames) {
-//        _groupBy(fieldName, fieldNames);
-//
-//        return new GroupByDocumentQuery<>(this);
-//    }
-//
-//    @Override
-//    public IGroupByDocumentQuery<T> groupBy(GroupBy field, GroupBy... fields) {
-//        _groupBy(field, fields);
-//
-//        return new GroupByDocumentQuery<>(this);
-//    }
-//
-//    @Override
-//    public <TResult> IDocumentQuery<TResult> ofType(Class<TResult> tResultClass) {
-//        return createDocumentQueryInternal(tResultClass);
-//    }
+    /**
+     * @param string|GroupBy $fieldName
+     * @param string|GroupBy ...$fieldNames
+     */
+    public function groupBy($fieldName, ...$fieldNames): GroupByDocumentQueryInterface
+    {
+        $this->_groupBy($fieldName, ...$fieldNames);
+        return new GroupByDocumentQuery($this);
+    }
+
+    public function ofType(string $resultClass): DocumentQueryInterface
+    {
+        return $this->createDocumentQueryInternal($resultClass);
+    }
 
     /**
      * Order the results by the specified fields
@@ -495,23 +489,21 @@ class DocumentQuery extends AbstractDocumentQuery
 
     //TBD expr public IDocumentQuery<T> OrderBy<TValue>(params Expression<Func<T, TValue>>[] propertySelectors)
 
-//    @Override
-//    public IDocumentQuery<T> orderByDescending(String field, String sorterName) {
-//        _orderByDescending(field, sorterName);
-//        return this;
-//    }
-//
-//    public IDocumentQuery<T> orderByDescending(String field) {
-//        return orderByDescending(field, OrderingType.STRING);
-//    }
-//
-//    public IDocumentQuery<T> orderByDescending(String field, OrderingType ordering) {
-//        _orderByDescending(field, ordering);
-//        return this;
-//    }
-//
-//    //TBD expr public IDocumentQuery<T> OrderByDescending<TValue>(params Expression<Func<T, TValue>>[] propertySelectors)
-//
+
+    /**
+     * Order the results by the specified fields
+     * The field is the name of the field to sort, defaulting to sorting by descending.
+     * @param string $field Field to use in order by
+     * @param string|OrderingType|null $sorterNameOrOrdering Sorter to use
+     */
+    function orderByDescending(string $field, $sorterNameOrOrdering = null): DocumentQueryInterface
+    {
+        $this->_orderByDescending($field, $sorterNameOrOrdering ?? OrderingType::string());
+        return $this;
+    }
+
+    //TBD expr public IDocumentQuery<T> OrderByDescending<TValue>(params Expression<Func<T, TValue>>[] propertySelectors)
+
 //    @Override
 //    public IDocumentQuery<T> addBeforeQueryExecutedListener(Consumer<IndexQuery> action) {
 //        _addBeforeQueryExecutedListener(action);
@@ -523,84 +515,84 @@ class DocumentQuery extends AbstractDocumentQuery
 //        _removeBeforeQueryExecutedListener(action);
 //        return this;
 //    }
-//
-//    public <TResult> DocumentQuery<TResult> createDocumentQueryInternal(Class<TResult> resultClass) {
-//        return createDocumentQueryInternal(resultClass, null);
-//    }
-//
-//    @SuppressWarnings("unchecked")
-//    public <TResult> DocumentQuery<TResult> createDocumentQueryInternal(Class<TResult> resultClass, QueryData queryData) {
-//        FieldsToFetchToken newFieldsToFetch;
-//
-//        if (queryData != null && queryData.getFields().length > 0) {
-//            String[] fields = queryData.getFields();
-//
-//            if (!isGroupBy) {
-//                Field identityProperty = getConventions().getIdentityProperty(resultClass);
-//
-//                if (identityProperty != null) {
-//                    fields = Arrays.stream(queryData.getFields())
-//                            .map(p -> p.equals(identityProperty.getName()) ? Constants.Documents.Indexing.Fields.DOCUMENT_ID_FIELD_NAME : p)
-//                            .toArray(String[]::new);
-//                }
-//            }
-//
-//            Reference<String> sourceAliasReference = new Reference<>();
-//            getSourceAliasIfExists(resultClass, queryData, fields, sourceAliasReference);
-//            newFieldsToFetch = FieldsToFetchToken.create(fields, queryData.getProjections(), queryData.isCustomFunction(), sourceAliasReference.value);
-//        } else {
-//            newFieldsToFetch = null;
-//        }
-//
-//        if (newFieldsToFetch != null) {
-//            updateFieldsToFetchToken(newFieldsToFetch);
-//        }
-//
-//        DocumentQuery query = new DocumentQuery<>(resultClass,
-//                theSession,
-//                getIndexName(),
-//                getCollectionName(),
-//                isGroupBy,
-//                queryData != null ? queryData.getDeclareTokens() : null,
-//                queryData != null ? queryData.getLoadTokens() : null,
-//                queryData != null ? queryData.getFromAlias() : null,
-//                queryData != null ? queryData.isProjectInto() : null);
-//
-//        query.queryRaw = queryRaw;
-//        query.pageSize = pageSize;
-//        query.selectTokens = new LinkedList<>(selectTokens);
-//        query.fieldsToFetchToken = fieldsToFetchToken;
-//        query.whereTokens = new LinkedList<>(whereTokens);
-//        query.orderByTokens = new LinkedList<>(orderByTokens);
-//        query.groupByTokens = new LinkedList<>(groupByTokens);
-//        query.queryParameters = new Parameters(queryParameters);
-//        query.start = start;
-//        query.timeout = timeout;
-//        query.queryStats = queryStats;
-//        query.theWaitForNonStaleResults = theWaitForNonStaleResults;
-//        query.negate = negate;
-//        query.documentIncludes = new HashSet<>(documentIncludes);
-//        query.counterIncludesTokens = counterIncludesTokens;
-//        query.timeSeriesIncludesTokens = timeSeriesIncludesTokens;
-//        query.compareExchangeValueIncludesTokens = compareExchangeValueIncludesTokens;
-//        query.rootTypes = Sets.newHashSet(clazz);
-//        query.beforeQueryExecutedCallback = beforeQueryExecutedCallback;
-//        query.afterQueryExecutedCallback = afterQueryExecutedCallback;
-//        query.afterStreamExecutedCallback = afterStreamExecutedCallback;
-//        query.highlightingTokens = highlightingTokens;
-//        query.queryHighlightings = queryHighlightings;
-//        query.disableEntitiesTracking = disableEntitiesTracking;
-//        query.disableCaching = disableCaching;
-//        query.projectionBehavior = ObjectUtils.firstNonNull(queryData != null ? queryData.getProjectionBehavior() : null, projectionBehavior);
-//        query.queryTimings = queryTimings;
-//        query.explanations = explanations;
-//        query.explanationToken = explanationToken;
-//        query.isIntersect = isIntersect;
-//        query.defaultOperator = defaultOperator;
-//
-//        return query;
-//    }
-//
+
+    public function createDocumentQueryInternal(string $resultClass, ?QueryData $queryData = null): DocumentQuery
+    {
+        /** @var ?FieldsToFetchToken $newFieldsToFetch */
+        $newFieldsToFetch = null;
+
+        if ($queryData != null && $queryData->getFields()->isNotEmpty()) {
+            $fields = $queryData->getFields();
+
+            if (!$this->isGroupBy) {
+                $identityProperty = $this->getConventions()->getIdentityProperty($resultClass);
+
+                if ($identityProperty != null) {
+                    $fields = [];
+
+                    foreach ($queryData->getFields() as $field) {
+                        $fields[] = strcmp($field, $identityProperty) == 0 ? DocumentsIndexingFields::DOCUMENT_ID_FIELD_NAME : $field;
+                    }
+                }
+            }
+
+            $sourceAlias = null;
+            self::getSourceAliasIfExists($resultClass, $queryData, $fields, $sourceAlias);
+            $newFieldsToFetch = FieldsToFetchToken::create($fields, $queryData->getProjections(), $queryData->isCustomFunction(), $sourceAlias);
+        }
+
+        if ($newFieldsToFetch != null) {
+            $this->updateFieldsToFetchToken($newFieldsToFetch);
+        }
+
+        $query = new DocumentQuery($resultClass,
+                $this->theSession,
+                $this->getIndexName(),
+                $this->getCollectionName(),
+                $this->isGroupBy,
+                $queryData != null ? $queryData->getDeclareTokens() : null,
+                $queryData != null ? $queryData->getLoadTokens() : null,
+                $queryData != null ? $queryData->getFromAlias() : null,
+            $queryData != null && $queryData->isProjectInto()
+        );
+
+        $query->queryRaw = $this->queryRaw;
+        $query->pageSize = $this->pageSize;
+        $query->selectTokens = new QueryTokenList($this->selectTokens);
+        $query->fieldsToFetchToken = $this->fieldsToFetchToken;
+        $query->whereTokens = new QueryTokenList($this->whereTokens);
+        $query->orderByTokens = new QueryTokenList($this->orderByTokens);
+        $query->groupByTokens = new QueryTokenList($this->groupByTokens);
+        $query->queryParameters = new Parameters($this->queryParameters);
+        $query->start = $this->start;
+        $query->timeout = $this->timeout;
+        $query->queryStats = $this->queryStats;
+        $query->theWaitForNonStaleResults = $this->theWaitForNonStaleResults;
+        $query->negate = $this->negate;
+        $query->documentIncludes = new StringSet($this->documentIncludes);
+        $query->counterIncludesTokens = $this->counterIncludesTokens;
+        $query->timeSeriesIncludesTokens = $this->timeSeriesIncludesTokens;
+        $query->compareExchangeValueIncludesTokens = $this->compareExchangeValueIncludesTokens;
+        $query->rootTypes = StringSet::fromArray([$this->className]);
+        $query->beforeQueryExecutedCallback = $this->beforeQueryExecutedCallback;
+        $query->afterQueryExecutedCallback = $this->afterQueryExecutedCallback;
+        $query->afterStreamExecutedCallback = $this->afterStreamExecutedCallback;
+        $query->highlightingTokens = $this->highlightingTokens;
+        // @todo: uncomment this
+//        $query->queryHighlightings = $this->queryHighlightings;
+        $query->disableEntitiesTracking = $this->disableEntitiesTracking;
+        $query->disableCaching = $this->disableCaching;
+        $query->projectionBehavior = ($queryData != null ? $queryData->getProjectionBehavior() : null) ?? $this->projectionBehavior;
+        $query->queryTimings = $this->queryTimings;
+        // @todo: uncomment this
+//        $query->explanations = $this->explanations;
+        $query->explanationToken = $this->explanationToken;
+        $query->isIntersect = $this->isIntersect;
+        $query->defaultOperator = $this->defaultOperator;
+
+        return $query;
+    }
+
 //    @Override
 //    public IAggregationDocumentQuery<T> aggregateBy(Consumer<IFacetBuilder<T>> builder) {
 //        FacetBuilder<T> ff = new FacetBuilder<>();

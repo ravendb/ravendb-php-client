@@ -176,7 +176,7 @@ class QueryOperation
 //                        }
 //                    }
 //
-                    throw new IllegalArgumentException("Raw query with aggregation by facet should be called by executeAggregation method.");
+                    throw new IllegalArgumentException("Raw query with aggregation by facet should be called by executeAggregation method." . $e->getMessage());
                 }
             }
         } catch (Throwable $e) {
@@ -200,7 +200,7 @@ class QueryOperation
         return $resultItems;
     }
 
-    public static function deserialize(string $className, string $id, array $document, array $metadata, ?FieldsToFetchToken $fieldsToFetch, bool $disableEntitiesTracking, InMemoryDocumentSessionOperations $session, bool $isProjectInto): object
+    public static function deserialize(string $className, ?string $id, array $document, array $metadata, ?FieldsToFetchToken $fieldsToFetch, bool $disableEntitiesTracking, InMemoryDocumentSessionOperations $session, bool $isProjectInto): object
     {
 //        JsonNode projection = metadata.get("@projection");
 //        if (projection == null || !projection.asBoolean()) {

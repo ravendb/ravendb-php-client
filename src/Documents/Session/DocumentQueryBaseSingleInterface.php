@@ -42,18 +42,19 @@ interface DocumentQueryBaseSingleInterface
 //     * @return true if the given query matches any records
 //     */
 //    boolean any();
-//
-//    /**
-//     * Gets the total count of records for this query
-//     * @return total count of records
-//     */
-//    int count();
-//
-//    /**
-//     * Gets the total count of records for this query as long
-//     * @return total count of records (as long)
-//     */
-//    long longCount();
+
+    /**
+     * Gets the total count of records for this query
+     * @return int total count of records
+     */
+    function count(): int;
+
+    /**
+     * Gets the total count of records for this query as long
+     * @return int total count of records (as long)
+     */
+    function longCount(): int;
+
 //    /**
 //     * Register the query as a lazy query in the session and return a lazy
 //     * instance that will evaluate the query only when needed.

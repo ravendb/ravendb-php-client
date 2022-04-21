@@ -37,6 +37,4 @@ class TypedArray extends ExtendedArrayObject implements TypedArrayInterface
             );
         }
     }
-
-
 }

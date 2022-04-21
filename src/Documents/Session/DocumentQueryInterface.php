@@ -2,6 +2,8 @@
 
 namespace RavenDB\Documents\Session;
 
+use RavenDB\Documents\Queries\GroupBy;
+use RavenDB\Documents\Queries\QueryResult;
 use RavenDB\Documents\Queries\SearchOperator;
 
 interface DocumentQueryInterface
@@ -16,13 +18,13 @@ interface DocumentQueryInterface
 //     * @return true if server should return distinct results
 //     */
 //    boolean isDistinct();
-//
-//    /**
-//     * Returns the query result. Accessing this property for the first time will execute the query.
-//     * @return query result
-//     */
-//    QueryResult getQueryResult();
-//
+
+    /**
+     * Returns the query result. Accessing this property for the first time will execute the query.
+     * @return QueryResult query result
+     */
+    function getQueryResult(): QueryResult;
+
 //    /**
 //     * Selects the specified fields directly from the index if the are stored. If the field is not stored in index, value
 //     * will come from document directly.
@@ -81,19 +83,20 @@ interface DocumentQueryInterface
 //     * @return Document query
 //     */
 //    <TTimeSeries> IDocumentQuery<TTimeSeries> selectTimeSeries(Class<TTimeSeries> clazz, Consumer<ITimeSeriesQueryBuilder> timeSeriesQuery);
-//
-//    /**
-//     * Changes the return type of the query
-//     * @param <TResult> class of result
-//     * @param resultClass class of result
-//     * @return Document query
-//     */
-//    <TResult> IDocumentQuery<TResult> ofType(Class<TResult> resultClass);
-//
-//    IGroupByDocumentQuery<T> groupBy(String fieldName, String... fieldNames);
-//
-//    IGroupByDocumentQuery<T> groupBy(GroupBy field, GroupBy... fields);
-//
+
+    /**
+     * Changes the return type of the query
+     * @param string $resultClass class of result
+     * @return DocumentQueryInterface Document query
+     */
+    function ofType(string $resultClass): DocumentQueryInterface;
+
+    /**
+     * @param string|GroupBy $fieldName
+     * @param string|GroupBy ...$fieldNames
+     */
+    public function groupBy($fieldName, ...$fieldNames): GroupByDocumentQueryInterface;
+
 //    IDocumentQuery<T> moreLikeThis(Consumer<IMoreLikeThisBuilderForDocumentQuery<T>> builder);
 //
 //    IAggregationDocumentQuery<T> aggregateBy(Consumer<IFacetBuilder<T>> builder);
@@ -108,22 +111,6 @@ interface DocumentQueryInterface
 //
 //    ISuggestionDocumentQuery<T> suggestUsing(Consumer<ISuggestionBuilder<T>> builder);
 
-
-    public function andAlso(bool $wrapPreviousQueryClauses = false): DocumentQueryInterface;
-
-    public function orElse(): DocumentQueryInterface;
-
-    /**
-     * @param string $fieldName
-     * @param mixed|MethodCall $value
-     * @param bool $exact
-     */
-    public function whereEquals(string $fieldName, $value, bool $exact = false): DocumentQueryInterface;
-
-    public function whereEqualsWithParams(WhereParams $whereParams): DocumentQueryInterface;
-
-
-    public function search(string $fieldName, string $searchTerms, ?SearchOperator $operator = null): DocumentQueryInterface;
 
     public function toString(bool $compatibilityMode = false): string;
 }
