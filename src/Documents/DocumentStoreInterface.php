@@ -3,6 +3,7 @@
 namespace RavenDB\Documents;
 
 use RavenDB\Auth\AuthOptions;
+use RavenDB\Documents\Indexes\AbstractIndexCreationTaskInterface;
 use RavenDB\Documents\Operations\MaintenanceOperationExecutor;
 use RavenDB\Documents\Session\DocumentSession;
 use RavenDB\Documents\Session\DocumentSessionInterface;
@@ -201,19 +202,13 @@ interface DocumentStoreInterface
      */
     public function openSessionWithOptions(SessionOptions $sessionOptions): DocumentSessionInterface;
 
-//    /**
-//     * Executes the index creation
-//     * @param task Index Creation task to use
-//     */
-//    void executeIndex(IAbstractIndexCreationTask task);
-//
-//    /**
-//     * Executes the index creation
-//     * @param task Index Creation task to use
-//     * @param database Target database
-//     */
-//    void executeIndex(IAbstractIndexCreationTask task, String database);
-//
+    /**
+     * Executes the index creation
+     * @param AbstractIndexCreationTaskInterface $task Index Creation task to use
+     * @param string|null $database Target database
+     */
+    function executeIndex(AbstractIndexCreationTaskInterface $task, ?string $database = null): void;
+
 //    /**
 //     * Executes the index creation
 //     * @param tasks Index Creation tasks to use

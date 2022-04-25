@@ -2,7 +2,7 @@
 
 namespace RavenDB\Type;
 
-class Collection extends \ArrayObject
+class Collection extends ExtendedArrayObject
 {
 
 }

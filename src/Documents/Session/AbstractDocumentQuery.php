@@ -682,14 +682,14 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
      */
     public function _whereIn(string $fieldName, Collection $values, bool $exact = false): void
     {
-//        fieldName = ensureValidFieldName(fieldName, false);
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//        negateIfNeeded(tokens, fieldName);
-//
-//        WhereToken whereToken = WhereToken.create(WhereOperator.IN, fieldName, addQueryParameter(transformCollection(fieldName, unpackCollection(values))));
-//        tokens.add(whereToken);
+        $fieldName = $this->ensureValidFieldName($fieldName, false);
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+        $this->negateIfNeeded($tokens, $fieldName);
+
+        $whereToken = WhereToken::create(WhereOperator::in(), $fieldName, $this->addQueryParameter($this->transformCollection($fieldName, self::unpackCollection($values))));
+        $tokens->append($whereToken);
     }
 
     public function _whereStartsWith(string $fieldName, $value, bool $exact = false): void
@@ -1512,22 +1512,26 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $tokens->append($token);
     }
 
-//    private Collection< ? > transformCollection(String fieldName, Collection< ? > values) {
-//        List<Object> result = new ArrayList<>();
-//        for (Object value : values) {
-//            if (value instanceof Collection) {
-//                result.addAll(transformCollection(fieldName, (Collection< ? >) value));
-//            } else {
-//                WhereParams nestedWhereParams = new WhereParams();
-//                nestedWhereParams.setAllowWildcards(true);
-//                nestedWhereParams.setFieldName(fieldName);
-//                nestedWhereParams.setValue(value);
-//
-//                result.add(transformValue(nestedWhereParams));
-//            }
-//        }
-//        return result;
-//    }
+    private function transformCollection(string $fieldName, Collection $values): Collection
+    {
+        $result = new Collection();
+        foreach ($values as $value) {
+            if ($value instanceof Collection) {
+                $collectionItems = $this->transformCollection($fieldName, $value);
+                foreach ($collectionItems as $item) {
+                    $result->append($item);
+                }
+            } else {
+                $nestedWhereParams = new WhereParams();
+                $nestedWhereParams->setAllowWildcards(true);
+                $nestedWhereParams->setFieldName($fieldName);
+                $nestedWhereParams->setValue($value);
+
+                $result->append(self::transformValue($nestedWhereParams));
+            }
+        }
+        return $result;
+    }
 
     private function negateIfNeeded(QueryTokenList $tokens, ?string $fieldName = null): void
     {
@@ -1549,19 +1553,23 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $tokens->append(NegateToken::instance());
     }
 
-//    private static Collection< ? > unpackCollection(Collection< ? > items) {
-//        List<Object> results = new ArrayList<>();
-//
-//        for (Object item : items) {
-//            if (item instanceof Collection) {
-//                results.addAll(unpackCollection((Collection< ? >) item));
-//            } else {
-//                results.add(item);
-//            }
-//        }
-//
-//        return results;
-//    }
+    private static function unpackCollection(Collection $items): Collection
+    {
+        $results = new Collection();
+
+        foreach ($items as $item) {
+            if ($item instanceof Collection) {
+                $subCollections = self::unpackCollection($item);
+                foreach ($subCollections as $collection) {
+                    $results->append($collection);
+                }
+            } else {
+                $results->append($item);
+            }
+        }
+
+        return $results;
+    }
 
     private function ensureValidFieldName(string $fieldName, bool $isNestedPath): string
     {

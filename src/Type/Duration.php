@@ -3,32 +3,38 @@
 namespace RavenDB\Type;
 
 use DateInterval;
+use DateTime;
 use RavenDB\Utils\HashUtils;
 
 class Duration
 {
-    private DateInterval $interval;
+    private float $intervalInSeconds = 0;
 
-    public function __construct()
+    public static function ofHours(int $hours): Duration
     {
-
+        $duration = new Duration();
+        $duration->intervalInSeconds = $hours * 3600;
+        return $duration;
     }
 
     public static function ofMillis(int $millis): Duration
     {
-        // @todo: implement this
-        return new Duration();
+        $duration = new Duration();
+        $duration->intervalInSeconds = $millis / 1000;
+        return $duration;
     }
 
-    public static function between(\DateTime $lastServerUpdate, \DateTime $param): Duration
+    public static function between(\DateTime $start, \DateTime $end): Duration
     {
-        // @todo: implement this
-        return new Duration();
+        $duration = new Duration();
+//        $duration->interval = $start->diff($end);
+        return $duration;
     }
 
     public function hashCode(): int
     {
-        return HashUtils::hashCode($this->interval->format(\DateTimeInterface::RFC3339_EXTENDED));
+        $period = new DateInterval('PT'. $this->intervalInSeconds .'S');
+        return HashUtils::hashCode($period->format(\DateTimeInterface::RFC3339_EXTENDED));
     }
 
     public function equals(Duration &$that): bool
@@ -40,11 +46,11 @@ class Duration
 
     public function toMillis(): int
     {
-        return 0;
+        return (int)$this->intervalInSeconds * 1000;
     }
 
     public function getSeconds(): int
     {
-        return 0;
+        return (int)$this->intervalInSeconds;
     }
 }

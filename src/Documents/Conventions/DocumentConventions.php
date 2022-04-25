@@ -195,9 +195,8 @@ class DocumentConventions
 //                throw new RavenException("Unable to find class by name = " + name, e);
 //            }
 //        };
-//        _transformClassCollectionNameToDocumentIdPrefix =
-//          collectionName -> defaultTransformCollectionNameToDocumentIdPrefix(collectionName);
-//
+        $this->transformClassCollectionNameToDocumentIdPrefix = Closure::fromCallable([$this, 'defaultTransformCollectionNameToDocumentIdPrefix']);
+
         $this->findCollectionName = 'defaultGetCollectionName';
 //
         $this->maxNumberOfRequestsPerSession = 30;
@@ -569,34 +568,38 @@ class DocumentConventions
 //        assertNotFrozen();
 //        this._findIdentityPropertyNameFromCollectionName = findIdentityPropertyNameFromCollectionName;
 //    }
-//
-//    public BiFunction<String, Object, String> getDocumentIdGenerator() {
-//        return _documentIdGenerator;
-//    }
-//
-//    public void setDocumentIdGenerator(BiFunction<String, Object, String> documentIdGenerator) {
-//        assertNotFrozen();
-//        _documentIdGenerator = documentIdGenerator;
-//    }
-//
-//
-//    /**
-//     *  Translates the types collection name to the document id prefix
-//     *  @return translation function
-//     */
-//    public Function<String, String> getTransformClassCollectionNameToDocumentIdPrefix() {
-//        return _transformClassCollectionNameToDocumentIdPrefix;
-//    }
-//
-//    /**
-//     *  Translates the types collection name to the document id prefix
-//     *  @param transformClassCollectionNameToDocumentIdPrefix value to set
-//     */
-//    public void setTransformClassCollectionNameToDocumentIdPrefix(Function<String, String> transformClassCollectionNameToDocumentIdPrefix) {
-//        assertNotFrozen();
-//        this._transformClassCollectionNameToDocumentIdPrefix = transformClassCollectionNameToDocumentIdPrefix;
-//    }
-//
+
+    public function getDocumentIdGenerator(): ?Closure
+    {
+        return $this->documentIdGenerator;
+    }
+
+    public function setDocumentIdGenerator(Closure $documentIdGenerator): void
+    {
+        $this->assertNotFrozen();
+        $this->documentIdGenerator = $documentIdGenerator;
+    }
+
+
+    /**
+     *  Translates the types collection name to the document id prefix
+     *  @return Closure translation function
+     */
+    public function getTransformClassCollectionNameToDocumentIdPrefix(): ?Closure
+    {
+        return $this->transformClassCollectionNameToDocumentIdPrefix;
+    }
+
+    /**
+     *  Translates the types collection name to the document id prefix
+     *  @param ?Closure $transformClassCollectionNameToDocumentIdPrefix value to set
+     */
+    public function setTransformClassCollectionNameToDocumentIdPrefix(?Closure $transformClassCollectionNameToDocumentIdPrefix): void
+    {
+        $this->assertNotFrozen();
+        $this->transformClassCollectionNameToDocumentIdPrefix = $transformClassCollectionNameToDocumentIdPrefix;
+    }
+
 //    public Function<PropertyDescriptor, Boolean> getFindIdentityProperty() {
 //        return _findIdentityProperty;
 //    }
@@ -769,17 +772,15 @@ class DocumentConventions
      */
     public function generateDocumentId(string $databaseName, ?object $entity): string
     {
-        return '12345';
-        // @todo: implement this mehotd
-//        Class<? > clazz = entity.getClass();
-    //
-    //        for (Tuple<Class, BiFunction<String, Object, String>> listOfRegisteredIdConvention : _listOfRegisteredIdConventions) {
+        $className = get_class($entity);
+        //        for (Tuple<Class, BiFunction<String, Object, String>> listOfRegisteredIdConvention : _listOfRegisteredIdConventions) {
     //            if (listOfRegisteredIdConvention.first.isAssignableFrom(clazz)) {
     //                return listOfRegisteredIdConvention.second.apply(databaseName, entity);
     //            }
     //        }
-    //
-    //        return _documentIdGenerator.apply(databaseName, entity);
+
+        $generator = $this->documentIdGenerator;
+        return  $generator($databaseName, $entity);
     }
 
     //    /**
@@ -994,21 +995,19 @@ class DocumentConventions
 //                    _identityPartsSeparator);
 //        }
 //    }
-//
-//    public static String defaultTransformCollectionNameToDocumentIdPrefix(String collectionName) {
-//        long upperCount = collectionName.chars()
-//                .filter(x -> Character.isUpperCase(x))
-//                .count();
-//
-//
-//        if (upperCount <= 1) {
-//            return collectionName.toLowerCase();
-//        }
-//
-//        // multiple capital letters, so probably something that we want to preserve caps on.
-//        return collectionName;
-//    }
-//
+
+    public static function defaultTransformCollectionNameToDocumentIdPrefix(?string $collectionName): string
+    {
+        $upperCount = strlen($collectionName) - similar_text($collectionName, strtolower($collectionName));
+
+        if ($upperCount <= 1) {
+            return strtolower($collectionName);
+        }
+
+        // multiple capital letters, so probably something that we want to preserve caps on.
+        return $collectionName;
+    }
+
 //    @SuppressWarnings("unchecked")
 //    public <T> void registerQueryValueConverter(Class<T> clazz, IValueForQueryConverter<T> converter) {
 //        assertNotFrozen();

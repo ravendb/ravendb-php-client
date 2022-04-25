@@ -6,6 +6,7 @@ use Closure;
 use InvalidArgumentException;
 use RavenDB\Auth\AuthOptions;
 use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Documents\Indexes\AbstractIndexCreationTaskInterface;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Http\RequestExecutor;
@@ -96,16 +97,13 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //    public abstract IDocumentSession openSession(String database);
 //
 //    public abstract IDocumentSession openSession(SessionOptions sessionOptions);
-//
-//    public void executeIndex(IAbstractIndexCreationTask task) {
-//        executeIndex(task, null);
-//    }
-//
-//    public void executeIndex(IAbstractIndexCreationTask task, String database) {
-//        assertInitialized();
-//        task.execute(this, conventions, database);
-//    }
-//
+
+    public function executeIndex(AbstractIndexCreationTaskInterface $task, ?string $database = null): void
+    {
+        $this->assertInitialized();
+        $task->execute($this, $this->conventions, $this->database);
+    }
+
 //    @Override
 //    public void executeIndexes(List<IAbstractIndexCreationTask> tasks) {
 //        executeIndexes(tasks, null);

@@ -11,6 +11,8 @@ use RavenDB\Documents\Session\DocumentSessionInterface;
 use RavenDB\Documents\Session\GroupByField;
 use RavenDB\Documents\Session\OrderingType;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Type\Collection;
+use RavenDB\Type\Duration;
 use RavenDB\Utils\DateUtils;
 use RavenDB\Utils\StringUtils;
 use tests\RavenDB\Infrastructure\Entity\User;
@@ -21,7 +23,8 @@ use tests\RavenDB\Test\Client\Query\Entity\Dog;
 use tests\RavenDB\Test\Client\Query\Entity\ReduceResult;
 use tests\RavenDB\Test\Client\Query\Index\DogsIndex;
 use tests\RavenDB\Test\Client\Query\Index\DogsIndexResult;
-use function PHPUnit\Framework\assertNotNull;
+use tests\RavenDB\Test\Client\Query\Index\OrderTime;
+use tests\RavenDB\Test\Client\Query\Index\UsersByName;
 
 class QueryTest extends RemoteTestBase
 {
@@ -383,27 +386,27 @@ class QueryTest extends RemoteTestBase
 //        }
 //    }
 
-//    public function queryWithWhereIn(): void
-//    {
-//        $store = $this->getDocumentStore();
-//        try {
-//            $this->addUsers($store);
-//
-//            $session = $store->openSession();
-//            try {
-//
-//                $users = $session->query(User::class)
-//                        ->whereIn("name", ["Tarzan", "no_such"])
-//                        ->toList();
-//
-//                $this->assertCount(1, $users);
-//            } finally {
-//                $session->close();
-//            }
-//        } finally {
-//            $store->close();
-//        }
-//    }
+    public function testQueryWithWhereIn(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $this->addUsers($store);
+
+            $session = $store->openSession();
+            try {
+
+                $users = $session->query(User::class)
+                        ->whereIn("name", new Collection(["Tarzan", "no_such"]))
+                        ->toList();
+
+                $this->assertCount(1, $users);
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
 
     public function testQueryWithWhereBetween(): void
     {
@@ -453,25 +456,28 @@ class QueryTest extends RemoteTestBase
         }
     }
 
-//    public void queryWithWhereLessThanOrEqual() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            addUsers(store);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//
-//                List<User> users = session.query(User.class)
-//                        .whereLessThanOrEqual("age", 3)
-//                        .toList();
-//
-//                assertThat(users)
-//                        .hasSize(2);
-//
-//            }
-//        }
-//    }
+    public function testQueryWithWhereLessThanOrEqual(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $this->addUsers($store);
 
-    public
-    function testQueryWithWhereGreaterThan(): void
+            $session = $store->openSession();
+            try {
+                $users = $session->query(User::class)
+                        ->whereLessThanOrEqual("age", 3)
+                        ->toList();
+
+                $this->assertCount(2, $users);
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testQueryWithWhereGreaterThan(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -519,27 +525,6 @@ class QueryTest extends RemoteTestBase
         }
     }
 
-//  private static class UserProjection {
-//        private String id;
-//        private String name;
-//
-//        public String getId() {
-//            return id;
-//        }
-//
-//        public void setId(String id) {
-//            this.id = id;
-//        }
-//
-//        public String getName() {
-//            return name;
-//        }
-//
-//        public void setName(String name) {
-//            this.name = name;
-//        }
-//    }
-//
 //  @Test
 //    public void queryWithProjection() throws Exception {
 //        try (IDocumentStore store = getDocumentStore()) {
@@ -759,8 +744,7 @@ class QueryTest extends RemoteTestBase
         }
     }
 
-    public
-    function testQueryWhereExact(): void
+    public function testQueryWhereExact(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -831,36 +815,13 @@ class QueryTest extends RemoteTestBase
         }
     }
 
-//    public static class OrderTime extends AbstractIndexCreationTask {
-//        public static class Result {
-//            private long delay;
-//
-//            public long getDelay() {
-//                return delay;
-//            }
-//
-//            public void setDelay(long delay) {
-//                this.delay = delay;
-//            }
-//        }
-//
-//        public OrderTime() {
-//            map = "from order in docs.Orders " +
-//                    "select new { " +
-//                    "  delay = order.shippedAt - ((DateTime?)order.orderedAt) " +
-//                    "}";
-//        }
-//    }
-
-    /** @todo uncoment all commented code in this test */
-    public
-    function atestQueryWithDuration(): void
+    public function atestQueryWithDuration(): void
     {
         $store = $this->getDocumentStore();
         try {
             $now = new \DateTime();
 
-//            $store->executeIndex(new OrderTime());
+            $store->executeIndex(new OrderTime());
 
             $session = $store->openSession();
             try {
@@ -887,42 +848,41 @@ class QueryTest extends RemoteTestBase
                 $session->close();
             }
 
-//            $this->waitForIndexing($store);
+            $this->waitForIndexing($store);
 
             $session = $store->openSession();
             try {
-//                Set<String> delay = session.query(Order.class, OrderTime.class)
-//                        .whereLessThan("delay", Duration.ofHours(3))
-//                        .toList()
-//                        .stream()
-//                        .map(x -> x.getCompany())
-//                        .collect(toSet());
+                $orders = $session->query(Order::class, 'OrderTime')
+//                    ->whereLessThan("delay", Duration::ofHours(3))
+                    ->toList();
+//                $delay = array_map(function(Order $o) {
+//                    return $o->getCompany();
+//                }, $orders);
+
+                print_r($orders);
+//                print_r($delay);
+
+//                $this->assertEquals(["hours", "minutes"], $delay);
+
+//                $orders = $session->query(Order::class, 'OrderTime')
+//                        ->whereGreaterThan("delay", Duration::ofHours(3))
+//                        ->toList();
 //
-//                assertThat(delay)
-//                        .containsExactly("hours", "minutes");
+//                $delay = array_map(function(Order $o) {
+//                    return $o->getCompany();
+//                }, $orders);
 //
-//                Set<String> delay2 = session.query(Order.class, OrderTime.class)
-//                        .whereGreaterThan("delay", Duration.ofHours(3))
-//                        .toList()
-//                        .stream()
-//                        .map(x -> x.getCompany())
-//                        .collect(toSet());
-//
-//                assertThat(delay2)
-//                        .containsExactly("days");
-//
-//
+//                $this->assertEquals(["days"], $delay);
+                $this->assertTrue(true);
             } finally {
                 $session->close();
             }
-
         } finally {
             $store->close();
         }
     }
 
-    public
-    function testQueryFirst(): void
+    public function testQueryFirst(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -1073,28 +1033,7 @@ class QueryTest extends RemoteTestBase
         }
     }
 
-//    public static class UsersByName extends AbstractIndexCreationTask {
-//        public UsersByName() {
-//
-//            map = "from c in docs.Users select new " +
-//                    " {" +
-//                    "    c.name, " +
-//                    "    count = 1" +
-//                    "}";
-//
-//            reduce = "from result in results " +
-//                    "group result by result.name " +
-//                    "into g " +
-//                    "select new " +
-//                    "{ " +
-//                    "  name = g.Key, " +
-//                    "  count = g.Sum(x => x.count) " +
-//                    "}";
-//        }
-//    }
-//
-    private
-    function addUsers(DocumentStoreInterface $store): void
+    private function addUsers(DocumentStoreInterface $store): void
     {
         $session = $store->openSession();
         try {
@@ -1118,39 +1057,9 @@ class QueryTest extends RemoteTestBase
             $session->close();
         }
 
-//        $store->executeIndex(new UsersByName());
-//        $this->waitForIndexing($store);
+        $store->executeIndex(new UsersByName());
+        $this->waitForIndexing($store);
     }
-
-//    public static class ReduceResult {
-//        private int count;
-//        private String name;
-//        private int age;
-//
-//        public int getAge() {
-//            return age;
-//        }
-//
-//        public void setAge(int age) {
-//            this.age = age;
-//        }
-//
-//        public int getCount() {
-//            return count;
-//        }
-//
-//        public void setCount(int count) {
-//            this.count = count;
-//        }
-//
-//        public String getName() {
-//            return name;
-//        }
-//
-//        public void setName(String name) {
-//            this.name = name;
-//        }
-//    }
 
     public function testQueryWithCustomize(): void
     {

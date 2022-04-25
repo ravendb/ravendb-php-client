@@ -71,6 +71,8 @@ class QueryCommand extends RavenCommand
             ]
         ];
 
+        print_r($options);
+
         return new HttpRequest($this->createUrl($serverNode), HttpRequest::POST, $options);
     }
 

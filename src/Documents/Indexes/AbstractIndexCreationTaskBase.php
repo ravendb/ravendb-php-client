@@ -7,7 +7,8 @@ use RavenDB\Documents\DocumentStoreBase;
 use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Documents\Operations\Indexes\PutIndexesOperation;
 
-abstract class AbstractIndexCreationTaskBase extends AbstractCommonApiForIndexes
+// !status: DONE
+abstract class AbstractIndexCreationTaskBase extends AbstractCommonApiForIndexes implements AbstractIndexCreationTaskInterface
 {
     /**
      * Creates the index definition.
@@ -83,11 +84,11 @@ abstract class AbstractIndexCreationTaskBase extends AbstractCommonApiForIndexes
 
     /**
      * Executes the index creation against the specified document database using the specified conventions
-     * @param DocumentStoreInterface $store target document store
+     * @param ?DocumentStoreInterface $store target document store
      * @param ?DocumentConventions $conventions Document conventions to use
      * @param ?string $database Target database
      */
-    public function execute(DocumentStoreInterface $store, ?DocumentConventions $conventions = null, ?string $database = null): void
+    public function execute(?DocumentStoreInterface $store, ?DocumentConventions $conventions = null, ?string $database = null): void
     {
         $oldConventions = $this->getConventions();
         $database = DocumentStoreBase::getEffectiveDatabaseForStore($store, $database);

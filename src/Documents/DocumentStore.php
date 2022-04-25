@@ -5,6 +5,7 @@ namespace RavenDB\Documents;
 use Closure;
 use InvalidArgumentException;
 use Ramsey\Uuid\Uuid;
+use RavenDB\Documents\Identity\MultiDatabaseHiLoIdGenerator;
 use RavenDB\Documents\Operations\MaintenanceOperationExecutor;
 use RavenDB\Documents\Session\DocumentSession;
 use RavenDB\Documents\Session\DocumentSessionInterface;
@@ -29,7 +30,7 @@ class DocumentStore extends DocumentStoreBase
 //
 //    private final ConcurrentMap<String, Lazy<RequestExecutor>> requestExecutors = new ConcurrentSkipListMap<>(String.CASE_INSENSITIVE_ORDER);
 //
-//    private MultiDatabaseHiLoIdGenerator _multiDbHiLo;
+    private ?MultiDatabaseHiLoIdGenerator $multiDbHiLo = null;
 
     private ?MaintenanceOperationExecutor $maintenanceOperationExecutor = null;
 //    private OperationExecutor operationExecutor;
@@ -255,13 +256,13 @@ class DocumentStore extends DocumentStoreBase
 //        RequestExecutor.validateUrls(urls, getCertificate());
 //
         try {
-//            if (getConventions().getDocumentIdGenerator() == null) { // don't overwrite what the user is doing
-//                MultiDatabaseHiLoIdGenerator generator = new MultiDatabaseHiLoIdGenerator(this);
-//                _multiDbHiLo = generator;
-//
-//                getConventions().setDocumentIdGenerator(generator::generateDocumentId);
-//            }
-//
+            if ($this->getConventions()->getDocumentIdGenerator() == null) { // don't overwrite what the user is doing
+                $generator = new MultiDatabaseHiLoIdGenerator($this);
+                $this->multiDbHiLo = $generator;
+
+                $this->getConventions()->setDocumentIdGenerator(Closure::fromCallable([$generator,  'generateDocumentId']));
+            }
+
             $this->getConventions()->freeze();
             $this->initialized = true;
         } catch (\Throwable $exception) {
