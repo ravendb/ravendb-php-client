@@ -22,7 +22,7 @@ jobs:
 
         strategy:
             matrix:
-                php-versions: [ "7.4" ]
+                php-versions: [ "7.4", "8.0", "8.1" ]
                 serverVersion: [ "5.2" ]
             fail-fast: false
 
@@ -83,12 +83,3 @@ jobs:
 
             - name: Run unit tests
               run: phpunit
-
-
-#    push:
-#        branches: [ v5.2 ]
-#    pull_request:
-#        branches: [ v5.2 ]
-#    schedule:
-#            - cron: '0 10 * * 6'
-#
