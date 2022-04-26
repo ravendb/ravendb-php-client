@@ -100,8 +100,12 @@ class StringUtils
         return str_repeat($string, $times);
     }
 
-    public static function equalsIgnoreCase(string $first, string $second): bool
+    public static function equalsIgnoreCase(?string $first, ?string $second): bool
     {
+        if ($first == null || $second == null) {
+            return false;
+        }
+
         return strcasecmp($first, $second) == 0;
     }
 }

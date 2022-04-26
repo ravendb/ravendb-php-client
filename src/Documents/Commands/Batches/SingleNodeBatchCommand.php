@@ -9,7 +9,6 @@ use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Http\HttpRequest;
 use RavenDB\Http\HttpRequestInterface;
 use RavenDB\Http\RavenCommand;
-use RavenDB\Http\ResultInterface;
 use RavenDB\Http\ServerNode;
 use RavenDB\Json\BatchCommandResult;
 use RavenDB\Primitives\CleanCloseable;
@@ -88,7 +87,6 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
                 'Commands' => $commands
             ]
         ]);
-
 
 //        request.setEntity(new ContentProviderHttpEntity(outputStream -> {
 //            try (JsonGenerator generator = mapper.getFactory().createGenerator(outputStream)) {

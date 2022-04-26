@@ -45,16 +45,16 @@ class JsonExtensions
             new TypedArrayNormalizer(),
             new StringArrayNormalizer(),
             new ValueObjectNormalizer(),
+            new DateTimeNormalizer([
+                DateTimeNormalizer::FORMAT_KEY => 'Y-m-d\TH:i:s.vZ'
+            ]),
             new ObjectNormalizer(
                 $classMetadataFactory,
                 $metadataAwareNameConverter,
                 new PropertyAccessor(),
                 new ReflectionExtractor()
             ),
-            new ArrayDenormalizer(),
-            new DateTimeNormalizer([
-                DateTimeNormalizer::FORMAT_KEY => 'Y-m-d\TH:i:s.vZ'
-            ])
+            new ArrayDenormalizer()
         ];
 
         $encoders = [

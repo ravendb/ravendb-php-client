@@ -3,12 +3,22 @@
 namespace tests\RavenDB\Driver;
 
 use PHPUnit\Framework\TestCase;
+use RavenDB\Constants\DocumentsIndexing;
 use RavenDB\Documents\DocumentStore;
 use RavenDB\Documents\DocumentStoreInterface;
+use RavenDB\Documents\Indexes\IndexState;
+use RavenDB\Documents\Operations\DatabaseStatistics;
+use RavenDB\Documents\Operations\GetStatisticsOperation;
+use RavenDB\Documents\Operations\IndexInformation;
+use RavenDB\Documents\Operations\MaintenanceOperationExecutor;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Exceptions\TimeoutException;
 use RavenDB\Http\Adapter\HttpClient;
+use RavenDB\Type\Duration;
 use RavenDB\Type\Url;
 use RavenDB\Type\UrlArray;
+use RavenDB\Utils\Stopwatch;
+use RuntimeException;
 
 abstract class RavenTestDriver extends TestCase
 {
@@ -183,44 +193,58 @@ abstract class RavenTestDriver extends TestCase
         ?\DateInterval $timeout = null,
         ?string $nodeTag = null
     ): void {
+        $admin = $store->maintenance()->forDatabase($database);
 
-    }
+        if ($timeout == null) {
+            $timeout = Duration::ofMinutes(1);
+        }
 
-//    public static void waitForIndexing(IDocumentStore store, String database, Duration timeout, String nodeTag) {
-//        MaintenanceOperationExecutor admin = store.maintenance().forDatabase(database);
-//
-//        if (timeout == null) {
-//            timeout = Duration.ofMinutes(1);
-//        }
-//
-//        Stopwatch sp = Stopwatch.createStarted();
-//
-//        while (sp.elapsed(TimeUnit.MILLISECONDS) < timeout.toMillis()) {
-//            DatabaseStatistics databaseStatistics = admin.send(new GetStatisticsOperation("wait-for-indexing", nodeTag));
-//
-//            List<IndexInformation> indexes = Arrays.stream(databaseStatistics.getIndexes())
-//                    .filter(x -> !IndexState.DISABLED.equals(x.getState()))
-//                    .collect(Collectors.toList());
-//
-//            if (indexes.stream().allMatch(x -> !x.isStale() &&
-//                    !x.getName().startsWith(Constants.Documents.Indexing.SIDE_BY_SIDE_INDEX_NAME_PREFIX))) {
-//                return;
-//            }
-//
-//            if (Arrays.stream(databaseStatistics.getIndexes()).anyMatch(x -> IndexState.ERROR.equals(x.getState()))) {
-//                break;
-//            }
-//
-//            try {
-//                Thread.sleep(100);
-//            } catch (InterruptedException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
-//
-//
-//        IndexErrors[] errors = admin.send(new GetIndexErrorsOperation());
-//        String allIndexErrorsText = "";
+        $sp = Stopwatch::createStarted(true);
+
+        while ($sp->elapsedInMillis() < $timeout->toMillis()) {
+
+            echo 'Elapsed: ' . $sp->elapsedInMillis() . PHP_EOL;
+            echo 'TIMEOUT: ' . $timeout->toMillis() . PHP_EOL;
+
+            /** @var DatabaseStatistics $databaseStatistics */
+            $databaseStatistics = $admin->send(new GetStatisticsOperation("wait-for-indexing", $nodeTag));
+
+            $indexes = array_filter(
+                $databaseStatistics->getIndexes()->getArrayCopy(),
+                function(IndexInformation $index) {
+                    return !$index->getState()->isDisabled();
+                }
+            );
+
+            $hasError = false;
+
+            /** @var IndexInformation $index */
+            foreach ($indexes as $index) {
+                if ($index->isStale() || str_starts_with($index->getName(), DocumentsIndexing::SIDE_BY_SIDE_INDEX_NAME_PREFIX)) {
+                    return;
+                }
+
+                if ($index->getState()->isError()) {
+                    $hasError = true;
+                }
+            }
+
+            if ($hasError) {
+                break;
+            }
+
+            try {
+                usleep(100);
+            } catch (\Throwable $e) {
+                throw new RuntimeException($e);
+            }
+        }
+
+        echo 'Elapsed: ' . $sp->elapsedInMillis() . PHP_EOL;
+        echo 'TIMEOUT: ' . $timeout->toMillis() . PHP_EOL;
+
+//        $errors = $admin->send(new GetIndexErrorsOperation());
+        $allIndexErrorsText = "";
 //        Function<IndexErrors, String> formatIndexErrors = indexErrors -> {
 //            String errorsListText = Arrays.stream(indexErrors.getErrors()).map(x -> "-" + x).collect(Collectors.joining(System.lineSeparator()));
 //            return "Index " + indexErrors.getName() + " (" + indexErrors.getErrors().length + " errors): "+ System.lineSeparator() + errorsListText;
@@ -229,9 +253,9 @@ abstract class RavenTestDriver extends TestCase
 //            allIndexErrorsText = Arrays.stream(errors).map(formatIndexErrors).collect(Collectors.joining(System.lineSeparator()));
 //        }
 //
-//        throw new TimeoutException("The indexes stayed stale for more than " + timeout + "." + allIndexErrorsText);
-//    }
-//
+        throw new TimeoutException("The indexes stayed stale for more than " . $timeout->getSeconds() . "." . $allIndexErrorsText);
+    }
+
 //    public static IndexErrors[] waitForIndexingErrors(IDocumentStore store, Duration timeout, String... indexNames) throws InterruptedException {
 //        Stopwatch sw = Stopwatch.createStarted();
 //

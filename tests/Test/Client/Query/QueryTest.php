@@ -13,6 +13,7 @@ use RavenDB\Documents\Session\GroupByField;
 use RavenDB\Documents\Session\OrderingType;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Type\Collection;
+use RavenDB\Type\Duration;
 use RavenDB\Utils\DateUtils;
 use RavenDB\Utils\StringUtils;
 use tests\RavenDB\Infrastructure\Entity\User;
@@ -831,8 +832,7 @@ class QueryTest extends RemoteTestBase
         }
     }
 
-    // @todo: implement this test
-    public function atestQueryWithDuration(): void
+    public function testQueryWithDuration(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -870,26 +870,23 @@ class QueryTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $orders = $session->query(Order::class, 'OrderTime')
-//                    ->whereLessThan("delay", Duration::ofHours(3))
+                    ->whereLessThan("delay", Duration::ofHours(3))
                     ->toList();
-//                $delay = array_map(function(Order $o) {
-//                    return $o->getCompany();
-//                }, $orders);
+                $delay = array_map(function(Order $o) {
+                    return $o->getCompany();
+                }, $orders);
+                
+                $this->assertEquals(["hours", "minutes"], $delay);
 
-                print_r($orders);
-//                print_r($delay);
+                $orders = $session->query(Order::class, 'OrderTime')
+                        ->whereGreaterThan("delay", Duration::ofHours(3))
+                        ->toList();
 
-//                $this->assertEquals(["hours", "minutes"], $delay);
+                $delay = array_map(function(Order $o) {
+                    return $o->getCompany();
+                }, $orders);
 
-//                $orders = $session->query(Order::class, 'OrderTime')
-//                        ->whereGreaterThan("delay", Duration::ofHours(3))
-//                        ->toList();
-//
-//                $delay = array_map(function(Order $o) {
-//                    return $o->getCompany();
-//                }, $orders);
-//
-//                $this->assertEquals(["days"], $delay);
+                $this->assertEquals(["days"], $delay);
                 $this->assertTrue(true);
             } finally {
                 $session->close();
@@ -1245,7 +1242,7 @@ class QueryTest extends RemoteTestBase
 
                 $session->saveChanges();
 
-                $this->waitForIndexing($store, $store->getDatabase(), null);
+                self::waitForIndexing($store, $store->getDatabase(), null);
             } finally {
                 $session->close();
             }

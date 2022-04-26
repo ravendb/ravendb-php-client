@@ -66,7 +66,7 @@ class EntityToJson
 
         $jsonNode = $mapper->normalize($entity);
 
-        self::writeMetadata($mapper, $jsonNode, $documentInfo);
+         self::writeMetadata($mapper, $jsonNode, $documentInfo);
 
         if ($removeIdentityProperty) {
             self::tryRemoveIdentityProperty($jsonNode, get_class($entity), $conventions);

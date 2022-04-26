@@ -2,55 +2,82 @@
 
 namespace RavenDB\Type;
 
-use DateInterval;
-use DateTime;
 use RavenDB\Utils\HashUtils;
 
 class Duration
 {
-    private float $intervalInSeconds = 0;
+    const MILLISECONDS_IN_HOUR = 60*60*1000;
+    const MILLISECONDS_IN_MINUTE = 60*1000;
+    const MILLISECONDS_IN_SECOND = 1000;
+
+    private int $intervalInMilliSeconds = 0;
 
     public static function ofHours(int $hours): Duration
     {
         $duration = new Duration();
-        $duration->intervalInSeconds = $hours * 3600;
+        $duration->intervalInMilliSeconds = $hours * self::MILLISECONDS_IN_HOUR;
         return $duration;
     }
 
     public static function ofMillis(int $millis): Duration
     {
         $duration = new Duration();
-        $duration->intervalInSeconds = $millis / 1000;
+        $duration->intervalInMilliSeconds = $millis;
         return $duration;
     }
 
     public static function between(\DateTime $start, \DateTime $end): Duration
     {
         $duration = new Duration();
-//        $duration->interval = $start->diff($end);
+        $duration->intervalInMilliSeconds = ($end->getTimestamp() - $start->getTimestamp()) * 1000;
         return $duration;
+    }
+
+    public static function ofMinutes(int $minutes): Duration
+    {
+        $duration = new Duration();
+        $duration->intervalInMilliSeconds = $minutes * self::MILLISECONDS_IN_MINUTE;
+        return $duration;
+    }
+
+    public function format(): string
+    {
+        $hours = intval(floor($this->intervalInMilliSeconds / self::MILLISECONDS_IN_HOUR));
+        $minutes = intval(floor(($this->intervalInMilliSeconds % self::MILLISECONDS_IN_HOUR) / self::MILLISECONDS_IN_MINUTE));
+        $seconds = intval(floor(($this->intervalInMilliSeconds % self::MILLISECONDS_IN_MINUTE) / self::MILLISECONDS_IN_SECOND));
+
+        $f = $this->intervalInMilliSeconds % self::MILLISECONDS_IN_SECOND;
+
+        return "$hours:$minutes:$seconds.$f";
     }
 
     public function hashCode(): int
     {
-        $period = new DateInterval('PT'. $this->intervalInSeconds .'S');
-        return HashUtils::hashCode($period->format(\DateTimeInterface::RFC3339_EXTENDED));
+        return HashUtils::hashCode($this->format());
     }
 
     public function equals(Duration &$that): bool
     {
-
-        // @todo: implement this method
-        return true;
+        return $that->intervalInMilliSeconds == $this->intervalInMilliSeconds;
     }
 
     public function toMillis(): int
     {
-        return (int)$this->intervalInSeconds * 1000;
+        return $this->intervalInMilliSeconds;
     }
 
-    public function getSeconds(): int
+    public function toMicros(): int
     {
-        return (int)$this->intervalInSeconds;
+        return $this->intervalInMilliSeconds * 1000;
+    }
+
+    public function toNanos(): int
+    {
+        return $this->intervalInMilliSeconds * 1000000;
+    }
+
+    public function getSeconds(): float
+    {
+        return (float)$this->intervalInMilliSeconds / 1000;
     }
 }

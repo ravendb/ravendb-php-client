@@ -1643,6 +1643,13 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //            return whereParams.getValue();
 //        }
 
+        if (is_object($whereParams->getValue())) {
+            $object = $whereParams->getValue();
+            if ($object instanceof Duration) {
+                return $object->toNanos() / 100;
+            }
+        }
+
         return $whereParams->getValue();
     }
 
