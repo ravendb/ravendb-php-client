@@ -46,7 +46,7 @@ class JsonExtensions
             new StringArrayNormalizer(),
             new ValueObjectNormalizer(),
             new DateTimeNormalizer([
-                DateTimeNormalizer::FORMAT_KEY => 'Y-m-d\TH:i:s.vZ'
+                DateTimeNormalizer::FORMAT_KEY => 'Y-m-d\TH:i:s.v'
             ]),
             new ObjectNormalizer(
                 $classMetadataFactory,
