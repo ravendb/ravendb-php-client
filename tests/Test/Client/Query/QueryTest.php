@@ -875,7 +875,7 @@ class QueryTest extends RemoteTestBase
                 $delay = array_map(function(Order $o) {
                     return $o->getCompany();
                 }, $orders);
-                
+
                 $this->assertEquals(["hours", "minutes"], $delay);
 
                 $orders = $session->query(Order::class, 'OrderTime')

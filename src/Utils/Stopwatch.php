@@ -2,54 +2,52 @@
 
 namespace RavenDB\Utils;
 
-use RavenDB\Type\Duration;
-use Symfony\Component\Stopwatch\Stopwatch as SfStopwatch;
-
 class Stopwatch
 {
-    private SfStopwatch $stopwatch;
+    private ?float $startTimeInMilliseconds = null;
+    private ?float $endTimeInMilliseconds = null;
 
-    private function __construct(bool $morePrecision = true)
+    public static function createStarted(): Stopwatch
     {
-        $this->stopwatch = new SfStopwatch($morePrecision);
-    }
-
-    public static function createStarted(bool $morePrecision = true): Stopwatch
-    {
-        $stopwatch = new Stopwatch($morePrecision);
+        $stopwatch = new Stopwatch();
         $stopwatch->start();
 
         return $stopwatch;
     }
 
-    private function start(): void
+    public function start(): void
     {
-        $this->stopwatch->start('ravendb');
+        $this->reset();
     }
 
     public function stop(): void
     {
-        $this->stopwatch->stop('ravendb');
+        $this->endTimeInMilliseconds = microtime(true);
     }
 
-    /**
-     * @return float|int Elapsed time
-     */
-    public function elapsed()
+    public function reset(): void
     {
-        $event = $this->stopwatch->getEvent('ravendb');
-
-        return $event->getDuration();
+        $this->startTimeInMilliseconds = microtime(true);
     }
 
     /**
-     * @return int Elapsed time in milliseconds
+     * @return float Elapsed time in milliseconds
+     */
+    public function elapsed(): float
+    {
+        if ($this->endTimeInMilliseconds == null) {
+            return microtime(true) - $this->startTimeInMilliseconds;
+        }
+
+        return $this->endTimeInMilliseconds - $this->startTimeInMilliseconds;
+    }
+
+    /**
+     * @return int
      */
     public function elapsedInMillis(): int
     {
-        $event = $this->stopwatch->getEvent('ravendb');
-
-        return $event->getDuration() * 100;
+        return intval(1000*round($this->elapsed(), 6));
     }
 
 

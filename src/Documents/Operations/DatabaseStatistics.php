@@ -6,6 +6,7 @@ use DateTimeInterface;
 use RavenDB\Http\ResultInterface;
 use RavenDB\Utils\Size;
 
+// !status: DONE
 class DatabaseStatistics implements ResultInterface
 {
     private ?int $lastDocEtag = null;

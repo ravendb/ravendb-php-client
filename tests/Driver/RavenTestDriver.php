@@ -199,12 +199,9 @@ abstract class RavenTestDriver extends TestCase
             $timeout = Duration::ofMinutes(1);
         }
 
-        $sp = Stopwatch::createStarted(true);
+        $sp = Stopwatch::createStarted();
 
         while ($sp->elapsedInMillis() < $timeout->toMillis()) {
-
-            echo 'Elapsed: ' . $sp->elapsedInMillis() . PHP_EOL;
-            echo 'TIMEOUT: ' . $timeout->toMillis() . PHP_EOL;
 
             /** @var DatabaseStatistics $databaseStatistics */
             $databaseStatistics = $admin->send(new GetStatisticsOperation("wait-for-indexing", $nodeTag));
@@ -216,12 +213,13 @@ abstract class RavenTestDriver extends TestCase
                 }
             );
 
+            $indexesAreValid = true;
             $hasError = false;
 
             /** @var IndexInformation $index */
             foreach ($indexes as $index) {
                 if ($index->isStale() || str_starts_with($index->getName(), DocumentsIndexing::SIDE_BY_SIDE_INDEX_NAME_PREFIX)) {
-                    return;
+                    $indexesAreValid = false;
                 }
 
                 if ($index->getState()->isError()) {
@@ -233,15 +231,16 @@ abstract class RavenTestDriver extends TestCase
                 break;
             }
 
+            if ($indexesAreValid) {
+                return;
+            }
+
             try {
                 usleep(100);
             } catch (\Throwable $e) {
                 throw new RuntimeException($e);
             }
         }
-
-        echo 'Elapsed: ' . $sp->elapsedInMillis() . PHP_EOL;
-        echo 'TIMEOUT: ' . $timeout->toMillis() . PHP_EOL;
 
 //        $errors = $admin->send(new GetIndexErrorsOperation());
         $allIndexErrorsText = "";
