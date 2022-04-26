@@ -5,19 +5,19 @@ namespace RavenDB\Documents\Queries;
 // !status: DONE
 class Query
 {
-    private string $collection;
-    private string $indexName;
+    private ?string $collection = null;
+    private ?string $indexName = null;
 
     private function __construct()
     {
     }
 
-    public function getCollection(): string
+    public function getCollection(): ?string
     {
         return $this->collection;
     }
 
-    public function getIndexName(): string
+    public function getIndexName(): ?string
     {
         return $this->indexName;
     }

@@ -330,30 +330,33 @@ class QueryTest extends RemoteTestBase
             $store->close();
         }
     }
-//    @Test
-//    public void queryMapReduceIndex() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            addUsers(store);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//
-//                List<ReduceResult> results = session.query(ReduceResult.class, Query.index("UsersByName"))
-//                        .orderByDescending("count")
-//                        .toList();
-//
-//                assertThat(results.get(0).getCount())
-//                        .isEqualTo(2);
-//                assertThat(results.get(0).getName())
-//                        .isEqualTo("John");
-//
-//                assertThat(results.get(1).getCount())
-//                        .isEqualTo(1);
-//                assertThat(results.get(1).getName())
-//                        .isEqualTo("Tarzan");
-//            }
-//        }
-//    }
-//
+
+    public function testQueryMapReduceIndex(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $this->addUsers($store);
+
+            $session = $store->openSession();
+            try {
+
+                $results = $session->query(ReduceResult::class, Query::index("UsersByName"))
+                        ->orderByDescending("count")
+                        ->toList();
+
+                $this->assertEquals(2, $results[0]->getCount());
+                $this->assertEquals("John",$results[0]->getName());
+
+                $this->assertEquals(1, $results[1]->getCount());
+                $this->assertEquals("Tarzan", $results[1]->getName());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
 //    @Test
 //    public void querySingleProperty() throws Exception {
 //        try (IDocumentStore store = getDocumentStore()) {
@@ -585,7 +588,7 @@ class QueryTest extends RemoteTestBase
 //    }
 //
 
-    // @todo: implement this
+    // @todo: implement this when select fileds option is added
     public function queryDistinct(): void
     {
         $store = $this->getDocumentStore();
