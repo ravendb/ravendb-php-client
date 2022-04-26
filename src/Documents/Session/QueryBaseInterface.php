@@ -29,20 +29,18 @@ interface QueryBaseInterface
     function invokeAfterQueryExecuted(QueryResult $result): void;
 
 //    void invokeAfterStreamExecuted(ObjectNode result);
-//
-//    /**
-//     * Disables caching for query results.
-//     * @return Query instance
-//     */
-//    TSelf noCaching();
-//
-//    /**
-//     * Disables tracking for queried entities by Raven's Unit of Work.
-//     * Usage of this option will prevent holding query results in memory.
-//     * @return Query instance
-//     */
-//    TSelf noTracking();
-//
+
+    /**
+     * Disables caching for query results.
+     */
+    function noCaching();
+
+    /**
+     * Disables tracking for queried entities by Raven's Unit of Work.
+     * Usage of this option will prevent holding query results in memory.
+     */
+    function noTracking();
+
 //    /**
 //     *  Enables calculation of timings for various parts of a query (Lucene search, loading documents, transforming
 //     *  results). Default: false

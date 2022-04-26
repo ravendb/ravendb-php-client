@@ -1328,23 +1328,22 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //    public void _addRootType(Class clazz) {
 //        rootTypes.add(clazz);
 //    }
-//
-//    //TBD expr public string GetMemberQueryPathForOrderBy(Expression expression)
-//    //TBD expr public string GetMemberQueryPath(Expression expression)
-//
-//
-//    @Override
-//    public void _distinct() {
-//        if (isDistinct()) {
-//            throw new IllegalStateException("The is already a distinct query");
-//        }
-//
-//        if (selectTokens.isEmpty()) {
-//            selectTokens.add(DistinctToken.INSTANCE);
-//        } else {
-//            selectTokens.add(0, DistinctToken.INSTANCE);
-//        }
-//    }
+
+    //TBD expr public string GetMemberQueryPathForOrderBy(Expression expression)
+    //TBD expr public string GetMemberQueryPath(Expression expression)
+
+    public function _distinct(): void
+    {
+        if ($this->isDistinct()) {
+            throw new IllegalStateException("The is already a distinct query");
+        }
+
+        if ($this->selectTokens->isEmpty()) {
+            $this->selectTokens->append(DistinctToken::$INSTANCE);
+        } else {
+            $this->selectTokens->prepend(DistinctToken::$INSTANCE);
+        }
+    }
 
     private function updateStatsHighlightingsAndExplanations(QueryResult $queryResult): void
     {

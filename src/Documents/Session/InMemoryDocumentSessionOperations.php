@@ -586,47 +586,50 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         throw new IllegalArgumentException("Document " . $id . " doesn't exist in the session");
     }
 
-//    /**
-//     * Returns whether a document with the specified id is loaded in the
-//     * current session
-//     *
-//     * @param id Document id to check
-//     * @return true is document is loaded
-//     */
-//    public boolean isLoaded(String id) {
-//        return isLoadedOrDeleted(id);
-//    }
-//
-//    public boolean isLoadedOrDeleted(String id) {
-//        DocumentInfo documentInfo = documentsById.getValue(id);
-//        return (documentInfo != null && (documentInfo.getDocument() != null || documentInfo.getEntity() != null)) || isDeleted(id) || includedDocumentsById.containsKey(id);
-//    }
+    /**
+     * Returns whether a document with the specified id is loaded in the
+     * current session
+     *
+     * @param string $id Document id to check
+     * @return bool true is document is loaded
+     */
+    public function isLoaded(string $id): bool
+    {
+        return $this->isLoadedOrDeleted($id);
+    }
+
+    public function isLoadedOrDeleted(string $id): bool
+    {
+        $documentInfo = $this->documentsById->getValue($id);
+        return ($documentInfo != null && ($documentInfo->getDocument() != null || $documentInfo->getEntity() != null)) || $this->isDeleted($id) || $this->includedDocumentsById->offsetExists($id);
+    }
 
     /**
      * Returns whether a document with the specified id is deleted
      * or known to be missing
      *
-     * @param id Document id to check
-     * @return true is document is deleted
+     * @param string $id Document id to check
+     * @return bool true is document is deleted
      */
     public function isDeleted(string $id): bool
     {
         return in_array($id, $this->knownMissingIds);
     }
 
-//    /**
-//     * Gets the document id.
-//     *
-//     * @param instance instance to get document id from
-//     * @return document id
-//     */
-//    public String getDocumentId(Object instance) {
-//        if (instance == null) {
-//            return null;
-//        }
-//        DocumentInfo value = documentsByEntity.get(instance);
-//        return value != null ? value.getId() : null;
-//    }
+    /**
+     * Gets the document id.
+     *
+     * @param ?object $instance instance to get document id from
+     * @return ?string document id
+     */
+    public function getDocumentId(?object $instance): ?string
+    {
+        if ($instance == null) {
+            return null;
+        }
+        $value = $this->documentsByEntity->get($instance);
+        return $value != null ? $value->getId() : null;
+    }
 
     public function incrementRequestCount(): void
     {

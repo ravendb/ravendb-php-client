@@ -50,7 +50,6 @@ class NextHiLoCommand extends RavenCommand
     public function createRequest(ServerNode $serverNode): HttpRequestInterface
     {
         $url = $this->createUrl($serverNode);
-        print_r($url);
         return new HttpRequest($url);
     }
 

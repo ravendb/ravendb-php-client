@@ -34,13 +34,12 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
 //     * @return Query instance
 //     */
 //    TSelf boost(double boost);
-//
-//    /**
-//     * Apply distinct operation to this query
-//     * @return Query instance
-//     */
-//    TSelf distinct();
-//
+
+    /**
+     * Apply distinct operation to this query
+     */
+    function distinct();
+
 //    /**
 //     * Adds explanations of scores calculated for queried documents to the query result
 //     * @param explanations Output parameter

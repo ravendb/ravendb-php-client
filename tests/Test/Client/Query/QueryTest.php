@@ -7,12 +7,12 @@ use RavenDB\Documents\Queries\Query;
 use RavenDB\Documents\Queries\SearchOperator;
 use RavenDB\Documents\Session\BeforeQueryEventArgs;
 use RavenDB\Documents\Session\DocumentQueryInterface;
+use RavenDB\Documents\Session\DocumentSession;
 use RavenDB\Documents\Session\DocumentSessionInterface;
 use RavenDB\Documents\Session\GroupByField;
 use RavenDB\Documents\Session\OrderingType;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Type\Collection;
-use RavenDB\Type\Duration;
 use RavenDB\Utils\DateUtils;
 use RavenDB\Utils\StringUtils;
 use tests\RavenDB\Infrastructure\Entity\User;
@@ -86,40 +86,48 @@ class QueryTest extends RemoteTestBase
         }
     }
 
-//  public void query_CreateClausesForQueryDynamicallyWhenTheQueryEmpty() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            String id1 = "users/1";
-//            String id2 = "users/2";
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                Article article1 = new Article();
-//                article1.setTitle("foo");
-//                article1.setDescription("bar");
-//                article1.setDeleted(false);
-//                session.store(article1, id1);
-//
-//                Article article2 = new Article();
-//                article2.setTitle("foo");
-//                article2.setDescription("bar");
-//                article2.setDeleted(true);
-//                session.store(article2, id2);
-//
-//                session.saveChanges();
-//            }
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                IDocumentQuery<Article> query = session.advanced().documentQuery(Article.class)
-//                        .andAlso(true);
-//
-//                assertThat(query.toString())
-//                        .isEqualTo("from 'Articles'");
-//
-//                List<Article> queryResult = query.toList();
-//                assertThat(queryResult)
-//                        .hasSize(2);
-//            }
-//        }
-//    }
+  public function testQuery_CreateClausesForQueryDynamicallyWhenTheQueryEmpty(): void
+  {
+      $store = $this->getDocumentStore();
+      try {
+          $id1 = "users/1";
+          $id2 = "users/2";
+
+          $session = $store->openSession();
+          try {
+              $article1 = new Article();
+              $article1->setTitle("foo");
+              $article1->setDescription("bar");
+              $article1->setDeleted(false);
+              $session->store($article1, $id1);
+
+              $article2 = new Article();
+              $article2->setTitle("foo");
+              $article2->setDescription("bar");
+              $article2->setDeleted(true);
+              $session->store($article2, $id2);
+
+              $session->saveChanges();
+            } finally {
+              $session->close();
+            }
+
+          $session = $store->openSession();
+          try {
+                $query = $session->advanced()->documentQuery(Article::class)
+                        ->andAlso(true);
+
+                $this->assertEquals("from 'Articles'",$query->toString());
+
+                $queryResult = $query->toList();
+                $this->assertCount(2, $queryResult);
+            } finally {
+              $session->close();
+          }
+        } finally {
+          $store->close();
+      }
+    }
 
     public function testQuerySimple(): void
     {
@@ -396,8 +404,8 @@ class QueryTest extends RemoteTestBase
             try {
 
                 $users = $session->query(User::class)
-                        ->whereIn("name", new Collection(["Tarzan", "no_such"]))
-                        ->toList();
+                    ->whereIn("name", new Collection(["Tarzan", "no_such"]))
+                    ->toList();
 
                 $this->assertCount(1, $users);
             } finally {
@@ -465,8 +473,8 @@ class QueryTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $users = $session->query(User::class)
-                        ->whereLessThanOrEqual("age", 3)
-                        ->toList();
+                    ->whereLessThanOrEqual("age", 3)
+                    ->toList();
 
                 $this->assertCount(2, $users);
             } finally {
@@ -575,28 +583,34 @@ class QueryTest extends RemoteTestBase
 //        }
 //    }
 //
-//    @Test
-//    public void queryDistinct() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            addUsers(store);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                List<String> uniqueNames = session.query(User.class)
-//                        .selectFields(String.class, "name")
-//                        .distinct()
-//                        .toList();
-//
-//                assertThat(uniqueNames)
-//                        .hasSize(2)
-//                        .contains("Tarzan")
-//                        .contains("John");
-//            }
-//        }
-//    }
+
+    // @todo: implement this
+    public function queryDistinct(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $this->addUsers($store);
+
+            $session = $store->openSession();
+            try {
+                $uniqueNames = $session->query(User::class)
+//                        ->selectFields(String::class, "name")
+                        ->distinct()
+                        ->toList();
+
+                $this->assertCount(2, $uniqueNames);
+                $this->assertContains("Tarzan", $uniqueNames);
+                $this->assertContains("John", $uniqueNames);
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
 
 
-    public
-    function testQuerySearchWithOr(): void
+    public function testQuerySearchWithOr(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -618,31 +632,37 @@ class QueryTest extends RemoteTestBase
         }
     }
 
-//
-//    @Test
-//    public void queryNoTracking() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            addUsers(store);
-//
-//            try (DocumentSession session = (DocumentSession) store.openSession()) {
-//                List<User> users = session.query(User.class)
-//                        .noTracking()
-//                        .toList();
-//
-//                assertThat(users)
-//                        .hasSize(3);
-//
-//                for (User user : users) {
-//                    assertThat(session.isLoaded(user.getId()))
-//                            .isFalse();
-//                }
-//            }
-//        }
-//    }
-//
+    // @todo: uncomment this when id is auto added to entities
+    public function atestQueryNoTracking(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $this->addUsers($store);
 
-    public
-    function testQuerySkipTake(): void
+            /** @var DocumentSession $session */
+            $session = $store->openSession();
+            try {
+                $users = $session->query(User::class)
+                        ->noTracking()
+                        ->toList();
+
+                $this->assertCount(3, $users);
+
+                print_r($users);
+
+                foreach ($users as $user) {
+                    $this->assertFalse($session->isLoaded($user->getId()));
+                }
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+
+    public function testQuerySkipTake(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -668,8 +688,7 @@ class QueryTest extends RemoteTestBase
         }
     }
 
-    public
-    function testRawQuerySkipTake(): void
+    public function testRawQuerySkipTake(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -694,8 +713,7 @@ class QueryTest extends RemoteTestBase
     }
 
 
-    public
-    function testParametersInRawQuery(): void
+    public function testParametersInRawQuery(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -718,8 +736,7 @@ class QueryTest extends RemoteTestBase
         }
     }
 
-    public
-    function testQueryLucene(): void
+    public function testQueryLucene(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -777,8 +794,7 @@ class QueryTest extends RemoteTestBase
         }
     }
 
-    public
-    function testQueryWhereNot(): void
+    public function testQueryWhereNot(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -815,6 +831,7 @@ class QueryTest extends RemoteTestBase
         }
     }
 
+    // @todo: implement this test
     public function atestQueryWithDuration(): void
     {
         $store = $this->getDocumentStore();
@@ -962,27 +979,34 @@ class QueryTest extends RemoteTestBase
         }
     }
 
-//    @Test
-//    public void queryWhereExists() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            addUsers(store);
-//
-//            try (DocumentSession session = (DocumentSession) store.openSession()) {
-//                assertThat(session.query(User.class)
-//                        .whereExists("name")
-//                        .toList())
-//                        .hasSize(3);
-//
-//                assertThat(session.query(User.class)
-//                        .whereExists("name")
-//                        .andAlso()
-//                        .not()
-//                        .whereExists("no_such_field")
-//                        .toList())
-//                        .hasSize(3);
-//            }
-//        }
-//    }
+    public function testQueryWhereExists(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $this->addUsers($store);
+
+            $session = $store->openSession();
+            try {
+                $users = $session->query(User::class)
+                    ->whereExists("name")
+                    ->toList();
+
+
+                $users2 = $session->query(User::class)
+                    ->whereExists("name")
+                    ->andAlso()
+                    ->not()
+                    ->whereExists("no_such_field")
+                    ->toList();
+
+                $this->assertcount(3, $users2);
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
 
     public function testQueryWithBoost(): void
     {
@@ -993,36 +1017,36 @@ class QueryTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $users = $session->query(User::class)
-                        ->whereEquals("name", "Tarzan")
-                        ->boost(5)
-                        ->orElse()
-                        ->whereEquals("name", "John")
-                        ->boost(2)
-                        ->orderByScore()
-                        ->toList();
+                    ->whereEquals("name", "Tarzan")
+                    ->boost(5)
+                    ->orElse()
+                    ->whereEquals("name", "John")
+                    ->boost(2)
+                    ->orderByScore()
+                    ->toList();
 
                 $this->assertCount(3, $users);
 
-                $names = array_map(function(User $o) {
+                $names = array_map(function (User $o) {
                     return $o->getName();
                 }, $users);
 
                 $this->assertSame(["Tarzan", "John", "John"], $names);
 
                 $users = $session->query(User::class)
-                        ->whereEquals("name", "Tarzan")
-                        ->boost(2)
-                        ->orElse()
-                        ->whereEquals("name", "John")
-                        ->boost(5)
-                        ->orderByScore()
-                        ->toList();
+                    ->whereEquals("name", "Tarzan")
+                    ->boost(2)
+                    ->orElse()
+                    ->whereEquals("name", "John")
+                    ->boost(5)
+                    ->orderByScore()
+                    ->toList();
 
-                $this->assertCount(3,$users);
+                $this->assertCount(3, $users);
 
-                $names = array_map(function(User $o) {
+                $names = array_map(function (User $o) {
                     return $o->getName();
-                    }, $users);
+                }, $users);
 
                 $this->assertSame(["John", "John", "Tarzan"], $names);
             } finally {
@@ -1069,7 +1093,7 @@ class QueryTest extends RemoteTestBase
             $dogsIndex->execute($store);
 
             $newSession = $store->openSession();
-            try  {
+            try {
                 $this->createDogs($newSession);
 
                 $newSession->saveChanges();
@@ -1078,7 +1102,7 @@ class QueryTest extends RemoteTestBase
             }
 
             $newSession = $store->openSession();
-            try  {
+            try {
 
                 $dogsIndex = new DogsIndex();
                 $queryResult = $newSession->advanced()
@@ -1208,54 +1232,61 @@ class QueryTest extends RemoteTestBase
         }
     }
 
-//    @Test
-//    public void queryByIndex() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//
-//            new DogsIndex().execute(store);
-//
-//            try (IDocumentSession newSession = store.openSession()) {
-//                createDogs(newSession);
-//
-//                newSession.saveChanges();
-//
-//                waitForIndexing(store, store.getDatabase(), null);
-//            }
-//
-//            try (IDocumentSession newSession = store.openSession()) {
-//                List<DogsIndex.Result> queryResult = newSession.advanced()
-//                        .documentQuery(DogsIndex.Result.class, new DogsIndex().getIndexName(), null, false)
-//                        .whereGreaterThan("age", 2)
-//                        .andAlso()
-//                        .whereEquals("vaccinated", false)
-//                        .toList();
-//
-//                assertThat(queryResult)
-//                        .hasSize(1);
-//
-//                assertThat(queryResult.get(0).getName())
-//                        .isEqualTo("Brian");
-//
-//
-//                List<DogsIndex.Result> queryResult2 = newSession.advanced()
-//                        .documentQuery(DogsIndex.Result.class, new DogsIndex().getIndexName(), null, false)
-//                        .whereLessThanOrEqual("age", 2)
-//                        .andAlso()
-//                        .whereEquals("vaccinated", false)
-//                        .toList();
-//
-//                assertThat(queryResult2)
-//                        .hasSize(3);
-//
-//                List<String> list = queryResult2.stream()
-//                        .map(x -> x.getName())
-//                        .collect(toList());
-//
-//                assertThat(list)
-//                        .contains("Beethoven")
-//                        .contains("Scooby Doo")
-//                        .contains("Benji");
-//            }
-//        }
-//    }
+    public function testQueryByIndex(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $dogsIndex = new DogsIndex();
+            $dogsIndex->execute($store);
+
+            $session = $store->openSession();
+            try {
+                $this->createDogs($session);
+
+                $session->saveChanges();
+
+                $this->waitForIndexing($store, $store->getDatabase(), null);
+            } finally {
+                $session->close();
+            }
+
+            $newSession = $store->openSession();
+            try {
+                $dogsIndex = new DogsIndex();
+                $queryResult = $newSession->advanced()
+                    ->documentQuery(DogsIndexResult::class, $dogsIndex->getIndexName(), null, false)
+                    ->whereGreaterThan("age", 2)
+                    ->andAlso()
+                    ->whereEquals("vaccinated", false)
+                    ->toList();
+
+                $this->assertCount(1, $queryResult);
+
+                $this->assertEquals("Brian", $queryResult[0]->getName());
+
+
+                $queryResult2 = $newSession->advanced()
+                    ->documentQuery(DogsIndexResult::class, $dogsIndex->getIndexName(), null, false)
+                    ->whereLessThanOrEqual("age", 2)
+                    ->andAlso()
+                    ->whereEquals("vaccinated", false)
+                    ->toList();
+
+                $this->assertCount(3, $queryResult2);
+
+                $list = array_map(function (DogsIndexResult $d) {
+                    return $d->getName();
+                }, $queryResult2);
+
+
+                $this->assertContains("Beethoven", $list);
+                $this->assertContains("Scooby Doo", $list);
+                $this->assertContains("Benji", $list);
+            } finally {
+                $newSession->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
 }

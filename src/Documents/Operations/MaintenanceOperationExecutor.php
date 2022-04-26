@@ -66,7 +66,7 @@ class MaintenanceOperationExecutor
 //        $this->getRequestExecutor()->execute($command);
 //    }
 
-    public function send(MaintenanceOperationInterface $operation): ResultInterface
+    public function send(MaintenanceOperationInterface $operation): ?ResultInterface
     {
         $this->assertDatabaseNameSet();
         $command = $operation->getCommand($this->getRequestExecutor()->getConventions());

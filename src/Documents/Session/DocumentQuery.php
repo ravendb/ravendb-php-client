@@ -67,11 +67,11 @@ class DocumentQuery extends AbstractDocumentQuery
 //        return selectFields(clazz, queryData);
 //    }
 //
-//    @Override
-//    public IDocumentQuery<T> distinct() {
-//        _distinct();
-//        return this;
-//    }
+    public function distinct(): DocumentQueryInterface
+    {
+        $this->_distinct();
+        return $this;
+    }
 
     public function orderByScore(): DocumentQueryInterface
     {
@@ -237,19 +237,19 @@ class DocumentQuery extends AbstractDocumentQuery
 //        _usingDefaultOperator(queryOperator);
 //        return this;
 //    }
-//
-//    @Override
-//    public IDocumentQuery<T> noTracking() {
-//        _noTracking();
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> noCaching() {
-//        _noCaching();
-//        return this;
-//    }
-//
+
+    public function noTracking(): DocumentQueryInterface
+    {
+        $this->_noTracking();
+        return $this;
+    }
+
+    public function noCaching(): DocumentQueryInterface
+    {
+        $this->_noCaching();
+        return $this;
+    }
+
 //    @Override
 //    public IDocumentQuery<T> include(String path) {
 //        _include(path);

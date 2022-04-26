@@ -12,12 +12,12 @@ interface DocumentQueryInterface
 //    String getIndexName();
 //
 //    Class<T> getQueryClass();
-//
-//    /**
-//     * Whether we should apply distinct operation to the query on the server side
-//     * @return true if server should return distinct results
-//     */
-//    boolean isDistinct();
+
+    /**
+     * Whether we should apply distinct operation to the query on the server side
+     * @return bool true if server should return distinct results
+     */
+    function isDistinct(): bool;
 
     /**
      * Returns the query result. Accessing this property for the first time will execute the query.
