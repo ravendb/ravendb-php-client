@@ -5,7 +5,7 @@ namespace RavenDB\Documents\Session;
 use Closure;
 use InvalidArgumentException;
 use Ramsey\Uuid\UuidInterface;
-use RavenDB\Constants\Metadata;
+use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Documents\Commands\Batches\BatchOptions;
 use RavenDB\Documents\Commands\Batches\CommandDataInterface;
 use RavenDB\Documents\Commands\Batches\CommandType;
@@ -17,6 +17,7 @@ use RavenDB\Documents\DocumentStoreBase;
 use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Documents\Identity\GenerateEntityIdOnTheClient;
 use RavenDB\Documents\IdTypeAndName;
+use RavenDB\Documents\Queries\IncludeInterface;
 use RavenDB\Exceptions\Documents\Session\NonUniqueObjectException;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
@@ -31,6 +32,7 @@ use RavenDB\Primitives\ClosureArray;
 use RavenDB\Primitives\EventHelper;
 use RavenDB\Type\StringArray;
 use RavenDB\Utils\AtomicInteger;
+use RavenDB\Utils\StringUtils;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 
 use DS\Map as DSMap;
@@ -584,47 +586,50 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         throw new IllegalArgumentException("Document " . $id . " doesn't exist in the session");
     }
 
-//    /**
-//     * Returns whether a document with the specified id is loaded in the
-//     * current session
-//     *
-//     * @param id Document id to check
-//     * @return true is document is loaded
-//     */
-//    public boolean isLoaded(String id) {
-//        return isLoadedOrDeleted(id);
-//    }
-//
-//    public boolean isLoadedOrDeleted(String id) {
-//        DocumentInfo documentInfo = documentsById.getValue(id);
-//        return (documentInfo != null && (documentInfo.getDocument() != null || documentInfo.getEntity() != null)) || isDeleted(id) || includedDocumentsById.containsKey(id);
-//    }
+    /**
+     * Returns whether a document with the specified id is loaded in the
+     * current session
+     *
+     * @param string $id Document id to check
+     * @return bool true is document is loaded
+     */
+    public function isLoaded(string $id): bool
+    {
+        return $this->isLoadedOrDeleted($id);
+    }
+
+    public function isLoadedOrDeleted(string $id): bool
+    {
+        $documentInfo = $this->documentsById->getValue($id);
+        return ($documentInfo != null && ($documentInfo->getDocument() != null || $documentInfo->getEntity() != null)) || $this->isDeleted($id) || $this->includedDocumentsById->offsetExists($id);
+    }
 
     /**
      * Returns whether a document with the specified id is deleted
      * or known to be missing
      *
-     * @param id Document id to check
-     * @return true is document is deleted
+     * @param string $id Document id to check
+     * @return bool true is document is deleted
      */
     public function isDeleted(string $id): bool
     {
         return in_array($id, $this->knownMissingIds);
     }
 
-//    /**
-//     * Gets the document id.
-//     *
-//     * @param instance instance to get document id from
-//     * @return document id
-//     */
-//    public String getDocumentId(Object instance) {
-//        if (instance == null) {
-//            return null;
-//        }
-//        DocumentInfo value = documentsByEntity.get(instance);
-//        return value != null ? value.getId() : null;
-//    }
+    /**
+     * Gets the document id.
+     *
+     * @param ?object $instance instance to get document id from
+     * @return ?string document id
+     */
+    public function getDocumentId(?object $instance): ?string
+    {
+        if ($instance == null) {
+            return null;
+        }
+        $value = $this->documentsByEntity->get($instance);
+        return $value != null ? $value->getId() : null;
+    }
 
     public function incrementRequestCount(): void
     {
@@ -966,7 +971,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $metadata = [];
 
         if ($collectionName != null) {
-            $metadata[Metadata::COLLECTION] = $mapper->normalize($collectionName, 'json');
+            $metadata[DocumentsMetadata::COLLECTION] = $mapper->normalize($collectionName, 'json');
         }
 
         // @todo: Check why do we need this for
@@ -1678,7 +1683,13 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $this->knownMissingIds = array_merge($this->knownMissingIds, $ids->getArrayCopy());
     }
 
-    public function registerIncludes(array $includes): void
+    /**
+     * @todo: this includes should be of type IncludeInterface but at the moment I didn't implement it
+     * because I don't know what side-effects this can cause
+     *
+     * @param mixed $includes
+     */
+    public function registerIncludes($includes): void
     {
         if ($this->noTracking) {
             return;
@@ -2456,17 +2467,18 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         );
     }
 
-//    public void onAfterConversionToDocumentInvoke(String id, Object entity, Reference<ObjectNode> document) {
-//        if (!onAfterConversionToDocument.isEmpty()) {
-//            AfterConversionToDocumentEventArgs eventArgs = new AfterConversionToDocumentEventArgs(this, id, entity, document);
-//            EventHelper.invoke(onAfterConversionToDocument, this, eventArgs);
-//
-//            if (eventArgs.getDocument().value != null && eventArgs.getDocument().value != document.value) {
-//                document.value = eventArgs.getDocument().value;
-//            }
-//        }
-//    }
-//
+    public function onAfterConversionToDocumentInvoke(string $id, object $entity, &$document): void
+    {
+        if (!$this->onAfterConversionToDocument->isEmpty()) {
+            $eventArgs = new AfterConversionToDocumentEventArgs($this, $id, $entity, $document);
+            EventHelper::invoke($this->onAfterConversionToDocument, $this, $eventArgs);
+
+            if ($eventArgs->getDocument() != null && $eventArgs->getDocument() != $document) {
+                $document = $eventArgs->getDocument();
+            }
+        }
+    }
+
 //    public void onBeforeConversionToEntityInvoke(String id, Class clazz, Reference<ObjectNode> document) {
 //        if (!onBeforeConversionToEntity.isEmpty()) {
 //            BeforeConversionToEntityEventArgs eventArgs = new BeforeConversionToEntityEventArgs(this, id, clazz, document);
@@ -2482,7 +2494,22 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //        AfterConversionToEntityEventArgs eventArgs = new AfterConversionToEntityEventArgs(this, id, document, entity);
 //        EventHelper.invoke(onAfterConversionToEntity, this, eventArgs);
 //    }
-//
+
+    protected function processQueryParameters(string $className, ?string $indexName, ?string $collectionName, DocumentConventions $conventions): array
+    {
+        $isIndex = StringUtils::isNotBlank($indexName);
+        $isCollection = StringUtils::isNotEmpty($collectionName);
+
+        if ($isIndex && $isCollection) {
+            throw new IllegalStateException('Parameters indexName and collectionName are mutually exclusive. Please specify only one of them.');
+        }
+
+        if (!$isIndex && !$isCollection) {
+            $collectionName = $conventions->getCollectionName($className) ?? DocumentsMetadata::ALL_DOCUMENTS_COLLECTION;
+        }
+
+        return [$indexName, $collectionName];
+    }
 //    protected Tuple<String, String> processQueryParameters(Class clazz, String indexName, String collectionName, DocumentConventions conventions) {
 //        boolean isIndex = StringUtils.isNotBlank(indexName);
 //        boolean isCollection = StringUtils.isNotEmpty(collectionName);
@@ -2499,7 +2526,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //
 //        return Tuple.create(indexName, collectionName);
 //    }
-//
+
 //    public static class SaveChangesData {
 //        private final List<ICommandData> deferredCommands;
 //        private final Map<IdTypeAndName, ICommandData> deferredCommandsMap;

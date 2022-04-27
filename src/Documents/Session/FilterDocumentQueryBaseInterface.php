@@ -2,27 +2,22 @@
 
 namespace RavenDB\Documents\Session;
 
+use RavenDB\Documents\Queries\SearchOperator;
+use RavenDB\Type\Collection;
+
 interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
 {
-//    /**
-//     * Negate the next operation
-//     * @return Query instance
-//     */
-//    TSelf not();
-//
-//    /**
-//     *  Add an AND to the query
-//     *  @return Query instance
-//     */
-//    TSelf andAlso();
-//
-//    /**
-//     * Add an AND to the query
-//     * @param wrapPreviousQueryClauses wrap previous query clauses
-//     * @return Query instance
-//     */
-//    TSelf andAlso(boolean wrapPreviousQueryClauses);
-//
+    /**
+     * Negate the next operation
+     */
+    function not();
+
+    /**
+     * Add an AND to the query
+     * @param bool $wrapPreviousQueryClauses wrap previous query clauses
+     */
+    public function andAlso(bool $wrapPreviousQueryClauses = false);
+
 //    /**
 //     * Simplified method for closing a clause within the query
 //     * @return Query instance
@@ -61,309 +56,155 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
 //     */
 //    TSelf openSubclause();
 //
-//    /**
-//     * Add an OR to the query
-//     * @return Query instance
-//     */
-//    TSelf orElse();
-//
-//    /**
-//     * Perform a search for documents which fields that match the searchTerms.
-//     * If there is more than a single term, each of them will be checked independently.
-//     *
-//     * Space separated terms e.g. 'John Adam' means that we will look in selected field for 'John'
-//     * or 'Adam'.
-//     * @param fieldName Field name
-//     * @param searchTerms Search terms
-//     * @return Query instance
-//     */
-//    TSelf search(String fieldName, String searchTerms);
-//
-//    /**
-//     * Perform a search for documents which fields that match the searchTerms.
-//     * If there is more than a single term, each of them will be checked independently.
-//     *
-//     * Space separated terms e.g. 'John Adam' means that we will look in selected field for 'John'
-//     * or 'Adam'.
-//     * @param fieldName Field name
-//     * @param searchTerms Search terms
-//     * @param operator Search operator
-//     * @return Query instance
-//     */
-//    TSelf search(String fieldName, String searchTerms, SearchOperator operator);
-//
-//    //TBD expr TSelf Search<TValue>(Expression<Func<T, TValue>> propertySelector, string searchTerms, SearchOperator @operator = SearchOperator.Or);
-//
-//    /**
-//     * Filter the results from the index using the specified where clause.
-//     * @param fieldName Field name
-//     * @param whereClause Where clause
-//     * @return Query instance
-//     */
-//    TSelf whereLucene(String fieldName, String whereClause);
-//
-//    /**
-//     * Filter the results from the index using the specified where clause.
-//     * @param fieldName Field name
-//     * @param whereClause Where clause
-//     * @param exact Use exact matcher
-//     * @return Query instance
-//     */
-//    TSelf whereLucene(String fieldName, String whereClause, boolean exact);
-//
-//    /**
-//     * Matches fields where the value is between the specified start and end, inclusive
-//     * @param fieldName Field name
-//     * @param start Range start
-//     * @param end Range end
-//     * @return Query instance
-//     */
-//    TSelf whereBetween(String fieldName, Object start, Object end);
-//
-//    /**
-//     * Matches fields where the value is between the specified start and end, inclusive
-//     * @param fieldName Field name
-//     * @param start Range start
-//     * @param end Range end
-//     * @param exact Use exact matcher
-//     * @return Query instance
-//     */
-//    TSelf whereBetween(String fieldName, Object start, Object end, boolean exact);
-//
-//    //TBD expr TSelf WhereBetween<TValue>(Expression<Func<T, TValue>> propertySelector, TValue start, TValue end, bool exact = false);
-//
-//    /**
-//     * Matches fields which ends with the specified value.
-//     * @param fieldName Field name
-//     * @param value Value to use
-//     * @return Query instance
-//     */
-//    TSelf whereEndsWith(String fieldName, Object value);
-//
-//    /**
-//     * Matches fields which ends with the specified value.
-//     * @param fieldName Field name
-//     * @param value Value to use
-//     * @param exact Use exact matcher
-//     * @return Query instance
-//     */
-//    TSelf whereEndsWith(String fieldName, Object value, boolean exact);
-//
-//    //TBD expr TSelf WhereEndsWith<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value);
-//
-//    /**
-//     * Matches value
-//     * @param fieldName Field name
-//     * @param value Value to use
-//     * @return Query instance
-//     */
-//    TSelf whereEquals(String fieldName, Object value);
-//
-//    /**
-//     * Matches value
-//     * @param fieldName Field name
-//     * @param value Value to use
-//     * @param exact Use exact matcher
-//     * @return Query instance
-//     */
-//    TSelf whereEquals(String fieldName, Object value, boolean exact);
-//
-//    /**
-//     * Matches value
-//     * @param fieldName Field name
-//     * @param method Method call
-//     * @return Query instance
-//     */
-//    TSelf whereEquals(String fieldName, MethodCall method);
-//
-//    /**
-//     * Matches value
-//     * @param fieldName Field name
-//     * @param method Method call
-//     * @param exact Use exact matcher
-//     * @return Query instance
-//     */
-//    TSelf whereEquals(String fieldName, MethodCall method, boolean exact);
-//
-//    //TBD expr TSelf WhereEquals<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
-//    //TBD expr TSelf WhereEquals<TValue>(Expression<Func<T, TValue>> propertySelector, MethodCall value, bool exact = false);
-//
-//    /**
-//     * Matches value
-//     * @param whereParams Where params
-//     * @return Query instance
-//     */
-//    TSelf whereEquals(WhereParams whereParams);
-//
-//    /**
-//     * Not matches value
-//     * @param fieldName Field name
-//     * @param value Value to use
-//     * @return Query instance
-//     */
-//    TSelf whereNotEquals(String fieldName, Object value);
-//
-//    /**
-//     * Not matches value
-//     * @param fieldName Field name
-//     * @param value Value to use
-//     * @param exact Use exact matcher
-//     * @return Query instance
-//     */
-//    TSelf whereNotEquals(String fieldName, Object value, boolean exact);
-//
-//    /**
-//     * Not matches value
-//     * @param fieldName Field name
-//     * @param method Method call
-//     * @return Query instance
-//     */
-//    TSelf whereNotEquals(String fieldName, MethodCall method);
-//
-//    /**
-//     * Not matches value
-//     * @param fieldName Field name
-//     * @param method Method call
-//     * @param exact Use exact matcher
-//     * @return Query instance
-//     */
-//    TSelf whereNotEquals(String fieldName, MethodCall method, boolean exact);
-//
-//    //TBD expr TSelf WhereNotEquals<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
-//    //TBD expr TSelf WhereNotEquals<TValue>(Expression<Func<T, TValue>> propertySelector, MethodCall value, bool exact = false);
-//
-//    /**
-//     * Not matches value
-//     * @param whereParams Where params
-//     * @return Query instance
-//     */
-//    TSelf whereNotEquals(WhereParams whereParams);
-//
-//    /**
-//     * Matches fields where the value is greater than the specified value
-//     * @param fieldName Field name
-//     * @param value Value to use
-//     * @return Query instance
-//     */
-//    TSelf whereGreaterThan(String fieldName, Object value);
-//
-//    /**
-//     * Matches fields where the value is greater than the specified value
-//     * @param fieldName Field name
-//     * @param value Value to use
-//     * @param exact Use exact matcher
-//     * @return Query instance
-//     */
-//    TSelf whereGreaterThan(String fieldName, Object value, boolean exact);
-//
+    /**
+     * Add an OR to the query
+     */
+    public function orElse();
+
+    /**
+     * Perform a search for documents which fields that match the searchTerms.
+     * If there is more than a single term, each of them will be checked independently.
+     *
+     * Space separated terms e.g. 'John Adam' means that we will look in selected field for 'John'
+     * or 'Adam'.
+     * @param string $fieldName Field name
+     * @param string $searchTerms Search terms
+     * @param SearchOperator $operator Search operator
+     */
+    public function search(string $fieldName, string $searchTerms, ?SearchOperator $operator = null);
+
+    //TBD expr TSelf Search<TValue>(Expression<Func<T, TValue>> propertySelector, string searchTerms, SearchOperator @operator = SearchOperator.Or);
+
+    /**
+     * Filter the results from the index using the specified where clause.
+     * @param string $fieldName Field name
+     * @param string $whereClause Where clause
+     * @param bool $exact Use exact matcher
+     */
+    function whereLucene(string $fieldName, string $whereClause, bool $exact = false);
+
+    /**
+     * Matches fields where the value is between the specified start and end, inclusive
+     * @param string $fieldName Field name
+     * @param mixed $start Range start
+     * @param mixed $end Range end
+     * @param bool $exact Use exact matcher
+     */
+    function whereBetween(string $fieldName, $start, $end, bool $exact = false);
+
+    //TBD expr TSelf WhereBetween<TValue>(Expression<Func<T, TValue>> propertySelector, TValue start, TValue end, bool exact = false);
+
+    /**
+     * Matches fields which ends with the specified value.
+     * @param string $fieldName Field name
+     * @param mixed $value Value to use
+     * @param bool $exact Use exact matcher
+     */
+    function whereEndsWith(string $fieldName, $value, bool $exact = false);
+
+    //TBD expr TSelf WhereEndsWith<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value);
+
+    /**
+     * @param string $fieldName
+     * @param mixed|MethodCall $value
+     * @param bool $exact
+     */
+    function whereEquals(string $fieldName, $value, bool $exact = false);
+
+    //TBD expr TSelf WhereEquals<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
+    //TBD expr TSelf WhereEquals<TValue>(Expression<Func<T, TValue>> propertySelector, MethodCall value, bool exact = false);
+
+    /**
+     * @param WhereParams $whereParams
+     */
+    function whereEqualsWithParams(WhereParams $whereParams);
+
+    /**
+     * @param string $fieldName
+     * @param mixed|MethodCall $value
+     * @param bool $exact
+     */
+    function whereNotEquals(string $fieldName, $value, bool $exact = false);
+
+    //TBD expr TSelf WhereNotEquals<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
+    //TBD expr TSelf WhereNotEquals<TValue>(Expression<Func<T, TValue>> propertySelector, MethodCall value, bool exact = false);
+
+    /**
+     * @param WhereParams $whereParams
+     */
+    function whereNotEqualsWithParams(WhereParams $whereParams);
+
+    /**
+     * Matches fields where the value is greater than the specified value
+     * @param string $fieldName Field name
+     * @param mixed $value Value to use
+     * @param bool $exact Use exact matcher
+     */
+    function whereGreaterThan(string $fieldName, $value, bool $exact = false);
+
 //    //TBD expr TSelf WhereGreaterThan<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
-//
-//    /**
-//     * Matches fields where the value is greater than or equal to the specified value
-//     * @param fieldName Field name
-//     * @param value Value to use
-//     * @return Query instance
-//     */
-//    TSelf whereGreaterThanOrEqual(String fieldName, Object value);
-//
-//    /**
-//     * Matches fields where the value is greater than or equal to the specified value
-//     * @param fieldName Field name
-//     * @param value Value to use
-//     * @param exact Use exact matcher
-//     * @return Query instance
-//     */
-//    TSelf whereGreaterThanOrEqual(String fieldName, Object value, boolean exact);
-//
-//    //TBD expr TSelf WhereGreaterThanOrEqual<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
-//
-//    /**
-//     * Check that the field has one of the specified values
-//     * @param fieldName Field name
-//     * @param values Values to use
-//     * @return Query instance
-//     */
-//    TSelf whereIn(String fieldName, Collection< ? > values);
-//
-//    /**
-//     * Check that the field has one of the specified values
-//     * @param fieldName Field name
-//     * @param values Values to use
-//     * @param exact Use exact matcher
-//     * @return Query instance
-//     */
-//    TSelf whereIn(String fieldName, Collection<? > values, boolean exact);
-//
-//    //TBD expr TSelf WhereIn<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values, bool exact = false);
-//
-//    /**
-//     * Matches fields where the value is less than the specified value
-//     * @param fieldName Field name
-//     * @param value Value to use
-//     * @return Query instance
-//     */
-//    TSelf whereLessThan(String fieldName, Object value);
-//
-//    /**
-//     * Matches fields where the value is less than the specified value
-//     * @param fieldName Field name
-//     * @param value Value to use
-//     * @param exact Use exact matcher
-//     * @return Query instance
-//     */
-//    TSelf whereLessThan(String fieldName, Object value, boolean exact);
-//
-//    //TBD expr TSelf WhereLessThan<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
-//
-//    /**
-//     *  Matches fields where the value is less than or equal to the specified value
-//     *  @param fieldName Field name
-//     *  @param value Value to use
-//     *  @return Query instance
-//     */
-//    TSelf whereLessThanOrEqual(String fieldName, Object value);
-//
-//    /**
-//     *  Matches fields where the value is less than or equal to the specified value
-//     *  @param fieldName Field name
-//     *  @param value Value to use
-//     *  @param exact Use exact matcher
-//     *  @return Query instance
-//     */
-//    TSelf whereLessThanOrEqual(String fieldName, Object value, boolean exact);
-//
-//    //TBD expr TSelf WhereLessThanOrEqual<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
-//
-//    /**
-//     * Matches fields which starts with the specified value.
-//     * @param fieldName Name of the field.
-//     * @param value The value.
-//     * @return Query instance
-//     */
-//    TSelf whereStartsWith(String fieldName, Object value);
-//
-//    /**
-//     * Matches fields which starts with the specified value.
-//     * @param fieldName Name of the field.
-//     * @param value The value.
-//     * @param exact Use exact matcher
-//     * @return Query instance
-//     */
-//    TSelf whereStartsWith(String fieldName, Object value, boolean exact);
-//
-//    //TBD expr TSelf WhereStartsWith<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value);
-//
-//    //TBD expr TSelf WhereExists<TValue>(Expression<Func<T, TValue>> propertySelector);
-//
-//    /**
-//     * Check if the given field exists
-//     * @param fieldName Field name
-//     * @return Query instance
-//     */
-//    TSelf whereExists(String fieldName);
-//
-//    //TBD expr TSelf WhereRegex<TValue>(Expression<Func<T, TValue>> propertySelector, string pattern);
-//
+
+
+    /**
+     * Matches fields where the value is greater than or equal to the specified value
+     * @param string $fieldName Field name
+     * @param mixed $value Value to use
+     * @param bool $exact Use exact matcher
+     */
+    function whereGreaterThanOrEqual(string $fieldName, $value, bool $exact = false);
+
+    //TBD expr TSelf WhereGreaterThanOrEqual<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
+
+    /**
+     * Check that the field has one of the specified values
+     * @param string $fieldName Field name
+     * @param Collection $values Values to use
+     * @param bool $exact Use exact matcher
+     */
+    function whereIn(string $fieldName, Collection $values, bool $exact = false);
+
+    //TBD expr TSelf WhereIn<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values, bool exact = false);
+
+    /**
+     * Matches fields where the value is less than the specified value
+     * @param string $fieldName Field name
+     * @param mixed $value Value to use
+     * @param bool $exact Use exact matcher
+     */
+    function whereLessThan(string $fieldName, $value, bool $exact = false);
+
+    //TBD expr TSelf WhereLessThan<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
+
+    /**
+     *  Matches fields where the value is less than or equal to the specified value
+     * @param string $fieldName Field name
+     * @param mixed $value Value to use
+     * @param bool $exact Use exact matcher
+     */
+    function whereLessThanOrEqual(string $fieldName, $value, bool $exact = false);
+
+    //TBD expr TSelf WhereLessThanOrEqual<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
+
+    /**
+     * Matches fields which starts with the specified value.
+     * @param string $fieldName Field name
+     * @param mixed $value Value to use
+     * @param bool $exact Use exact matcher
+     */
+    function whereStartsWith(string $fieldName, $value, bool $exact = false);
+
+    //TBD expr TSelf WhereStartsWith<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value);
+
+    //TBD expr TSelf WhereExists<TValue>(Expression<Func<T, TValue>> propertySelector);
+
+    /**
+     * Check if the given field exists
+     * @param string $fieldName Field name
+     */
+    function whereExists(string $fieldName);
+
+    //TBD expr TSelf WhereRegex<TValue>(Expression<Func<T, TValue>> propertySelector, string pattern);
+
 //    /**
 //     * Checks value of a given field against supplied regular expression pattern
 //     * @param fieldName Field name

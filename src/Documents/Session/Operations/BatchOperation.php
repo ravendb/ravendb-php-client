@@ -2,7 +2,7 @@
 
 namespace RavenDB\Documents\Session\Operations;
 
-use RavenDB\Constants\Metadata;
+use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Documents\Commands\Batches\ClusterWideBatchCommand;
 use RavenDB\Documents\Commands\Batches\CommandType;
 use RavenDB\Documents\Commands\Batches\SingleNodeBatchCommand;
@@ -211,12 +211,12 @@ class BatchOperation
         $metadata = $documentInfo->getMetadata();
         $cloned = $metadata; // cloned @todo: check is this realy cloned object and we don't have to do nothing here?
 
-        $cloned[Metadata::CHANGE_VECTOR]  = $metadata[Metadata::CHANGE_VECTOR] ?? $documentInfo->getChangeVector();
+        $cloned[DocumentsMetadata::CHANGE_VECTOR]  = $metadata[DocumentsMetadata::CHANGE_VECTOR] ?? $documentInfo->getChangeVector();
         $documentInfo->setMetadata($cloned);
 
         $document = $documentInfo->getDocument();
         $documentCopy = $document; // cloned @todo: check is this realy cloned object and we don't have to do nothing here?
-        $documentCopy[Metadata::KEY] = $documentInfo->getMetadata();
+        $documentCopy[DocumentsMetadata::KEY] = $documentInfo->getMetadata();
 
         $documentInfo->setDocument($documentCopy);
     }
@@ -460,8 +460,8 @@ class BatchOperation
             }
         }
 
-        $id = $this->getStringField($batchResult, CommandType::put(), Metadata::ID);
-        $changeVector = $this->getStringField($batchResult, CommandType::put(), Metadata::CHANGE_VECTOR);
+        $id = $this->getStringField($batchResult, CommandType::put(), DocumentsMetadata::ID);
+        $changeVector = $this->getStringField($batchResult, CommandType::put(), DocumentsMetadata::CHANGE_VECTOR);
 
         if ($isDeferred) {
             $sessionDocumentInfo = $this->session->documentsById->getValue($id);

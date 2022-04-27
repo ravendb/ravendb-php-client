@@ -4,15 +4,25 @@ namespace RavenDB\Extensions;
 
 use RavenDB\Type\StringArray;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
+use Symfony\Component\Serializer\Normalizer\NormalizerAwareInterface;
+use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
-class StringArrayNormalizer implements DenormalizerInterface
+class StringArrayNormalizer implements
+    NormalizerInterface,
+    NormalizerAwareInterface,
+    DenormalizerInterface
 {
+
+    private ?NormalizerInterface $normalizer = null;
+
     public function denormalize($data, string $type, string $format = null, array $context = [])
     {
         $object = new $type();
 
-        foreach ($data as $key => $item) {
-            $object->offsetSet($key, $item);
+        if ($data) {
+            foreach ($data as $key => $item) {
+                $object->offsetSet($key, $item);
+            }
         }
 
         return $object;
@@ -21,5 +31,28 @@ class StringArrayNormalizer implements DenormalizerInterface
     public function supportsDenormalization($data, string $type, string $format = null): bool
     {
         return $type == StringArray::class;
+    }
+
+    public function setNormalizer(NormalizerInterface $normalizer)
+    {
+        $this->normalizer = $normalizer;
+    }
+
+    public function normalize($object, string $format = null, array $context = [])
+    {
+        if (count($object) == 0) {
+            return null;
+        }
+
+        $result = [];
+        foreach ($object as $item) {
+            $result[] = $this->normalizer->normalize($item, $format, $context);
+        }
+        return $result;
+    }
+
+    public function supportsNormalization($data, string $format = null)
+    {
+        return is_a($data, StringArray::class);
     }
 }

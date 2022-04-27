@@ -7,8 +7,8 @@ use RavenDB\Type\ValueObjectInterface;
 // !status: DONE
 class TimeSeriesRangeType implements ValueObjectInterface
 {
-    public const NONE = 'NONE';
-    public const LAST = 'LAST';
+    public const NONE = 'None';
+    public const LAST = 'Last';
 
     private string $value;
 

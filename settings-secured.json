@@ -1,5 +1,5 @@
 {
-    "DataDir": "RavenData",
+    "DataDir": "RavenSecuredData",
     "License.Eula.Accepted": true,
     "Setup.Mode": "None",
     "Security.UnsecuredAccessAllowed": "PublicNetwork",

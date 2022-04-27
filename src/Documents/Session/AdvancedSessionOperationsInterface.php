@@ -2,6 +2,8 @@
 
 namespace RavenDB\Documents\Session;
 
+use RavenDB\Documents\Indexes\AbstractCommonApiForIndexes;
+
 interface AdvancedSessionOperationsInterface extends
     AdvancedDocumentSessionOperationsInterface,
     DocumentQueryBuilderInterface
@@ -50,6 +52,15 @@ interface AdvancedSessionOperationsInterface extends
      * @return RawDocumentQueryInterface Raw document query
      */
     public function rawQuery(string $className, string $query): RawDocumentQueryInterface;
+
+    /**
+     * Query the specified index using Lucene syntax
+     * @param string $className The result of the query
+     * @param string|null|AbstractCommonApiForIndexes $indexName Name of the index (mutually exclusive with collectionName) or AbstractCommonApiForIndexes class name
+     * @param string|null $collectionName Name of the collection (mutually exclusive with indexName)
+     * @param bool $isMapReduce Whether we are querying a map/reduce index (modify how we treat identifier properties)
+     */
+    public function documentQuery(string $className, $indexName = null, ?string $collectionName = null, bool $isMapReduce = false): DocumentQueryInterface;
 
 //    /**
 //     * Issue a graph query based on the raw match query provided

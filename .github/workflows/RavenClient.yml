@@ -22,7 +22,7 @@ jobs:
 
         strategy:
             matrix:
-                php-versions: [ "7.4" ]
+                php-versions: [ "7.4", "8.0", "8.1" ]
                 serverVersion: [ "5.2" ]
             fail-fast: false
 
@@ -54,6 +54,7 @@ jobs:
             - name: Wait for server to run
               run: while ! curl http://127.0.0.1:8080; do sleep 0.2; echo "Waiting for server to start..."; done
 
+
             - run: mkdir certs
             - run: openssl genrsa -out certs/ca.key 2048
             - run: openssl req -new -x509 -key certs/ca.key -out certs/ca.crt -subj "/C=US/ST=Arizona/L=Nevada/O=RavenDB Test CA/OU=RavenDB test CA/CN=localhost/emailAddress=ravendbca@example.com"
@@ -82,12 +83,3 @@ jobs:
 
             - name: Run unit tests
               run: phpunit
-
-
-#    push:
-#        branches: [ v5.2 ]
-#    pull_request:
-#        branches: [ v5.2 ]
-#    schedule:
-#        - cron: '0 10 * * 6'
-#

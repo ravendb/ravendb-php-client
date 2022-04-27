@@ -77,7 +77,7 @@ class DocumentConventions
     private ?Closure $findIdentityPropertyNameFromCollectionName = null;
     private ?Closure $loadBalancerPerSessionContextSelector = null;
 
-    private ?Closure $findCollectionName = null;
+    private ?string $findCollectionName = null;
 
     private ?Closure $findJavaClassName = null;
     private ?Closure $findJavaClass = null;
@@ -90,9 +90,9 @@ class DocumentConventions
     private Duration $requestTimeout;
     private ?Duration $firstBroadcastAttemptTimeout = null;
     private ?Duration $secondBroadcastAttemptTimeout = null;
-    private Duration $waitForIndexesAfterSaveChangesTimeout;
-    private Duration $waitForReplicationAfterSaveChangesTimeout;
-    private Duration $waitForNonStaleResultsTimeout;
+    private ?Duration $waitForIndexesAfterSaveChangesTimeout = null;
+    private ?Duration $waitForReplicationAfterSaveChangesTimeout = null;
+    private ?Duration $waitForNonStaleResultsTimeout = null;
 
     protected int $loadBalancerContextSeed = 0;
     protected LoadBalanceBehavior $loadBalanceBehavior;
@@ -195,10 +195,9 @@ class DocumentConventions
 //                throw new RavenException("Unable to find class by name = " + name, e);
 //            }
 //        };
-//        _transformClassCollectionNameToDocumentIdPrefix =
-//          collectionName -> defaultTransformCollectionNameToDocumentIdPrefix(collectionName);
-//
-//        _findCollectionName = type -> defaultGetCollectionName(type);
+        $this->transformClassCollectionNameToDocumentIdPrefix = Closure::fromCallable([$this, 'defaultTransformCollectionNameToDocumentIdPrefix']);
+
+        $this->findCollectionName = 'defaultGetCollectionName';
 //
         $this->maxNumberOfRequestsPerSession = 30;
 //        _bulkInsert = new BulkInsertConventions(this);
@@ -323,16 +322,17 @@ class DocumentConventions
 //        assertNotFrozen();
 //        _waitForIndexesAfterSaveChangesTimeout = waitForIndexesAfterSaveChangesTimeout;
 //    }
-//
-//    /**
-//     * Get the default timeout for DocumentSession waitForNonStaleResults methods.
-//     * Default: 15 seconds
-//     * @return wait timeout
-//     */
-//    public Duration getWaitForNonStaleResultsTimeout() {
-//        return _waitForNonStaleResultsTimeout;
-//    }
-//
+
+    /**
+     * Get the default timeout for DocumentSession waitForNonStaleResults methods.
+     * Default: 15 seconds
+     * @return ?Duration wait timeout
+     */
+    public function getWaitForNonStaleResultsTimeout(): ?Duration
+    {
+        return $this->waitForNonStaleResultsTimeout;
+    }
+
 //    /**
 //     * Sets the default timeout for DocumentSession waitForNonStaleResults methods.
 //     * @param waitForNonStaleResultsTimeout wait timeout
@@ -568,34 +568,38 @@ class DocumentConventions
 //        assertNotFrozen();
 //        this._findIdentityPropertyNameFromCollectionName = findIdentityPropertyNameFromCollectionName;
 //    }
-//
-//    public BiFunction<String, Object, String> getDocumentIdGenerator() {
-//        return _documentIdGenerator;
-//    }
-//
-//    public void setDocumentIdGenerator(BiFunction<String, Object, String> documentIdGenerator) {
-//        assertNotFrozen();
-//        _documentIdGenerator = documentIdGenerator;
-//    }
-//
-//
-//    /**
-//     *  Translates the types collection name to the document id prefix
-//     *  @return translation function
-//     */
-//    public Function<String, String> getTransformClassCollectionNameToDocumentIdPrefix() {
-//        return _transformClassCollectionNameToDocumentIdPrefix;
-//    }
-//
-//    /**
-//     *  Translates the types collection name to the document id prefix
-//     *  @param transformClassCollectionNameToDocumentIdPrefix value to set
-//     */
-//    public void setTransformClassCollectionNameToDocumentIdPrefix(Function<String, String> transformClassCollectionNameToDocumentIdPrefix) {
-//        assertNotFrozen();
-//        this._transformClassCollectionNameToDocumentIdPrefix = transformClassCollectionNameToDocumentIdPrefix;
-//    }
-//
+
+    public function getDocumentIdGenerator(): ?Closure
+    {
+        return $this->documentIdGenerator;
+    }
+
+    public function setDocumentIdGenerator(Closure $documentIdGenerator): void
+    {
+        $this->assertNotFrozen();
+        $this->documentIdGenerator = $documentIdGenerator;
+    }
+
+
+    /**
+     *  Translates the types collection name to the document id prefix
+     *  @return Closure translation function
+     */
+    public function getTransformClassCollectionNameToDocumentIdPrefix(): ?Closure
+    {
+        return $this->transformClassCollectionNameToDocumentIdPrefix;
+    }
+
+    /**
+     *  Translates the types collection name to the document id prefix
+     *  @param ?Closure $transformClassCollectionNameToDocumentIdPrefix value to set
+     */
+    public function setTransformClassCollectionNameToDocumentIdPrefix(?Closure $transformClassCollectionNameToDocumentIdPrefix): void
+    {
+        $this->assertNotFrozen();
+        $this->transformClassCollectionNameToDocumentIdPrefix = $transformClassCollectionNameToDocumentIdPrefix;
+    }
+
 //    public Function<PropertyDescriptor, Boolean> getFindIdentityProperty() {
 //        return _findIdentityProperty;
 //    }
@@ -719,14 +723,25 @@ class DocumentConventions
 
     /**
      * Gets the collection name for a given type.
+     *
+     * @param string|object|null $entity
+     *
+     * @return string|null
+     *
+     * @throws ReflectionException
      */
-    public function getCollectionName(?object $entity): ?string
+    public function getCollectionName($entity): ?string
     {
-        if ($entity == null) {
+        if (empty($entity)) {
             return null;
         }
 
-        return $this->getCollectionNameForClass(get_class($entity));
+        $className = $entity;
+        if (is_object($entity)) {
+            $className = get_class($entity);
+        }
+
+        return $this->getCollectionNameForClass($className);
     }
 
     /**
@@ -735,8 +750,11 @@ class DocumentConventions
      */
     public function getCollectionNameForClass(string $className): string
     {
-        // @todo: implement _findCollectionName call and function saving
-        $collectionName = null;//$this->_findCollectionName.apply(clazz);
+        $collectionName = null;
+        if (!empty($this->findCollectionName)) {
+            $methodName = $this->findCollectionName;
+            $collectionName = $this->$methodName($className);
+        }
 
         if ($collectionName != null) {
             return $collectionName;
@@ -745,25 +763,26 @@ class DocumentConventions
         return $this->defaultGetCollectionName($className);
     }
 
-//    /**
-//     * Generates the document id.
-//     * @param databaseName Database name
-//     * @param entity Entity
-//     * @return document id
-//     */
-//    @SuppressWarnings("unchecked")
-//    public String generateDocumentId(String databaseName, Object entity) {
-//        Class<? > clazz = entity.getClass();
-    //
-    //        for (Tuple<Class, BiFunction<String, Object, String>> listOfRegisteredIdConvention : _listOfRegisteredIdConventions) {
+    /**
+     * Generates the document id.
+     *
+     * @param string $databaseName Database name
+     * @param Object|null $entity Entity
+     * @return string document id
+     */
+    public function generateDocumentId(string $databaseName, ?object $entity): string
+    {
+        $className = get_class($entity);
+        //        for (Tuple<Class, BiFunction<String, Object, String>> listOfRegisteredIdConvention : _listOfRegisteredIdConventions) {
     //            if (listOfRegisteredIdConvention.first.isAssignableFrom(clazz)) {
     //                return listOfRegisteredIdConvention.second.apply(databaseName, entity);
     //            }
     //        }
-    //
-    //        return _documentIdGenerator.apply(databaseName, entity);
-    //    }
-    //
+
+        $generator = $this->documentIdGenerator;
+        return  $generator($databaseName, $entity);
+    }
+
     //    /**
     //     * Register an id convention for a single type (and all of its derived types.
     //     * Note that you can still fall back to the DocumentIdGenerator if you want.
@@ -976,21 +995,19 @@ class DocumentConventions
 //                    _identityPartsSeparator);
 //        }
 //    }
-//
-//    public static String defaultTransformCollectionNameToDocumentIdPrefix(String collectionName) {
-//        long upperCount = collectionName.chars()
-//                .filter(x -> Character.isUpperCase(x))
-//                .count();
-//
-//
-//        if (upperCount <= 1) {
-//            return collectionName.toLowerCase();
-//        }
-//
-//        // multiple capital letters, so probably something that we want to preserve caps on.
-//        return collectionName;
-//    }
-//
+
+    public static function defaultTransformCollectionNameToDocumentIdPrefix(?string $collectionName): string
+    {
+        $upperCount = strlen($collectionName) - similar_text($collectionName, strtolower($collectionName));
+
+        if ($upperCount <= 1) {
+            return strtolower($collectionName);
+        }
+
+        // multiple capital letters, so probably something that we want to preserve caps on.
+        return $collectionName;
+    }
+
 //    @SuppressWarnings("unchecked")
 //    public <T> void registerQueryValueConverter(Class<T> clazz, IValueForQueryConverter<T> converter) {
 //        assertNotFrozen();

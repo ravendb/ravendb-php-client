@@ -17,7 +17,6 @@ use tests\RavenDB\Test\Client\Crud\Entities\Poc;
 
 class CrudTest extends RemoteTestBase
 {
-    // @todo: Implement rawQuary in order for this test to be fully implemented
     public function testEntitiesAreSavedUsingLowerCase(): void
     {
         $store = $this->getDocumentStore();
@@ -45,10 +44,9 @@ class CrudTest extends RemoteTestBase
 
             $newSession = $store->openSession();
             try {
-//                @todo: Uncommnet this when we implement rawQueries
-//                $rawDocumentQuery = $newSession->advanced()->rawQuery(User::class, "from Users where lastName = 'user1'");
-//                $users = $rawDocumentQuery->toList();
-//                $this->assertCount(1, $users);
+                $rawDocumentQuery = $newSession->advanced()->rawQuery(User::class, "from Users where lastName = 'user1'");
+                $users = $rawDocumentQuery->toList();
+                $this->assertCount(1, $users);
             } finally {
                 $newSession->close();
             }
@@ -57,7 +55,6 @@ class CrudTest extends RemoteTestBase
         }
     }
 
-    // @todo: Implement rawQuery in order this test to be fully implemented
     public function testCanCustomizePropertyNamingStrategy(): void
     {
         $store = $this->getDocumentStore();
@@ -87,10 +84,9 @@ class CrudTest extends RemoteTestBase
 
             $newSession = $store->openSession();
             try {
-//                @todo: Uncommnet this when we implement rawQueries
-                $rawDocumentQuery = $newSession->advanced()->rawQuery(User::class, "from Users where lastName = 'user1'");
-//                $users = $rawDocumentQuery->toList();
-//                $this->assertCount(1, $users);
+                $rawDocumentQuery = $newSession->advanced()->rawQuery(User::class, "from Users where LastName = 'user1'");
+                $users = $rawDocumentQuery->toList();
+                $this->assertCount(1, $users);
             } finally {
                 $newSession->close();
             }

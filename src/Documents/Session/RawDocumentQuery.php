@@ -2,6 +2,13 @@
 
 namespace RavenDB\Documents\Session;
 
+use RavenDB\Documents\Queries\Facets\AggregationRawDocumentQuery;
+use RavenDB\Documents\Queries\Facets\FacetResultArray;
+use RavenDB\Documents\Queries\ProjectionBehavior;
+use RavenDB\Documents\Queries\QueryOperator;
+use RavenDB\Documents\Queries\Timings\QueryTimings;
+use RavenDB\Type\Duration;
+
 // !status: IN PROGRESS
 class RawDocumentQuery extends AbstractDocumentQuery implements RawDocumentQueryInterface
 {
@@ -11,71 +18,67 @@ class RawDocumentQuery extends AbstractDocumentQuery implements RawDocumentQuery
         $this->queryRaw = $rawQuery;
     }
 
-//    public IRawDocumentQuery<T> skip(int count) {
-//        _skip(count);
-//        return this;
+    public function skip(int $count): RawDocumentQueryInterface
+    {
+        $this->_skip($count);
+        return $this;
+    }
+
+    public function take(int $count): RawDocumentQueryInterface
+    {
+        $this->_take($count);
+        return $this;
+    }
+
+    public function waitForNonStaleResults(?Duration $waitTimeout = null): RawDocumentQueryInterface
+    {
+        $this->_waitForNonStaleResults($waitTimeout);
+        return $this;
+    }
+
+
+    public function timings(QueryTimings &$timings): RawDocumentQueryInterface
+    {
+        $this->_includeTimings($timings);
+        return $this;
+    }
+
+    public function noTracking(): RawDocumentQueryInterface
+    {
+        $this->_noTracking();
+        return $this;
+    }
+
+    public function noCaching(): RawDocumentQueryInterface
+    {
+        $this->_noCaching();
+        return $this;
+    }
+
+    public function usingDefaultOperator(QueryOperator $queryOperator): RawDocumentQueryInterface
+    {
+        $this->_usingDefaultOperator($queryOperator);
+        return $this;
+    }
+
+    public function statistics(QueryStatistics &$stats): RawDocumentQueryInterface
+    {
+        $this->_statistics($stats);
+        return $this;
+    }
+
+//    public function removeAfterQueryExecutedListener(Consumer<QueryResult> action): RawDocumentQueryInterface
+//    {
+//        $this->_removeAfterQueryExecutedListener($action);
+//        return $this;
 //    }
 //
-//    @Override
-//    public IRawDocumentQuery<T> take(int count) {
-//        _take(count);
-//        return this;
+//    public function addAfterQueryExecutedListener(Consumer<QueryResult> action): RawDocumentQueryInterface
+//    {
+//        $this->_addAfterQueryExecutedListener($action);
+//        return $this;
 //    }
-//
-//    @Override
-//    public IRawDocumentQuery<T> waitForNonStaleResults() {
-//        _waitForNonStaleResults(null);
-//        return this;
-//    }
-//
-//    @Override
-//    public IRawDocumentQuery<T> waitForNonStaleResults(Duration waitTimeout) {
-//        _waitForNonStaleResults(waitTimeout);
-//        return this;
-//    }
-//
-//    @Override
-//    public IRawDocumentQuery<T> timings(Reference<QueryTimings> timings) {
-//        _includeTimings(timings);
-//        return this;
-//    }
-//
-//    @Override
-//    public IRawDocumentQuery<T> noTracking() {
-//        _noTracking();
-//        return this;
-//    }
-//
-//    @Override
-//    public IRawDocumentQuery<T> noCaching() {
-//        _noCaching();
-//        return this;
-//    }
-//
-//    @Override
-//    public IRawDocumentQuery<T> usingDefaultOperator(QueryOperator queryOperator) {
-//        _usingDefaultOperator(queryOperator);
-//        return this;
-//    }
-//
-//    @Override
-//    public IRawDocumentQuery<T> statistics(Reference<QueryStatistics> stats) {
-//        _statistics(stats);
-//        return this;
-//    }
-//
-//    @Override
-//    public IRawDocumentQuery<T> removeAfterQueryExecutedListener(Consumer<QueryResult> action) {
-//        _removeAfterQueryExecutedListener(action);
-//        return this;
-//    }
-//
-//    @Override
-//    public IRawDocumentQuery<T> addAfterQueryExecutedListener(Consumer<QueryResult> action) {
-//        _addAfterQueryExecutedListener(action);
-//        return this;
-//    }
-//
+
 //    @Override
 //    public IRawDocumentQuery<T> addBeforeQueryExecutedListener(Consumer<IndexQuery> action) {
 //        _addBeforeQueryExecutedListener(action);
@@ -99,22 +102,22 @@ class RawDocumentQuery extends AbstractDocumentQuery implements RawDocumentQuery
 //        _removeAfterStreamExecutedListener(action);
 //        return this;
 //    }
-//
-//    @Override
-//    public IRawDocumentQuery<T> addParameter(String name, Object value) {
-//        _addParameter(name, value);
-//        return this;
-//    }
-//
-//    @Override
-//    public Map<String, FacetResult> executeAggregation() {
-//        AggregationRawDocumentQuery<T> query = new AggregationRawDocumentQuery<>(this, theSession);
-//        return query.execute();
-//    }
-//
-//    @Override
-//    public IRawDocumentQuery<T> projection(ProjectionBehavior projectionBehavior) {
-//        _projection(projectionBehavior);
-//        return this;
-//    }
+
+    public function addParameter(string $name, $value): RawDocumentQueryInterface
+    {
+        $this->_addParameter($name, $value);
+        return $this;
+    }
+
+    public function executeAggregation(): FacetResultArray
+    {
+        $query = new AggregationRawDocumentQuery($this, $this->theSession);
+        return $query->execute();
+    }
+
+    public function projection(ProjectionBehavior $projectionBehavior): RawDocumentQuery
+    {
+        $this->_projection($projectionBehavior);
+        return $this;
+    }
 }

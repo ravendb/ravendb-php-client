@@ -30,10 +30,12 @@ class NetISO8601Utils
      */
     public static function format(DateTimeInterface $date, bool $millis = false, ?DateTimeZone $tz = null): string
     {
+        return $date->format(DateTimeInterface::ISO8601);
+
 //        if ($tz == null) {
 //            $tz = GMT
 //        }
-
+//
 //        Calendar calendar = new GregorianCalendar(tz, Locale.US);
 //        calendar.setTime(date);
 //

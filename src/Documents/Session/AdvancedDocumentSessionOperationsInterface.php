@@ -186,15 +186,15 @@ interface AdvancedDocumentSessionOperationsInterface
 //     * @return true if entity has changed
 //     */
 //    boolean hasChanged(Object entity);
-//
-//    /**
-//     * Returns whether a document with the specified id is loaded in the
-//     * current session
-//     * @param id Id of document
-//     * @return true is entity is loaded in session
-//     */
-//    boolean isLoaded(String id);
-//
+
+    /**
+     * Returns whether a document with the specified id is loaded in the
+     * current session
+     * @param string $id Id of document
+     * @return bool true is entity is loaded in session
+     */
+    function isLoaded(string $id): bool;
+
 //    /**
 //     * Mark the entity as one that should be ignore for change tracking purposes,
 //     * it still takes part in the session, but is ignored for SaveChanges.

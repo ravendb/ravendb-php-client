@@ -3,6 +3,9 @@
 namespace RavenDB\Extensions;
 
 use Doctrine\Common\Annotations\AnnotationReader;
+use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Documents\Queries\IndexQuery;
+use RavenDB\Documents\Session\EntityToJson;
 use Symfony\Component\PropertyAccess\PropertyAccessor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
@@ -42,16 +45,16 @@ class JsonExtensions
             new TypedArrayNormalizer(),
             new StringArrayNormalizer(),
             new ValueObjectNormalizer(),
+            new DateTimeNormalizer([
+                DateTimeNormalizer::FORMAT_KEY => 'Y-m-d\TH:i:s.v'
+            ]),
             new ObjectNormalizer(
                 $classMetadataFactory,
                 $metadataAwareNameConverter,
                 new PropertyAccessor(),
                 new ReflectionExtractor()
             ),
-            new ArrayDenormalizer(),
-            new DateTimeNormalizer([
-                DateTimeNormalizer::FORMAT_KEY => 'Y-m-d\TH:i:s.vZ'
-            ])
+            new ArrayDenormalizer()
         ];
 
         $encoders = [
@@ -77,5 +80,49 @@ class JsonExtensions
     public static function createDefaultJsonSerializer(): EntityMapper
     {
         return self::createDefaultEntityMapper();
+    }
+
+
+    public static function writeIndexQuery(DocumentConventions $conventions, IndexQuery $query): array
+    {
+        $data = [];
+
+        $data['Query'] = $query->getQuery();
+        if ($query->isPageSizeSet() && $query->getPageSize() >= 0) {
+            $data['PageSize'] = $query->getPageSize();
+        }
+
+        if ($query->isWaitForNonStaleResults()) {
+            $data["WaitForNonStaleResults"] = $query->isWaitForNonStaleResults();
+        }
+
+        if ($query->getStart() > 0) {
+            $data["Start"] = $query->getStart();
+        }
+
+//        if ($query->getWaitForNonStaleResultsTimeout() != null) {
+//            $data["WaitForNonStaleResultsTimeout"] = TimeUtils::durationToTimeSpan($query->getWaitForNonStaleResultsTimeout()));
+//        }
+
+        if ($query->isDisableCaching()) {
+            $data["DisableCaching"] = $query->isDisableCaching();
+        }
+
+        if ($query->isSkipDuplicateChecking()) {
+            $data["SkipDuplicateChecking"] = $query->isSkipDuplicateChecking();
+        }
+
+        $data["QueryParameters"] = null;
+        if ($query->getQueryParameters() != null) {
+            if ($query->getQueryParameters()->isNotEmpty()) {
+                $data["QueryParameters"] = EntityToJson::convertEntityToJsonStatic($query->getQueryParameters(), $conventions, null);
+            }
+        }
+
+        if ($query->getProjectionBehavior() != null && !$query->getProjectionBehavior()->isDefault()) {
+            $data["ProjectionBehavior"] = $query->getProjectionBehavior()->getValue();
+        }
+
+        return $data;
     }
 }

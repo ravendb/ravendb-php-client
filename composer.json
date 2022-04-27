@@ -17,10 +17,10 @@
         }
     ],
     "require": {
-        "php": "~7.4",
+        "php": ">=7.4",
+        "ext-ds": "*",
         "ext-json": "*",
         "ext-zip": "*",
-        "ext-ds": "*",
         "doctrine/annotations": "^1.13",
         "doctrine/inflector": "^2.0",
         "ramsey/uuid": "^4.2",

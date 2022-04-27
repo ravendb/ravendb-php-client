@@ -66,6 +66,4 @@ class TypedArrayNormalizer implements
     {
         return is_a($data, TypedArray::class) || is_a($data, TypedMap::class);
     }
-
-
 }

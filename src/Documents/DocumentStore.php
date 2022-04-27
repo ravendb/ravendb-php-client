@@ -5,12 +5,15 @@ namespace RavenDB\Documents;
 use Closure;
 use InvalidArgumentException;
 use Ramsey\Uuid\Uuid;
+use RavenDB\Documents\Identity\MultiDatabaseHiLoIdGenerator;
 use RavenDB\Documents\Operations\MaintenanceOperationExecutor;
 use RavenDB\Documents\Session\DocumentSession;
 use RavenDB\Documents\Session\DocumentSessionInterface;
 use RavenDB\Documents\Session\SessionOptions;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Http\AggressiveCacheOptions;
 use RavenDB\Http\RequestExecutor;
+use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Primitives\ClosureArray;
 use RavenDB\Primitives\EventArgs;
 use RavenDB\Primitives\EventHelper;
@@ -27,7 +30,7 @@ class DocumentStore extends DocumentStoreBase
 //
 //    private final ConcurrentMap<String, Lazy<RequestExecutor>> requestExecutors = new ConcurrentSkipListMap<>(String.CASE_INSENSITIVE_ORDER);
 //
-//    private MultiDatabaseHiLoIdGenerator _multiDbHiLo;
+    private ?MultiDatabaseHiLoIdGenerator $multiDbHiLo = null;
 
     private ?MaintenanceOperationExecutor $maintenanceOperationExecutor = null;
 //    private OperationExecutor operationExecutor;
@@ -68,7 +71,7 @@ class DocumentStore extends DocumentStoreBase
             return $this->identifier;
         }
 
-        if ($this->urls->count() == 0) {
+        if ($this->urls->isEmpty()) {
             return null;
         }
 
@@ -253,13 +256,13 @@ class DocumentStore extends DocumentStoreBase
 //        RequestExecutor.validateUrls(urls, getCertificate());
 //
         try {
-//            if (getConventions().getDocumentIdGenerator() == null) { // don't overwrite what the user is doing
-//                MultiDatabaseHiLoIdGenerator generator = new MultiDatabaseHiLoIdGenerator(this);
-//                _multiDbHiLo = generator;
-//
-//                getConventions().setDocumentIdGenerator(generator::generateDocumentId);
-//            }
-//
+            if ($this->getConventions()->getDocumentIdGenerator() == null) { // don't overwrite what the user is doing
+                $generator = new MultiDatabaseHiLoIdGenerator($this);
+                $this->multiDbHiLo = $generator;
+
+                $this->getConventions()->setDocumentIdGenerator(Closure::fromCallable([$generator,  'generateDocumentId']));
+            }
+
             $this->getConventions()->freeze();
             $this->initialized = true;
         } catch (\Throwable $exception) {
@@ -276,39 +279,29 @@ class DocumentStore extends DocumentStoreBase
      */
     private function assertValidConfiguration()
     {
-        if ($this->urls == null || $this->urls->count() == 0) {
+        if ($this->urls == null || $this->urls->isEmpty()) {
             throw new InvalidArgumentException("Document store URLs cannot be empty");
         }
     }
 
-
-//    /**
-//     * Setup the context for no aggressive caching
-//     * <p>
-//     * This is mainly useful for internal use inside RavenDB, when we are executing
-//     * queries that have been marked with WaitForNonStaleResults, we temporarily disable
-//     * aggressive caching.
-//     */
-//    public CleanCloseable disableAggressiveCaching() {
-//        return disableAggressiveCaching(null);
-//    }
-//
-//    /**
-//     * Setup the context for no aggressive caching
-//     * <p>
-//     * This is mainly useful for internal use inside RavenDB, when we are executing
-//     * queries that have been marked with WaitForNonStaleResults, we temporarily disable
-//     * aggressive caching.
-//     */
-//    public CleanCloseable disableAggressiveCaching(String databaseName) {
-//        assertInitialized();
-//        RequestExecutor re = getRequestExecutor(getEffectiveDatabase(databaseName));
-//        AggressiveCacheOptions old = re.aggressiveCaching.get();
-//        re.aggressiveCaching.set(null);
-//
+    /**
+     * Setup the context for no aggressive caching
+     *
+     * This is mainly useful for internal use inside RavenDB, when we are executing
+     * queries that have been marked with WaitForNonStaleResults, we temporarily disable
+     * aggressive caching.
+     */
+    public function disableAggressiveCaching(string $databaseName = ''): CleanCloseable
+    {
+        $this->assertInitialized();
+        $re = $this->getRequestExecutor($this->getEffectiveDatabase($databaseName));
+        /** @var AggressiveCacheOptions $old */
+//        $old = $re->aggressiveCaching->get();
+//        $re->aggressiveCaching->set(null);
 //        return () -> re.aggressiveCaching.set(old);
-//    }
-//
+
+    }
+
 //    @Override
 //    public IDatabaseChanges changes() {
 //        return changes(null, null);

@@ -7,22 +7,22 @@ use Doctrine\Inflector\InflectorFactory;
 class StringUtils
 {
     // @todo: Implement this as explained here: https://stackoverflow.com/questions/23419087/stringutils-isblank-vs-string-isempty
-    public static function isBlank(string $value): bool
+    public static function isBlank(?string $value): bool
     {
         return !$value;
     }
 
-    public static function isNotBlank(string $value): bool
+    public static function isNotBlank(?string $value): bool
     {
         return !self::isBlank($value);
     }
 
-    public static function isEmpty(string $value): bool
+    public static function isEmpty(?string $value): bool
     {
         return empty($value);
     }
 
-    public static function isNotEmpty(string $value): bool
+    public static function isNotEmpty(?string $value): bool
     {
         return !self::isEmpty($value);
     }
@@ -80,5 +80,32 @@ class StringUtils
         }
 
         return strlen(trim($value)) == 0;
+    }
+
+    public static function stripStart(?string $string, ?string $stripChars = null): ?string
+    {
+        if (empty($string)) {
+            return $string;
+        }
+
+        if (empty($stripChars)) {
+            return ltrim($string);
+        }
+
+        return ltrim ($string, $stripChars);
+    }
+
+    public static function repeat(string $string, int $times): string
+    {
+        return str_repeat($string, $times);
+    }
+
+    public static function equalsIgnoreCase(?string $first, ?string $second): bool
+    {
+        if ($first == null || $second == null) {
+            return false;
+        }
+
+        return strcasecmp($first, $second) == 0;
     }
 }

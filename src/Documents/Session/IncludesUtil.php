@@ -34,37 +34,18 @@ class IncludesUtil
         }
      */
 
-    public static function addQuotesIfRequired(string $include): string
+    public static function requiresQuotes(string $include, ?string &$escapedInclude): bool
     {
-        $required = false;
-
         $length = strlen($include);
-        for ($i=0; $i < $length; $i++) {
+        for ($i = 0; $i < $length; $i++) {
             $char = $include[$i];
             if (!ctype_alnum($char) && ($char != '_') && ($char != '.')) {
+                $escapedInclude = str_replace("'", "\\'", $include);
                 $required = true;
             }
         }
 
-        if ($required) {
-            return str_replace("'", "\\'", $include);
-        }
-
-        return $include;
+        $escapedInclude = null;
+        return false;
     }
-
-// use addQuotesIfRequired instead of this method;
-
-//    public static boolean requiresQuotes(String include, Reference<String> escapedInclude) {
-//        for (int i = 0; i < include.length(); i++) {
-//            char ch = include.charAt(i);
-//            if (!Character.isLetterOrDigit(ch) && ch != '_' && ch != '.') {
-//                escapedInclude.value = include.replaceAll("'", "\\'");
-//                return true;
-//            }
-//        }
-//
-//        escapedInclude.value = null;
-//        return false;
-//    }
 }
