@@ -28,6 +28,7 @@ use RavenDB\Documents\Session\Tokens\GroupByKeyToken;
 use RavenDB\Documents\Session\Tokens\GroupBySumToken;
 use RavenDB\Documents\Session\Tokens\GroupByToken;
 use RavenDB\Documents\Session\Tokens\HighlightingTokenArray;
+use RavenDB\Documents\Session\Tokens\IntersectMarkerToken;
 use RavenDB\Documents\Session\Tokens\LoadToken;
 use RavenDB\Documents\Session\Tokens\LoadTokenList;
 use RavenDB\Documents\Session\Tokens\MethodsType;
@@ -1266,21 +1267,21 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         }
     }
 
-//    @Override
-//    public void _intersect() {
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        if (tokens.size() > 0) {
-//            QueryToken last = tokens.get(tokens.size() - 1);
-//            if (last instanceof WhereToken || last instanceof CloseSubclauseToken) {
-//                isIntersect = true;
-//
-//                tokens.add(IntersectMarkerToken.INSTANCE);
-//                return;
-//            }
-//        }
-//
-//        throw new IllegalStateException("Cannot add INTERSECT at this point.");
-//    }
+    public function _intersect(): void
+    {
+        $tokens = $this->getCurrentWhereTokens();
+        if (count($tokens)) {
+            $last = $tokens->last();
+            if ($last instanceof WhereToken || $last instanceof CloseSubclauseToken) {
+                $this->isIntersect = true;
+
+                $tokens->append(IntersectMarkerToken::getInstance());
+                return;
+            }
+        }
+
+        throw new IllegalStateException("Cannot add INTERSECT at this point.");
+    }
 
     public function _whereExists(string $fieldName): void {
         $fieldName = $this->ensureValidFieldName($fieldName, false);

@@ -4,14 +4,27 @@ namespace RavenDB\Documents\Indexes;
 
 use RavenDB\Documents\Indexes\Spatial\SpatialOptions;
 
+use Symfony\Component\Serializer\Annotation\SerializedName;
+
 // !status: DONE
 class IndexFieldOptions
 {
+    /** @SerializedName ("Storage") */
     private ?FieldStorage $storage = null;
+
+    /** @SerializedName ("Indexing") */
     private ?FieldIndexing $indexing = null;
+
+    /** @SerializedName ("TermVector") */
     private ?FieldTermVector $termVector = null;
+
+    /** @SerializedName ("Spatial") */
     private ?SpatialOptions $spatial = null;
+
+    /** @SerializedName ("Analyzer") */
     private ?string $analyzer = null;
+
+    /** @SerializedName ("Suggestions") */
     private bool $suggestions = false;
 
     public function getStorage(): ?FieldStorage

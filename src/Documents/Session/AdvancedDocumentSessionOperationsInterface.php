@@ -3,6 +3,7 @@
 namespace RavenDB\Documents\Session;
 
 use Closure;
+use RavenDB\Documents\Commands\Batches\CommandDataInterface;
 
 interface AdvancedDocumentSessionOperationsInterface
 {
@@ -68,13 +69,14 @@ interface AdvancedDocumentSessionOperationsInterface
 //     * @param maxRequests Sets the maximum requests
 //     */
 //    void setMaxNumberOfRequestsPerSession(int maxRequests);
-//
-//    /**
-//     * Gets the number of requests for this session
-//     * @return Number of requests issued on this session
-//     */
-//    int getNumberOfRequests();
-//    /**
+
+    /**
+     * Gets the number of requests for this session
+     * @return int Number of requests issued on this session
+     */
+    function getNumberOfRequests(): int;
+
+    //    /**
 //     * Gets the store identifier for this session.
 //     * The store identifier is the identifier for the particular RavenDB instance.
 //     * @return Store identifier
@@ -102,20 +104,18 @@ interface AdvancedDocumentSessionOperationsInterface
 //     * Remove all entities from the delete queue and stops tracking changes for all entities.
 //     */
 //    void clear();
-//
-//    /**
-//     * Defer commands to be executed on saveChanges()
-//     * @param command command
-//     * @param commands more commands to defer
-//     */
-//    void defer(ICommandData command, ICommandData... commands);
-//
-//    /**
-//     * Defer commands to be executed on saveChanges()
-//     * @param commands Commands to defer
-//     */
-//    void defer(ICommandData[] commands);
-//
+
+    /**
+     * Defer commands to be executed on saveChanges()
+     *
+     * defer(CommandDataInterface $command): void
+     * defer(CommandDataInterface $command, array $commands): void
+     * defer(array $commands): void
+     *
+     * @param CommandDataInterface|array $commands More commands to defer
+     */
+    public function defer(...$commands): void;
+
 //    /**
 //     * Evicts the specified entity from the session.
 //     * Remove the entity from the delete queue and stops tracking changes for this entity.
@@ -123,17 +123,17 @@ interface AdvancedDocumentSessionOperationsInterface
 //     * @param entity Entity to evict
 //     */
 //    <T> void evict(T entity);
-//
-//    /**
-//     * Gets the document id for the specified entity.
-//     *
-//     *  This function may return null if the entity isn't tracked by the session, or if the entity is
-//     *   a new entity with an ID that should be generated on the server.
-//     * @param entity Entity to get id from
-//     * @return document id
-//     */
-//    String getDocumentId(Object entity);
-//
+
+    /**
+     * Gets the document id for the specified entity.
+     *
+     *  This function may return null if the entity isn't tracked by the session, or if the entity is
+     *   a new entity with an ID that should be generated on the server.
+     * @param ?object $instance Entity to get id from
+     * @return string document id
+     */
+    function getDocumentId(?object $instance): ?string;
+
 //    /**
 //     * Gets the metadata for the specified entity.
 //     * If the entity is transient, it will load the metadata from the store
@@ -144,16 +144,16 @@ interface AdvancedDocumentSessionOperationsInterface
 //     */
 //    <T> IMetadataDictionary getMetadataFor(T instance);
 //
-//    /**
-//     * Gets change vector for the specified entity.
-//     * If the entity is transient, it will load the metadata from the store
-//     * and associate the current state of the entity with the metadata from the server.
-//     * @param <T> Class of instance
-//     * @param instance Instance to get metadata from
-//     * @return Change vector
-//     */
-//    <T> String getChangeVectorFor(T instance);
-//
+    /**
+     * Gets change vector for the specified entity.
+     * If the entity is transient, it will load the metadata from the store
+     * and associate the current state of the entity with the metadata from the server.
+     *
+     * @param ?object $instance Instance to get metadata from
+     * @return ?string Change vector
+     */
+    function getChangeVectorFor(?object $instance): ?string;
+
 //    /**
 //     * Gets all the counter names for the specified entity.
 //     * @param instance The instance

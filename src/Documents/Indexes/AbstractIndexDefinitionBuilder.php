@@ -107,6 +107,7 @@ abstract class AbstractIndexDefinitionBuilder
     private function applyValues(IndexDefinition $indexDefinition, ArrayObject $values, /*BiConsumer<IndexFieldOptions, T>*/ \Closure $action): void
     {
         $fields = $indexDefinition->getFields();
+
         foreach ($values as $key => $value) {
             if (!$fields->offsetExists($key)) {
                 $fields->offsetSet($key, new IndexFieldOptions());

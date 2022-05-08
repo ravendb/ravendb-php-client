@@ -88,6 +88,7 @@ class JsonExtensions
         $data = [];
 
         $data['Query'] = $query->getQuery();
+
         if ($query->isPageSizeSet() && $query->getPageSize() >= 0) {
             $data['PageSize'] = $query->getPageSize();
         }

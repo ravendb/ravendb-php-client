@@ -7,10 +7,12 @@ use InvalidArgumentException;
 use Ramsey\Uuid\UuidInterface;
 use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Documents\Commands\Batches\BatchOptions;
+use RavenDB\Documents\Commands\Batches\BatchPatchCommandData;
 use RavenDB\Documents\Commands\Batches\CommandDataInterface;
 use RavenDB\Documents\Commands\Batches\CommandType;
 use RavenDB\Documents\Commands\Batches\DeleteCommandData;
 use RavenDB\Documents\Commands\Batches\ForceRevisionCommandData;
+use RavenDB\Documents\Commands\Batches\IdAndChangeVector;
 use RavenDB\Documents\Commands\Batches\PutCommandDataWithJson;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\DocumentStoreBase;
@@ -528,28 +530,30 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //        return tsList;
 //    }
 
-//    /**
-//     * Gets the Change Vector for the specified entity.
-//     * If the entity is transient, it will load the change vector from the store
-//     * and associate the current state of the entity with the change vector from the server.
-//     *
-//     * @param <T>      instance class
-//     * @param instance Instance to get change vector from
-//     * @return change vector
-//     */
-//    public <T> String getChangeVectorFor(T instance) {
-//        if (instance == null) {
-//            throw new IllegalArgumentException("instance cannot be null");
-//        }
-//
-//        DocumentInfo documentInfo = getDocumentInfo(instance);
-//        JsonNode changeVector = documentInfo.getMetadata().get(Constants.Documents.Metadata.CHANGE_VECTOR);
-//        if (changeVector != null) {
-//            return changeVector.asText();
-//        }
-//        return null;
-//    }
-//
+    /**
+     * Gets the Change Vector for the specified entity.
+     * If the entity is transient, it will load the change vector from the store
+     * and associate the current state of the entity with the change vector from the server.
+     *
+     * @param ?object $instance Instance to get change vector from
+     * @return ?string change vector
+     *
+     * @throws NonUniqueObjectException
+     */
+    public function getChangeVectorFor(?object $instance): ?string
+    {
+        if ($instance == null) {
+            throw new IllegalArgumentException("instance cannot be null");
+        }
+
+        $documentInfo = $this->getDocumentInfo($instance);
+        $metadata = $changeVector = $documentInfo->getMetadata();
+        if (!array_key_exists(DocumentsMetadata::CHANGE_VECTOR, $metadata)) {
+            return null;
+        };
+        return $metadata[DocumentsMetadata::CHANGE_VECTOR];
+    }
+
 //    public <T> Date getLastModifiedFor(T instance) {
 //        if (instance == null) {
 //            throw new IllegalArgumentException("Instance cannot be null");
@@ -1058,7 +1062,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             // additional values during the same SaveChanges call
 
             for ($i=$deferredCommandsCount; $i < count($this->deferredCommands); $i++) {
-                $result->getDeferredCommands()[] = $this->deferredCommands[$i];
+                $result->addDeferredCommand($this->deferredCommands[$i]);
             }
 
             foreach ($this->deferredCommandsMap as $key => $value) {
@@ -1574,10 +1578,47 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     /**
      * Defer commands to be executed on saveChanges()
      *
+     * defer(CommandDataInterface $command): void
+     * defer(CommandDataInterface $command, array $commands): void
+     * defer(array $commands): void
+     *
+     * @param CommandDataInterface|array $commands More commands to defer
+     */
+    public function defer(...$commands): void
+    {
+        if (!count($commands)) {
+            throw new InvalidArgumentException('You must call defer with command in parameter.');
+        }
+
+        if (is_array($commands[0])) {
+            $this->deferCommands($commands[0]);
+            return;
+        }
+
+        if ($commands[0] instanceof CommandDataInterface) {
+            $this->deferCommand($commands[0]);
+            if (count($commands) == 1) {
+                return;
+            }
+        }
+
+        if (count($commands) > 1) {
+            if (is_array($commands[1])) {
+                $this->deferCommands($commands[1]);
+                return;
+            }
+        }
+
+        throw new InvalidArgumentException('You called defer with invalid parameters');
+    }
+
+    /**
+     * Defer commands to be executed on saveChanges()
+     *
      * @param CommandDataInterface $command  Command to defer
      * @param ?array $commands More commands to defer
      */
-    public function defer(CommandDataInterface $command, array $commands = []): void
+    private function deferCommand(CommandDataInterface $command, array $commands = []): void
     {
         $this->deferredCommands[] = $command;
         $this->deferInternal($command);
@@ -1587,14 +1628,12 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
     }
 
-    // @todo: change this deffers to single call
-
     /**
      * Defer commands to be executed on saveChanges()
      *
      * @param array $commands Commands to defer
      */
-    public function deferCommands(array $commands): void
+    private function deferCommands(array $commands): void
     {
         foreach ($commands as $command) {
             $this->deferredCommands[] = $command;
@@ -1605,23 +1644,24 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
     }
 
-
-    // @todo: implement this method fully
     private function deferInternal(CommandDataInterface $command): void
     {
         if ($command->getType()->isBatchPatch()) {
             /** @var BatchPatchCommandData $batchPatchCommand */
             $batchPatchCommand = $command;
-//            for (BatchPatchCommandData.IdAndChangeVector kvp : batchPatchCommand.getIds()) {
-//                addCommand(command, kvp.getId(), CommandType.PATCH, command.getName());
-//            }
-//            return;
+            /**
+             * @var IdAndChangeVector $value
+             */
+            foreach ($batchPatchCommand->getIds() as $value) {
+                $this->addCommand($batchPatchCommand, $value->getId(), CommandType::patch(), $batchPatchCommand->getName());
+            }
+            return;
         }
 
         $this->addCommand($command, $command->getId(), $command->getType(), $command->getName());
     }
 
-    private function addCommand(CommandDataInterface $command, string $id, CommandType $commandType, string $commandName): void
+    private function addCommand(CommandDataInterface $command, string $id, CommandType $commandType, ?string $commandName): void
     {
         $this->deferredCommandsMap->put(IdTypeAndName::create($id, $commandType, $commandName), $command);
         $this->deferredCommandsMap->put(IdTypeAndName::create($id, CommandType::clientAnyCommand(), null), $command);

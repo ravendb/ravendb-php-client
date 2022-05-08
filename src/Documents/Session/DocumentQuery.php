@@ -177,18 +177,18 @@ class DocumentQuery extends AbstractDocumentQuery
 //        _removeAfterStreamExecutedListener(action);
 //        return this;
 //    }
-//
-//    public IDocumentQuery<T> openSubclause() {
-//        _openSubclause();
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> closeSubclause() {
-//        _closeSubclause();
-//        return this;
-//    }
-//
+
+    public function openSubclause(): DocumentQueryInterface
+    {
+        $this->_openSubclause();
+        return $this;
+    }
+
+    public function closeSubclause(): DocumentQueryInterface
+    {
+        $this->_closeSubclause();
+        return $this;
+    }
 
     public function negateNext(): DocumentQueryInterface
     {
@@ -204,12 +204,12 @@ class DocumentQuery extends AbstractDocumentQuery
 
     //TBD expr public IDocumentQuery<T> Search<TValue>(Expression<Func<T, TValue>> propertySelector, string searchTerms, SearchOperator @operator)
 
-//    @Override
-//    public IDocumentQuery<T> intersect() {
-//        _intersect();
-//        return this;
-//    }
-//
+    public function intersect(): DocumentQueryInterface
+    {
+        $this->_intersect();
+        return $this;
+    }
+
 //    @Override
 //    public IDocumentQuery<T> containsAny(String fieldName, Collection< ? > values) {
 //        _containsAny(fieldName, values);

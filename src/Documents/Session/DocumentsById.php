@@ -31,7 +31,7 @@ class DocumentsById extends TypedMap
     public function remove(string $id): void
     {
         if ($this->offsetExists($id)) {
-            $this->remove($id);
+            parent::offsetUnset($id);
         }
     }
 

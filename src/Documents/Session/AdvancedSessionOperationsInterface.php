@@ -70,15 +70,15 @@ interface AdvancedSessionOperationsInterface extends
 //     * @return Graph query
 //     */
 //    <T> IGraphDocumentQuery<T> graphQuery(Class<T> clazz, String query);
-//
-//
-//    /**
-//     * Check if document exists
-//     * @param id document id to check
-//     * @return true if document exists
-//     */
-//    boolean exists(String id);
-//
+
+
+    /**
+     * Check if document exists
+     * @param ?string $id document id to check
+     * @return bool true if document exists
+     */
+    function exists(?string $id): bool;
+
 //    /**
 //     * Loads multiple entities that contain common prefix.
 //     * @param clazz entity class

@@ -12,7 +12,7 @@ class HttpResponse implements HttpResponseInterface
     {
         $this->content = $content;
         $this->statusCode = $statusCode;
-        $this->headers = $headers;
+        $this->headers = array_change_key_case($headers, CASE_LOWER);
     }
 
     public function getContent(): string
@@ -30,12 +30,22 @@ class HttpResponse implements HttpResponseInterface
         return $this->headers;
     }
 
+    public function containsHeader(string $key): bool
+    {
+        return array_key_exists(strtolower($key), $this->headers);
+    }
+
     public function getFirstHeader(string $key): ?string
     {
-        if (!array_key_exists($key, $this->headers)) {
+        $key = strtolower($key);
+        if (!$this->containsHeader($key)) {
             return null;
         }
 
-        return $this->headers[$key];
+        if (!count($this->headers[$key])) {
+            return null;
+        }
+
+        return $this->headers[$key][0];
     }
 }

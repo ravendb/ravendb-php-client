@@ -4,6 +4,8 @@ namespace RavenDB\Documents\Session;
 
 // @todo: implement this interface
 use RavenDB\Documents\Queries\Query;
+use RavenDB\Documents\Session\Loaders\LoaderWithIncludeInterface;
+use RavenDB\Type\ObjectArray;
 
 interface DocumentSessionInterface
 {
@@ -56,66 +58,28 @@ interface DocumentSessionInterface
 
     public function store(object $entity, ?string $id = null): void;
 
-//    /**
-//     * Begin a load while including the specified path
-//     * Path in documents in which server should look for a 'referenced' documents.
-//     * @param path Path to include
-//     * @return Loader with includes
-//     */
-//    ILoaderWithInclude include(String path);
-//
-//
-//    //TBD expr another includes here?
+    /**
+     * Begin a load while including the specified path
+     * Path in documents in which server should look for a 'referenced' documents.
+     *
+     * @param ?string $path Path to include
+     * @return LoaderWithIncludeInterface Loader with includes
+     */
+    function include(?string $path): LoaderWithIncludeInterface;
+
+    //TBD expr another includes here?
 
     /**
      *  Loads the specified entity with the specified id.
      *
-     *  @param string $className Object class
-     *  @param string $id        Identifier of a entity that will be loaded.
+     * load(string $className, string $id): ?object
      *
-     *  @return object           Loaded entity
+     *  @param string $className Object class
+     *  @param string $params    Identifier of a entity that will be loaded.
+     *
+     *  @return null|object|ObjectArray Loaded entity or entities
      */
-    public function load(string $className, string $id): ?object;
-
-//    /**
-//     *  Loads the specified entities with the specified ids.
-//     *  @param <TResult> result class
-//     *  @param clazz result class
-//     *  @param ids Document ids to load
-//     *  @return Map: id to loaded document
-//     */
-//    <TResult> Map<String, TResult> load(Class<TResult> clazz, String... ids);
-//
-//    /**
-//     *  Loads the specified entities with the specified ids.
-//     *  @param <TResult> result class
-//     *  @param clazz result class
-//     *  @param ids Document ids to load
-//     *  @return Map: id -&gt; loaded document
-//     */
-//    <TResult> Map<String, TResult> load(Class<TResult> clazz, Collection<String> ids);
-//
-//    /**
-//     * Loads the specified entities with the specified ids,
-//     * and includes other Documents and/or Counters.
-//     * @param clazz entity class
-//     * @param id Document id to load
-//     * @param includes Specify which documents/counters to include
-//     * @param <T> entity class
-//     * @return Map: Id to loaded document
-//     */
-//    <T> T load(Class<T> clazz, String id, Consumer<IIncludeBuilder> includes);
-//
-//    /**
-//     * Loads the specified entities with the specified ids,
-//     * and includes other Documents and/or Counters.
-//     * @param clazz entity class
-//     * @param ids Document ids to load
-//     * @param includes Specify which documents/counters to include
-//     * @param <TResult> entity class
-//     * @return Map: Id to loaded document
-//     */
-//    <TResult> Map<String, TResult> load(Class<TResult> clazz, Collection<String> ids, Consumer<IIncludeBuilder> includes);
+    public function load(string $className, ...$params);
 
     /**
      * @param string $className

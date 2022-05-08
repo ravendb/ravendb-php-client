@@ -4,6 +4,9 @@ namespace RavenDB\Documents\Session;
 
 use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Exceptions\IllegalArgumentException;
+use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Extensions\EntityMapper;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use Symfony\Component\Serializer\Serializer;
 
@@ -180,34 +183,36 @@ class EntityToJson
 //            throw new IllegalStateException("Could not convert document " + id + " to entity of type " + entityType.getName(), e);
 //        }
 //    }
-//
-//    public void populateEntity(Object entity, String id, ObjectNode document) {
-//        if (id == null) {
-//            throw new IllegalArgumentException("Id cannot be null");
-//        }
-//
-//        populateEntity(entity, document, _session.getConventions().getEntityMapper());
-//
-//        _session.getGenerateEntityIdOnTheClient().trySetIdentity(entity, id);
-//    }
-//
-//    public static void populateEntity(Object entity, ObjectNode document, ObjectMapper objectMapper) {
-//        if (entity == null) {
-//            throw new IllegalArgumentException("Entity cannot be null");
-//        }
-//        if (document == null) {
-//            throw new IllegalArgumentException("Document cannot be null");
-//        }
-//        if (objectMapper == null) {
-//            throw new IllegalArgumentException("ObjectMapper cannot be null");
-//        }
-//
-//        try {
-//            objectMapper.updateValue(entity, document);
-//        } catch (IOException e) {
-//            throw new IllegalStateException("Could not populate entity", e);
-//        }
-//    }
+
+    public function populateEntity(?object &$entity, ?string $id, array $document): void
+    {
+        if ($id == null) {
+            throw new IllegalArgumentException("Id cannot be null");
+        }
+
+        self::populateEntityS($entity, $document, $this->session->getConventions()->getEntityMapper());
+
+        $this->session->getGenerateEntityIdOnTheClient()->trySetIdentity($entity, $id);
+    }
+
+    public static function populateEntityS(?object &$entity, ?array $document, ?EntityMapper $objectMapper): void
+    {
+        if ($entity == null) {
+            throw new IllegalArgumentException("Entity cannot be null");
+        }
+        if ($document == null) {
+            throw new IllegalArgumentException("Document cannot be null");
+        }
+        if ($objectMapper == null) {
+            throw new IllegalArgumentException("ObjectMapper cannot be null");
+        }
+
+        try {
+            $objectMapper->updateValue($entity, $document);
+        } catch (\Throwable $e) {
+            throw new IllegalStateException("Could not populate entity", $e);
+        }
+    }
 
     private static function tryRemoveIdentityProperty(array $document, string $className, DocumentConventions $conventions): bool
     {

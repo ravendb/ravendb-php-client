@@ -84,11 +84,11 @@ class GetDocumentsCommand extends RavenCommand
     }
 
     public static function withCounters(
-        StringArray $ids,
-        StringArray $includes,
-        StringArray $counterIncludes,
-        AbstractTimeSeriesRangeArray $timeSeriesIncludes,
-        StringArray $compareExchangeValueIncludes,
+        ?StringArray $ids,
+        ?StringArray $includes,
+        ?StringArray $counterIncludes,
+        ?AbstractTimeSeriesRangeArray $timeSeriesIncludes,
+        ?StringArray $compareExchangeValueIncludes,
         bool $metadata
     ): GetDocumentsCommand {
         $command = GetDocumentsCommand::forMultipleDocuments($ids, $includes, $metadata);

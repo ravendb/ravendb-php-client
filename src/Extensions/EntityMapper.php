@@ -24,4 +24,9 @@ class EntityMapper extends Serializer
     {
         $this->dotNetNamingConvertor = $dotNetNamingConvertor;
     }
+
+    public function updateValue(object &$entity, array $document)
+    {
+        $entity = $this->denormalize($document, get_class($entity));
+    }
 }

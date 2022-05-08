@@ -18,12 +18,11 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      */
     public function andAlso(bool $wrapPreviousQueryClauses = false);
 
-//    /**
-//     * Simplified method for closing a clause within the query
-//     * @return Query instance
-//     */
-//    TSelf closeSubclause();
-//
+    /**
+     * Simplified method for closing a clause within the query
+     */
+    function closeSubclause();
+
 //    /**
 //     * Performs a query matching ALL of the provided values against the given field (AND)
 //     * @param fieldName Field name
@@ -49,13 +48,12 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
 //     * @return Query instance
 //     */
 //    TSelf negateNext();
-//
-//    /**
-//     *  Simplified method for opening a new clause within the query
-//     *  @return Query instance
-//     */
-//    TSelf openSubclause();
-//
+
+    /**
+     *  Simplified method for opening a new clause within the query
+     */
+    function openSubclause();
+
     /**
      * Add an OR to the query
      */
@@ -69,7 +67,9 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * or 'Adam'.
      * @param string $fieldName Field name
      * @param string $searchTerms Search terms
-     * @param SearchOperator $operator Search operator
+     * @param ?SearchOperator $operator Search operator
+     *
+     * @return static
      */
     public function search(string $fieldName, string $searchTerms, ?SearchOperator $operator = null);
 

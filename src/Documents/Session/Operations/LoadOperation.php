@@ -9,6 +9,7 @@ use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRangeArray;
 use RavenDB\Documents\Session\DocumentInfo;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Type\ObjectArray;
 use RavenDB\Type\StringArray;
 use RavenDB\Utils\Logger;
 use RavenDB\Utils\LoggerFactory;
@@ -107,9 +108,11 @@ class LoadOperation
         return $this;
     }
 
-    public function withCompareExchange(StringArray $compareExchangeValues): LoadOperation
+    public function withCompareExchange(?StringArray $compareExchangeValues): LoadOperation
     {
-        $this->compareExchangeValuesToInclude = $compareExchangeValues;
+        if ($compareExchangeValues != null) {
+            $this->compareExchangeValuesToInclude = $compareExchangeValues;
+        }
         return $this;
     }
 
@@ -214,9 +217,9 @@ class LoadOperation
      * @throws ExceptionInterface
      * @throws IllegalStateException
      */
-    public function getDocuments($className): array
+    public function getDocuments($className): ObjectArray
     {
-        $finalResults = []; // new TreeMap<>(String::compareToIgnoreCase);
+        $finalResults = new ObjectArray();
 
         if ($this->session->noTracking) {
             if (!$this->resultsSet && count($this->ids)) {
@@ -228,7 +231,7 @@ class LoadOperation
                     continue;
                 }
 
-                $finalResults[$id] = null;
+                $finalResults->offsetSet($id, null);
             }
 
             if (($this->results == null) || $this->results->getResults() == null || !count($this->results->getResults())) {
@@ -241,7 +244,7 @@ class LoadOperation
                 }
 
                 $newDocumentInfo = DocumentInfo::getNewDocumentInfo($document);
-                $finalResults[$newDocumentInfo->getId()] = $this->session->trackEntity($className, $newDocumentInfo);
+                $finalResults->offsetSet($newDocumentInfo->getId(), $this->session->trackEntity($className, $newDocumentInfo));
             }
 
             return $finalResults;
@@ -252,7 +255,7 @@ class LoadOperation
                 continue;
             }
 
-            $finalResults[$id] = $this->getDocumentWithId($className, $id);
+            $finalResults->offsetSet($id, $this->getDocumentWithId($className, $id));
         }
 
         return $finalResults;
@@ -290,6 +293,7 @@ class LoadOperation
         }
 
         if ($this->compareExchangeValuesToInclude != null) {
+            // @todo: uncomment this
 //            $this->session->getClusterSession()->registerCompareExchangeValues($result->getCompareExchangeValueIncludes());
         }
 

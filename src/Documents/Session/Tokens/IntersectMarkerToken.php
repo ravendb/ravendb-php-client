@@ -7,13 +7,19 @@ use RavenDB\Utils\StringBuilder;
 // !status: DONE
 class IntersectMarkerToken extends QueryToken
 {
-    public static ?IntersectMarkerToken $INSTANCE = null;
+    private static ?IntersectMarkerToken $INSTANCE = null;
 
-    public function __construct()
+    private function __construct()
+    {
+
+    }
+
+    public static function getInstance(): IntersectMarkerToken
     {
         if (self::$INSTANCE == null) {
             self::$INSTANCE = new IntersectMarkerToken();
         }
+        return self::$INSTANCE;
     }
 
     public function writeTo(StringBuilder &$writer): void

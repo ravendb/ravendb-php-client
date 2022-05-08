@@ -139,7 +139,7 @@ class DocumentInfo
         $this->document = $document;
     }
 
-    public function getEntity(): ?object
+    public function &getEntity(): ?object
     {
         return $this->entity;
     }

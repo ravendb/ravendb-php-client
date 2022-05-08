@@ -25,5 +25,14 @@ class StringSet extends StringArray
 
         return $sa;
     }
-    // @todo: implement that StringSet can't hold two same values
+
+    public function add(string $value): bool
+    {
+        if (in_array($value, $this->getArrayCopy())) {
+            return false;
+        }
+
+        $this->append($value);
+        return true;
+    }
 }

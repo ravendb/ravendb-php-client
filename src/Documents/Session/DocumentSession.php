@@ -5,13 +5,24 @@ namespace RavenDB\Documents\Session;
 use InvalidArgumentException;
 use Ramsey\Uuid\UuidInterface;
 use RavenDB\Documents\Commands\GetDocumentsResult;
+use RavenDB\Documents\Commands\HeadDocumentCommand;
 use RavenDB\Documents\DocumentStore;
 use RavenDB\Documents\Indexes\AbstractCommonApiForIndexes;
 use RavenDB\Documents\Linq\DocumentQueryGeneratorInterface;
+use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRangeArray;
 use RavenDB\Documents\Queries\Query;
+use RavenDB\Documents\Session\Loaders\IncludeBuilder;
+use RavenDB\Documents\Session\Loaders\IncludeBuilderInterface;
+use RavenDB\Documents\Session\Loaders\LoaderWithIncludeInterface;
+use RavenDB\Documents\Session\Loaders\MultiLoaderWithInclude;
 use RavenDB\Documents\Session\Operations\BatchOperation;
 use RavenDB\Documents\Session\Operations\LoadOperation;
+use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Http\ResultMap;
+use RavenDB\Primitives\Consumer;
+use RavenDB\Type\ObjectArray;
+use RavenDB\Type\StringArray;
 use RavenDB\Utils\StringUtils;
 use RuntimeException;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
@@ -137,35 +148,37 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         try {
             $this->requestExecutor->execute($command, $this->sessionInfo);
             $this->updateSessionAfterSaveChanges($command->getResult());
+            $r = $command->getResult();
             $saveChangeOperation->setResult($command->getResult());
         } finally {
             $command->close();
         }
     }
 
-//    /**
-//     * Check if document exists without loading it
-//     */
-//    public boolean exists(String id) {
-//        if (id == null) {
-//            throw new IllegalArgumentException("id cannot be null");
-//        }
-//
-//        if (_knownMissingIds.contains(id)) {
-//            return false;
-//        }
-//
-//        if (documentsById.getValue(id) != null) {
-//            return true;
-//        }
-//
-//        HeadDocumentCommand command = new HeadDocumentCommand(id, null);
-//
-//        _requestExecutor.execute(command, sessionInfo);
-//
-//        return command.getResult() != null;
-//    }
-//
+    /**
+     * Check if document exists without loading it
+     */
+    public function exists(?string $id): bool
+    {
+        if ($id == null) {
+            throw new IllegalArgumentException("id cannot be null");
+        }
+
+        if (in_array($id, $this->knownMissingIds)) {
+            return false;
+        }
+
+        if ($this->documentsById->getValue($id) != null) {
+            return true;
+        }
+
+        $command = new HeadDocumentCommand($id, null);
+
+        $this->requestExecutor->execute($command, $this->sessionInfo);
+
+        return $command->getResult() != null;
+    }
+
 //    /**
 //     * Refreshes the specified entity from Raven server.
 //     */
@@ -274,14 +287,15 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //            return false;
 //        }
 //    }
-//
-//    /**
-//     * Begin a load while including the specified path
-//     */
-//    public ILoaderWithInclude include(String path) {
-//        return new MultiLoaderWithInclude(this).include(path);
-//    }
-//
+
+    /**
+     * Begin a load while including the specified path
+     */
+    public function include(?string $path): LoaderWithIncludeInterface
+    {
+        return (new MultiLoaderWithInclude($this))->include($path);
+    }
+
 //    public <T> Lazy<T> addLazyOperation(Class<T> clazz, ILazyOperation operation, Consumer<T> onEval) {
 //        pendingLazyOperations.add(operation);
 //        Lazy<T> lazyValue = new Lazy<>(() -> {
@@ -323,13 +337,88 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //    }
 
     /**
-     * @todo: change this load method to match load methods
+     * Loads the specified entity with the specified id.
+     *
+     * load(string $className, string $id): ?object
+     * load(string $className, string $id, Consumer $includes) ?Object;
+     *
+     * load(string $className, StringArray $ids): ObjectArray
+     * load(string $className, StringArray $ids, Consumer $includes): ObjectArray;
+     *
+     * load(string $className, string $id1, string $id2, string $id3 ... ): ObjectArray
+     *
+     * @param string $className Object class
+     * @param string|StringArray $params Identifier of a entity that will be loaded.
+     *
+     * @return null|object|ObjectArray Loaded entity or entities
+     *
+     * @throws ExceptionInterface
+     */
+    public function load(string $className, ...$params)
+    {
+        if (empty($params)) {
+            throw new \http\Exception\InvalidArgumentException('Id or ids must be defined for loading.');
+        }
+
+        // called: load(string $className, string $id): object
+        if (count($params) == 1) {
+            if (is_string($params[0])) {
+                return $this->loadById($className, $params[0]);
+            }
+        }
+
+        $ids = null;
+
+        // called: load(string $className, StringArray $ids): ObjectArray
+        if (count($params) == 1) {
+            if ($params[0] instanceof StringArray) {
+                $ids = $params[0];
+            }
+        }
+
+        if (count($params) == 2) {
+            if ($params[1] instanceof Consumer) {
+
+                    // called: load(string $className, StringArray $ids, Consumer $includes): ObjectArray;
+                    if ($params[0] instanceof StringArray) {
+                        return $this->loadMultipleWithIncludes($className, $params[0], $params[1]);
+                    }
+
+                    // called: load(string $className, string $id, Consumer $includes) ?Object;
+                    if (is_string($params[0])) {
+                        return $this->loadSingleWithIncludes($className, $params[0], $params[1]);
+                    }
+            }
+        }
+
+        // called: load(string $className, string $id1, string $id2, string $id3 ... ): ObjectArray
+        $allParamsString = true;
+        foreach ($params as $param) {
+            if (!is_string($param)) {
+                $allParamsString = false;
+             }
+        }
+
+        if ($allParamsString) {
+            $ids = StringArray::fromArray($params);
+        }
+
+        if ($ids) {
+            $loadOperation = new LoadOperation($this);
+            $this->loadInternalByOperation($ids, $loadOperation/*, null*/);
+            return $loadOperation->getDocuments($className);
+        }
+
+        throw new \LogicException('Load method with this arguments is not possible.');
+    }
+
+    /**
      *
      * @throws IllegalStateException
      * @throws InvalidArgumentException
      * @throws ExceptionInterface
      */
-    public function load(string $className, string $id): ?object
+    private function loadById(string $className, string $id): ?object
     {
         if (empty($id)) {
             return new $className();
@@ -351,51 +440,15 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 
         return $loadOperation->getDocument($className);
     }
-//    @Override
-//    public <T> T load(Class<T> clazz, String id) {
-//        if (StringUtils.isBlank(id)) {
-//            return Defaults.defaultValue(clazz);
-//        }
-//
-//        LoadOperation loadOperation = new LoadOperation(this);
-//
-//        loadOperation.byId(id);
-//
-//        GetDocumentsCommand command = loadOperation.createRequest();
-//
-//        if (command != null) {
-//            _requestExecutor.execute(command, sessionInfo);
-//            loadOperation.setResult(command.getResult());
-//        }
-//
-//        return loadOperation.getDocument(clazz);
-//    }
-//
-//    public <T> Map<String, T> load(Class<T> clazz, String... ids) {
-//        if (ids == null) {
-//            throw new IllegalArgumentException("Ids cannot be null");
-//        }
-//        LoadOperation loadOperation = new LoadOperation(this);
-//        loadInternal(ids, loadOperation, null);
-//        return loadOperation.getDocuments(clazz);
-//    }
-//
-//    /**
-//     * Loads the specified entities with the specified ids.
-//     */
-//    public <T> Map<String, T> load(Class<T> clazz, Collection<String> ids) {
-//        LoadOperation loadOperation = new LoadOperation(this);
-//        loadInternal(ids.toArray(new String[0]), loadOperation, null);
-//        return loadOperation.getDocuments(clazz);
-//    }
-//
-//    private <T> void loadInternal(String[] ids, LoadOperation operation, OutputStream stream) {
-//        operation.byIds(ids);
-//
-//        GetDocumentsCommand command = operation.createRequest();
-//        if (command != null) {
-//            _requestExecutor.execute(command, sessionInfo);
-//
+
+    private function loadInternalByOperation(StringArray $ids, LoadOperation $operation /*, OutputStream stream*/): void
+    {
+        $operation->byIds($ids);
+
+        $command = $operation->createRequest();
+        if ($command != null) {
+            $this->requestExecutor->execute($command, $this->sessionInfo);
+
 //            if (stream != null) {
 //                try {
 //                    GetDocumentsResult result = command.getResult();
@@ -404,34 +457,45 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //                    throw new RuntimeException("Unable to serialize returned value into stream" + e.getMessage(), e);
 //                }
 //            } else {
-//                operation.setResult(command.getResult());
+            /** @var GetDocumentsResult $result */
+            $result = $command->getResult();
+            $operation->setResult($result);
 //            }
-//        }
-//    }
-//
-//    @Override
-//    public <T> T load(Class<T> clazz, String id, Consumer<IIncludeBuilder> includes) {
-//        if (id == null) {
-//            return null;
-//        }
-//
-//        Collection<T> values = load(clazz, Collections.singletonList(id), includes).values();
-//        return values.isEmpty() ? null : values.iterator().next();
-//    }
-//
-//    @Override
-//    public <TResult> Map<String, TResult> load(Class<TResult> clazz, Collection<String> ids, Consumer<IIncludeBuilder> includes) {
-//        if (ids == null) {
-//            throw new IllegalArgumentException("ids cannot be null");
-//        }
-//
-//        if (includes == null) {
-//            return load(clazz, ids);
-//        }
-//
-//        IncludeBuilder includeBuilder = new IncludeBuilder(getConventions());
-//        includes.accept(includeBuilder);
-//
+        }
+    }
+
+    /**
+     * @param string $className
+     * @param string|null $id
+     * @param Consumer<IncludeBuilderInterface> $includes
+     * @return object|null
+     */
+    private function loadSingleWithIncludes(string $className, ?string $id, Consumer $includes): ?object
+    {
+        if ($id == null) {
+            return null;
+        }
+
+        $values = $this->loadMultipleWithIncludes($className, StringArray::fromArray([$id]), $includes);
+        return empty($values) ? null : $values->first();
+    }
+
+    /**
+     * @param string $className
+     * @param StringArray|null $ids
+     * @param Consumer<IncludeBuilderInterface> $includes
+     * @return ObjectArray
+     */
+    private function loadMultipleWithIncludes(string $className, ?StringArray $ids, Consumer $includes): ObjectArray
+    {
+        if ($ids == null) {
+            throw new IllegalArgumentException("ids cannot be null");
+        }
+
+        $includeBuilder = new IncludeBuilder($this->getConventions());
+        $includes->accept($includeBuilder);
+
+        // @todo: continue work with includes from here
 //        List<AbstractTimeSeriesRange> timeSeriesIncludes = includeBuilder.getTimeSeriesToInclude() != null
 //                ? new ArrayList<>(includeBuilder.getTimeSeriesToInclude())
 //                : null;
@@ -439,7 +503,7 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //        String[] compareExchangeValuesToInclude = includeBuilder.getCompareExchangeValuesToInclude() != null
 //                ? includeBuilder.getCompareExchangeValuesToInclude().toArray(new String[0])
 //                : null;
-//
+
 //        return loadInternal(clazz,
 //                ids.toArray(new String[0]),
 //                includeBuilder.documentsToInclude != null ? includeBuilder.documentsToInclude.toArray(new String[0]) : null,
@@ -447,60 +511,45 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //                includeBuilder.isAllCounters(),
 //                timeSeriesIncludes,
 //                compareExchangeValuesToInclude);
-//    }
-//
-//    public <TResult> Map<String, TResult> loadInternal(Class<TResult> clazz, String[] ids, String[] includes) {
-//        return loadInternal(clazz, ids, includes, null, false);
-//    }
-//
-//    public <TResult> Map<String, TResult> loadInternal(Class<TResult> clazz, String[] ids, String[] includes,
-//                                                       String[] counterIncludes) {
-//        return loadInternal(clazz, ids, includes, counterIncludes, false);
-//    }
-//
-//    @Override
-//    public <TResult> Map<String, TResult> loadInternal(Class<TResult> clazz, String[] ids, String[] includes,
-//                                                       String[] counterIncludes, boolean includeAllCounters) {
-//        return loadInternal(clazz, ids, includes, counterIncludes, includeAllCounters, null, null);
-//    }
-//
-//    @Override
-//    public <TResult> Map<String, TResult> loadInternal(Class<TResult> clazz, String[] ids, String[] includes,
-//                                                       String[] counterIncludes, boolean includeAllCounters,
-//                                                       List<AbstractTimeSeriesRange> timeSeriesIncludes) {
-//        return loadInternal(clazz, ids, includes, counterIncludes, includeAllCounters, timeSeriesIncludes, null);
-//    }
-//
-//    public <TResult> Map<String, TResult> loadInternal(Class<TResult> clazz, String[] ids, String[] includes,
-//                                                       String[] counterIncludes, boolean includeAllCounters,
-//                                                       List<AbstractTimeSeriesRange> timeSeriesIncludes,
-//                                                       String[] compareExchangeValueIncludes) {
-//        if (ids == null) {
-//            throw new IllegalArgumentException("Ids cannot be null");
-//        }
-//
-//        LoadOperation loadOperation = new LoadOperation(this);
-//        loadOperation.byIds(ids);
-//        loadOperation.withIncludes(includes);
-//
-//        if (includeAllCounters) {
-//            loadOperation.withAllCounters();
-//        } else {
-//            loadOperation.withCounters(counterIncludes);
-//        }
-//
-//        loadOperation.withTimeSeries(timeSeriesIncludes);
-//        loadOperation.withCompareExchange(compareExchangeValueIncludes);
-//
-//        GetDocumentsCommand command = loadOperation.createRequest();
-//        if (command != null) {
-//            _requestExecutor.execute(command, sessionInfo);
-//            loadOperation.setResult(command.getResult());
-//        }
-//
-//        return loadOperation.getDocuments(clazz);
-//    }
-//
+    }
+
+    public function loadInternal(
+        string $className,
+        ?StringArray $ids,
+        ?StringArray $includes,
+        ?StringArray $counterIncludes = null,
+        bool $includeAllCounters = false,
+        ?AbstractTimeSeriesRangeArray $timeSeriesIncludes = null,
+        ?StringArray $compareExchangeValueIncludes = null
+    ): ObjectArray {
+        if ($ids == null) {
+            throw new IllegalArgumentException("Ids cannot be null");
+        }
+
+        $loadOperation = new LoadOperation($this);
+        $loadOperation->byIds($ids);
+        $loadOperation->withIncludes($includes);
+
+        if ($includeAllCounters) {
+            $loadOperation->withAllCounters();
+        } else {
+            $loadOperation->withCounters($counterIncludes);
+        }
+
+        $loadOperation->withTimeSeries($timeSeriesIncludes);
+        $loadOperation->withCompareExchange($compareExchangeValueIncludes);
+
+        $command = $loadOperation->createRequest();
+        if ($command != null) {
+            $this->requestExecutor->execute($command, $this->sessionInfo);
+            /** @var GetDocumentsResult $result */
+            $result = $command->getResult();
+            $loadOperation->setResult($result);
+        }
+
+        return $loadOperation->getDocuments($className);
+    }
+
 //    public <T> T[] loadStartingWith(Class<T> clazz, String idPrefix) {
 //        return loadStartingWith(clazz, idPrefix, null, 0, 25, null, null);
 //    }
@@ -812,7 +861,7 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
      */
     public function documentQuery(string $className, $indexName = null, ?string $collectionName = null, bool $isMapReduce = false): DocumentQueryInterface
     {
-        if (class_exists($indexName) && is_a($indexName, AbstractCommonApiForIndexes::class)) {
+        if (class_exists($indexName) && is_a($indexName,  AbstractCommonApiForIndexes::class, true)) {
             try {
                 $index = new $indexName();
                 return  $this->_documentQuery($className, $index->getIndexName(), null, $index->isMapReduce());
