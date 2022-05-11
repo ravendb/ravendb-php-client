@@ -2,195 +2,160 @@
 
 namespace RavenDB\Documents\Session;
 
+use DateTimeInterface;
+use RavenDB\Documents\Queries\QueryResult;
+
 /**
  * Statistics about a raven query.
  * Such as how many records match the query
  */
+// !status: DONE
 class QueryStatistics
 {
-//  private boolean isStale;
-//    private long durationInMs;
-//    private int totalResults;
-//    private long longTotalResults;
-//    private int skippedResults;
-//    private Date timestamp;
-//    private String indexName;
-//    private Date indexTimestamp;
-//    private Date lastQueryTime;
-//    private Long resultEtag;
-//    private String nodeTag;
-//
-//    /**
-//     * Whether the query returned potentially stale results
-//     * @return true is query result is stale
-//     */
-//    public boolean isStale() {
-//        return isStale;
-//    }
-//
-//    /**
-//     * Whether the query returned potentially stale results
-//     * @param stale sets the value
-//     */
-//    public void setStale(boolean stale) {
-//        isStale = stale;
-//    }
-//
-//    /**
-//     * The duration of the query _server side_
-//     * @return duration of the query
-//     */
-//    public long getDurationInMs() {
-//        return durationInMs;
-//    }
-//
-//    /**
-//     * The duration of the query _server side_
-//     * @param durationInMs Sets the value
-//     */
-//    public void setDurationInMs(long durationInMs) {
-//        this.durationInMs = durationInMs;
-//    }
-//
-//    /**
-//     * What was the total count of the results that matched the query
-//     * @return total results
-//     */
-//    public int getTotalResults() {
-//        return totalResults;
-//    }
-//
-//    /**
-//     * What was the total count of the results that matched the query
-//     * @param totalResults Sets the value
-//     */
-//    public void setTotalResults(int totalResults) {
-//        this.totalResults = totalResults;
-//    }
-//
-//    /**
-//     * What was the total count of the results that matched the query as long
-//     * @return total results as long
-//     */
-//    public long getLongTotalResults() {
-//        return longTotalResults;
-//    }
-//
-//    /**
-//     * What was the total count of the results that matched the query as long
-//     * @param longTotalResults total results as long
-//     */
-//    public void setLongTotalResults(long longTotalResults) {
-//        this.longTotalResults = longTotalResults;
-//    }
-//
-//    /**
-//     * Gets the skipped results
-//     * @return amount of skipped results
-//     */
-//    public int getSkippedResults() {
-//        return skippedResults;
-//    }
-//
-//    /**
-//     * Sets the skipped results
-//     * @param skippedResults Sets the value
-//     */
-//    public void setSkippedResults(int skippedResults) {
-//        this.skippedResults = skippedResults;
-//    }
-//
-//    /**
-//     * The time when the query results were non stale.
-//     * @return Query timestamp
-//     */
-//    public Date getTimestamp() {
-//        return timestamp;
-//    }
-//
-//    /**
-//     * The time when the query results were non stale.
-//     * @param timestamp Sets the value
-//     */
-//    public void setTimestamp(Date timestamp) {
-//        this.timestamp = timestamp;
-//    }
-//
-//    /**
-//     * The name of the index queried
-//     * @return index name used for query
-//     */
-//    public String getIndexName() {
-//        return indexName;
-//    }
-//
-//    /**
-//     * The name of the index queried
-//     * @param indexName Sets the value
-//     */
-//    public void setIndexName(String indexName) {
-//        this.indexName = indexName;
-//    }
-//
-//    /**
-//     * The timestamp of the queried index
-//     * @return the index timestamp
-//     */
-//    public Date getIndexTimestamp() {
-//        return indexTimestamp;
-//    }
-//
-//    /**
-//     * The timestamp of the queried index
-//     * @param indexTimestamp Sets the value
-//     */
-//    public void setIndexTimestamp(Date indexTimestamp) {
-//        this.indexTimestamp = indexTimestamp;
-//    }
-//
-//    /**
-//     * The timestamp of the last time the index was queried
-//     * @return last query time
-//     */
-//    public Date getLastQueryTime() {
-//        return lastQueryTime;
-//    }
-//
-//    /**
-//     * The timestamp of the last time the index was queried
-//     * @param lastQueryTime Sets the query time
-//     */
-//    public void setLastQueryTime(Date lastQueryTime) {
-//        this.lastQueryTime = lastQueryTime;
-//    }
-//
-//    public Long getResultEtag() {
-//        return resultEtag;
-//    }
-//
-//    public void setResultEtag(Long resultEtag) {
-//        this.resultEtag = resultEtag;
-//    }
-//
-//    public String getNodeTag() {
-//        return nodeTag;
-//    }
-//
-//    public void setNodeTag(String nodeTag) {
-//        this.nodeTag = nodeTag;
-//    }
-//
-//    public void updateQueryStats(QueryResult qr) {
-//        isStale = qr.isStale();
-//        durationInMs = qr.getDurationInMs();
-//        totalResults = qr.getTotalResults();
-//        longTotalResults = qr.getLongTotalResults();
-//        skippedResults = qr.getSkippedResults();
-//        timestamp = qr.getIndexTimestamp();
-//        indexName = qr.getIndexName();
-//        indexTimestamp = qr.getIndexTimestamp();
-//        lastQueryTime = qr.getLastQueryTime();
-//        resultEtag = qr.getResultEtag();
-//        nodeTag = qr.getNodeTag();
-//    }
+    private bool $isStale = false;
+    private int $durationInMs = 0;
+    private int $totalResults = 0;
+    private int $longTotalResults = 0;
+    private int $skippedResults = 0;
+    private ?DateTimeInterface $timestamp = null;
+    private ?string $indexName = null;
+    private ?DateTimeInterface $indexTimestamp = null;
+    private ?DateTimeInterface $lastQueryTime = null;
+    private ?int $resultEtag = null;
+    private ?string $nodeTag = null;
+
+    /**
+     * Whether the query returned potentially stale results
+     * @return bool true is query result is stale
+     */
+
+    public function isStale(): bool
+    {
+        return $this->isStale;
+    }
+
+    /**
+     * Whether the query returned potentially stale results
+     * @param bool $isStale sets the value
+     */
+    public function setIsStale(bool $isStale): void
+    {
+        $this->isStale = $isStale;
+    }
+
+    public function getDurationInMs(): int
+    {
+        return $this->durationInMs;
+    }
+
+    public function setDurationInMs(int $durationInMs): void
+    {
+        $this->durationInMs = $durationInMs;
+    }
+
+    public function getTotalResults(): int
+    {
+        return $this->totalResults;
+    }
+
+    public function setTotalResults(int $totalResults): void
+    {
+        $this->totalResults = $totalResults;
+    }
+
+    public function getLongTotalResults(): int
+    {
+        return $this->longTotalResults;
+    }
+
+    public function setLongTotalResults(int $longTotalResults): void
+    {
+        $this->longTotalResults = $longTotalResults;
+    }
+
+    public function getSkippedResults(): int
+    {
+        return $this->skippedResults;
+    }
+
+    public function setSkippedResults(int $skippedResults): void
+    {
+        $this->skippedResults = $skippedResults;
+    }
+
+    public function getTimestamp(): ?DateTimeInterface
+    {
+        return $this->timestamp;
+    }
+
+    public function setTimestamp(?DateTimeInterface $timestamp): void
+    {
+        $this->timestamp = $timestamp;
+    }
+
+    public function getIndexName(): ?string
+    {
+        return $this->indexName;
+    }
+
+    public function setIndexName(?string $indexName): void
+    {
+        $this->indexName = $indexName;
+    }
+
+    public function getIndexTimestamp(): ?DateTimeInterface
+    {
+        return $this->indexTimestamp;
+    }
+
+    public function setIndexTimestamp(?DateTimeInterface $indexTimestamp): void
+    {
+        $this->indexTimestamp = $indexTimestamp;
+    }
+
+    public function getLastQueryTime(): ?DateTimeInterface
+    {
+        return $this->lastQueryTime;
+    }
+
+    public function setLastQueryTime(?DateTimeInterface $lastQueryTime): void
+    {
+        $this->lastQueryTime = $lastQueryTime;
+    }
+
+    public function getResultEtag(): ?int
+    {
+        return $this->resultEtag;
+    }
+
+    public function setResultEtag(?int $resultEtag): void
+    {
+        $this->resultEtag = $resultEtag;
+    }
+
+    public function getNodeTag(): ?string
+    {
+        return $this->nodeTag;
+    }
+
+    public function setNodeTag(?string $nodeTag): void
+    {
+        $this->nodeTag = $nodeTag;
+    }
+
+
+    public function updateQueryStats(QueryResult $qr)
+    {
+        $this->isStale = $qr->isStale();
+        $this->durationInMs = $qr->getDurationInMs();
+        $this->totalResults = $qr->getTotalResults();
+        $this->longTotalResults = $qr->getLongTotalResults();
+        $this->skippedResults = $qr->getSkippedResults();
+        $this->timestamp = $qr->getIndexTimestamp();
+        $this->indexName = $qr->getIndexName();
+        $this->indexTimestamp = $qr->getIndexTimestamp();
+        $this->lastQueryTime = $qr->getLastQueryTime();
+        $this->resultEtag = $qr->getResultEtag();
+        $this->nodeTag = $qr->getNodeTag();
+    }
 }

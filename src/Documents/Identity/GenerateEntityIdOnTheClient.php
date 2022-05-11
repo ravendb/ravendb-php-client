@@ -113,7 +113,7 @@ class GenerateEntityIdOnTheClient
     /**
      * Tries to set the identity property
      */
-    public function trySetIdentity(object $entity, string $id, bool $isProjection = false): void
+    public function trySetIdentity(object &$entity, string $id, bool $isProjection = false): void
     {
         $this->trySetIdentityInternal($entity, $id, $isProjection);
     }
@@ -122,7 +122,7 @@ class GenerateEntityIdOnTheClient
      * @throws RavenException
      * @throws IllegalStateException
      */
-    private function trySetIdentityInternal(object $entity, string $id, bool $isProjection): void
+    private function trySetIdentityInternal(object &$entity, string $id, bool $isProjection): void
     {
         $entityType = get_class($entity);
         $identityProperty = $this->conventions->getIdentityProperty($entityType);
@@ -149,7 +149,7 @@ class GenerateEntityIdOnTheClient
     /**
      * @throws IllegalStateException
      */
-    private function setPropertyOrField(string $propertyOrFieldType, object $entity, string $field, string $id): void
+    private function setPropertyOrField(string $propertyOrFieldType, object &$entity, string $field, string $id): void
     {
         try {
             if ($propertyOrFieldType == 'string') {

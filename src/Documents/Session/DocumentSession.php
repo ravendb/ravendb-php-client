@@ -148,7 +148,6 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         try {
             $this->requestExecutor->execute($command, $this->sessionInfo);
             $this->updateSessionAfterSaveChanges($command->getResult());
-            $r = $command->getResult();
             $saveChangeOperation->setResult($command->getResult());
         } finally {
             $command->close();

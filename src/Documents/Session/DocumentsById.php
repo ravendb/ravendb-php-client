@@ -19,13 +19,14 @@ class DocumentsById extends TypedMap
         $this[$documentInfo->getId()] = $documentInfo;
     }
 
-    public function getValue($id): ?DocumentInfo
+    public function &getValue($id): ?DocumentInfo
     {
-        if (!$this->offsetExists($id)) {
-            return null;
+        $result = null;
+        if ($this->offsetExists($id)) {
+            $result = $this->offsetGet($id);
         }
 
-        return $this->offsetGet($id);
+        return $result;
     }
 
     public function remove(string $id): void

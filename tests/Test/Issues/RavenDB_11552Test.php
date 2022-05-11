@@ -137,14 +137,7 @@ class RavenDB_11552Test extends RemoteTestBase
                 $this->assertTrue($session->advanced()->isLoaded("companies/1"));
                 $this->assertEquals(2, $session->advanced()->getNumberOfRequests());
 
-//                echo 'FIRST: ' . PHP_EOL;
-//                print_r($company);
-//                echo 'SECOND: ' . PHP_EOL;
-//                print_r($company2);
-//
-                // @todo: Check with Marcing what to do with this behavior
-                // !!!! we do not returning object references !!!!
-//                 $this->assertEquals($company, $company2);
+                 $this->assertEquals($company, $company2);
 
                 $this->assertEquals("HR2", $company2->getName());
             } finally {

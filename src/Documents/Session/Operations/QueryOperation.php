@@ -15,8 +15,10 @@ use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Exceptions\TimeoutException;
 use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Type\Duration;
+use RavenDB\Type\ValueObjectInterface;
 use RavenDB\Utils\Stopwatch;
 use RuntimeException;
+use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use Throwable;
 
 class QueryOperation
@@ -136,14 +138,14 @@ class QueryOperation
 //        return result;
 //    }
 
-    public function complete(string $className): array
+    public function complete(?string $className): array
     {
         $queryResult = $this->currentQueryResults->createSnapshot();
 
         return $this->completeInternal($className, $queryResult);
     }
 
-    private function completeInternal(string $className, QueryResult $queryResult): array
+    private function completeInternal(?string $className, QueryResult $queryResult): array
     {
         if (!$this->noTracking) {
 //            $this->session->registerIncludes($queryResult->getIncludes());
@@ -201,9 +203,23 @@ class QueryOperation
         return $resultItems;
     }
 
-    public static function deserialize(string $className, ?string $id, array $document, array $metadata, ?FieldsToFetchToken $fieldsToFetch, bool $disableEntitiesTracking, InMemoryDocumentSessionOperations $session, bool $isProjectInto): object
+    /**
+     * @param string|null $className
+     * @param string|null $id
+     * @param array $document
+     * @param array $metadata
+     * @param FieldsToFetchToken|null $fieldsToFetch
+     * @param bool $disableEntitiesTracking
+     * @param InMemoryDocumentSessionOperations $session
+     * @param bool $isProjectInto
+     * @return array|mixed|object|null
+     *
+     * @throws ExceptionInterface
+     */
+    public static function deserialize(?string $className, ?string $id, array $document, array $metadata, ?FieldsToFetchToken $fieldsToFetch, bool $disableEntitiesTracking, InMemoryDocumentSessionOperations $session, bool $isProjectInto)
     {
         if (array_key_exists('@projection', $metadata) && $metadata['@projection'] !== null && !boolval($metadata['@projection'])) {
+            //@todo: I think we should not track entity if className is null. Check this in nodeJs client
             return $session->trackEntity($className, $id, $document, $metadata, $disableEntitiesTracking);
         }
 
@@ -224,15 +240,15 @@ class QueryOperation
                 }
             }
 
-//            if (String.class.equals(clazz) || ClassUtils.isPrimitiveOrWrapper(clazz) || clazz.isEnum()) {
-//                JsonNode jsonNode = document.get(projectionField);
-//                if (jsonNode instanceof ValueNode) {
-//                    return ObjectUtils.firstNonNull(session.getConventions().getEntityMapper().treeToValue(jsonNode, clazz), Defaults.defaultValue(clazz));
-//                }
-//            }
-//
-            $isTimeSeriesField = str_starts_with($fieldsToFetch->projections[0], TimeSeries::QUERY_FUNCTION);
+            if (is_a($className, ValueObjectInterface::class)) { // Enums
+                return new $className($document[$projectionField]);
+            }
 
+            if (!$className) {
+                return $document[$projectionField];
+            }
+
+//            $isTimeSeriesField = str_starts_with($fieldsToFetch->projections[0], TimeSeries::QUERY_FUNCTION);
 //            if (!isProjectInto || isTimeSeriesField) {
 //                JsonNode inner = document.get(projectionField);
 //                if (inner == null) {

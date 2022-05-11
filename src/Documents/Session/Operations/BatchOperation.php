@@ -222,9 +222,9 @@ class BatchOperation
         $documentInfo->setDocument($documentCopy);
     }
 
-    private function getOrAddModifications(
+    private function &getOrAddModifications(
         string       $id,
-        DocumentInfo $documentInfo,
+        DocumentInfo &$documentInfo,
         bool         $applyModifications
     ): DocumentInfo
     {
@@ -395,9 +395,8 @@ class BatchOperation
                 $this->applyMetadataModifications($id, $documentInfo);
 
                 if ($documentInfo->getEntity() != null) {
-                    $entity = &$documentInfo->getEntity();
+                    $entity = $documentInfo->getEntity();
                     $this->session->getEntityToJson()->populateEntity($entity, $id, $documentInfo->getDocument());
-
                     $afterSaveChangesEventArgs = new AfterSaveChangesEventArgs($this->session, $documentInfo->getId(), $documentInfo->getEntity());
                     $this->session->onAfterSaveChangesInvoke($afterSaveChangesEventArgs);
                 }

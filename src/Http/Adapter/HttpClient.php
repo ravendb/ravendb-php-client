@@ -34,20 +34,7 @@ class HttpClient implements HttpClientInterface
             $options['proxy'] = self::$proxy;
         }
 
-        $url = null;
-//        $url = 'http://127.0.0.1:8080/databases/test_db_1/admin/indexes?raft-request-id';
-        $url = 'http://127.0.0.1:8080/databases/test_db_1/queries?queryHash=';
-//
-        if (empty($url) || str_starts_with($request->getUrl(), $url)) {
-            echo $request->getUrl() . PHP_EOL;
-            print_r($options);
-        }
-
         $serverResponse =  $this->client->request($request->getMethod(), $request->getUrl(), $options);
-
-        if (empty($url) || str_starts_with($request->getUrl(), $url)) {
-            print_r($serverResponse->getContent());
-        }
 
         return HttpResponseTransformer::fromHttpClientResponse($serverResponse);
     }

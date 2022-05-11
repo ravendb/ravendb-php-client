@@ -11,6 +11,7 @@ use RavenDB\Documents\Session\Tokens\DeclareTokenArray;
 use RavenDB\Documents\Session\Tokens\FieldsToFetchToken;
 use RavenDB\Documents\Session\Tokens\LoadTokenList;
 use RavenDB\Documents\Session\Tokens\QueryTokenList;
+use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Parameters;
 use RavenDB\Type\Collection;
 use RavenDB\Type\Duration;
@@ -23,7 +24,7 @@ class DocumentQuery extends AbstractDocumentQuery
     implements DocumentQueryInterface, AbstractDocumentQueryImplInterface
 {
     public function __construct(
-        string $className,
+        ?string $className,
         InMemoryDocumentSessionOperations $session,
         ?string $indexName,
         ?string $collectionName,
@@ -37,56 +38,92 @@ class DocumentQuery extends AbstractDocumentQuery
     }
 
     /**
-     * selectFields(?string $projectionClass): DocumentQueryInterface
-     * selectFields(?string $projectionClass, ProjectionBehavior $projectionBehavior): DocumentQueryInterface
-     * selectFields(?string $projectionClass, ProjectionBehavior $projectionBehavior, string ...$fields): DocumentQueryInterface
+     * selectFields(string $projectionClass, ?ProjectionBehavior $projectionBehavior = null): DocumentQueryInterface
      *
-     * selectFields(?string $projectionClass, string ...$fields): DocumentQueryInterface
+     * selectFields(string $field, ProjectionBehavior $projectionBehavior = null): DocumentQueryInterface
      *
-     * selectFields(?string $projectionClass, QueryData $queryData): DocumentQueryInterface
+     * selectFields(array $fields, ?string $projectionClass = null, ProjectionBehavior $projectionBehavior = null): DocumentQueryInterface
+     * selectFields(StringArray $fields, ?string $projectionClass = null, ProjectionBehavior $projectionBehavior = null): DocumentQueryInterface
      *
-     * @param string|null $projectionClass
+     * selectFields(QueryData $queryData, ?string $projectionClass = null): DocumentQueryInterface
+     *
      * @param mixed ...$params
      *
      * @return DocumentQueryInterface
      */
-    public function selectFields(?string $projectionClass, ...$params): DocumentQueryInterface
+    public function selectFields(...$params): DocumentQueryInterface
     {
-        $projectionBehavior = null;
+        if (!count($params)) {
+            throw new IllegalArgumentException('You must set select fields params.');
+        }
+
         $fields = null;
-        $queryData = null;
+        $projectionClass = null;
+        $projectionBehavior = null;
+        $firstParam = $params[0];
 
-        if (count($params)) {
-            if ($params[0] instanceof QueryData) {
-                $queryData = $params[0];
-            } else {
-                if ($params[0] instanceof ProjectionBehavior) {
-                    $projectionBehavior = $params[0];
-                    array_shift($params);
-                }
+        if (is_string($firstParam)) {
+            if (count($params) > 1 && ($params[1] instanceof ProjectionBehavior)) {
+                $projectionBehavior = $params[1];
+            }
 
-                if (count($params)) {
-                    $fields = $params;
-                }
+            if (class_exists($firstParam)) { // give string is projectionClass
+                $projectionClass = $firstParam;
+                return $this->_selectFieldsByClass($projectionClass, $projectionBehavior ?? ProjectionBehavior::default());
+            }
+
+            $fields = [$firstParam];
+        }
+
+        if ($firstParam instanceof StringArray) {
+            $fields = $firstParam->getArrayCopy();
+            $projectionClass = count($params) > 1 && is_string($params[2]) ? $params[2] : null;
+            if (count($params) > 2 && ($params[2] instanceof ProjectionBehavior)) {
+                $projectionBehavior = $params[2];
             }
         }
 
-        if (!$queryData) {
+        if (is_array($firstParam)) {
+            $fields = $firstParam;
+            $projectionClass = count($params) > 1 && is_string($params[2]) ? $params[2] : null;
+            if (count($params) > 2 && ($params[2] instanceof ProjectionBehavior)) {
+                $projectionBehavior = $params[2];
+            }
+        }
+
+        if ($fields != null) {
             if (!$projectionBehavior) {
                 $projectionBehavior = ProjectionBehavior::default();
             }
 
-            $projections = new StringArray();
-            if ($fields) {
-                foreach ($fields as $field) {
-                    $projections->append($field);
-                }
-                $fields = $projections;
-            } else {
-                $ref = new ReflectionClass(new $projectionClass());
-                $allProperties = $ref->getProperties(ReflectionProperty::IS_PUBLIC | ReflectionProperty::IS_PRIVATE | ReflectionProperty::IS_PROTECTED);
+            $stringArray = StringArray::fromArray($fields);
+            $queryData = new QueryData($stringArray, $stringArray);
+            $queryData->setProjectInto(true);
+            $queryData->setProjectionBehavior($projectionBehavior);
 
-                // @todo: Check with Marcin how to filter this properties
+            return $this->_selectFieldsByQueryData($queryData, $projectionClass);
+        }
+
+        if ($firstParam instanceof QueryData) {
+            if (count($params) > 1) {
+                $projectionClass = $params[1];
+            }
+
+            return $this->_selectFieldsByQueryData($firstParam, $projectionClass);
+        }
+
+        throw new IllegalArgumentException('Illegal arguments.');
+    }
+
+    private function _selectFieldsByClass(string $projectionClass, ProjectionBehavior $projectionBehavior): DocumentQueryInterface
+    {
+        throw new \LogicException('Method not implemented yet.');
+
+        $ref = new ReflectionClass(new $projectionClass());
+        $allProperties = $ref->getProperties(ReflectionProperty::IS_PUBLIC | ReflectionProperty::IS_PRIVATE | ReflectionProperty::IS_PROTECTED);
+
+        // @todo: !!! extract only getter and setter properties that use default conventions getProperty - setProperty
+
 //                  PropertyDescriptor[] propertyDescriptors = Introspector.getBeanInfo(projectionClass).getPropertyDescriptors();
 //
 //            String[] projections = Arrays.stream(propertyDescriptors)
@@ -100,19 +137,28 @@ class DocumentQuery extends AbstractDocumentQuery
 //                    .toArray(String[]::new);
 
 
-                foreach ($allProperties as $property) {
-                    $projections->append($property->getName());
-                }
-                $fields = $projections;
-            }
+        $stringArray = StringArray::fromArray($fields);
+        $queryData = new QueryData($stringArray, $stringArray);
+        $queryData->setProjectInto(true);
+        $queryData->setProjectionBehavior($projectionBehavior);
 
-            $queryData = new QueryData($fields, $projections);
-            $queryData->setProjectInto(true);
-            $queryData->setProjectionBehavior($projectionBehavior);
+        return $this->_selectFieldsByQueryData($queryData, $projectionClass);
+    }
+
+    private function _selectFieldsByQueryData(QueryData $queryData, ?string $projectionClass = null): DocumentQueryInterface
+    {
+        if ((count($queryData->getFields()) > 1) && $projectionClass == null) {
+            throw new IllegalArgumentException('You must define projectionClass if you select more than one field.');
+        }
+
+        if ($projectionClass) {
+            if (!class_exists($projectionClass)) {
+                throw new IllegalArgumentException('Class ' . $projectionClass . ' does not exists.');
+            }
         }
 
         $queryData->setProjectInto(true);
-        return $this->createDocumentQueryInternal($projectionClass, $queryData);
+        return $this->createDocumentQueryInternal($queryData, $projectionClass);
     }
 
 //    @Override
@@ -261,11 +307,12 @@ class DocumentQuery extends AbstractDocumentQuery
 
     //TBD expr public IDocumentQuery<T> ContainsAll<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values)
 
-//    public IDocumentQuery<T> statistics(Reference<QueryStatistics> stats) {
-//        _statistics(stats);
-//        return this;
-//    }
-//
+    public function statistics(QueryStatistics &$stats): DocumentQueryInterface
+    {
+        $this->_statistics($stats);
+        return $this;
+    }
+
 //    @Override
 //    public IDocumentQuery<T> usingDefaultOperator(QueryOperator queryOperator) {
 //        _usingDefaultOperator(queryOperator);
@@ -502,7 +549,7 @@ class DocumentQuery extends AbstractDocumentQuery
 
     public function ofType(string $resultClass): DocumentQueryInterface
     {
-        return $this->createDocumentQueryInternal($resultClass);
+        return $this->createDocumentQueryInternal(null, $resultClass);
     }
 
     /**
@@ -550,7 +597,8 @@ class DocumentQuery extends AbstractDocumentQuery
 //        return this;
 //    }
 
-    public function createDocumentQueryInternal(string $resultClass, ?QueryData $queryData = null): DocumentQuery
+    //@todo: check this method - I reversed the properties
+    public function createDocumentQueryInternal(?QueryData $queryData = null, ?string $resultClass = null): DocumentQuery
     {
         /** @var ?FieldsToFetchToken $newFieldsToFetch */
         $newFieldsToFetch = null;

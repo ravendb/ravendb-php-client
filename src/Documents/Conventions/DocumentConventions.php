@@ -909,8 +909,11 @@ class DocumentConventions
     /**
      *  Gets the identity property.
      */
-    public function getIdentityProperty(string $className): string
+    public function getIdentityProperty(?string $className): ?string
     {
+        if (!$className) {
+            return null;
+        }
 
         if (array_key_exists($className, $this->idPropertyCache)) {
             $info = $this->idPropertyCache[$className];

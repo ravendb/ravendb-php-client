@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Session;
 
+use Closure;
 use RavenDB\Constants\DocumentsIndexingFields;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Queries\GroupBy;
@@ -61,7 +62,7 @@ use RavenDB\Utils\StringUtils;
 
 abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 {
-    protected string $className;
+    protected ?string $className = null;
 
     private StringArray $aliasToGroupByFieldName;
 
@@ -200,7 +201,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     }
 
     protected function __construct(
-        string $className,
+        ?string $className,
         ?InMemoryDocumentSessionOperations $session,
         ?string $indexName,
         ?string $collectionName,
@@ -237,7 +238,9 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         //--
 
         $this->className = $className;
-        $this->rootTypes->append($className);
+        if ($className) {
+            $this->rootTypes->append($className);
+        }
         $this->isGroupBy = $isGroupBy;
         $this->indexName = $indexName;
         $this->collectionName = $collectionName;
@@ -245,7 +248,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->declareTokens = $declareTokens;
         $this->loadTokens = $loadTokens;
         $this->theSession = $session;
-//        _addAfterQueryExecutedListener(this::updateStatsHighlightingsAndExplanations);
+        $this->_addAfterQueryExecutedListener(Closure::fromCallable([$this, 'updateStatsHighlightingsAndExplanations']));
         $this->conventions = $session == null ? new DocumentConventions() : $session->getConventions();
         $this->isProjectInto = $isProjectInto;
     }
@@ -1064,13 +1067,18 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->orderByTokens->append(OrderByToken::scoreDescending());
     }
 
+    public function &getStats(): QueryStatistics
+    {
+        return $this->queryStats;
+    }
+
     /**
      * Provide statistics about the query, such as total count of matching records
      * @param QueryStatistics $stats Output parameter for query statistics
      */
     public function _statistics(QueryStatistics &$stats): void
     {
-        $stats = $this->queryStats;
+        $stats = $this->getStats();
     }
 
     /**
@@ -1347,7 +1355,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     private function updateStatsHighlightingsAndExplanations(QueryResult $queryResult): void
     {
-//        $this->queryStats->updateQueryStats($queryResult);
+        $this->queryStats->updateQueryStats($queryResult);
 //        $this->queryHighlightings->update($queryResult);
 //        if ($this->explanations != null) {
 //            $this->explanations->update($queryResult);
@@ -1746,7 +1754,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        return fromAlias;
 //    }
 
-    protected static function getSourceAliasIfExists(string $className, QueryData $queryData, StringArray $fields, ?string &$sourceAlias): void
+    protected static function getSourceAliasIfExists(?string $className, QueryData $queryData, StringArray $fields, ?string &$sourceAlias): void
     {
         $sourceAlias = null;
 
@@ -1812,15 +1820,17 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //    public void _removeBeforeQueryExecutedListener(Consumer<IndexQuery> action) {
 //        beforeQueryExecutedCallback.remove(action);
 //    }
-//
-//    public void _addAfterQueryExecutedListener(Consumer<QueryResult> action) {
-//        afterQueryExecutedCallback.add(action);
-//    }
-//
-//    public void _removeAfterQueryExecutedListener(Consumer<QueryResult> action) {
-//        afterQueryExecutedCallback.remove(action);
-//    }
-//
+
+    public function _addAfterQueryExecutedListener(Closure $action): void
+    {
+        $this->afterQueryExecutedCallback->append($action);
+    }
+
+    public function _removeAfterQueryExecutedListener(Closure $action): void
+    {
+        $this->afterQueryExecutedCallback->removeValue($action);
+    }
+
 //    public void _addAfterStreamExecutedListener(Consumer<ObjectNode> action) {
 //        afterStreamExecutedCallback.add(action);
 //    }

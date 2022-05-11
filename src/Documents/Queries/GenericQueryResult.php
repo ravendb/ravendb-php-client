@@ -80,23 +80,25 @@ class GenericQueryResult extends QueryResultBase
 //    public void setCappedMaxResults(Integer cappedMaxResults) {
 //        this.cappedMaxResults = cappedMaxResults;
 //    }
-//
-//    /**
-//     * Gets the skipped results
-//     * @return Amount of skipped results
-//     */
-//    public int getSkippedResults() {
-//        return skippedResults;
-//    }
-//
-//    /**
-//     * Sets the skipped results
-//     * @param skippedResults Sets the skipped results
-//     */
-//    public void setSkippedResults(int skippedResults) {
-//        this.skippedResults = skippedResults;
-//    }
-//
+
+    /**
+     * Gets the skipped results
+     * @return int Amount of skipped results
+     */
+    public function getSkippedResults(): int
+    {
+        return $this->skippedResults;
+    }
+
+    /**
+     * Sets the skipped results
+     * @param int $skippedResults Sets the skipped results
+     */
+    public function setSkippedResults(int $skippedResults): void
+    {
+        $this->skippedResults = $skippedResults;
+    }
+
 //    /**
 //     * @return Highlighter results (if requested).
 //     */
@@ -124,23 +126,25 @@ class GenericQueryResult extends QueryResultBase
 //    public void setExplanations(Map<String, String[]> explanations) {
 //        this.explanations = explanations;
 //    }
-//
-//    /**
-//     * The duration of actually executing the query server side
-//     * @return Query duration in milliseconds
-//     */
-//    public long getDurationInMs() {
-//        return durationInMs;
-//    }
-//
-//    /**
-//     * The duration of actually executing the query server side
-//     * @param durationInMs Sets the query duration
-//     */
-//    public void setDurationInMs(long durationInMs) {
-//        this.durationInMs = durationInMs;
-//    }
-//
+
+    /**
+     * The duration of actually executing the query server side
+     * @return int Query duration in milliseconds
+     */
+    public function getDurationInMs(): int
+    {
+        return $this->durationInMs;
+    }
+
+    /**
+     * The duration of actually executing the query server side
+     * @param int $durationInMs Sets the query duration
+     */
+    public function setDurationInMs(int $durationInMs): void
+    {
+        $this->durationInMs = $durationInMs;
+    }
+
 //    /**
 //     * The size of the request which were sent from the server.
 //     * This value is the _uncompressed_ size.

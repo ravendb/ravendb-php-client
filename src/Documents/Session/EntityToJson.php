@@ -210,7 +210,7 @@ class EntityToJson
         try {
             $objectMapper->updateValue($entity, $document);
         } catch (\Throwable $e) {
-            throw new IllegalStateException("Could not populate entity", $e);
+            throw new IllegalStateException("Could not populate entity. " . $e->getMessage());
         }
     }
 

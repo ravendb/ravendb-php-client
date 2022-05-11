@@ -3,14 +3,13 @@
 namespace tests\RavenDB\Test\Client\ContainsTest;
 
 use RavenDB\Type\Collection;
-use RavenDB\Type\StringClass;
 use RavenDB\Type\StringList;
 use tests\RavenDB\RemoteTestBase;
 use tests\RavenDB\Test\Client\ContainsTest\Entity\UserWithFavs;
 
 class ContainsTest extends RemoteTestBase
 {
-    public function atestContainsTest(): void
+    public function testContainsTest(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -39,8 +38,6 @@ class ContainsTest extends RemoteTestBase
                     ->query(UserWithFavs::class)
                     ->containsAny("favourites", Collection::fromArray(["pascal", "go"]))
                     ->selectFields("name")
-                    ->selectFields(["name"], StringClass::class,)
-                    ->selectFields(StringClass::class, ["name"])
                     ->toList();
 
                 $this->assertCount(2, $pascalOrGoDeveloperNames);
@@ -54,7 +51,7 @@ class ContainsTest extends RemoteTestBase
                 $javaDevelopers = $session
                         ->query(UserWithFavs::class)
                         ->containsAll("favourites", Collection::fromArray(["java"]))
-                        ->selectFields(StringClass::class, "name")
+                        ->selectFields("name")
                         ->toList();
 
                 $this->assertCount(2, $javaDevelopers);
