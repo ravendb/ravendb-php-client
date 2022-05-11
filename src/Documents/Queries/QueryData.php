@@ -49,32 +49,32 @@ class QueryData
         $this->projections = $projections;
     }
 
-    public function getFromAlias(): string
+    public function getFromAlias(): ?string
     {
         return $this->fromAlias;
     }
 
-    public function setFromAlias(string $fromAlias): void
+    public function setFromAlias(?string $fromAlias): void
     {
         $this->fromAlias = $fromAlias;
     }
 
-    public function getDeclareTokens(): DeclareTokenArray
+    public function getDeclareTokens(): ?DeclareTokenArray
     {
         return $this->declareTokens;
     }
 
-    public function setDeclareTokens(DeclareTokenArray $declareTokens): void
+    public function setDeclareTokens(?DeclareTokenArray $declareTokens): void
     {
         $this->declareTokens = $declareTokens;
     }
 
-    public function getLoadTokens(): LoadTokenlist
+    public function getLoadTokens(): ?LoadTokenlist
     {
         return $this->loadTokens;
     }
 
-    public function setLoadTokens(LoadTokenlist $loadTokens): void
+    public function setLoadTokens(?LoadTokenlist $loadTokens): void
     {
         $this->loadTokens = $loadTokens;
     }

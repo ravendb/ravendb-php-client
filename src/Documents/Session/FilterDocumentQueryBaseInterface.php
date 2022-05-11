@@ -23,31 +23,28 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      */
     function closeSubclause();
 
-//    /**
-//     * Performs a query matching ALL of the provided values against the given field (AND)
-//     * @param fieldName Field name
-//     * @param values values to match
-//     * @return Query instance
-//     */
-//    TSelf containsAll(String fieldName, Collection< ? > values);
-//
-//    //TBD expr TSelf ContainsAll<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values);
-//
-//    /**
-//     * Performs a query matching ANY of the provided values against the given field (OR)
-//     * @param fieldName Field name
-//     * @param values values to match
-//     * @return Query instance
-//     */
-//    TSelf containsAny(String fieldName, Collection< ? > values);
-//
-//    //TBD expr TSelf ContainsAny<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values);
-//
-//    /**
-//     * Negate the next operation
-//     * @return Query instance
-//     */
-//    TSelf negateNext();
+    /**
+     * Performs a query matching ALL of the provided values against the given field (AND)
+     * @param ?string $fieldName Field name
+     * @param Collection $values values to match
+     */
+    function containsAll(?string $fieldName, Collection $values);
+
+    //TBD expr TSelf ContainsAll<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values);
+
+    /**
+     * Performs a query matching ANY of the provided values against the given field (OR)
+     * @param ?string $fieldName Field name
+     * @param Collection $values values to match
+     */
+    function containsAny(?string $fieldName, Collection $values);
+
+    //TBD expr TSelf ContainsAny<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values);
+
+    /**
+     * Negate the next operation
+     */
+    function negateNext();
 
     /**
      *  Simplified method for opening a new clause within the query

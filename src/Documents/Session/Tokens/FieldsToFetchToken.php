@@ -12,9 +12,9 @@ class FieldsToFetchToken extends QueryToken
     public StringArray $fieldsToFetch;
     public ?StringArray $projections;
     public bool $customFunction;
-    public string $sourceAlias;
+    public ?string $sourceAlias;
 
-    private function __construct(StringArray $fieldsToFetch, ?StringArray $projections, bool $customFunction, String $sourceAlias)
+    private function __construct(StringArray $fieldsToFetch, ?StringArray $projections, bool $customFunction, ?string $sourceAlias)
     {
         $this->fieldsToFetch = $fieldsToFetch;
         $this->projections = $projections;
@@ -22,7 +22,7 @@ class FieldsToFetchToken extends QueryToken
         $this->sourceAlias = $sourceAlias;
     }
 
-    public static function create(?StringArray $fieldsToFetch, ?StringArray $projections, bool $customFunction, string $sourceAlias): FieldsToFetchToken
+    public static function create(?StringArray $fieldsToFetch, ?StringArray $projections, bool $customFunction, ?string $sourceAlias): FieldsToFetchToken
     {
         if ($fieldsToFetch == null || $fieldsToFetch->isEmpty()) {
             throw new IllegalArgumentException("fieldToFetch cannot be null");
@@ -35,7 +35,7 @@ class FieldsToFetchToken extends QueryToken
         return new FieldsToFetchToken($fieldsToFetch, $projections, $customFunction, $sourceAlias);
     }
 
-    public function writeTo(StringBuilder $writer): void
+    public function writeTo(StringBuilder &$writer): void
     {
         for ($i = 0; $i < $this->fieldsToFetch->count(); $i++) {
             $fieldToFetch = $this->fieldsToFetch->offsetGet($i);
@@ -54,9 +54,9 @@ class FieldsToFetchToken extends QueryToken
                 continue;
             }
 
-            $projection = $this->projections != null ? $$this->projections[$i] : null;
+            $projection = $this->projections != null ? $this->projections[$i] : null;
 
-            if ($projection == null || $projection->equals($fieldToFetch)) {
+            if ($projection == null || strcmp($projection, $fieldToFetch) == 0) {
                 continue;
             }
 

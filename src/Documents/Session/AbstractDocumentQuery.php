@@ -1292,40 +1292,39 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
         $tokens->append(WhereToken::create(WhereOperator::exists(), $fieldName, null));
     }
-//
-//    @Override
-//    public void _containsAny(String fieldName, Collection< ? > values) {
-//        fieldName = ensureValidFieldName(fieldName, false);
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//        negateIfNeeded(tokens, fieldName);
-//
-//        Collection< ? > array = transformCollection(fieldName, unpackCollection(values));
-//        WhereToken whereToken = WhereToken.create(WhereOperator.IN, fieldName, addQueryParameter(array), new WhereToken.WhereOptions(false));
-//        tokens.add(whereToken);
-//    }
-//
-//    @Override
-//    public void _containsAll(String fieldName, Collection< ? > values) {
-//        fieldName = ensureValidFieldName(fieldName, false);
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//        negateIfNeeded(tokens, fieldName);
-//
-//        Collection< ? > array = transformCollection(fieldName, unpackCollection(values));
-//
-//        if (array.isEmpty()) {
-//            tokens.add(TrueToken.INSTANCE);
-//            return;
-//        }
-//
-//        WhereToken whereToken = WhereToken.create(WhereOperator.ALL_IN, fieldName, addQueryParameter(array));
-//        tokens.add(whereToken);
-//    }
-//
-//    @Override
+
+    public function _containsAny(?string $fieldName, Collection $values): void
+    {
+        $fieldName = $this->ensureValidFieldName($fieldName, false);
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+        $this->negateIfNeeded($tokens, $fieldName);
+
+        $array = $this->transformCollection($fieldName, $this->unpackCollection($values));
+        $whereToken = WhereToken::create(WhereOperator::in(), $fieldName, $this->addQueryParameter($array), new WhereOptions(false));
+        $tokens->append($whereToken);
+    }
+
+    public function _containsAll(?string $fieldName, Collection $values): void
+    {
+        $fieldName = $this->ensureValidFieldName($fieldName, false);
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+        $this->negateIfNeeded($tokens, $fieldName);
+
+        $array = $this->transformCollection($fieldName, $this->unpackCollection($values));
+
+        if (empty($array)) {
+            $tokens->append(TrueToken::instance());
+            return;
+        }
+
+        $whereToken = WhereToken::create(WhereOperator::allIn(), $fieldName, $this->addQueryParameter($array));
+        $tokens->append($whereToken);
+    }
+
 //    public void _addRootType(Class clazz) {
 //        rootTypes.add(clazz);
 //    }
@@ -1747,7 +1746,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        return fromAlias;
 //    }
 
-    protected static function getSourceAliasIfExists(string $className, QueryData $queryData, StringArray $fields, string &$sourceAlias): void
+    protected static function getSourceAliasIfExists(string $className, QueryData $queryData, StringArray $fields, ?string &$sourceAlias): void
     {
         $sourceAlias = null;
 

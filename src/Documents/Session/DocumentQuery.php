@@ -4,6 +4,7 @@ namespace RavenDB\Documents\Session;
 
 use RavenDB\Constants\DocumentsIndexingFields;
 use RavenDB\Documents\Queries\GroupBy;
+use RavenDB\Documents\Queries\ProjectionBehavior;
 use RavenDB\Documents\Queries\QueryData;
 use RavenDB\Documents\Queries\SearchOperator;
 use RavenDB\Documents\Session\Tokens\DeclareTokenArray;
@@ -13,7 +14,10 @@ use RavenDB\Documents\Session\Tokens\QueryTokenList;
 use RavenDB\Parameters;
 use RavenDB\Type\Collection;
 use RavenDB\Type\Duration;
+use RavenDB\Type\StringArray;
 use RavenDB\Type\StringSet;
+use ReflectionClass;
+use ReflectionProperty;
 
 class DocumentQuery extends AbstractDocumentQuery
     implements DocumentQueryInterface, AbstractDocumentQueryImplInterface
@@ -32,14 +36,58 @@ class DocumentQuery extends AbstractDocumentQuery
         parent::__construct($className, $session, $indexName, $collectionName, $isGroupBy, $declareTokens, $loadTokens, $fromAlias, $isProjectInto);
     }
 
-//    public <TProjection> IDocumentQuery<TProjection> selectFields(Class<TProjection> projectionClass) {
-//        return selectFields(projectionClass, ProjectionBehavior.DEFAULT);
-//    }
-//
-//    @Override
-//    public <TProjection> IDocumentQuery<TProjection> selectFields(Class<TProjection> projectionClass, ProjectionBehavior projectionBehavior) {
-//        try {
-//            PropertyDescriptor[] propertyDescriptors = Introspector.getBeanInfo(projectionClass).getPropertyDescriptors();
+    /**
+     * selectFields(?string $projectionClass): DocumentQueryInterface
+     * selectFields(?string $projectionClass, ProjectionBehavior $projectionBehavior): DocumentQueryInterface
+     * selectFields(?string $projectionClass, ProjectionBehavior $projectionBehavior, string ...$fields): DocumentQueryInterface
+     *
+     * selectFields(?string $projectionClass, string ...$fields): DocumentQueryInterface
+     *
+     * selectFields(?string $projectionClass, QueryData $queryData): DocumentQueryInterface
+     *
+     * @param string|null $projectionClass
+     * @param mixed ...$params
+     *
+     * @return DocumentQueryInterface
+     */
+    public function selectFields(?string $projectionClass, ...$params): DocumentQueryInterface
+    {
+        $projectionBehavior = null;
+        $fields = null;
+        $queryData = null;
+
+        if (count($params)) {
+            if ($params[0] instanceof QueryData) {
+                $queryData = $params[0];
+            } else {
+                if ($params[0] instanceof ProjectionBehavior) {
+                    $projectionBehavior = $params[0];
+                    array_shift($params);
+                }
+
+                if (count($params)) {
+                    $fields = $params;
+                }
+            }
+        }
+
+        if (!$queryData) {
+            if (!$projectionBehavior) {
+                $projectionBehavior = ProjectionBehavior::default();
+            }
+
+            $projections = new StringArray();
+            if ($fields) {
+                foreach ($fields as $field) {
+                    $projections->append($field);
+                }
+                $fields = $projections;
+            } else {
+                $ref = new ReflectionClass(new $projectionClass());
+                $allProperties = $ref->getProperties(ReflectionProperty::IS_PUBLIC | ReflectionProperty::IS_PRIVATE | ReflectionProperty::IS_PROTECTED);
+
+                // @todo: Check with Marcin how to filter this properties
+//                  PropertyDescriptor[] propertyDescriptors = Introspector.getBeanInfo(projectionClass).getPropertyDescriptors();
 //
 //            String[] projections = Arrays.stream(propertyDescriptors)
 //                    .filter(x -> !Object.class.equals(x.getReadMethod().getDeclaringClass())) // ignore class field etc,
@@ -50,17 +98,23 @@ class DocumentQuery extends AbstractDocumentQuery
 //                    .filter(x -> !Object.class.equals(x.getReadMethod().getDeclaringClass())) // ignore class field etc,
 //                    .map(x -> x.getName())
 //                    .toArray(String[]::new);
-//
-//
-//            QueryData queryData = new QueryData(fields, projections);
-//            queryData.setProjectInto(true);
-//            queryData.setProjectionBehavior(projectionBehavior);
-//            return selectFields(projectionClass, queryData);
-//        } catch (IntrospectionException e) {
-//            throw new RuntimeException("Unable to project to class: " + projectionClass.getName() + e.getMessage(), e);
-//        }
-//    }
-//
+
+
+                foreach ($allProperties as $property) {
+                    $projections->append($property->getName());
+                }
+                $fields = $projections;
+            }
+
+            $queryData = new QueryData($fields, $projections);
+            $queryData->setProjectInto(true);
+            $queryData->setProjectionBehavior($projectionBehavior);
+        }
+
+        $queryData->setProjectInto(true);
+        return $this->createDocumentQueryInternal($projectionClass, $queryData);
+    }
+
 //    @Override
 //    public <TTimeSeries> IDocumentQuery<TTimeSeries> selectTimeSeries(Class<TTimeSeries> clazz, Consumer<ITimeSeriesQueryBuilder> timeSeriesQuery) {
 //        QueryData queryData = createTimeSeriesQueryData(timeSeriesQuery);
@@ -103,26 +157,7 @@ class DocumentQuery extends AbstractDocumentQuery
 //        return this;
 //    }
 //
-//    @Override
-//    public <TProjection> IDocumentQuery<TProjection> selectFields(Class<TProjection> projectionClass, String... fields) {
-//        return selectFields(projectionClass, ProjectionBehavior.DEFAULT, fields);
-//    }
-//
-//    @Override
-//    public <TProjection> IDocumentQuery<TProjection> selectFields(Class<TProjection> projectionClass, ProjectionBehavior projectionBehavior, String... fields) {
-//        QueryData queryData = new QueryData(fields, fields);
-//        queryData.setProjectInto(true);
-//        queryData.setProjectionBehavior(projectionBehavior);
-//
-//        IDocumentQuery<TProjection> selectFields = selectFields(projectionClass, queryData);
-//        return selectFields;
-//    }
-//
-//    @Override
-//    public <TProjection> IDocumentQuery<TProjection> selectFields(Class<TProjection> projectionClass, QueryData queryData) {
-//        queryData.setProjectInto(true);
-//        return createDocumentQueryInternal(projectionClass, queryData);
-//    }
+
 
     public function waitForNonStaleResults(?Duration $waitTimeout = null): DocumentQueryInterface
     {
@@ -210,23 +245,22 @@ class DocumentQuery extends AbstractDocumentQuery
         return $this;
     }
 
-//    @Override
-//    public IDocumentQuery<T> containsAny(String fieldName, Collection< ? > values) {
-//        _containsAny(fieldName, values);
-//        return this;
-//    }
-//
-//    //TBD expr public IDocumentQuery<T> ContainsAny<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values)
-//
-//    @Override
-//    public IDocumentQuery<T> containsAll(String fieldName, Collection< ? > values) {
-//        _containsAll(fieldName, values);
-//        return this;
-//    }
-//
-//    //TBD expr public IDocumentQuery<T> ContainsAll<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values)
-//
-//    @Override
+    public function containsAny(?string $fieldName, Collection $values): DocumentQueryInterface
+    {
+        $this->_containsAny($fieldName, $values);
+        return $this;
+    }
+
+    //TBD expr public IDocumentQuery<T> ContainsAny<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values)
+
+    public function containsAll(?string $fieldName, Collection $values): DocumentQueryInterface
+    {
+        $this->_containsAll($fieldName, $values);
+        return $this;
+    }
+
+    //TBD expr public IDocumentQuery<T> ContainsAll<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values)
+
 //    public IDocumentQuery<T> statistics(Reference<QueryStatistics> stats) {
 //        _statistics(stats);
 //        return this;

@@ -653,22 +653,38 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
     }
 
-
     /**
      * Tracks the entity inside the unit of work
      *
-     * @throws IllegalStateException
+     * @param string $className
+     * @param string|DocumentInfo $idOrDocumentInfo
+     * @param array|null $document
+     * @param array|null $metadata
+     * @param bool $noTracking
+     *
+     * @return object|null
+     *
      * @throws ExceptionInterface
      */
-    public function trackEntity(string $className, DocumentInfo $docFound): ?object
-    {
-        return $this->trackEntityInternal(
-            $className,
-            $docFound->getId(),
-            $docFound->getDocument(),
-            $docFound->getMetadata(),
-            $this->noTracking
-        );
+    public function trackEntity(
+        string  $className,
+                $idOrDocumentInfo,
+        ?array  $document = null,
+        ? array $metadata = null,
+        bool    $noTracking = false
+    ): ?object {
+
+        if ($idOrDocumentInfo instanceof DocumentInfo) {
+            return $this->trackEntityInternal(
+                $className,
+                $idOrDocumentInfo->getId(),
+                $idOrDocumentInfo->getDocument(),
+                $idOrDocumentInfo->getMetadata(),
+                $this->noTracking
+            );
+        }
+
+        return $this->trackEntityInternal($className, $idOrDocumentInfo, $document, $metadata, $noTracking);
     }
 
 //    public void registerExternalLoadedIntoTheSession(DocumentInfo info) {
