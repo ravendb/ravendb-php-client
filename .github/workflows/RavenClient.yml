@@ -1,7 +1,7 @@
 name: Run unit tests
 on:
     push:
-        branches: [ v5.2 ]
+        branches: [ v5.2, RDBC-565 ]
     pull_request:
         branches: [ v5.2 ]
 

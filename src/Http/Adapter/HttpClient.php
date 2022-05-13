@@ -17,8 +17,12 @@ class HttpClient implements HttpClientInterface
 
     private static string $proxy;
 
-    public function __construct()
+    private array $clientOptions;
+
+    public function __construct(array $options = [])
     {
+        $this->clientOptions = $options;
+
         $this->client = SymfonyHttpClient::create();
     }
 
@@ -28,7 +32,7 @@ class HttpClient implements HttpClientInterface
      */
     public function execute(HttpRequestInterface $request): HttpResponseInterface
     {
-        $options = $request->getOptions();
+        $options = array_merge($this->clientOptions, $request->getOptions());
 
         if (!empty(self::$proxy) && !key_exists('proxy', $options)) {
             $options['proxy'] = self::$proxy;

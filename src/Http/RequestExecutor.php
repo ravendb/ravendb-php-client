@@ -5,7 +5,10 @@ namespace RavenDB\Http;
 use DateTime;
 use Ds\Map as DSMap;
 use Exception;
+use Ramsey\Uuid\Uuid;
 use RavenDB\Auth\AuthOptions;
+use RavenDB\Auth\Certificate;
+use RavenDB\Auth\CertificateInterface;
 use RavenDB\Constants\HttpStatusCode;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Session\SessionInfo;
@@ -31,10 +34,10 @@ use RavenDB\Utils\UrlUtils;
 // !status: IN PROGRESS
 class RequestExecutor implements CleanCloseable
 {
-//    private static UUID GLOBAL_APPLICATION_IDENTIFIER = UUID.randomUUID();
-//
-//    private static final int INITIAL_TOPOLOGY_ETAG = -2;
-//
+    private static ?string $GLOBAL_APPLICATION_IDENTIFIER = null;
+
+    private static int $INITIAL_TOPOLOGY_ETAG = -2;
+
 //    public static Consumer<HttpClientBuilder> configureHttpClient = null;
 //
 //    private static final GetStatisticsOperation backwardCompatibilityFailureCheckOperation = new GetStatisticsOperation("failure=check");
@@ -46,9 +49,9 @@ class RequestExecutor implements CleanCloseable
 //     * Extension point to plug - in request post processing like adding proxy etc.
 //     */
 //    public static Consumer<HttpRequestBase> requestPostProcessor = null;
-//
-//    public static final String CLIENT_VERSION = "5.2.0";
-//
+
+    public const CLIENT_VERSION = "5.2.0";
+
 //    private static final ConcurrentMap<String, CloseableHttpClient> globalHttpClientWithCompression = new ConcurrentHashMap<>();
 //    private static final ConcurrentMap<String, CloseableHttpClient> globalHttpClientWithoutCompression = new ConcurrentHashMap<>();
 //
@@ -87,15 +90,16 @@ class RequestExecutor implements CleanCloseable
     private DateTime $lastReturnedResponse;
 //
 //    protected final ExecutorService _executorService;
-//
-//    private final HttpCache cache;
-//
+
+    private ?HttpCache $cache = null;
+
 //    private ServerNode _topologyTakenFromNode;
 //
-//    public HttpCache getCache() {
-//        return cache;
-//    }
-//
+    public function getCache(): ?HttpCache
+    {
+        return $this->cache;
+    }
+
 //    public final ThreadLocal<AggressiveCacheOptions> aggressiveCaching = new ThreadLocal<>();
 //
     public function getTopology(): ?Topology
@@ -263,21 +267,37 @@ class RequestExecutor implements CleanCloseable
 //
     private function createHttpClient(): HttpClientInterface
     {
-        return new HttpClient();
-//        ConcurrentMap<String, CloseableHttpClient> httpClientCache = getHttpClientCache();
-//
-//        String name = getHttpClientName();
-//
-//        return httpClientCache.computeIfAbsent(name, n -> createClient());
+        $clientOptions = [];
+
+        if ($this->authOptions && $this->authOptions->getType()->isPem()) {
+            if (!empty($certificatePath)) {
+                $clientOptions['local_cert'] = $this->authOptions->getCertificatePath();
+            }
+
+            if (!empty($password)) {
+                $clientOptions['passphrase'] = $this->authOptions->getPassword();
+            }
+
+            if (!empty($caPath)) {
+                $clientOptions['capath'] = $this->authOptions->getCaPath();
+            }
+
+            if (!empty($caFile)) {
+                $clientOptions['cafile'] = $this->authOptions->getCaFile();
+            }
+        }
+
+        return new HttpClient($clientOptions);
     }
 
-//    private String getHttpClientName() {
-//        if (certificate != null) {
-//            return CertificateUtils.extractThumbprintFromCertificate(certificate);
+//    private function getHttpClientName(): string
+//    {
+//        if ($this->certificate != null) {
+//            return CertificateUtils::extractThumbprintFromCertificate($this->certificate);
 //        }
 //        return "";
 //    }
-//
+
 //    private ConcurrentMap<String, CloseableHttpClient> getHttpClientCache() {
 //        return conventions.isUseCompression() ? globalHttpClientWithCompression : globalHttpClientWithoutCompression;
 //    }
@@ -310,6 +330,7 @@ class RequestExecutor implements CleanCloseable
 //        String[] initialUrls
 
     ) {
+        self::$GLOBAL_APPLICATION_IDENTIFIER = Uuid::uuid4();
 
         $this->onTopologyUpdated = new ClosureArray();
 
@@ -317,7 +338,7 @@ class RequestExecutor implements CleanCloseable
 
         $this->numberOfServerRequests = new AtomicInteger(0);
 
-//        cache = new HttpCache(conventions.getMaxHttpCacheSize());
+        $this->cache = new HttpCache($conventions->getMaxHttpCacheSize());
 //        _executorService = executorService;
         $this->databaseName = $databaseName ?? '';
         $this->authOptions = $authOptions;
@@ -566,34 +587,6 @@ class RequestExecutor implements CleanCloseable
             return;
         }
 
-        if ($this->authOptions != null) {
-            if ($this->authOptions->getType()->isPem()) {
-                $requestOptions = $request->getOptions();
-
-                $certificatePath = $this->authOptions->getCertificatePath();
-                if (!array_key_exists('local_cert', $requestOptions) && !empty($certificatePath)) {
-                    $requestOptions['local_cert'] = $certificatePath;
-                }
-
-                $password = $this->authOptions->getPassword();
-                if (!array_key_exists('passphrase', $requestOptions) && !empty($password)) {
-                    $requestOptions['passphrase'] = $password;
-                }
-
-                $caPath = $this->authOptions->getCaPath();
-                if (!array_key_exists('capath', $requestOptions) && !empty($caPath)) {
-                    $requestOptions['capath'] = $caPath;
-                }
-
-                $caFile = $this->authOptions->getCaFile();
-                if (!array_key_exists('cafile', $requestOptions) && !empty($caFile)) {
-                    $requestOptions['cafile'] = $caFile;
-                }
-
-                $request->setOptions($requestOptions);
-            }
-        }
-
         $response = $this->sendRequestToServer(
             $options->getChosenNode(),
             $options->getNodeIndex(),
@@ -631,34 +624,34 @@ class RequestExecutor implements CleanCloseable
 //                    }
 //
 //                    return;
-                }
+            }
 
-                if ($response->getStatusCode() >= 400) {
-                    if (!$this->handleUnsuccessfulResponse(
-                        $options->getChosenNode(),
-                        $options->getNodeIndex(),
-                        $command,
-                        $request,
-                        $response
+            if ($response->getStatusCode() >= 400) {
+                if (!$this->handleUnsuccessfulResponse(
+                    $options->getChosenNode(),
+                    $options->getNodeIndex(),
+                    $command,
+                    $request,
+                    $response
 //                        urlRef.value,
 //                        sessionInfo,
 //                        shouldRetry
-                    )) {
-                        $dbMissingHeader = $response->getFirstHeader("Database-Missing");
-                        if ($dbMissingHeader != null) {
-                            throw new DatabaseDoesNotExistException($dbMissingHeader);
-                        }
-
-                        $this->throwFailedToContactAllNodes($command, $request);
+                )) {
+                    $dbMissingHeader = $response->getFirstHeader("Database-Missing");
+                    if ($dbMissingHeader != null) {
+                        throw new DatabaseDoesNotExistException($dbMissingHeader);
                     }
-                    return; // we either handled this already in the unsuccessful response or we are throwing
+
+                    $this->throwFailedToContactAllNodes($command, $request);
                 }
+                return; // we either handled this already in the unsuccessful response or we are throwing
+            }
 
 //                EventHelper.invoke(_onSucceedRequest, this, new SucceedRequestEventArgs(_databaseName, urlRef.value, response, request, attemptNum));
 //
 //                $responseDispose = $command->processResponse($cache, $response, $urlRef);
-                $responseDispose = $command->processResponse(null, $response, $request->getUrl());
-                $this->lastReturnedResponse = new DateTime();
+            $responseDispose = $command->processResponse(null, $response, $request->getUrl());
+            $this->lastReturnedResponse = new DateTime();
         } finally {
                 if ($responseDispose->isAutomatic()) {
                     // @todo: check what to do with this - initial idea is to do nothing 'cause this is Java

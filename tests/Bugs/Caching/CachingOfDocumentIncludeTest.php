@@ -2,41 +2,54 @@
 
 namespace tests\RavenDB\Bugs\Caching;
 
+use tests\RavenDB\Bugs\Caching\Entity\User;
 use tests\RavenDB\RemoteTestBase;
 
 class CachingOfDocumentIncludeTest extends RemoteTestBase
 {
-//    public void can_cache_document_with_includes() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            try (IDocumentSession session = store.openSession()) {
-//                User user = new User();
-//                user.setName("Ayende");
-//                session.store(user);
-//
-//                User partner = new User();
-//                partner.setPartnerId("users/1-A");
-//                session.store(partner);
-//
-//                session.saveChanges();
-//            }
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                session.include("partnerId")
-//                        .load(User.class, "users/2-A");
-//                session.saveChanges();
-//            }
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                session.include("partnerId")
-//                        .load(User.class, "users/2-A");
-//
-//                assertThat(session.advanced().getRequestExecutor().getCache().getNumberOfItems())
-//                        .isEqualTo(1);
-//            }
-//        }
-//    }
-//
-//    @Test
+    public function atest_can_cache_document_with_includes(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+
+            $session = $store->openSession();
+            try {
+                $user = new User();
+                $user->setName("Ayende");
+                $session->store($user);
+
+                $partner = new User();
+                $partner->setPartnerId("users/1-A");
+                $session->store($partner);
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                $session->include("partnerId")
+                        ->load(User::class, "users/2-A");
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                $session->include("partnerId")
+                        ->load(User::class, "users/2-A");
+
+                $this->assertEquals(1,$session->advanced()->getRequestExecutor()->getCache()->getNumberOfItems());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
 //    public void can_avoid_using_server_for_load_with_include_if_everything_is_in_session_cacheAsync() throws Exception {
 //        try (IDocumentStore store = getDocumentStore()) {
 //            try (IDocumentSession session = store.openSession()) {
