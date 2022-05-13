@@ -270,19 +270,19 @@ class RequestExecutor implements CleanCloseable
         $clientOptions = [];
 
         if ($this->authOptions && $this->authOptions->getType()->isPem()) {
-            if (!empty($certificatePath)) {
+            if (!empty($this->authOptions->getCertificatePath())) {
                 $clientOptions['local_cert'] = $this->authOptions->getCertificatePath();
             }
 
-            if (!empty($password)) {
+            if (!empty($this->authOptions->getPassword())) {
                 $clientOptions['passphrase'] = $this->authOptions->getPassword();
             }
 
-            if (!empty($caPath)) {
+            if (!empty($this->authOptions->getCaPath())) {
                 $clientOptions['capath'] = $this->authOptions->getCaPath();
             }
 
-            if (!empty($caFile)) {
+            if (!empty($this->authOptions->getCaFile())) {
                 $clientOptions['cafile'] = $this->authOptions->getCaFile();
             }
         }

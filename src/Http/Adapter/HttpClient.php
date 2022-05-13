@@ -22,7 +22,6 @@ class HttpClient implements HttpClientInterface
     public function __construct(array $options = [])
     {
         $this->clientOptions = $options;
-
         $this->client = SymfonyHttpClient::create();
     }
 
