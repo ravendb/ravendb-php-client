@@ -109,7 +109,7 @@ class DocumentInfo
         $this->newDocument = $newDocument;
     }
 
-    public function getCollection(): string
+    public function &getCollection(): string
     {
         return $this->collection;
     }
@@ -119,7 +119,7 @@ class DocumentInfo
         $this->collection = $collection;
     }
 
-    public function getMetadata(): array
+    public function &getMetadata(): array
     {
         return $this->metadata;
     }
@@ -129,7 +129,7 @@ class DocumentInfo
         $this->metadata = $metadata;
     }
 
-    public function getDocument(): array
+    public function &getDocument(): array
     {
         return $this->document;
     }
@@ -139,7 +139,7 @@ class DocumentInfo
         $this->document = $document;
     }
 
-    public function getEntity(): ?object
+    public function &getEntity(): ?object
     {
         return $this->entity;
     }
@@ -149,7 +149,7 @@ class DocumentInfo
         $this->entity = $entity;
     }
 
-    public function getMetadataInstance(): ?MetadataDictionaryInterface
+    public function &getMetadataInstance(): ?MetadataDictionaryInterface
     {
         return $this->metadataInstance;
     }

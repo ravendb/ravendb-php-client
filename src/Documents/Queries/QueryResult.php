@@ -19,14 +19,14 @@ class QueryResult extends GenericQueryResult implements ResultInterface
 //        queryResult.setIndexTimestamp(getIndexTimestamp());
 //        queryResult.setIncludedPaths(getIncludedPaths());
 //        queryResult.setStale(isStale());
-//        queryResult.setSkippedResults(getSkippedResults());
+        $queryResult->setSkippedResults($this->getSkippedResults());
         $queryResult->setTotalResults($this->getTotalResults());
         $queryResult->setLongTotalResults($this->getLongTotalResults());
 //        queryResult.setHighlightings(getHighlightings() != null ? new HashMap<>(getHighlightings()) : null);
 //        queryResult.setExplanations(getExplanations() != null ? new HashMap<>(getExplanations()) : null);
 //        queryResult.setTimings(getTimings());
 //        queryResult.setLastQueryTime(getLastQueryTime());
-//        queryResult.setDurationInMs(getDurationInMs());
+        $queryResult->setDurationInMs($this->getDurationInMs());
 //        queryResult.setResultEtag(getResultEtag());
 //        queryResult.setNodeTag(getNodeTag());
 //        queryResult.setCounterIncludes(getCounterIncludes());

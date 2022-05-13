@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Session;
 
+use Closure;
 use RavenDB\Constants\DocumentsIndexingFields;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Queries\GroupBy;
@@ -28,6 +29,7 @@ use RavenDB\Documents\Session\Tokens\GroupByKeyToken;
 use RavenDB\Documents\Session\Tokens\GroupBySumToken;
 use RavenDB\Documents\Session\Tokens\GroupByToken;
 use RavenDB\Documents\Session\Tokens\HighlightingTokenArray;
+use RavenDB\Documents\Session\Tokens\IntersectMarkerToken;
 use RavenDB\Documents\Session\Tokens\LoadToken;
 use RavenDB\Documents\Session\Tokens\LoadTokenList;
 use RavenDB\Documents\Session\Tokens\MethodsType;
@@ -60,7 +62,7 @@ use RavenDB\Utils\StringUtils;
 
 abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 {
-    protected string $className;
+    protected ?string $className = null;
 
     private StringArray $aliasToGroupByFieldName;
 
@@ -199,7 +201,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     }
 
     protected function __construct(
-        string $className,
+        ?string $className,
         ?InMemoryDocumentSessionOperations $session,
         ?string $indexName,
         ?string $collectionName,
@@ -236,7 +238,9 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         //--
 
         $this->className = $className;
-        $this->rootTypes->append($className);
+        if ($className) {
+            $this->rootTypes->append($className);
+        }
         $this->isGroupBy = $isGroupBy;
         $this->indexName = $indexName;
         $this->collectionName = $collectionName;
@@ -244,7 +248,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->declareTokens = $declareTokens;
         $this->loadTokens = $loadTokens;
         $this->theSession = $session;
-//        _addAfterQueryExecutedListener(this::updateStatsHighlightingsAndExplanations);
+        $this->_addAfterQueryExecutedListener(Closure::fromCallable([$this, 'updateStatsHighlightingsAndExplanations']));
         $this->conventions = $session == null ? new DocumentConventions() : $session->getConventions();
         $this->isProjectInto = $isProjectInto;
     }
@@ -1063,13 +1067,18 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->orderByTokens->append(OrderByToken::scoreDescending());
     }
 
+    public function &getStats(): QueryStatistics
+    {
+        return $this->queryStats;
+    }
+
     /**
      * Provide statistics about the query, such as total count of matching records
      * @param QueryStatistics $stats Output parameter for query statistics
      */
     public function _statistics(QueryStatistics &$stats): void
     {
-        $stats = $this->queryStats;
+        $stats = $this->getStats();
     }
 
     /**
@@ -1266,21 +1275,21 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         }
     }
 
-//    @Override
-//    public void _intersect() {
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        if (tokens.size() > 0) {
-//            QueryToken last = tokens.get(tokens.size() - 1);
-//            if (last instanceof WhereToken || last instanceof CloseSubclauseToken) {
-//                isIntersect = true;
-//
-//                tokens.add(IntersectMarkerToken.INSTANCE);
-//                return;
-//            }
-//        }
-//
-//        throw new IllegalStateException("Cannot add INTERSECT at this point.");
-//    }
+    public function _intersect(): void
+    {
+        $tokens = $this->getCurrentWhereTokens();
+        if (count($tokens)) {
+            $last = $tokens->last();
+            if ($last instanceof WhereToken || $last instanceof CloseSubclauseToken) {
+                $this->isIntersect = true;
+
+                $tokens->append(IntersectMarkerToken::getInstance());
+                return;
+            }
+        }
+
+        throw new IllegalStateException("Cannot add INTERSECT at this point.");
+    }
 
     public function _whereExists(string $fieldName): void {
         $fieldName = $this->ensureValidFieldName($fieldName, false);
@@ -1291,40 +1300,39 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
         $tokens->append(WhereToken::create(WhereOperator::exists(), $fieldName, null));
     }
-//
-//    @Override
-//    public void _containsAny(String fieldName, Collection< ? > values) {
-//        fieldName = ensureValidFieldName(fieldName, false);
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//        negateIfNeeded(tokens, fieldName);
-//
-//        Collection< ? > array = transformCollection(fieldName, unpackCollection(values));
-//        WhereToken whereToken = WhereToken.create(WhereOperator.IN, fieldName, addQueryParameter(array), new WhereToken.WhereOptions(false));
-//        tokens.add(whereToken);
-//    }
-//
-//    @Override
-//    public void _containsAll(String fieldName, Collection< ? > values) {
-//        fieldName = ensureValidFieldName(fieldName, false);
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//        negateIfNeeded(tokens, fieldName);
-//
-//        Collection< ? > array = transformCollection(fieldName, unpackCollection(values));
-//
-//        if (array.isEmpty()) {
-//            tokens.add(TrueToken.INSTANCE);
-//            return;
-//        }
-//
-//        WhereToken whereToken = WhereToken.create(WhereOperator.ALL_IN, fieldName, addQueryParameter(array));
-//        tokens.add(whereToken);
-//    }
-//
-//    @Override
+
+    public function _containsAny(?string $fieldName, Collection $values): void
+    {
+        $fieldName = $this->ensureValidFieldName($fieldName, false);
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+        $this->negateIfNeeded($tokens, $fieldName);
+
+        $array = $this->transformCollection($fieldName, $this->unpackCollection($values));
+        $whereToken = WhereToken::create(WhereOperator::in(), $fieldName, $this->addQueryParameter($array), new WhereOptions(false));
+        $tokens->append($whereToken);
+    }
+
+    public function _containsAll(?string $fieldName, Collection $values): void
+    {
+        $fieldName = $this->ensureValidFieldName($fieldName, false);
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+        $this->negateIfNeeded($tokens, $fieldName);
+
+        $array = $this->transformCollection($fieldName, $this->unpackCollection($values));
+
+        if (empty($array)) {
+            $tokens->append(TrueToken::instance());
+            return;
+        }
+
+        $whereToken = WhereToken::create(WhereOperator::allIn(), $fieldName, $this->addQueryParameter($array));
+        $tokens->append($whereToken);
+    }
+
 //    public void _addRootType(Class clazz) {
 //        rootTypes.add(clazz);
 //    }
@@ -1347,7 +1355,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     private function updateStatsHighlightingsAndExplanations(QueryResult $queryResult): void
     {
-//        $this->queryStats->updateQueryStats($queryResult);
+        $this->queryStats->updateQueryStats($queryResult);
 //        $this->queryHighlightings->update($queryResult);
 //        if ($this->explanations != null) {
 //            $this->explanations->update($queryResult);
@@ -1746,7 +1754,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        return fromAlias;
 //    }
 
-    protected static function getSourceAliasIfExists(string $className, QueryData $queryData, StringArray $fields, string &$sourceAlias): void
+    protected static function getSourceAliasIfExists(?string $className, QueryData $queryData, StringArray $fields, ?string &$sourceAlias): void
     {
         $sourceAlias = null;
 
@@ -1812,15 +1820,17 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //    public void _removeBeforeQueryExecutedListener(Consumer<IndexQuery> action) {
 //        beforeQueryExecutedCallback.remove(action);
 //    }
-//
-//    public void _addAfterQueryExecutedListener(Consumer<QueryResult> action) {
-//        afterQueryExecutedCallback.add(action);
-//    }
-//
-//    public void _removeAfterQueryExecutedListener(Consumer<QueryResult> action) {
-//        afterQueryExecutedCallback.remove(action);
-//    }
-//
+
+    public function _addAfterQueryExecutedListener(Closure $action): void
+    {
+        $this->afterQueryExecutedCallback->append($action);
+    }
+
+    public function _removeAfterQueryExecutedListener(Closure $action): void
+    {
+        $this->afterQueryExecutedCallback->removeValue($action);
+    }
+
 //    public void _addAfterStreamExecutedListener(Consumer<ObjectNode> action) {
 //        afterStreamExecutedCallback.add(action);
 //    }

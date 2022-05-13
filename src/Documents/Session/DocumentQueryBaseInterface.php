@@ -80,13 +80,14 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
 //    TSelf include(Consumer<IQueryIncludeBuilder> includes);
 //
 //    //TBD expr TSelf Include(Expression<Func<T, object>> path);
-//
-//    /**
-//     * Partition the query so we can intersect different parts of the query
-//     *  across different index entries.
-//     *  @return Query instance
-//     */
-//    TSelf intersect();
+
+    /**
+     * Partition the query so we can intersect different parts of the query
+     *  across different index entries.
+     *
+     *  @return static Query instance
+     */
+    public function intersect();
 
     /**
      * Order the results by the specified fields

@@ -2,6 +2,7 @@
 
 namespace RavenDB\Extensions;
 
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Serializer;
 
 class EntityMapper extends Serializer
@@ -23,5 +24,10 @@ class EntityMapper extends Serializer
     public function setDotNetNamingConvertor(DotNetNamingConverter $dotNetNamingConvertor)
     {
         $this->dotNetNamingConvertor = $dotNetNamingConvertor;
+    }
+
+    public function updateValue(object &$entity, array $document)
+    {
+        $this->denormalize($document, get_class($entity), null, [AbstractNormalizer::OBJECT_TO_POPULATE => $entity]);
     }
 }

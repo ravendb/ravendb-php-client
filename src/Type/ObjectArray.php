@@ -2,7 +2,7 @@
 
 namespace RavenDB\Type;
 
-class ObjectArray extends \ArrayObject
+class ObjectArray extends ExtendedArrayObject
 {
     public static function withValue(object $id): ObjectArray
     {

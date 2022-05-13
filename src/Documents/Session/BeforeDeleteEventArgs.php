@@ -10,9 +10,9 @@ class BeforeDeleteEventArgs extends EventArgs
 
     private InMemoryDocumentSessionOperations $session;
     private string $documentId;
-    private object $entity;
+    private ?object $entity;
 
-    public function __construct(InMemoryDocumentSessionOperations $session, string $documentId, object $entity)
+    public function __construct(InMemoryDocumentSessionOperations $session, string $documentId, ?object $entity)
     {
         $this->session = $session;
         $this->documentId = $documentId;
@@ -28,7 +28,7 @@ class BeforeDeleteEventArgs extends EventArgs
         return $this->documentId;
     }
 
-    public function getEntity(): object {
+    public function getEntity(): ?object {
         return $this->entity;
     }
 

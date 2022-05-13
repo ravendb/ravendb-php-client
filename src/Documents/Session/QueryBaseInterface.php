@@ -55,12 +55,11 @@ interface QueryBaseInterface
      */
     function skip(int $count);
 
-//    /**
-//     * Provide statistics about the query, such as total count of matching records
-//     * @param stats Output parameter for query stats
-//     * @return Query instance
-//     */
-//    TSelf statistics(Reference<QueryStatistics> stats);
+    /**
+     * Provide statistics about the query, such as total count of matching records
+     * @param QueryStatistics $stats Output parameter for query stats
+     */
+    function statistics(QueryStatistics &$stats);
 
     /**
      * Takes the specified count.

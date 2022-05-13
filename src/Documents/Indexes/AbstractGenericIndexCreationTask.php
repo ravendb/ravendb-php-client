@@ -30,7 +30,7 @@ abstract class AbstractGenericIndexCreationTask extends AbstractIndexCreationTas
         parent::__construct();
 
         $this->storesStrings = new FieldStorageMap();
-        $this->indexesStrings= new FieldIndexingMap();
+        $this->indexesStrings = new FieldIndexingMap();
         $this->analyzersStrings = new StringArray();
         $this->indexSuggestions = new StringSet();
         $this->termVectorsStrings = new FieldTermVectorMap();

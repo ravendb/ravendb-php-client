@@ -8,6 +8,7 @@ class HttpRequest implements HttpRequestInterface
     public const PUT = 'PUT';
     public const POST = 'POST';
     public const DELETE = 'DELETE';
+    public const HEAD = 'HEAD';
 
     private string $url;
     private string $method;

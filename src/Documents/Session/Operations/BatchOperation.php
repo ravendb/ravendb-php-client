@@ -6,6 +6,7 @@ use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Documents\Commands\Batches\ClusterWideBatchCommand;
 use RavenDB\Documents\Commands\Batches\CommandType;
 use RavenDB\Documents\Commands\Batches\SingleNodeBatchCommand;
+use RavenDB\Documents\Operations\PatchStatus;
 use RavenDB\Documents\Session\ActionsToRunOnSuccess;
 use RavenDB\Documents\Session\AfterSaveChangesEventArgs;
 use RavenDB\Documents\Session\DocumentInfo;
@@ -76,7 +77,7 @@ class BatchOperation
 
     public function setResult(BatchCommandResult $result): void
     {
-        $getCommandType = function($batchResult): CommandType {
+        $getCommandType = function ($batchResult): CommandType {
             $type = null;
             if (key_exists('Type', $batchResult)) {
                 $type = $batchResult['Type'];
@@ -155,7 +156,7 @@ class BatchOperation
                     $this->handleDelete($batchResult);
                     break;
                 case CommandType::PATCH:
-//                    handlePatch(batchResult);
+                    $this->handlePatch($batchResult);
                     break;
                 case CommandType::ATTACHMENT_PUT:
 //                    handleAttachmentPut(batchResult);
@@ -211,7 +212,7 @@ class BatchOperation
         $metadata = $documentInfo->getMetadata();
         $cloned = $metadata; // cloned @todo: check is this realy cloned object and we don't have to do nothing here?
 
-        $cloned[DocumentsMetadata::CHANGE_VECTOR]  = $metadata[DocumentsMetadata::CHANGE_VECTOR] ?? $documentInfo->getChangeVector();
+        $cloned[DocumentsMetadata::CHANGE_VECTOR] = $metadata[DocumentsMetadata::CHANGE_VECTOR] ?? $documentInfo->getChangeVector();
         $documentInfo->setMetadata($cloned);
 
         $document = $documentInfo->getDocument();
@@ -221,11 +222,12 @@ class BatchOperation
         $documentInfo->setDocument($documentCopy);
     }
 
-    private function getOrAddModifications(
-        string $id,
-        DocumentInfo $documentInfo,
-        bool $applyModifications
-    ): DocumentInfo {
+    private function &getOrAddModifications(
+        string       $id,
+        DocumentInfo &$documentInfo,
+        bool         $applyModifications
+    ): DocumentInfo
+    {
         if ($this->modifications == null) {
             $this->modifications = new DocumentInfoArray();
         }
@@ -348,58 +350,64 @@ class BatchOperation
 //        dynamicNode.put("Name", getStringField(batchResult, type, "Name"));
 //        dynamicNode.put("Size", getLongField(batchResult, type, "Size"));
 //    }
-//
-//    private void handlePatch(ObjectNode batchResult) {
-//
-//        JsonNode patchStatus = batchResult.get("PatchStatus");
-//        if (patchStatus == null || patchStatus.isNull()) {
-//            throwMissingField(CommandType.PATCH, "PatchStatus");
-//        }
-//
-//        PatchStatus status = JsonExtensions.getDefaultMapper().convertValue(patchStatus, PatchStatus.class);
-//
-//        switch (status) {
-//            case CREATED:
-//            case PATCHED:
-//                ObjectNode document = (ObjectNode) batchResult.get("ModifiedDocument");
-//                if (document == null) {
-//                    return;
-//                }
-//
-//                String id = getStringField(batchResult, CommandType.PUT, "Id");
-//
-//                DocumentInfo sessionDocumentInfo = _session.documentsById.getValue(id);
-//                if (sessionDocumentInfo == null) {
-//                    return;
-//                }
-//
-//                DocumentInfo documentInfo = getOrAddModifications(id, sessionDocumentInfo, true);
-//
-//                String changeVector = getStringField(batchResult, CommandType.PATCH, "ChangeVector");
-//                String lastModified = getStringField(batchResult, CommandType.PATCH, "LastModified");
-//
-//                documentInfo.setChangeVector(changeVector);
-//
-//                documentInfo.getMetadata().put(Constants.Documents.Metadata.ID, id);
-//                documentInfo.getMetadata().put(Constants.Documents.Metadata.CHANGE_VECTOR, changeVector);
-//                documentInfo.getMetadata().put(Constants.Documents.Metadata.LAST_MODIFIED, lastModified);
-//
-//                documentInfo.setDocument(document);
-//                applyMetadataModifications(id, documentInfo);
-//
-//                if (documentInfo.getEntity() != null) {
-//                    _session.getEntityToJson().populateEntity(documentInfo.getEntity(), id, documentInfo.getDocument());
-//                    AfterSaveChangesEventArgs afterSaveChangesEventArgs = new AfterSaveChangesEventArgs(_session, documentInfo.getId(), documentInfo.getEntity());
-//                    _session.onAfterSaveChangesInvoke(afterSaveChangesEventArgs);
-//                }
-//
-//                break;
-//        }
-//    }
 
-    private function handleDelete(array $batchReslt): void
+    private function handlePatch(array $batchResult): void
     {
-        $this->handleDeleteInternal($batchReslt, CommandType::delete());
+        $patchStatus = null;
+        if (array_key_exists('PatchStatus', $batchResult)) {
+            $patchStatus = $batchResult['PatchStatus'];
+        }
+        if (($patchStatus == null) || empty($patchStatus)) {
+            self::throwMissingField(CommandType::patch(), 'PatchStatus');
+        }
+
+        $status = new PatchStatus($patchStatus);
+
+        switch ($status->getValue()) {
+            case PatchStatus::CREATED:
+            case PatchStatus::PATCHED:
+                $document = $batchResult["ModifiedDocument"];
+                if ($document == null) {
+                    return;
+                }
+
+                $id = $this->getStringField($batchResult, CommandType::put(), "Id");
+
+                $sessionDocumentInfo = $this->session->documentsById->getValue($id);
+                if ($sessionDocumentInfo == null) {
+                    return;
+                }
+
+                $documentInfo = $this->getOrAddModifications($id, $sessionDocumentInfo, true);
+
+                $changeVector = $this->getStringField($batchResult, CommandType::patch(), "ChangeVector");
+                $lastModified = $this->getStringField($batchResult, CommandType::patch(), "LastModified");
+
+                $documentInfo->setChangeVector($changeVector);
+
+                $metadata = $documentInfo->getMetadata();
+                $metadata[DocumentsMetadata::ID] = $id;
+                $metadata[DocumentsMetadata::CHANGE_VECTOR] = $changeVector;
+                $metadata[DocumentsMetadata::LAST_MODIFIED] = $lastModified;
+                $documentInfo->setMetadata($metadata);
+
+                $documentInfo->setDocument($document);
+                $this->applyMetadataModifications($id, $documentInfo);
+
+                if ($documentInfo->getEntity() != null) {
+                    $entity = $documentInfo->getEntity();
+                    $this->session->getEntityToJson()->populateEntity($entity, $id, $documentInfo->getDocument());
+                    $afterSaveChangesEventArgs = new AfterSaveChangesEventArgs($this->session, $documentInfo->getId(), $documentInfo->getEntity());
+                    $this->session->onAfterSaveChangesInvoke($afterSaveChangesEventArgs);
+                }
+
+                break;
+        }
+    }
+
+    private function handleDelete(array $batchResult): void
+    {
+        $this->handleDeleteInternal($batchResult, CommandType::delete());
     }
 
     private function handleDeleteInternal(array $batchResult, CommandType $type): void
@@ -487,10 +495,11 @@ class BatchOperation
 
     private function handleMetadataModifications(
         DocumentInfo $documentInfo,
-        array $batchResult,
-        string $id,
-        string $changeVector
-    ): void {
+        array        $batchResult,
+        string       $id,
+        string       $changeVector
+    ): void
+    {
         foreach ($batchResult as $key => $value) {
             if ($key == "Type") continue;
 
@@ -543,11 +552,12 @@ class BatchOperation
 //    }
 
     private function getStringField(
-        array $json,
+        array       $json,
         CommandType $type,
-        string $fieldName,
-        bool $throwOnMissing = true
-    ): ?string {
+        string      $fieldName,
+        bool        $throwOnMissing = true
+    ): ?string
+    {
         $jsonNode = null;
         if (key_exists($fieldName, $json)) {
             $jsonNode = $json[$fieldName];
@@ -557,7 +567,7 @@ class BatchOperation
             self::throwMissingField($type, $fieldName);
         }
 
-        return (string) $jsonNode;
+        return (string)$jsonNode;
     }
 
 //    private static Long getLongField(ObjectNode json, CommandType type, String fieldName) {
@@ -584,7 +594,8 @@ class BatchOperation
         throw new IllegalStateException($type . " response is invalid. Field '" . $fieldName . "' is missing.");
     }
 
-    private static function throwOnNullResults(): void {
+    private static function throwOnNullResults(): void
+    {
         throw new IllegalStateException("Received empty response from the server. This is not supposed to happen and is likely a bug.");
     }
 }

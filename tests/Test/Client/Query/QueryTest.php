@@ -652,8 +652,6 @@ class QueryTest extends RemoteTestBase
 
                 $this->assertCount(3, $users);
 
-                print_r($users);
-
                 foreach ($users as $user) {
                     $this->assertFalse($session->isLoaded($user->getId()));
                 }

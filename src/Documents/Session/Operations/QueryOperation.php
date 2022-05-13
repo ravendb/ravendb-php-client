@@ -3,6 +3,7 @@
 namespace RavenDB\Documents\Session\Operations;
 
 use RavenDB\Constants\DocumentsMetadata;
+use RavenDB\Constants\TimeSeries;
 use RavenDB\Documents\Commands\QueryCommand;
 use RavenDB\Documents\Queries\IndexQuery;
 use RavenDB\Documents\Queries\QueryResult;
@@ -14,8 +15,10 @@ use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Exceptions\TimeoutException;
 use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Type\Duration;
+use RavenDB\Type\ValueObjectInterface;
 use RavenDB\Utils\Stopwatch;
 use RuntimeException;
+use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use Throwable;
 
 class QueryOperation
@@ -135,14 +138,14 @@ class QueryOperation
 //        return result;
 //    }
 
-    public function complete(string $className): array
+    public function complete(?string $className): array
     {
         $queryResult = $this->currentQueryResults->createSnapshot();
 
         return $this->completeInternal($className, $queryResult);
     }
 
-    private function completeInternal(string $className, QueryResult $queryResult): array
+    private function completeInternal(?string $className, QueryResult $queryResult): array
     {
         if (!$this->noTracking) {
 //            $this->session->registerIncludes($queryResult->getIncludes());
@@ -200,37 +203,52 @@ class QueryOperation
         return $resultItems;
     }
 
-    public static function deserialize(string $className, ?string $id, array $document, array $metadata, ?FieldsToFetchToken $fieldsToFetch, bool $disableEntitiesTracking, InMemoryDocumentSessionOperations $session, bool $isProjectInto): object
+    /**
+     * @param string|null $className
+     * @param string|null $id
+     * @param array $document
+     * @param array $metadata
+     * @param FieldsToFetchToken|null $fieldsToFetch
+     * @param bool $disableEntitiesTracking
+     * @param InMemoryDocumentSessionOperations $session
+     * @param bool $isProjectInto
+     * @return array|mixed|object|null
+     *
+     * @throws ExceptionInterface
+     */
+    public static function deserialize(?string $className, ?string $id, array $document, array $metadata, ?FieldsToFetchToken $fieldsToFetch, bool $disableEntitiesTracking, InMemoryDocumentSessionOperations $session, bool $isProjectInto)
     {
-//        JsonNode projection = metadata.get("@projection");
-//        if (projection == null || !projection.asBoolean()) {
-//            return (T)session.trackEntity(clazz, id, document, metadata, disableEntitiesTracking);
-//        }
-//
-//        if (fieldsToFetch != null && fieldsToFetch.projections != null && fieldsToFetch.projections.length == 1) { // we only select a single field
-//            String projectionField = fieldsToFetch.projections[0];
-//
-//            if (fieldsToFetch.sourceAlias != null) {
-//
-//                if (projectionField.startsWith(fieldsToFetch.sourceAlias)) {
-//                    // remove source-alias from projection name
-//                    projectionField = projectionField.substring(fieldsToFetch.sourceAlias.length() + 1);
-//                }
-//
-//                if (projectionField.startsWith("'")) {
-//                    projectionField = projectionField.substring(1, projectionField.length() - 1);
-//                }
-//            }
-//
-//            if (String.class.equals(clazz) || ClassUtils.isPrimitiveOrWrapper(clazz) || clazz.isEnum()) {
-//                JsonNode jsonNode = document.get(projectionField);
-//                if (jsonNode instanceof ValueNode) {
-//                    return ObjectUtils.firstNonNull(session.getConventions().getEntityMapper().treeToValue(jsonNode, clazz), Defaults.defaultValue(clazz));
-//                }
-//            }
-//
-//            boolean isTimeSeriesField = fieldsToFetch.projections[0].startsWith(Constants.TimeSeries.QUERY_FUNCTION);
-//
+        if (array_key_exists('@projection', $metadata) && $metadata['@projection'] !== null && !boolval($metadata['@projection'])) {
+            //@todo: I think we should not track entity if className is null. Check this in nodeJs client
+            return $session->trackEntity($className, $id, $document, $metadata, $disableEntitiesTracking);
+        }
+
+        $singleField = $fieldsToFetch != null && $fieldsToFetch->projections != null && count($fieldsToFetch->projections) == 1;
+
+        if ($singleField) { // we only select a single field
+            $projectionField = $fieldsToFetch->projections[0];
+
+            if ($fieldsToFetch->sourceAlias != null) {
+
+                if (str_starts_with($projectionField, $fieldsToFetch->sourceAlias)) {
+                    // remove source-alias from projection name
+                    $projectionField = substr($projectionField, strlen($fieldsToFetch->sourceAlias) + 1);
+                }
+
+                if (str_starts_with($projectionField, "'")) {
+                    $projectionField = substr($projectionField, 1, strlen($projectionField) - 1);
+                }
+            }
+
+            if (is_a($className, ValueObjectInterface::class)) { // Enums
+                return new $className($document[$projectionField]);
+            }
+
+            if (!$className) {
+                return $document[$projectionField];
+            }
+
+//            $isTimeSeriesField = str_starts_with($fieldsToFetch->projections[0], TimeSeries::QUERY_FUNCTION);
 //            if (!isProjectInto || isTimeSeriesField) {
 //                JsonNode inner = document.get(projectionField);
 //                if (inner == null) {
@@ -243,7 +261,7 @@ class QueryOperation
 //                    }
 //                }
 //            }
-//        }
+        }
 //
 //        if (ObjectNode.class.equals(clazz)) {
 //            return (T)document;
@@ -252,9 +270,9 @@ class QueryOperation
 //        Reference<ObjectNode> documentRef = new Reference<>(document);
 //        session.onBeforeConversionToEntityInvoke(id, clazz, documentRef);
 //        document = documentRef.value;
-//
+
         $result = $session->getConventions()->getEntityMapper()->denormalize($document, $className);
-//
+
 //        session.onAfterConversionToEntityInvoke(id, document, result);
 //
         return $result;

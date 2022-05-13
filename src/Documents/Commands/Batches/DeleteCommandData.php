@@ -11,7 +11,7 @@ use RavenDB\Exceptions\IllegalArgumentException;
 class DeleteCommandData implements CommandDataInterface
 {
     private string $id;
-    private string $name;
+    private string $name = '';
     private ?string $changeVector;
     private CommandType $type;
     private ?string $originalChangeVector;
@@ -37,7 +37,7 @@ class DeleteCommandData implements CommandDataInterface
 
     public function getName(): string
     {
-        return $this->name;
+         return $this->name;
     }
 
     public function getChangeVector(): string

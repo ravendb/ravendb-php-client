@@ -97,6 +97,10 @@ class ExceptionDispatcher
             throw $exception;
 
         } catch (Throwable $exception) {
+            if ($exception instanceof RavenException) {
+                throw $exception;
+            }
+
             throw new RavenException($exception->getMessage(), $exception);
         }
     }

@@ -64,7 +64,7 @@ class PutIndexesCommand extends RavenCommand implements RaftCommandInterface
 
         $options = [
             'json' => [
-                'Indexes' => $this->getMapper()->normalize($this->indexToAdd),
+                'Indexes' => $this->getMapper()->normalize($this->indexToAdd)
             ],
             'headers' => [
                 'Content-Type' => 'application/json'

@@ -2,6 +2,7 @@
 
 namespace RavenDB\Extensions;
 
+use RavenDB\Type\ExtendedArrayObject;
 use RavenDB\Type\TypedArray;
 use RavenDB\Type\TypedMap;
 use Symfony\Component\Serializer\Exception\CircularReferenceException;
@@ -56,14 +57,17 @@ class TypedArrayNormalizer implements
         }
 
         $result = [];
-        foreach ($object as $item) {
-            $result[] = $this->normalizer->normalize($item, $format, $context);
+        foreach ($object as $key => $item) {
+            $result[$key] = $this->normalizer->normalize($item, $format, $context);
         }
         return $result;
     }
 
     public function supportsNormalization($data, string $format = null)
     {
-        return is_a($data, TypedArray::class) || is_a($data, TypedMap::class);
+        return
+            is_a($data, TypedArray::class) ||
+            is_a($data, TypedMap::class)
+            ;
     }
 }

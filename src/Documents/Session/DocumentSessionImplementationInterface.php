@@ -2,27 +2,26 @@
 
 namespace RavenDB\Documents\Session;
 
+use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRangeArray;
 use RavenDB\Documents\Session\Operations\Lazy\EagerSessionOperationsInterface;
+use RavenDB\Type\ObjectArray;
+use RavenDB\Type\StringArray;
 
 interface DocumentSessionImplementationInterface extends DocumentSessionInterface, EagerSessionOperationsInterface
 {
-    // @todo: implement this interface
+    public function getConventions(): DocumentConventions;
 
-//     DocumentConventions getConventions();
-//
-//    <T> Map<String, T> loadInternal(Class<T> clazz, String[] ids, String[] includes);
-//
-//    <T> Map<String, T> loadInternal(Class<T> clazz, String[] ids, String[] includes, String[] counterIncludes);
-//
-//    <T> Map<String, T> loadInternal(Class<T> clazz, String[] ids, String[] includes, String[] counterIncludes,
-//                                    boolean includeAllCounters);
-//
-//    <T> Map<String, T> loadInternal(Class<T> clazz, String[] ids, String[] includes, String[] counterIncludes,
-//                                    boolean includeAllCounters, List<AbstractTimeSeriesRange> timeSeriesIncludes);
-//
-//    <T> Map<String, T> loadInternal(Class<T> clazz, String[] ids, String[] includes, String[] counterIncludes,
-//                                    boolean includeAllCounters, List<AbstractTimeSeriesRange> timeSeriesIncludes,
-//                                    String[] compareExchangeValueIncludes);
-//
+    public function loadInternal(
+        string $className,
+        ?StringArray $ids,
+        ?StringArray $includes,
+        ?StringArray $counterIncludes = null,
+        bool $includeAllCounters = false,
+        ?AbstractTimeSeriesRangeArray $timeSeriesIncludes = null,
+        ?StringArray $compareExchangeValueIncludes = null
+    ): ObjectArray;
+
+    // @todo: uncomment this for lazy loading
 //    <T> Lazy<Map<String, T>> lazyLoadInternal(Class<T> clazz, String[] ids, String[] includes, Consumer<Map<String, T>> onEval);
 }
