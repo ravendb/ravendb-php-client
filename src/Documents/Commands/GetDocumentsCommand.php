@@ -143,7 +143,7 @@ class GetDocumentsCommand extends RavenCommand
         return $command;
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         $path = $serverNode->getUrl();
         $path .= '/databases/';

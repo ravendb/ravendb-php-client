@@ -51,7 +51,7 @@ class PutIndexesCommand extends RavenCommand implements RaftCommandInterface
         }
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         $url = $serverNode->getUrl() . "/databases/" . $serverNode->getDatabase();
         $url .= $this->allJavaScriptIndexes ? "/indexes" : "/admin/indexes";

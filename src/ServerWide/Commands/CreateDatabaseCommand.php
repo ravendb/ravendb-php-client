@@ -43,7 +43,7 @@ class CreateDatabaseCommand extends RavenCommand implements RaftCommandInterface
         parent::__construct(DatabasePutResult::class);
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         $url =  $serverNode->getUrl() . '/admin/databases?name=' . $this->databaseName;
         $url .= '&replicationFactor=' . $this->replicationFactor;

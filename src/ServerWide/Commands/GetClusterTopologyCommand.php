@@ -23,7 +23,7 @@ class GetClusterTopologyCommand extends RavenCommand
         return $this->debugTag;
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         $url = $serverNode->getUrl() . '/cluster/topology';
 

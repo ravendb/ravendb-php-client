@@ -37,7 +37,7 @@ class PutDocumentCommand extends RavenCommand
         $this->document = $document;
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         return  $serverNode->getUrl() . "/databases/" . $serverNode->getDatabase() . "/docs?id=" . urlEncode($this->id);
     }

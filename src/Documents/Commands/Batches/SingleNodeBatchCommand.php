@@ -157,7 +157,7 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
         return $request;
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         $path = $serverNode->getUrl() . '/databases/' . $serverNode->getDatabase() . '/bulk_docs?';
         $path .= $this->appendOptions();

@@ -39,7 +39,7 @@ class DeleteDatabaseCommand extends RavenCommand implements RaftCommandInterface
 //        }
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         return $serverNode->getUrl() . "/admin/databases";
     }

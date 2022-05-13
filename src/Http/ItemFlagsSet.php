@@ -10,4 +10,15 @@ class ItemFlagsSet extends TypedArray
     {
         parent::__construct(ItemFlags::class);
     }
+
+    public function contains(ItemFlags $flag): bool
+    {
+        /** @var ItemFlags $item */
+        foreach ($this as $item) {
+            if ($item->isEqual($flag)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

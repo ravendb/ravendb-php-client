@@ -28,7 +28,7 @@ class GetCertificateCommand extends RavenCommand
         return false;
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         return $serverNode->getUrl() . '/admin/certificates?thumbprint=' . UrlUtils::escapeDataString($this->thumbprint);
     }

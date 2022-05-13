@@ -26,7 +26,7 @@ class GetCertificatesMetadataCommand extends RavenCommand
         return true;
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         $path = $serverNode->getUrl() . '/admin/certificates?metadataOnly=true';
 

@@ -22,7 +22,7 @@ class GetDatabaseNamesCommand extends RavenCommand
         parent::__construct(GetDatabaseNamesResponse::class);
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         return $serverNode->getUrl() .
             '/databases?start=' . $this->start .

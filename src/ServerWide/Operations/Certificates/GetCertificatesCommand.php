@@ -25,7 +25,7 @@ class GetCertificatesCommand extends RavenCommand
         return false;
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         return $serverNode->getUrl() . '/admin/certificates?start=' . $this->start . '&pageSize=' . $this->pageSize;
     }

@@ -34,7 +34,7 @@ class QueryCommand extends RavenCommand
         $this->indexEntriesOnly = $indexEntriesOnly;
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         $path = $serverNode->getUrl()
             . '/databases/'

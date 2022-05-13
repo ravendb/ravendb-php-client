@@ -2,22 +2,22 @@
 
 namespace RavenDB\Http;
 
+use Closure;
 use DateTime;
 use Ds\Map as DSMap;
 use Exception;
 use Ramsey\Uuid\Uuid;
 use RavenDB\Auth\AuthOptions;
-use RavenDB\Auth\Certificate;
-use RavenDB\Auth\CertificateInterface;
 use RavenDB\Constants\HttpStatusCode;
 use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Documents\Session\BeforeRequestEventArgs;
 use RavenDB\Documents\Session\SessionInfo;
+use RavenDB\Documents\Session\SucceedRequestEventArgs;
 use RavenDB\Documents\Session\TopologyUpdatedEventArgs;
 use RavenDB\Exceptions\AllTopologyNodesDownException;
 use RavenDB\Exceptions\Database\DatabaseDoesNotExistException;
 use RavenDB\Exceptions\ExceptionDispatcher;
 use RavenDB\Exceptions\ExceptionSchema;
-use RavenDB\Exceptions\ExecutionException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Exceptions\Security\AuthorizationException;
 use RavenDB\Extensions\JsonExtensions;
@@ -30,6 +30,7 @@ use RavenDB\Type\Duration;
 use RavenDB\Type\UrlArray;
 use RavenDB\Utils\AtomicInteger;
 use RavenDB\Utils\UrlUtils;
+use RuntimeException;
 
 // !status: IN PROGRESS
 class RequestExecutor implements CleanCloseable
@@ -100,8 +101,8 @@ class RequestExecutor implements CleanCloseable
         return $this->cache;
     }
 
-//    public final ThreadLocal<AggressiveCacheOptions> aggressiveCaching = new ThreadLocal<>();
-//
+    public ?AggressiveCacheOptions $aggressiveCaching = null;
+
     public function getTopology(): ?Topology
     {
         return $this->nodeSelector != null ? $this->nodeSelector->getTopology() : null;
@@ -230,27 +231,31 @@ class RequestExecutor implements CleanCloseable
 //    public void removeOnFailedRequestListener(EventHandler<FailedRequestEventArgs> handler) {
 //        this._onFailedRequest.remove(handler);
 //    }
-//
-//    private final List<EventHandler<BeforeRequestEventArgs>> _onBeforeRequest = new ArrayList<>();
-//
-//    public void addOnBeforeRequestListener(EventHandler<BeforeRequestEventArgs> handler) {
-//        this._onBeforeRequest.add(handler);
-//    }
-//
-//    public void removeOnBeforeRequestListener(EventHandler<BeforeRequestEventArgs> handler) {
-//        this._onBeforeRequest.remove(handler);
-//    }
-//
-//    private final List<EventHandler<SucceedRequestEventArgs>> _onSucceedRequest = new ArrayList<>();
-//
-//    public void addOnSucceedRequestListener(EventHandler<SucceedRequestEventArgs> handler) {
-//        this._onSucceedRequest.add(handler);
-//    }
-//
-//    public void removeOnSucceedRequestListener(EventHandler<SucceedRequestEventArgs> handler) {
-//        this._onSucceedRequest.remove(handler);
-//    }
-//
+
+    private ?ClosureArray $onBeforeRequest = null;
+
+    public function addOnBeforeRequestListener(Closure $handler): void
+    {
+        $this->onBeforeRequest->append($handler);
+    }
+
+    public function removeOnBeforeRequestListener(Closure $handler): void
+    {
+        $this->onBeforeRequest->removeValue($handler);
+    }
+
+    private ?ClosureArray $onSucceedRequest = null;
+
+    public function addOnSucceedRequestListener(Closure $handler): void
+    {
+        $this->onSucceedRequest->append($handler);
+    }
+
+    public function removeOnSucceedRequestListener(Closure $handler): void
+    {
+        $this->onSucceedRequest->removeValue($handler);
+    }
+
     private  ClosureArray $onTopologyUpdated;
 //
 //    public void addOnTopologyUpdatedListener(EventHandler<TopologyUpdatedEventArgs> handler) {
@@ -264,7 +269,7 @@ class RequestExecutor implements CleanCloseable
 //    private void onFailedRequestInvoke(String url, Exception e) {
 //        EventHelper.invoke(_onFailedRequest, this, new FailedRequestEventArgs(_databaseName, url, e));
 //    }
-//
+
     private function createHttpClient(): HttpClientInterface
     {
         $clientOptions = [];
@@ -322,9 +327,6 @@ class RequestExecutor implements CleanCloseable
     protected function __construct(
         ?string $databaseName,
         ?AuthOptions $authOptions,
-//        KeyStore certificate,
-//        char[] keyPassword,
-//        KeyStore trustStore,
         DocumentConventions $conventions
 //        ExecutorService executorService,
 //        String[] initialUrls
@@ -333,7 +335,8 @@ class RequestExecutor implements CleanCloseable
         self::$GLOBAL_APPLICATION_IDENTIFIER = Uuid::uuid4();
 
         $this->onTopologyUpdated = new ClosureArray();
-
+        $this->onBeforeRequest = new ClosureArray();
+        $this->onSucceedRequest = new ClosureArray();
         // --
 
         $this->numberOfServerRequests = new AtomicInteger(0);
@@ -587,72 +590,91 @@ class RequestExecutor implements CleanCloseable
             return;
         }
 
-        $response = $this->sendRequestToServer(
-            $options->getChosenNode(),
-            $options->getNodeIndex(),
-            $command,
-            true,
-            $sessionInfo,
-            $request
-        );
+        $noCaching = $sessionInfo != null && $sessionInfo->isNoCaching();
 
-        if ($response == null) {
-            return ;
-        }
+        $cachedChangeVector = null;
+        $cachedValue = null;
 
-
-
-//        CompletableFuture<Void> refreshTask = refreshIfNeeded(chosenNode, response);
-//
-
-        $command->setStatusCode($response->getStatusCode());
-
-        $responseDispose = ResponseDisposeHandling::automatic();
+        $url = $command->createUrl($options->getChosenNode());
+        $cachedItem = $this->getFromCache($command, !$noCaching, $url,  $cachedChangeVector, $cachedValue);
 
         try {
-            if ($response->getStatusCode() == HttpStatusCode::NOT_MODIFIED) {
-//                    EventHelper.invoke(_onSucceedRequest, this, new SucceedRequestEventArgs(_databaseName, urlRef.value, response, request, attemptNum));
-//
-//                    cachedItem.notModified();
-//
-//                    try {
-//                        if (command.getResponseType() == RavenCommandResponseType.OBJECT) {
-//                            command.setResponse(cachedValue.value, true);
-//                        }
-//                    } catch (IOException e) {
-//                        throw ExceptionsUtils.unwrapException(e);
-//                    }
-//
-//                    return;
+            if ($cachedChangeVector != null) {
+                if ($this->tryGetFromCache($command, $cachedItem, $cachedValue)) {
+                    return;
+                }
             }
 
-            if ($response->getStatusCode() >= 400) {
-                if (!$this->handleUnsuccessfulResponse(
-                    $options->getChosenNode(),
-                    $options->getNodeIndex(),
-                    $command,
-                    $request,
-                    $response
-//                        urlRef.value,
-//                        sessionInfo,
-//                        shouldRetry
-                )) {
-                    $dbMissingHeader = $response->getFirstHeader("Database-Missing");
-                    if ($dbMissingHeader != null) {
-                        throw new DatabaseDoesNotExistException($dbMissingHeader);
+//            $this->setRequestHeaders($sessionInfo, $cachedChangeVector, $request);
+
+            $command->setNumberOfAttempts($command->getNumberOfAttempts() + 1);
+            $attemptNum = $command->getNumberOfAttempts();
+            EventHelper::invoke($this->onBeforeRequest, $this, new BeforeRequestEventArgs($this->databaseName, $url, $request, $attemptNum));
+
+            $response = $this->sendRequestToServer(
+                $options->getChosenNode(),
+                $options->getNodeIndex(),
+                $command,
+                true,
+                $sessionInfo,
+                $request
+            );
+
+            if ($response == null) {
+                return ;
+            }
+
+//            $refreshTask = $this->refreshIfNeeded($chosenNode, $response);
+
+
+            $command->setStatusCode($response->getStatusCode());
+
+            $responseDispose = ResponseDisposeHandling::automatic();
+
+            try {
+                if ($response->getStatusCode() == HttpStatusCode::NOT_MODIFIED) {
+                    EventHelper::invoke($this->onSucceedRequest, $this, new SucceedRequestEventArgs($this->databaseName, $url, $response, $request, $attemptNum));
+
+                    $cachedItem->notModified();
+
+                    try {
+                        if ($command->getResponseType()->isObject()) {
+                            $command->setResponse($cachedValue, true);
+                        }
+                    } catch (\Throwable $e) {
+                        throw ExceptionsUtils::unwrapException($e);
                     }
 
-                    $this->throwFailedToContactAllNodes($command, $request);
+                    return;
                 }
-                return; // we either handled this already in the unsuccessful response or we are throwing
-            }
+
+                if ($response->getStatusCode() >= 400) {
+                    if (!$this->handleUnsuccessfulResponse(
+                        $options->getChosenNode(),
+                        $options->getNodeIndex(),
+                        $command,
+                        $request,
+                        $response,
+                        $url
+//                        sessionInfo,
+//                        shouldRetry
+                    )) {
+                        $dbMissingHeader = $response->getFirstHeader("Database-Missing");
+                        if ($dbMissingHeader != null) {
+                            throw new DatabaseDoesNotExistException($dbMissingHeader);
+                        }
+
+                        $this->throwFailedToContactAllNodes($command, $request);
+                    }
+                    return; // we either handled this already in the unsuccessful response or we are throwing
+                }
 
 //                EventHelper.invoke(_onSucceedRequest, this, new SucceedRequestEventArgs(_databaseName, urlRef.value, response, request, attemptNum));
 //
 //                $responseDispose = $command->processResponse($cache, $response, $urlRef);
-            $responseDispose = $command->processResponse(null, $response, $request->getUrl());
-            $this->lastReturnedResponse = new DateTime();
-        } finally {
+                $responseDispose = $command->processResponse(null, $response, $request->getUrl());
+                $this->lastReturnedResponse = new DateTime();
+            } finally {
                 if ($responseDispose->isAutomatic()) {
                     // @todo: check what to do with this - initial idea is to do nothing 'cause this is Java
 //                    IOUtils::closeQuietly($response, null);
@@ -664,6 +686,9 @@ class RequestExecutor implements CleanCloseable
 //                    //noinspection ThrowFromFinallyBlock
 //                    throw ExceptionsUtils.unwrapException(e);
 //                }
+            }
+        } finally {
+            $cachedItem->close();
         }
     }
 
@@ -1303,33 +1328,35 @@ class RequestExecutor implements CleanCloseable
 //            request.addHeader(Constants.Headers.CLIENT_VERSION, RequestExecutor.CLIENT_VERSION);
 //        }
 //    }
-//
-//    private <TResult> boolean tryGetFromCache(RavenCommand<TResult> command, HttpCache.ReleaseCacheItem cachedItem, String cachedValue) {
-//        AggressiveCacheOptions aggressiveCacheOptions = aggressiveCaching.get();
-//        if (aggressiveCacheOptions != null &&
-//                cachedItem.getAge().compareTo(aggressiveCacheOptions.getDuration()) < 0 &&
-//                (!cachedItem.getMightHaveBeenModified() || aggressiveCacheOptions.getMode() != AggressiveCacheMode.TRACK_CHANGES) &&
-//                command.canCacheAggressively()) {
-//            try {
-//                if (cachedItem.item.flags.contains(ItemFlags.NOT_FOUND)) {
-//                    // if this is a cached delete, we only respect it if it _came_ from an aggressively cached
-//                    // block, otherwise, we'll run the request again
-//
-//                    if (cachedItem.item.flags.contains(ItemFlags.AGGRESSIVELY_CACHED)) {
-//                        command.setResponse(cachedValue, true);
-//                        return true;
-//                    }
-//                } else {
-//                    command.setResponse(cachedValue, true);
-//                    return true;
-//                }
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
-//        return false;
-//    }
-//
+
+    private function tryGetFromCache(RavenCommand $command, ReleaseCacheItem $cachedItem, string $cachedValue): bool
+    {
+        $aggressiveCacheOptions = $this->aggressiveCaching;
+        if ($aggressiveCacheOptions != null &&
+                $cachedItem->getAge()->compareTo($aggressiveCacheOptions->getDuration()) < 0 &&
+                (!$cachedItem->getMightHaveBeenModified() || $aggressiveCacheOptions->getMode()->isTrackChanges()) &&
+                $command->canCacheAggressively()
+        ) {
+            try {
+                if ($cachedItem->getItem()->flags->contains(ItemFlags::notFound())) {
+                    // if this is a cached delete, we only respect it if it _came_ from an aggressively cached
+                    // block, otherwise, we'll run the request again
+
+                    if ($cachedItem->getItem()->flags->contains(ItemFlags::aggressivelyCached())) {
+                        $command->setResponse($cachedValue, true);
+                        return true;
+                    }
+                } else {
+                    $command->setResponse($cachedValue, true);
+                    return true;
+                }
+            } catch (\Throwable $e) {
+                throw new RuntimeException($e);
+            }
+        }
+        return false;
+    }
+
 //    private static String tryGetServerVersion(CloseableHttpResponse response) {
 //        Header serverVersionHeader = response.getFirstHeader(Constants.Headers.SERVER_VERSION);
 //
@@ -1465,17 +1492,18 @@ class RequestExecutor implements CleanCloseable
 //            throw ExceptionsUtils.unwrapException(e);
 //        }
 //    }
-//
-//    private <TResult> HttpCache.ReleaseCacheItem getFromCache(RavenCommand<TResult> command, boolean useCache, String url, Reference<String> cachedChangeVector, Reference<String> cachedValue) {
-//        if (useCache && command.canCache() && command.isReadRequest() && command.getResponseType() == RavenCommandResponseType.OBJECT) {
-//            return cache.get(url, cachedChangeVector, cachedValue);
-//        }
-//
-//        cachedChangeVector.value = null;
-//        cachedValue.value = null;
-//        return new HttpCache.ReleaseCacheItem();
-//    }
-//
+
+    private function getFromCache(RavenCommand $command, bool $useCache, string $url, ?string &$cachedChangeVector, ?string &$cachedValue): ReleaseCacheItem
+    {
+        if ($useCache && $command->canCache() && $command->isReadRequest() && $command->getResponseType()->isObject()) {
+            return $this->cache->get($url, $cachedChangeVector, $cachedValue);
+        }
+
+        $cachedChangeVector = null;
+        $cachedValue = null;
+        return new ReleaseCacheItem();
+    }
+
 //    private <TResult> HttpRequestBase createRequest(ServerNode node, RavenCommand<TResult> command, Reference<String> url) {
 //        try {
 //            HttpRequestBase request = command.createRequest(node, url);
@@ -1513,8 +1541,8 @@ class RequestExecutor implements CleanCloseable
         ?int $nodeIndex,
         RavenCommand $command,
         HttpRequestInterface $request,
-        HttpResponseInterface $response
-//        String url,
+        HttpResponseInterface $response,
+        string $url
 //        SessionInfo sessionInfo,
 //        boolean shouldRetry
     ): bool
@@ -1523,7 +1551,7 @@ class RequestExecutor implements CleanCloseable
             switch ($response->getStatusCode()) {
                 case HttpStatusCode::NOT_FOUND:
                     // @todo: implement cache
-//                    cache.setNotFound(url, aggressiveCaching.get() != null);
+                    $this->cache->setNotFound($url, $this->aggressiveCaching != null);
                     if ($command->getResponseType()->isEmpty()) {
                         return true;
                     }

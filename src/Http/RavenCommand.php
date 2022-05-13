@@ -45,7 +45,7 @@ abstract class RavenCommand
         return $this->responseType;
     }
 
-    abstract protected function createUrl(ServerNode $serverNode): string;
+    abstract public function createUrl(ServerNode $serverNode): string;
 
     abstract public function createRequest(ServerNode $serverNode): HttpRequestInterface;
 

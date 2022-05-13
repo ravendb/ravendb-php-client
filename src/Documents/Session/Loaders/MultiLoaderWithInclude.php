@@ -37,7 +37,7 @@ class MultiLoaderWithInclude implements LoaderWithIncludeInterface
      *
      * @param string $className Result class
      * @param string|StringArray $ids Ids to load
-     * @return ObjectArray|object Map id to entity
+     * @return ObjectArray|object|null Map id to entity
      */
     public function load(string $className, ...$ids)
     {
@@ -59,7 +59,10 @@ class MultiLoaderWithInclude implements LoaderWithIncludeInterface
         $objects = $this->session->loadInternal($className, $idsStringArray, $this->includes);
 
         if ($loadSingleObject) {
-            return $objects[0];
+            if (!count($objects)) {
+                return null;
+            }
+            return $objects->first();
         }
 
         return $objects;
