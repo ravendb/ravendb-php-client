@@ -13,9 +13,9 @@ class StringResult implements ResultInterface
         $this->result = $result;
     }
 
-    public function __toString(): ?string
+    public function __toString(): string
     {
-        return $this->result;
+        return $this->result ?? '';
     }
 
     public function getResult(): ?string
