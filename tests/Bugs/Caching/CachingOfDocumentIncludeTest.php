@@ -82,7 +82,7 @@ class CachingOfDocumentIncludeTest extends RemoteTestBase
 
                 $old = $session->advanced()->getNumberOfRequests();
                 $newUser = $session->include("partnerId")
-                        ->load(User::class, "users/2-A");
+                    ->load(User::class, "users/2-A");
 
                 $this->assertEquals($old, $session->advanced()->getNumberOfRequests());
             } finally {
@@ -157,7 +157,7 @@ class CachingOfDocumentIncludeTest extends RemoteTestBase
                 $old = $session->advanced()->getNumberOfRequests();
 
                 $res = $session->include("partnerId")
-                        ->load(User::class, "users/2-A");
+                    ->load(User::class, "users/2-A");
 
                 $this->assertEquals($old, $session->advanced()->getNumberOfRequests());
             } finally {
@@ -175,7 +175,7 @@ class CachingOfDocumentIncludeTest extends RemoteTestBase
 
             $session = $store->openSession();
             try {
-                $storeUser = function($name) use ($session) {
+                $storeUser = function ($name) use ($session) {
                     $user = new User();
                     $user->setName($name);
                     $session->store($user);
@@ -214,7 +214,7 @@ class CachingOfDocumentIncludeTest extends RemoteTestBase
                 $old = $session->advanced()->getNumberOfRequests();
 
                 $res = $session->include("partnerId")
-                        ->load(User::class, "users/2-A", "users/3-A", "users/6-A");
+                    ->load(User::class, "users/2-A", "users/3-A", "users/6-A");
 
                 $this->assertEquals($old, $session->advanced()->getNumberOfRequests());
             } finally {
@@ -263,10 +263,10 @@ class CachingOfDocumentIncludeTest extends RemoteTestBase
             try {
                 $this->assertEquals(0, $session->advanced()->getNumberOfRequests());
                 $orders = $session->query(Order::class)
-                        ->include(function($x) {
-                            return $x->includeDocuments("lines[].product");
-                        })
-                        ->toList();
+                    ->include(function ($x) {
+                        return $x->includeDocuments("lines[].product");
+                    })
+                    ->toList();
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -282,10 +282,10 @@ class CachingOfDocumentIncludeTest extends RemoteTestBase
             try {
                 $this->assertEquals(0, $session->advanced()->getNumberOfRequests());
                 $orders = $session->query(Order::class)
-                        ->include(function($x) {
-                            return $x->includeDocuments("lines.product");
-                        })
-                        ->toList();
+                    ->include(function ($x) {
+                        return $x->includeDocuments("lines.product");
+                    })
+                    ->toList();
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
