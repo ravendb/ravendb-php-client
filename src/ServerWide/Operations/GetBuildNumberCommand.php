@@ -30,7 +30,7 @@ class GetBuildNumberCommand extends RavenCommand
         return new HttpRequest($this->createUrl($serverNode));
     }
 
-    public function setResponse(string $response, bool $fromCache): void
+    public function setResponse(?string $response, bool $fromCache): void
     {
         if ($response == null) {
             self::throwInvalidResponse();

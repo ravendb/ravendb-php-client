@@ -45,7 +45,7 @@ class GetClusterTopologyCommand extends RavenCommand
         return true;
     }
 
-    public function setResponse(string $response, bool $fromCache): void
+    public function setResponse(?string $response, bool $fromCache): void
     {
         if ($response == null) {
             $this->throwInvalidResponse();

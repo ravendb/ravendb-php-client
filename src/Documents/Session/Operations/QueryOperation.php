@@ -148,7 +148,7 @@ class QueryOperation
     private function completeInternal(?string $className, QueryResult $queryResult): array
     {
         if (!$this->noTracking) {
-//            $this->session->registerIncludes($queryResult->getIncludes());
+            $this->session->registerIncludes($queryResult->getIncludes());
         }
 
         $resultItems = [];

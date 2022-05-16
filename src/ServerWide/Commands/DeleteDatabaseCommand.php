@@ -56,7 +56,7 @@ class DeleteDatabaseCommand extends RavenCommand implements RaftCommandInterface
         return new HttpRequest($this->createUrl($serverNode), HttpRequest::DELETE, $options);
     }
 
-    public function setResponse(string $response, bool $fromCache): void
+    public function setResponse(?string $response, bool $fromCache): void
     {
         $this->result = $this->getMapper()->deserialize($response, $this->getResultClass(), 'json');
     }

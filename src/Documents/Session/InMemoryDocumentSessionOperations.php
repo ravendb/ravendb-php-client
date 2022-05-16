@@ -1739,38 +1739,24 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $this->knownMissingIds = array_merge($this->knownMissingIds, $ids->getArrayCopy());
     }
 
-    /**
-     * @todo: this includes should be of type IncludeInterface but at the moment I didn't implement it
-     * because I don't know what side-effects this can cause
-     *
-     * @param mixed $includes
-     */
-    public function registerIncludes($includes): void
+    public function registerIncludes(array $includes): void
     {
         if ($this->noTracking) {
             return;
         }
 
-        if (empty($this->includes)) {
+        if (empty($includes)) {
             return;
         }
 
-//        for (String fieldName : Lists.newArrayList(includes.fieldNames())) {
-//            JsonNode fieldValue = includes.get(fieldName);
-//
-//            if (fieldValue == null) {
-//                continue;
-//            }
-//
-//            ObjectNode json = (ObjectNode) fieldValue;
-//
-//            DocumentInfo newDocumentInfo = DocumentInfo.getNewDocumentInfo(json);
-//            if (JsonExtensions.tryGetConflict(newDocumentInfo.getMetadata())) {
-//                continue;
-//            }
-//
-//            includedDocumentsById.put(newDocumentInfo.getId(), newDocumentInfo);
-//        }
+        foreach ($includes as $item) {
+            $newDocumentInfo = DocumentInfo::getNewDocumentInfo($item);
+            if (JsonExtensions::tryGetConflict($newDocumentInfo->getMetadata())) {
+                continue;
+            }
+
+            $this->includedDocumentsById->offsetSet($newDocumentInfo->getId(), $newDocumentInfo);
+        }
     }
 
     public function registerMissingIncludes(array $results, array $includes, StringArray $includePaths): void

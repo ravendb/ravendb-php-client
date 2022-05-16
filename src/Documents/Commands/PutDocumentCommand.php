@@ -59,7 +59,7 @@ class PutDocumentCommand extends RavenCommand
         return false;
     }
 
-    public function setResponse(string $response, bool $fromCache): void
+    public function setResponse(?string $response, bool $fromCache): void
     {
         $this->setResult($this->getMapper()->deserialize($response, $this->getResultClass(), 'json'));
     }

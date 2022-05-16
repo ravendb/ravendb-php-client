@@ -4,6 +4,11 @@ namespace RavenDB\Documents\Queries;
 
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
+/**
+ * @template TInclude
+ *
+ * @extends QueryResultBase<TInclude>
+ */
 class GenericQueryResult extends QueryResultBase
 {
     /** @SerializedName("TotalResults"); */

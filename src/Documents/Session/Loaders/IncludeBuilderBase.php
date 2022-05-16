@@ -3,7 +3,11 @@
 namespace RavenDB\Documents\Session\Loaders;
 
 use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Exceptions\IllegalArgumentException;
+use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Type\StringArray;
 use RavenDB\Type\StringSet;
+use RavenDB\Utils\StringUtils;
 
 class IncludeBuilderBase
 {
@@ -14,6 +18,18 @@ class IncludeBuilderBase
 
     public ?string $alias = null;
 //    public Map<String, Tuple<Boolean, Set<String>>> countersToIncludeBySourcePath;
+
+    /**
+     * Structure:
+     *  [
+     *      'string index' => [
+     *          bool value,
+     *          [ array of strings ]
+     *      ]
+     *  ]
+     */
+    public array $countersToIncludeBySourcePath = [];
+
 //    public Map<String, Set<AbstractTimeSeriesRange>> timeSeriesToIncludeBySourceAlias;
     public ?StringSet $compareExchangeValuesToInclude = null;
     public bool $includeTimeSeriesTags = false;
@@ -27,26 +43,31 @@ class IncludeBuilderBase
 //        return timeSeriesToIncludeBySourceAlias.get("");
 //    }
 //
-//    public Set<String> getCountersToInclude() {
-//        if (countersToIncludeBySourcePath == null) {
-//            return null;
-//        }
-//
-//        Tuple<Boolean, Set<String>> value = countersToIncludeBySourcePath.get("");
-//
-//        return value != null ? value.second : new HashSet<>();
-//    }
-//
-//    public boolean isAllCounters() {
-//        if (countersToIncludeBySourcePath == null) {
-//            return false;
-//        }
-//
-//        Tuple<Boolean, Set<String>> value = countersToIncludeBySourcePath.get("");
-//        return value != null ? value.first : false;
-//    }
+    public function getCountersToInclude(): ?StringSet
+    {
+        if ($this->countersToIncludeBySourcePath == null) {
+            return null;
+        }
 
-    public function __construct(?DocumentConventions $conventions) {
+        if (!array_key_exists("", $this->countersToIncludeBySourcePath)) {
+            return new StringSet();
+        }
+
+        return $this->countersToIncludeBySourcePath[""][1];
+    }
+
+    public function isAllCounters(): bool
+    {
+        if ($this->countersToIncludeBySourcePath == null) {
+            return false;
+        }
+
+        $value = $this->countersToIncludeBySourcePath[""];
+        return $value != null ? $value[0] : false;
+    }
+
+    public function __construct(?DocumentConventions $conventions)
+    {
         $this->conventions = $conventions;
     }
 
@@ -57,93 +78,107 @@ class IncludeBuilderBase
 //
 //        compareExchangeValuesToInclude.add(path);
 //    }
-//
-//    protected void _includeCounterWithAlias(String path, String name) {
-//        _withAlias();
-//        _includeCounter(path, name);
-//    }
-//
-//    protected void _includeCounterWithAlias(String path, String[] names) {
-//        _withAlias();
-//        _includeCounters(path, names);
-//    }
-//
-//    protected void _includeDocuments(String path) {
-//        if (documentsToInclude == null) {
-//            documentsToInclude = new HashSet<>();
-//        }
-//
-//        documentsToInclude.add(path);
-//    }
-//
-//    protected void _includeCounter(String path, String name) {
-//        if (StringUtils.isEmpty(name)) {
-//            throw new IllegalArgumentException("Name cannot be empty");
-//        }
-//
-//        assertNotAllAndAddNewEntryIfNeeded(path);
-//
-//        countersToIncludeBySourcePath.get(path).second.add(name);
-//    }
-//
-//    protected void _includeCounters(String path, String[] names) {
-//        if (names == null) {
-//            throw new IllegalArgumentException("Names cannot be null");
-//        }
-//
-//        assertNotAllAndAddNewEntryIfNeeded(path);
-//
-//        for (String name : names) {
-//            if (StringUtils.isBlank(name)) {
-//                throw new IllegalArgumentException("Counters(String[] names): 'names' should not contain null or whitespace elements");
-//            }
-//
-//            countersToIncludeBySourcePath.get(path).second.add(name);
-//        }
-//    }
-//
-//    protected void _includeAllCountersWithAlias(String path) {
-//        _withAlias();
-//        _includeAllCounters(path);
-//    }
-//
-//    protected void _includeAllCounters(String sourcePath) {
-//        if (countersToIncludeBySourcePath == null) {
-//            countersToIncludeBySourcePath = new TreeMap<>(String::compareToIgnoreCase);
-//        }
-//
-//        Tuple<Boolean, Set<String>> val = countersToIncludeBySourcePath.get(sourcePath);
-//
-//        if (val != null && val.second != null) {
-//            throw new IllegalStateException("You cannot use allCounters() after using counter(String name) or counters(String[] names)");
-//        }
-//
-//        countersToIncludeBySourcePath.put(sourcePath, Tuple.create(true, null));
-//    }
-//
-//    protected void assertNotAllAndAddNewEntryIfNeeded(String path) {
-//        if (countersToIncludeBySourcePath != null) {
-//            Tuple<Boolean, Set<String>> val = countersToIncludeBySourcePath.get(path);
-//            if (val != null && val.first) {
-//                throw new IllegalStateException("You cannot use counter(name) after using allCounters()");
-//            }
-//        }
-//
-//        if (countersToIncludeBySourcePath == null) {
-//            countersToIncludeBySourcePath = new TreeMap<>(String::compareToIgnoreCase);
-//        }
-//
-//        if (!countersToIncludeBySourcePath.containsKey(path)) {
-//            countersToIncludeBySourcePath.put(path, Tuple.create(false, new TreeSet<>(String::compareToIgnoreCase)));
-//        }
-//    }
-//
-//    protected void _withAlias() {
-//        if (alias == null) {
-//            alias = "a_" + (nextParameterId++);
-//        }
-//    }
-//
+
+    /**
+     * @param string|null $path
+     * @param string|StringArray|array $names
+     */
+    protected function _includeCounterWithAlias(?string $path, $names): void
+    {
+        $this->_withAlias();
+
+        if (is_string($names)) {
+            $this->_includeCounter($path, $names);
+        } else {
+            $this->_includeCounters($path, $names);
+        }
+    }
+
+    protected function _includeDocuments(?string $path): void
+    {
+        if ($this->documentsToInclude == null) {
+            $this->documentsToInclude = new StringSet();
+        }
+
+        $this->documentsToInclude->append($path);
+    }
+
+    protected function _includeCounter(?string $path, ?string $name): void
+    {
+        if (StringUtils::isEmpty($name)) {
+            throw new IllegalArgumentException("Name cannot be empty");
+        }
+
+        $this->assertNotAllAndAddNewEntryIfNeeded($path);
+
+        $this->countersToIncludeBySourcePath[$path][1][] = $name;;
+    }
+
+    /**
+     * @param string|null $path
+     * @param StringArray|array|null $names
+     */
+    protected function _includeCounters(?string $path, $names): void
+    {
+        if ($names == null) {
+            throw new IllegalArgumentException("Names cannot be null");
+        }
+
+        $this->assertNotAllAndAddNewEntryIfNeeded($path);
+
+        foreach ($names as $name) {
+            if (StringUtils::isBlank($name)) {
+                throw new IllegalArgumentException("Counters(String[] names): 'names' should not contain null or whitespace elements");
+            }
+
+            $this->countersToIncludeBySourcePath[$path][1][] = $name;
+        }
+    }
+
+    protected function _includeAllCountersWithAlias(?string $path): void
+    {
+        $this->_withAlias();
+        $this->_includeAllCounters($path);
+    }
+
+    protected function _includeAllCounters(?string $sourcePath): void
+    {
+        $value = null;
+        if (array_key_exists($sourcePath, $this->countersToIncludeBySourcePath)) {
+            $value = $this->countersToIncludeBySourcePath[$sourcePath];
+        }
+
+        if ($value != null && $value[1] != null) {
+            throw new IllegalStateException("You cannot use allCounters() after using counter(String name) or counters(String[] names)");
+        }
+
+        $this->countersToIncludeBySourcePath[$sourcePath] = [true, null];
+    }
+
+    protected function assertNotAllAndAddNewEntryIfNeeded(?string $path): void
+    {
+        if ($this->countersToIncludeBySourcePath != null) {
+            $value = null;
+            if (array_key_exists($path, $this->countersToIncludeBySourcePath)) {
+                $value = $this->countersToIncludeBySourcePath[$path];
+            }
+            if ($value != null && $value[1]) {
+                throw new IllegalStateException("You cannot use counter(name) after using allCounters()");
+            }
+        }
+
+        if (!array_key_exists($path, $this->countersToIncludeBySourcePath)) {
+            $this->countersToIncludeBySourcePath[$path] = [false, new StringSet()];
+        }
+    }
+
+    protected function _withAlias(): void
+    {
+        if ($this->alias == null) {
+            $alias = "a_" . ($this->nextParameterId++);
+        }
+    }
+
 //    protected void _includeTimeSeriesFromTo(String alias, String name, Date from, Date to) {
 //        assertValid(alias, name);
 //

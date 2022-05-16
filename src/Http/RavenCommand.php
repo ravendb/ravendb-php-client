@@ -136,7 +136,7 @@ abstract class RavenCommand
         return $this->resultClass;
     }
 
-    public function setResponse(string $response, bool $fromCache): void
+    public function setResponse(?string $response, bool $fromCache): void
     {
         if ($this->responseType->isEmpty() || $this->responseType->isRaw()) {
             self::throwInvalidResponse();

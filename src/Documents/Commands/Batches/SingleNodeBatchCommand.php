@@ -201,7 +201,7 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
         return $options;
     }
 
-    public function setResponse(string $response, bool $fromCache): void
+    public function setResponse(?string $response, bool $fromCache): void
     {
         if (empty($response)) {
             throw new IllegalStateException('Got null response from the server after doing a batch, something is very wrong. Probably a garbled response.');

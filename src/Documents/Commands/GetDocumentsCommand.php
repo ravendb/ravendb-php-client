@@ -227,7 +227,10 @@ class GetDocumentsCommand extends RavenCommand
         if (!empty($this->id)) {
             $path .= '&id=' . UrlUtils::escapeDataString($this->id);
         } else if (!empty($this->ids)) {
-//            request = prepareRequestWithMultipleIds(pathBuilder, request, _ids);
+            foreach ($this->ids as $id) {
+                $path .= '&id=' . UrlUtils::escapeDataString($id);
+            }
+
         }
 
         return $path;
@@ -305,7 +308,7 @@ class GetDocumentsCommand extends RavenCommand
         return $hasher->getHash();
 }
 
-    public function setResponse(string $response, bool $fromCache): void
+    public function setResponse(?string $response, bool $fromCache): void
     {
         if ($response == null) {
             $this->result = null;

@@ -2,17 +2,20 @@
 
 namespace RavenDB\Documents\Session;
 
+use InvalidArgumentException;
 use RavenDB\Constants\DocumentsIndexingFields;
 use RavenDB\Documents\Queries\GroupBy;
 use RavenDB\Documents\Queries\ProjectionBehavior;
 use RavenDB\Documents\Queries\QueryData;
 use RavenDB\Documents\Queries\SearchOperator;
+use RavenDB\Documents\Session\Loaders\QueryIncludeBuilder;
 use RavenDB\Documents\Session\Tokens\DeclareTokenArray;
 use RavenDB\Documents\Session\Tokens\FieldsToFetchToken;
 use RavenDB\Documents\Session\Tokens\LoadTokenList;
 use RavenDB\Documents\Session\Tokens\QueryTokenList;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Parameters;
+use RavenDB\Primitives\Consumer;
 use RavenDB\Type\Collection;
 use RavenDB\Type\Duration;
 use RavenDB\Type\StringArray;
@@ -331,22 +334,39 @@ class DocumentQuery extends AbstractDocumentQuery
         return $this;
     }
 
-//    @Override
-//    public IDocumentQuery<T> include(String path) {
-//        _include(path);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> include(Consumer<IQueryIncludeBuilder> includes) {
-//        QueryIncludeBuilder includeBuilder = new QueryIncludeBuilder(getConventions());
-//        includes.accept(includeBuilder);
-//        _include(includeBuilder);
-//        return this;
-//    }
-//
-//    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.Include(Expression<Func<T, object>> path)
-//
+    /**
+     * @param Callable|string $includes
+     * @return DocumentQueryInterface
+     */
+    public function include($includes): DocumentQueryInterface
+    {
+        if (is_string($includes)) {
+            $this->includeWithString($includes);
+        }
+
+        if (is_callable($includes)) {
+            return $this->includeWithCallable($includes);
+        }
+
+        throw new InvalidArgumentException('Invalid argument.');
+    }
+
+
+    public function includeWithString(?string $path): DocumentQueryInterface
+    {
+        $this->_includeWithString($path);
+        return $this;
+    }
+
+    protected function includeWithCallable(Callable $includes): DocumentQueryInterface
+    {
+        $includeBuilder = new QueryIncludeBuilder($this->getConventions());
+        $includes($includeBuilder);
+        $this->_includeWithIncludeBuilder($includeBuilder);
+        return $this;
+    }
+
+    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.Include(Expression<Func<T, object>> path)
 
     public function not(): DocumentQueryInterface
     {

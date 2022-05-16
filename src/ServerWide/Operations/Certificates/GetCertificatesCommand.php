@@ -35,7 +35,7 @@ class GetCertificatesCommand extends RavenCommand
         return new HttpRequest($this->createUrl($serverNode), HttpRequest::GET);
     }
 
-    public function setResponse(string $response, bool $fromCache): void
+    public function setResponse(?string $response, bool $fromCache): void
     {
         if ($response == null) {
             return;

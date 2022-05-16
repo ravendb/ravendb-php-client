@@ -69,17 +69,14 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
 //    TSelf highlight(String fieldName, int fragmentLength, int fragmentCount, HighlightingOptions options, Reference<Highlightings> highlightings);
 //    //TBD expr TSelf Highlight(Expression<Func<T, object>> path, int fragmentLength, int fragmentCount, out Highlightings highlightings);
 //    //TBD expr TSelf Highlight(Expression<Func<T, object>> path, int fragmentLength, int fragmentCount, HighlightingOptions options, out Highlightings highlightings);
-//
-//    /**
-//     * Includes the specified path in the query, loading the document specified in that path
-//     * @param path Path to include
-//     * @return Query instance
-//     */
-//    TSelf include(String path);
-//
-//    TSelf include(Consumer<IQueryIncludeBuilder> includes);
-//
-//    //TBD expr TSelf Include(Expression<Func<T, object>> path);
+
+    /**
+     * Includes the specified path in the query, loading the document specified in that path
+     * @param Callable|string $path Path to include
+     */
+    function include($path);
+
+    //TBD expr TSelf Include(Expression<Func<T, object>> path);
 
     /**
      * Partition the query so we can intersect different parts of the query

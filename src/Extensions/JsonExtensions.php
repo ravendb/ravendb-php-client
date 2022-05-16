@@ -3,6 +3,7 @@
 namespace RavenDB\Extensions;
 
 use Doctrine\Common\Annotations\AnnotationReader;
+use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Queries\IndexQuery;
 use RavenDB\Documents\Session\EntityToJson;
@@ -125,5 +126,13 @@ class JsonExtensions
         }
 
         return $data;
+    }
+
+    public static function tryGetConflict(array $metadata): bool
+    {
+        if (array_key_exists(DocumentsMetadata::CONFLICT, $metadata)) {
+            return $metadata[DocumentsMetadata::CONFLICT];
+        }
+        return false;
     }
 }

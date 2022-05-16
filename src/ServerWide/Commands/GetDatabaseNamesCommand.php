@@ -44,7 +44,7 @@ class GetDatabaseNamesCommand extends RavenCommand
      * @throws \ReflectionException
      * @throws \RavenDB\Exceptions\InvalidResultAssignedToCommandException
      */
-    public function setResponse(string $response, bool $fromCache): void
+    public function setResponse(?string $response, bool $fromCache): void
     {
         $this->setResult($this->getMapper()->deserialize($response, $this->getResultClass(), 'json'));
     }
