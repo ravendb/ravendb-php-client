@@ -41,11 +41,7 @@ class CachingOfDocumentIncludeTest extends RemoteTestBase
                 $session->include("partnerId")
                         ->load(User::class, "users/2-A");
 
-//                print_r($session->advanced()->getRequestExecutor()->getCache());
-
-                // @todo uncomment this
-//                $this->assertEquals(1, $session->advanced()->getRequestExecutor()->getCache()->getNumberOfItems());
-                $this->assertTrue(true);
+                $this->assertEquals(1, $session->advanced()->getRequestExecutor()->getCache()->getNumberOfItems());
             } finally {
                 $session->close();
             }

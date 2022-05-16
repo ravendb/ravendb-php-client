@@ -10,11 +10,10 @@ class HttpUtils
 
     public static function getEtagHeader(HttpResponse $response): ?string
     {
-        $headers = $response->getHeaders();
-        if (!array_key_exists(Headers::ETAG, $headers)) {
+        if (!$response->containsHeader(Headers::ETAG)) {
             return null;
         }
 
-        return $headers[Headers::ETAG];
+        return $response->getFirstHeader(Headers::ETAG);
     }
 }

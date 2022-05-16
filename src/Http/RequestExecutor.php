@@ -670,9 +670,8 @@ class RequestExecutor implements CleanCloseable
                 }
 
 //                EventHelper.invoke(_onSucceedRequest, this, new SucceedRequestEventArgs(_databaseName, urlRef.value, response, request, attemptNum));
-//
-//                $responseDispose = $command->processResponse($cache, $response, $urlRef);
-                $responseDispose = $command->processResponse(null, $response, $request->getUrl());
+
+                $responseDispose = $command->processResponse($this->cache, $response, $request->getUrl());
                 $this->lastReturnedResponse = new DateTime();
             } finally {
                 if ($responseDispose->isAutomatic()) {
