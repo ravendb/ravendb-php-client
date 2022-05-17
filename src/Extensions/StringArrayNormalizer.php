@@ -3,6 +3,7 @@
 namespace RavenDB\Extensions;
 
 use RavenDB\Type\StringArray;
+use RavenDB\Type\StringArrayResult;
 use RavenDB\Type\StringSet;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerAwareInterface;
@@ -31,7 +32,7 @@ class StringArrayNormalizer implements
 
     public function supportsDenormalization($data, string $type, string $format = null): bool
     {
-        return ($type == StringArray::class) or ($type == StringSet::class);
+        return is_a($type, StringArray::class, true);
     }
 
     public function setNormalizer(NormalizerInterface $normalizer)
@@ -54,6 +55,6 @@ class StringArrayNormalizer implements
 
     public function supportsNormalization($data, string $format = null)
     {
-        return is_a($data, StringArray::class);
+        return is_a($data, StringArray::class, true);
     }
 }

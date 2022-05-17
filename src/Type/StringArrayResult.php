@@ -8,12 +8,12 @@ class StringArrayResult extends StringArray implements ResultInterface
 {
     public static function fromArray(array $data): StringArrayResult
     {
-        $sa = new StringArrayResult();
+        $array = new StringArrayResult();
 
         foreach ($data as $key => $value) {
-            $sa->offsetSet($key, $value);
+            $array->offsetSet($key, $value);
         }
 
-        return $sa;
+        return $array;
     }
 }

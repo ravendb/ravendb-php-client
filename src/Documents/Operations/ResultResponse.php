@@ -3,9 +3,9 @@
 namespace RavenDB\Documents\Operations;
 
 use InvalidArgumentException;
-use RavenDB\Type\TypedArrayInterface;
+use RavenDB\Http\ResultInterface;
 
-abstract class ResultResponse
+abstract class ResultResponse implements ResultInterface
 {
     private string $type;
 

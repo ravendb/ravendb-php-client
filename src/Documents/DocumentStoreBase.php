@@ -6,7 +6,10 @@ use Closure;
 use InvalidArgumentException;
 use RavenDB\Auth\AuthOptions;
 use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Documents\Indexes\AbstractIndexCreationTaskArray;
 use RavenDB\Documents\Indexes\AbstractIndexCreationTaskInterface;
+use RavenDB\Documents\Indexes\IndexCreation;
+use RavenDB\Documents\Operations\Indexes\PutIndexesOperation;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Http\RequestExecutor;
@@ -104,21 +107,23 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
         $task->execute($this, $this->conventions, $this->database);
     }
 
-//    @Override
-//    public void executeIndexes(List<IAbstractIndexCreationTask> tasks) {
-//        executeIndexes(tasks, null);
-//    }
-//
-//    @Override
-//    public void executeIndexes(List<IAbstractIndexCreationTask> tasks, String database) {
-//        assertInitialized();
-//        IndexDefinition[] indexesToAdd = IndexCreation.createIndexesToAdd(tasks, conventions);
-//
-//        maintenance()
-//                .forDatabase(getEffectiveDatabase(database))
-//                .send(new PutIndexesOperation(indexesToAdd));
-//    }
-//
+    /**
+     * @param AbstractIndexCreationTaskArray|array $tasks
+     * @param string|null $database
+     */
+    public function executeIndexes($tasks, ?string $database = null): void
+    {
+        if (is_array($tasks)) {
+            $tasks = AbstractIndexCreationTaskArray::fromArray($tasks);
+        }
+        $this->assertInitialized();
+        $indexesToAdd = IndexCreation::createIndexesToAdd($tasks, $this->conventions);
+
+        $this->maintenance()
+                ->forDatabase($this->getEffectiveDatabase($database))
+                ->send(new PutIndexesOperation($indexesToAdd));
+    }
+
 //    private TimeSeriesOperations _timeSeriesOperation;
 //
 //    public TimeSeriesOperations timeSeries() {

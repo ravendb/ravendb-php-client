@@ -40,7 +40,8 @@ class IndexCreation
         $definitions = new IndexDefinitionArray();
 
         foreach ($indexCreationTasks as $creationTask) {
-            $oldConventions = $creationTask->getConvetions();
+
+            $oldConventions = $creationTask->getConventions();
 
             try {
                 $creationTask->setConventions($conventions);

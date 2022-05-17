@@ -7,12 +7,12 @@ use RavenDB\Documents\DocumentStoreInterface;
 
 interface AbstractIndexCreationTaskInterface
 {
-    function getIndexName(): ?string;
-    function getPriority(): ?IndexPriority;
-    function getState(): ?IndexState;
-    function getDeploymentMode(): ?IndexDeploymentMode;
-    function getConventions(): ?DocumentConventions;
-    function setConventions(?DocumentConventions $conventions): void;
-    function createIndexDefinition(): IndexDefinition;
-    function execute(?DocumentStoreInterface $store, ?DocumentConventions $conventions, ?string $database = null): void;
+    public function getIndexName(): ?string;
+    public function getPriority(): ?IndexPriority;
+    public function getState(): ?IndexState;
+    public function getDeploymentMode(): ?IndexDeploymentMode;
+    public function getConventions(): ?DocumentConventions;
+    public function setConventions(?DocumentConventions $conventions): void;
+    public function createIndexDefinition(): IndexDefinition;
+    public function execute(?DocumentStoreInterface $store, ?DocumentConventions $conventions, ?string $database = null): void;
 }
