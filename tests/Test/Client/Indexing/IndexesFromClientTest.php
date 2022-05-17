@@ -2,37 +2,49 @@
 
 namespace tests\RavenDB\Test\Client\Indexing;
 
+use RavenDB\Documents\Indexes\AbstractIndexCreationTaskArray;
+use RavenDB\Documents\Indexes\IndexCreation;
 use RavenDB\Documents\Operations\Indexes\GetTermsOperation;
 use RavenDB\Documents\Session\QueryStatistics;
 use RavenDB\Type\StringArray;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
+use tests\RavenDB\Test\Client\Indexing\Index\Users_ByName;
 
 class IndexesFromClientTest extends RemoteTestBase
 {
-//    public void canCreateIndexesUsingIndexCreation() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            IndexCreation.createIndexes(Collections.singletonList(new Users_ByName()), store);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                User user1 = new User();
-//                user1.setName("Marcin");
-//                session.store(user1, "users/1");
-//                session.saveChanges();
-//            }
-//
-//            waitForIndexing(store);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                List<User> users = session.query(User.class, Users_ByName.class)
-//                        .toList();
-//
-//                assertThat(users)
-//                        .hasSize(1);
-//            }
-//        }
-//    }
-//
+    public function testCanCreateIndexesUsingIndexCreation(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            IndexCreation::createIndexes(AbstractIndexCreationTaskArray::fromArray([new Users_ByName()]), $store);
+
+            $session = $store->openSession();
+            try {
+                $user1 = new User();
+                $user1->setName("Marcin");
+                $session->store($user1, "users/1");
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $this->waitForIndexing($store);
+
+            $session = $store->openSession();
+            try {
+                $users = $session->query(User::class, Users_ByName::class)
+                        ->toList();
+
+                $this->assertCount(1, $users);
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
 //    @Test
 //    public void canReset() throws Exception {
 //        try (IDocumentStore store = getDocumentStore()) {
@@ -162,20 +174,7 @@ class IndexesFromClientTest extends RemoteTestBase
 //                    .isEqualTo(IndexRunningStatus.PAUSED);
 //        }
 //    }
-//
-//    public static class Users_ByName extends AbstractIndexCreationTask {
-//        public Users_ByName() {
-//            map = "from u in docs.Users select new { u.name }";
-//
-//            index("name", FieldIndexing.SEARCH);
-//
-//            indexSuggestions.add("name");
-//
-//            store("name", FieldStorage.YES);
-//        }
-//    }
-//
-//    @Test
+
 //    public void setLockModeAndSetPriority() throws Exception {
 //        try (IDocumentStore store = getDocumentStore()) {
 //
@@ -255,12 +254,11 @@ class IndexesFromClientTest extends RemoteTestBase
             try {
                 $stats = new QueryStatistics();
                 $users = $session
-                        ->query(User::class)
-                        ->waitForNonStaleResults()
-                        ->statistics($stats)
-                        ->whereEquals("name", "Arek")
-                        ->toList()
-                ;
+                    ->query(User::class)
+                    ->waitForNonStaleResults()
+                    ->statistics($stats)
+                    ->whereEquals("name", "Arek")
+                    ->toList();
 
                 $indexName = $stats->getIndexName();
             } finally {
