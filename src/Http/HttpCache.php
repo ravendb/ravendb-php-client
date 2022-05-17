@@ -14,8 +14,15 @@ class HttpCache implements CleanCloseable
 
     public AtomicInteger $generation;
 
-    public function __construct()
+    // @todo: decide what to do with this property
+    // unused at the moment. added just to store value that is passed in constructor.
+    // maybe later we will require to decide how big cache can be
+    private int $maxCacheSize;
+
+    public function __construct(int $maxCacheSize)
     {
+        $this->maxCacheSize = $maxCacheSize;
+
         $this->items = new HttpCacheItemArray();
         $this->generation = new AtomicInteger();
     }
@@ -49,7 +56,7 @@ class HttpCache implements CleanCloseable
         $this->items->offsetSet($url, $httpCacheItem);
     }
 
-    public function get(string $url, &$changeVectorRef, &$responseRef)
+    public function get(string $url, &$changeVectorRef, &$responseRef): ReleaseCacheItem
     {
         $item = $this->items->getIfPresent($url);
 

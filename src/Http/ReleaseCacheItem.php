@@ -18,6 +18,11 @@ class ReleaseCacheItem implements CleanCloseable
         $this->cacheGeneration = $item != null ? $item->generation : 0;
     }
 
+    public function getItem(): ?HttpCacheItem
+    {
+        return $this->item;
+    }
+
     public function notModified(): void
     {
         if ($this->item != null) {
@@ -32,6 +37,11 @@ class ReleaseCacheItem implements CleanCloseable
             return Duration::ofMillis(PHP_INT_MAX);
         }
         return Duration::between($this->item->lastServerUpdate, new DateTime());
+    }
+
+    public function getMightHaveBeenModified(): bool
+    {
+        return false; // TBD
     }
 
     public function close(): void

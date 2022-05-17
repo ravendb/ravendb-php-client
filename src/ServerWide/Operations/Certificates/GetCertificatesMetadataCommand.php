@@ -26,7 +26,7 @@ class GetCertificatesMetadataCommand extends RavenCommand
         return true;
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         $path = $serverNode->getUrl() . '/admin/certificates?metadataOnly=true';
 
@@ -42,7 +42,7 @@ class GetCertificatesMetadataCommand extends RavenCommand
         return new HttpRequest($this->createUrl($serverNode), HttpRequest::GET);
     }
 
-    public function setResponse(string $response, bool $fromCache = false): void
+    public function setResponse(?string $response, bool $fromCache = false): void
     {
         if ($response == null) {
             return;

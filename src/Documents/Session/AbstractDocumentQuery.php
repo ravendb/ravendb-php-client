@@ -14,8 +14,10 @@ use RavenDB\Documents\Queries\QueryOperator;
 use RavenDB\Documents\Queries\QueryResult;
 use RavenDB\Documents\Queries\SearchOperator;
 use RavenDB\Documents\Queries\Timings\QueryTimings;
+use RavenDB\Documents\Session\Loaders\IncludeBuilderBase;
 use RavenDB\Documents\Session\Operations\QueryOperation;
 use RavenDB\Documents\Session\Tokens\CloseSubclauseToken;
+use RavenDB\Documents\Session\Tokens\CompareExchangeValueIncludesToken;
 use RavenDB\Documents\Session\Tokens\CompareExchangeValueIncludesTokenArray;
 use RavenDB\Documents\Session\Tokens\CounterIncludesTokenArray;
 use RavenDB\Documents\Session\Tokens\DeclareTokenArray;
@@ -490,40 +492,58 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        _isInMoreLikeThis = true;
 //        return new MoreLikeThisScope(token, this::addQueryParameter, () -> _isInMoreLikeThis = false);
 //    }
-//
-//    /**
-//     * Includes the specified path in the query, loading the document specified in that path
-//     * @param path Path to include
-//     */
-//    @Override
-//    public void _include(String path) {
-//        documentIncludes.add(path);
-//    }
-//
-//    //TBD expr public void Include(Expression<Func<T, object>> path)
-//
-//    public void _include(IncludeBuilderBase includes) {
-//        if (includes == null) {
-//            return;
+
+    /**
+     * @param string|IncludeBuilderBase|null $includes
+     */
+    public function _include($includes): void
+    {
+        if (is_string($includes)) {
+            $this->_includeWithString($includes);
+            return;
+        }
+
+        $this->_includeWithIncludeBuilder($includes);
+    }
+
+
+    /**
+     * Includes the specified path in the query, loading the document specified in that path
+     * @param ?string $path Path to include
+     */
+    protected function _includeWithString(?string $path): void
+    {
+        $this->documentIncludes->append($path);
+    }
+
+    //TBD expr public void Include(Expression<Func<T, object>> path)
+
+    protected function _includeWithIncludeBuilder(?IncludeBuilderBase $includes)
+    {
+        if ($includes == null) {
+            return;
+        }
+
+        if ($includes->documentsToInclude != null) {
+            foreach ($includes->documentsToInclude as $document) {
+                $this->documentIncludes->append($document);
+            }
+        }
+
+        // @todo: implement this for counters and timeseeries
+//        $this->_includeCounters($includes->alias, $includes->countersToIncludeBySourcePath);
+//        if ($includes->timeSeriesToIncludeBySourceAlias != null) {
+//            $this->_includeTimeSeries($includes->alias, $includes->timeSeriesToIncludeBySourceAlias);
 //        }
-//
-//        if (includes.documentsToInclude != null) {
-//            documentIncludes.addAll(includes.documentsToInclude);
-//        }
-//
-//        _includeCounters(includes.alias, includes.countersToIncludeBySourcePath);
-//        if (includes.timeSeriesToIncludeBySourceAlias != null) {
-//            _includeTimeSeries(includes.alias, includes.timeSeriesToIncludeBySourceAlias);
-//        }
-//
-//        if (includes.compareExchangeValuesToInclude != null) {
-//            compareExchangeValueIncludesTokens = new ArrayList<>();
-//
-//            for (String compareExchangeValue : includes.compareExchangeValuesToInclude) {
-//                compareExchangeValueIncludesTokens.add(CompareExchangeValueIncludesToken.create(compareExchangeValue));
-//            }
-//        }
-//    }
+
+        if ($includes->compareExchangeValuesToInclude != null) {
+            $compareExchangeValueIncludesTokens = new CompareExchangeValueIncludesTokenArray();
+
+            foreach($includes->compareExchangeValuesToInclude as $compareExchangeValue) {
+                $this->compareExchangeValueIncludesTokens->append(CompareExchangeValueIncludesToken::create($compareExchangeValue));
+            }
+        }
+    }
 
     public function _take(int $count): void
     {

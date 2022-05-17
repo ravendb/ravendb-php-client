@@ -13,11 +13,10 @@ class HttpCacheItemArray extends TypedArray
 
     public function getIfPresent(string $url): ?HttpCacheItem
     {
-        $item = $this->offsetGet($url);
-        if ($item) {
-            return $item;
+        if (!$this->offsetExists($url)) {
+            return null;
         }
 
-        return null;
+        return $this->offsetGet($url);
     }
 }

@@ -21,7 +21,7 @@ class GetServerWideOperationStateCommand extends RavenCommand
         $this->selectedNodeTag = $nodeTag;
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         return $serverNode->getUrl() . '/operations/state?id=' . $this->id;
     }

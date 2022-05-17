@@ -20,7 +20,7 @@ class GetBuildNumberCommand extends RavenCommand
         return true;
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         return $serverNode->getUrl() . "/build/version";
     }
@@ -30,7 +30,7 @@ class GetBuildNumberCommand extends RavenCommand
         return new HttpRequest($this->createUrl($serverNode));
     }
 
-    public function setResponse(string $response, bool $fromCache): void
+    public function setResponse(?string $response, bool $fromCache): void
     {
         if ($response == null) {
             self::throwInvalidResponse();

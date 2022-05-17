@@ -9,13 +9,19 @@ use RavenDB\Type\StringArray;
 
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
+/**
+ * @template TInclude
+ */
 class QueryResultBase
 {
     /** @SerializedName ("Results") */
     private ?array $results = null;
 
-    /** @ SerializedName ("Includes") */
-    private ?IncludesArray $includes = null;
+    /**
+     * @SerializedName ("Includes")
+     * @var TInclude[]|null $includes
+     */
+    private ?array $includes = null;
 
 //    private ObjectNode counterIncludes;
 //
@@ -73,18 +79,18 @@ class QueryResultBase
 
     /**
      * Gets the document included in the result.
-     * @return ?IncludesArray Query includes
+     * @return ?TInclude[] Query includes
      */
-    public function getIncludes(): ?IncludesArray
+    public function getIncludes(): ?array
     {
         return $this->includes;
     }
 
     /**
      * Sets the document included in the result.
-     * @param ?IncludesArray $includes Sets the value
+     * @param ?TInclude[] $includes Sets the value
      */
-    public function setIncludes(?IncludesArray $includes): void
+    public function setIncludes(?array $includes): void
     {
         $this->includes = $includes;
     }

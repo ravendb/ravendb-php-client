@@ -80,4 +80,10 @@ class Duration
     {
         return (float)$this->intervalInMilliSeconds / 1000;
     }
+
+    public function compareTo(Duration $getDuration): int
+    {
+        // @todo: implement this
+        return -1;
+    }
 }

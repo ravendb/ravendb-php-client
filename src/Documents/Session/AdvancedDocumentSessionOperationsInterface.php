@@ -4,6 +4,7 @@ namespace RavenDB\Documents\Session;
 
 use Closure;
 use RavenDB\Documents\Commands\Batches\CommandDataInterface;
+use RavenDB\Http\RequestExecutor;
 
 interface AdvancedDocumentSessionOperationsInterface
 {
@@ -20,9 +21,9 @@ interface AdvancedDocumentSessionOperationsInterface
 //    Map<String, Object> getExternalState();
 //
 //    ServerNode getCurrentSessionNode();
-//
-//    RequestExecutor getRequestExecutor();
-//
+
+    public function getRequestExecutor(): RequestExecutor;
+
 //    SessionInfo getSessionInfo();
 //
 //    void addBeforeStoreListener(EventHandler<BeforeStoreEventArgs> handler);

@@ -36,7 +36,7 @@ class HiLoReturnCommand extends VoidRavenCommand
         $this->end = $end;
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         return $serverNode->getUrl()
             . "/databases/" . $serverNode->getDatabase()

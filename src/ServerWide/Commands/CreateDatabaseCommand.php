@@ -43,7 +43,7 @@ class CreateDatabaseCommand extends RavenCommand implements RaftCommandInterface
         parent::__construct(DatabasePutResult::class);
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         $url =  $serverNode->getUrl() . '/admin/databases?name=' . $this->databaseName;
         $url .= '&replicationFactor=' . $this->replicationFactor;
@@ -73,7 +73,7 @@ class CreateDatabaseCommand extends RavenCommand implements RaftCommandInterface
      * @throws \Symfony\Component\Serializer\Exception\ExceptionInterface
      * @throws \RavenDB\Exceptions\IllegalStateException
      */
-    public function setResponse(string $response, bool $fromCache): void
+    public function setResponse(?string $response, bool $fromCache): void
     {
         if (empty($response)) {
             $this->throwInvalidResponse();

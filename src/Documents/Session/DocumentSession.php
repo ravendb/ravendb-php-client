@@ -344,6 +344,9 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
      * load(string $className, StringArray $ids): ObjectArray
      * load(string $className, StringArray $ids, Consumer $includes): ObjectArray;
      *
+     * load(string $className, array $ids): ObjectArray
+     * load(string $className, array $ids, Consumer $includes): ObjectArray;
+     *
      * load(string $className, string $id1, string $id2, string $id3 ... ): ObjectArray
      *
      * @param string $className Object class
@@ -372,6 +375,10 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         if (count($params) == 1) {
             if ($params[0] instanceof StringArray) {
                 $ids = $params[0];
+            }
+
+            if (is_array($params[0])) {
+                $ids = StringArray::fromArray($params[0]);
             }
         }
 
@@ -495,21 +502,24 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         $includes->accept($includeBuilder);
 
         // @todo: continue work with includes from here
+        $timeSeriesIncludes = null;
 //        List<AbstractTimeSeriesRange> timeSeriesIncludes = includeBuilder.getTimeSeriesToInclude() != null
 //                ? new ArrayList<>(includeBuilder.getTimeSeriesToInclude())
 //                : null;
-//
+
+        $compareExchangeValuesToInclude = null;
 //        String[] compareExchangeValuesToInclude = includeBuilder.getCompareExchangeValuesToInclude() != null
 //                ? includeBuilder.getCompareExchangeValuesToInclude().toArray(new String[0])
 //                : null;
 
-//        return loadInternal(clazz,
-//                ids.toArray(new String[0]),
-//                includeBuilder.documentsToInclude != null ? includeBuilder.documentsToInclude.toArray(new String[0]) : null,
-//                includeBuilder.getCountersToInclude() != null ? includeBuilder.getCountersToInclude().toArray(new String[0]) : null,
-//                includeBuilder.isAllCounters(),
-//                timeSeriesIncludes,
-//                compareExchangeValuesToInclude);
+        return $this->loadInternal($className,
+                $ids,
+                $includeBuilder->documentsToInclude != null ? $includeBuilder->documentsToInclude : null,
+                $includeBuilder->getCountersToInclude() != null ? $includeBuilder->getCountersToInclude() : null,
+                $includeBuilder->isAllCounters(),
+                $timeSeriesIncludes,
+                $compareExchangeValuesToInclude
+        );
     }
 
     public function loadInternal(

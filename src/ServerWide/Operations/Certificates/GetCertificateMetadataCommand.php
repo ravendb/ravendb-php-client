@@ -25,7 +25,7 @@ class GetCertificateMetadataCommand extends RavenCommand
         return true;
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         return $serverNode->getUrl()
         . '/admin/certificates?thumbprint='

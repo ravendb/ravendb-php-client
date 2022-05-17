@@ -19,7 +19,7 @@ class GetStatisticsCommand extends RavenCommand
         $this->selectedNodeTag = $nodeTag;
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
             $url = $serverNode->getUrl() . "/databases/" . $serverNode->getDatabase() . "/stats";
             if ($this->debugTag != null) {

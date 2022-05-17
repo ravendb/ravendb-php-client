@@ -35,7 +35,7 @@ class NextHiLoCommand extends RavenCommand
         $this->lastRangeMax = $lastRangeMax;
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         $date = $this->lastRangeAt != null ? NetISO8601Utils::format($this->lastRangeAt, true) : "";
         $path = "/hilo/next?tag=" . urlEncode($this->tag)

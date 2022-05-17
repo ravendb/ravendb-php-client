@@ -45,7 +45,7 @@ class PutClientCertificateCommand extends VoidRavenCommand implements RaftComman
         return false;
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         return $serverNode->getUrl() . "/admin/certificates";
     }

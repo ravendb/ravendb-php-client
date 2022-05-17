@@ -22,7 +22,7 @@ class GetDatabaseNamesCommand extends RavenCommand
         parent::__construct(GetDatabaseNamesResponse::class);
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         return $serverNode->getUrl() .
             '/databases?start=' . $this->start .
@@ -44,7 +44,7 @@ class GetDatabaseNamesCommand extends RavenCommand
      * @throws \ReflectionException
      * @throws \RavenDB\Exceptions\InvalidResultAssignedToCommandException
      */
-    public function setResponse(string $response, bool $fromCache): void
+    public function setResponse(?string $response, bool $fromCache): void
     {
         $this->setResult($this->getMapper()->deserialize($response, $this->getResultClass(), 'json'));
     }

@@ -23,7 +23,7 @@ class GetClusterTopologyCommand extends RavenCommand
         return $this->debugTag;
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         $url = $serverNode->getUrl() . '/cluster/topology';
 
@@ -45,7 +45,7 @@ class GetClusterTopologyCommand extends RavenCommand
         return true;
     }
 
-    public function setResponse(string $response, bool $fromCache): void
+    public function setResponse(?string $response, bool $fromCache): void
     {
         if ($response == null) {
             $this->throwInvalidResponse();

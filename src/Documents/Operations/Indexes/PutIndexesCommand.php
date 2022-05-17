@@ -51,7 +51,7 @@ class PutIndexesCommand extends RavenCommand implements RaftCommandInterface
         }
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         $url = $serverNode->getUrl() . "/databases/" . $serverNode->getDatabase();
         $url .= $this->allJavaScriptIndexes ? "/indexes" : "/admin/indexes";
@@ -74,7 +74,7 @@ class PutIndexesCommand extends RavenCommand implements RaftCommandInterface
         return new HttpRequest($this->createUrl($serverNode), HttpRequest::PUT, $options);
     }
 
-    public function setResponse(string $response, bool $fromCache): void
+    public function setResponse(?string $response, bool $fromCache): void
     {
         /** @var PutIndexesResponse $decodedResponse */
         $decodedResponse = $this->getMapper()->deserialize($response, PutIndexesResponse::class, 'json');

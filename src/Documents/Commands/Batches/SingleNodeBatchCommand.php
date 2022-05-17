@@ -157,7 +157,7 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
         return $request;
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         $path = $serverNode->getUrl() . '/databases/' . $serverNode->getDatabase() . '/bulk_docs?';
         $path .= $this->appendOptions();
@@ -201,7 +201,7 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
         return $options;
     }
 
-    public function setResponse(string $response, bool $fromCache): void
+    public function setResponse(?string $response, bool $fromCache): void
     {
         if (empty($response)) {
             throw new IllegalStateException('Got null response from the server after doing a batch, something is very wrong. Probably a garbled response.');

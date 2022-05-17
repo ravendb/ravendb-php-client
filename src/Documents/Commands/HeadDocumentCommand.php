@@ -38,7 +38,7 @@ class HeadDocumentCommand extends RavenCommand
         return false;
     }
 
-    protected function createUrl(ServerNode $serverNode): string
+    public function createUrl(ServerNode $serverNode): string
     {
         return $serverNode->getUrl() . "/databases/" . $serverNode->getDatabase() . "/docs?id=" . UrlUtils::escapeDataString($this->id);
     }

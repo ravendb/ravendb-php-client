@@ -62,4 +62,9 @@ class ItemFlags implements ValueObjectInterface
     {
         return new ItemFlags(self::AGGRESSIVELY_CACHED);
     }
+
+    public function isEqual(ItemFlags $flag): bool
+    {
+        return $this->value == $flag->getValue();
+    }
 }
