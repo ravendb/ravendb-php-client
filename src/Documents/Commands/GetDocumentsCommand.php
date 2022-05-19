@@ -178,7 +178,7 @@ class GetDocumentsCommand extends RavenCommand
             }
         }
 
-        if (count($this->includes)) {
+        if (!empty($this->includes)) {
             foreach ($this->includes as $include) {
                 $path .= '&include=' . urlEncode($include);
             }
