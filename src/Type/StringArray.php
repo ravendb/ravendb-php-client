@@ -4,6 +4,11 @@ namespace RavenDB\Type;
 
 class StringArray extends ExtendedArrayObject implements \JsonSerializable
 {
+    public function __construct()
+    {
+        parent::__construct();
+    }
+
     public static function withValue(string $id): StringArray
     {
         $a = new StringArray();

@@ -12,7 +12,7 @@ class GetStatisticsCommand extends RavenCommand
 {
     private ?string $debugTag = null;
 
-    public function __construct(?string $debugTag, ?string $nodeTag)
+    public function __construct(?string $debugTag = null, ?string $nodeTag = null)
     {
         parent::__construct(DatabaseStatistics::class);
         $this->debugTag = $debugTag;

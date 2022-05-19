@@ -2,232 +2,264 @@
 
 namespace tests\RavenDB\Test\Client\Indexing;
 
+use RavenDB\Documents\Commands\ExplainQueryCommand;
+use RavenDB\Documents\Commands\ExplainQueryResultArray;
+use RavenDB\Documents\Indexes\AbstractIndexCreationTaskArray;
+use RavenDB\Documents\Indexes\IndexCreation;
+use RavenDB\Documents\Indexes\IndexDefinition;
+use RavenDB\Documents\Indexes\IndexDefinitionArray;
+use RavenDB\Documents\Indexes\IndexingStatus;
+use RavenDB\Documents\Indexes\IndexLockMode;
+use RavenDB\Documents\Indexes\IndexPriority;
+use RavenDB\Documents\Indexes\IndexStats;
+use RavenDB\Documents\Operations\DatabaseStatistics;
+use RavenDB\Documents\Operations\GetStatisticsCommand;
+use RavenDB\Documents\Operations\Indexes\DeleteIndexOperation;
+use RavenDB\Documents\Operations\Indexes\GetIndexesOperation;
+use RavenDB\Documents\Operations\Indexes\GetIndexingStatusOperation;
+use RavenDB\Documents\Operations\Indexes\GetIndexNamesOperation;
+use RavenDB\Documents\Operations\Indexes\GetIndexStatisticsOperation;
 use RavenDB\Documents\Operations\Indexes\GetTermsOperation;
+use RavenDB\Documents\Operations\Indexes\ResetIndexOperation;
+use RavenDB\Documents\Operations\Indexes\SetIndexesLockOperation;
+use RavenDB\Documents\Operations\Indexes\SetIndexesPriorityOperation;
+use RavenDB\Documents\Operations\Indexes\StartIndexingOperation;
+use RavenDB\Documents\Operations\Indexes\StopIndexingOperation;
+use RavenDB\Documents\Operations\Indexes\StopIndexOperation;
+use RavenDB\Documents\Queries\IndexQuery;
 use RavenDB\Documents\Session\QueryStatistics;
 use RavenDB\Type\StringArray;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
+use tests\RavenDB\Test\Client\Indexing\Index\Users_ByName;
+use tests\RavenDB\Test\Client\Indexing\Index\UsersIndex;
 
 class IndexesFromClientTest extends RemoteTestBase
 {
-//    public void canCreateIndexesUsingIndexCreation() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            IndexCreation.createIndexes(Collections.singletonList(new Users_ByName()), store);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                User user1 = new User();
-//                user1.setName("Marcin");
-//                session.store(user1, "users/1");
-//                session.saveChanges();
-//            }
-//
-//            waitForIndexing(store);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                List<User> users = session.query(User.class, Users_ByName.class)
-//                        .toList();
-//
-//                assertThat(users)
-//                        .hasSize(1);
-//            }
-//        }
-//    }
-//
-//    @Test
-//    public void canReset() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            try (IDocumentSession session = store.openSession()) {
-//                User user1 = new User();
-//                user1.setName("Marcin");
-//                session.store(user1, "users/1");
-//                session.saveChanges();
-//            }
-//
-//            store.executeIndex(new UsersIndex());
-//
-//            waitForIndexing(store);
-//
-//            GetStatisticsOperation.GetStatisticsCommand command = new GetStatisticsOperation.GetStatisticsCommand();
-//            store.getRequestExecutor().execute(command);
-//
-//            DatabaseStatistics statistics = command.getResult();
-//            Date firstIndexingTime = statistics.getIndexes()[0].getLastIndexingTime();
-//
-//            String indexName = new UsersIndex().getIndexName();
-//
-//            // now reset index
-//
-//            Thread.sleep(2); /// avoid the same millisecond
-//
-//            store.maintenance().send(new ResetIndexOperation(indexName));
-//            waitForIndexing(store);
-//
-//            command = new GetStatisticsOperation.GetStatisticsCommand();
-//            store.getRequestExecutor().execute(command);
-//
-//            statistics = command.getResult();
-//
-//            Date secondIndexingTime = statistics.getLastIndexingTime();
-//            assertThat(firstIndexingTime)
-//                    .isBefore(secondIndexingTime);
-//        }
-//    }
-//
-//    @Test
-//    public void canExecuteManyIndexes() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            store.executeIndexes(Collections.singletonList(new UsersIndex()));
-//
-//            GetIndexNamesOperation indexNamesOperation = new GetIndexNamesOperation(0, 10);
-//            String[] indexNames = store.maintenance().send(indexNamesOperation);
-//
-//            assertThat(indexNames)
-//                    .hasSize(1);
-//        }
-//    }
-//
-//    public static class UsersIndex extends AbstractIndexCreationTask {
-//        public UsersIndex() {
-//            map = "from user in docs.users select new { user.name }";
-//        }
-//    }
-//
-//    @Test
-//    public void canDelete() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            store.executeIndex(new UsersIndex());
-//
-//            store.maintenance().send(new DeleteIndexOperation(new UsersIndex().getIndexName()));
-//
-//            GetStatisticsOperation.GetStatisticsCommand command = new GetStatisticsOperation.GetStatisticsCommand();
-//            store.getRequestExecutor().execute(command);
-//
-//            DatabaseStatistics statistics = command.getResult();
-//
-//            assertThat(statistics.getIndexes())
-//                    .hasSize(0);
-//        }
-//    }
-//
-//    @Test
-//    public void canStopAndStart() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            new Users_ByName().execute(store);
-//
-//            IndexingStatus status = store.maintenance().send(new GetIndexingStatusOperation());
-//
-//            assertThat(status.getStatus())
-//                    .isEqualTo(IndexRunningStatus.RUNNING);
-//
-//            assertThat(status.getIndexes())
-//                    .hasSize(1);
-//
-//            assertThat(status.getIndexes()[0].getStatus())
-//                    .isEqualTo(IndexRunningStatus.RUNNING);
-//
-//            store.maintenance().send(new StopIndexingOperation());
-//
-//            status = store.maintenance().send(new GetIndexingStatusOperation());
-//
-//            assertThat(status.getStatus())
-//                    .isEqualTo(IndexRunningStatus.PAUSED);
-//
-//            assertThat(status.getIndexes()[0].getStatus())
-//                    .isEqualTo(IndexRunningStatus.PAUSED);
-//
-//            store.maintenance().send(new StartIndexingOperation());
-//
-//            status = store.maintenance().send(new GetIndexingStatusOperation());
-//
-//            assertThat(status.getStatus())
-//                    .isEqualTo(IndexRunningStatus.RUNNING);
-//
-//            assertThat(status.getIndexes())
-//                    .hasSize(1);
-//
-//            assertThat(status.getIndexes()[0].getStatus())
-//                    .isEqualTo(IndexRunningStatus.RUNNING);
-//
-//            store.maintenance().send(new StopIndexOperation(status.getIndexes()[0].getName()));
-//
-//            status = store.maintenance().send(new GetIndexingStatusOperation());
-//
-//            assertThat(status.getStatus())
-//                    .isEqualTo(IndexRunningStatus.RUNNING);
-//
-//            assertThat(status.getIndexes())
-//                    .hasSize(1);
-//
-//            assertThat(status.getIndexes()[0].getStatus())
-//                    .isEqualTo(IndexRunningStatus.PAUSED);
-//        }
-//    }
-//
-//    public static class Users_ByName extends AbstractIndexCreationTask {
-//        public Users_ByName() {
-//            map = "from u in docs.Users select new { u.name }";
-//
-//            index("name", FieldIndexing.SEARCH);
-//
-//            indexSuggestions.add("name");
-//
-//            store("name", FieldStorage.YES);
-//        }
-//    }
-//
-//    @Test
-//    public void setLockModeAndSetPriority() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//
-//            new Users_ByName().execute(store);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                User user1 = new User();
-//                user1.setName("Fitzchak");
-//                session.store(user1);
-//
-//                User user2 = new User();
-//                user2.setName("Arek");
-//                session.store(user2);
-//
-//                session.saveChanges();
-//            }
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                List<User> users = session
-//                        .query(User.class, Users_ByName.class)
-//                        .waitForNonStaleResults()
-//                        .whereEquals("name", "Arek")
-//                        .toList();
-//
-//
-//                assertThat(users)
-//                        .hasSize(1);
-//            }
-//
-//            IndexDefinition[] indexes = store.maintenance().send(new GetIndexesOperation(0, 128));
-//            assertThat(indexes)
-//                    .hasSize(1);
-//
-//            IndexDefinition index = indexes[0];
-//            IndexStats stats = store.maintenance().send(new GetIndexStatisticsOperation(index.getName()));
-//
-//            assertThat(stats.getLockMode())
-//                    .isEqualTo(IndexLockMode.UNLOCK);
-//            assertThat(stats.getPriority())
-//                    .isEqualTo(IndexPriority.NORMAL);
-//
-//            store.maintenance().send(new SetIndexesLockOperation(index.getName(), IndexLockMode.LOCKED_IGNORE));
-//            store.maintenance().send(new SetIndexesPriorityOperation(index.getName(), IndexPriority.LOW));
-//
-//            stats = store.maintenance().send(new GetIndexStatisticsOperation(index.getName()));
-//
-//            assertThat(stats.getLockMode())
-//                    .isEqualTo(IndexLockMode.LOCKED_IGNORE);
-//            assertThat(stats.getPriority())
-//                    .isEqualTo(IndexPriority.LOW);
-//        }
-//    }
+    public function testCanCreateIndexesUsingIndexCreation(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            IndexCreation::createIndexes(AbstractIndexCreationTaskArray::fromArray([new Users_ByName()]), $store);
+
+            $session = $store->openSession();
+            try {
+                $user1 = new User();
+                $user1->setName("Marcin");
+                $session->store($user1, "users/1");
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $this->waitForIndexing($store);
+
+            $session = $store->openSession();
+            try {
+                $users = $session->query(User::class, Users_ByName::class)
+                    ->toList();
+
+                $this->assertCount(1, $users);
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCanReset(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $session = $store->openSession();
+            try {
+                $user1 = new User();
+                $user1->setName("Marcin");
+                $session->store($user1, "users/1");
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $store->executeIndex(new UsersIndex());
+
+            $this->waitForIndexing($store);
+
+            $command = new GetStatisticsCommand();
+            $store->getRequestExecutor()->execute($command);
+
+            /** @var DatabaseStatistics $statistics */
+            $statistics = $command->getResult();
+            $firstIndexingTime = $statistics->getIndexes()[0]->getLastIndexingTime();
+
+            $indexName = (new UsersIndex())->getIndexName();
+
+            // now reset index
+
+            usleep(2000); // avoid the same millisecond
+
+            $store->maintenance()->send(new ResetIndexOperation($indexName));
+            $this->waitForIndexing($store);
+
+            $command = new GetStatisticsCommand();
+            $store->getRequestExecutor()->execute($command);
+
+            /** @var DatabaseStatistics $statistics */
+            $statistics = $command->getResult();
+
+            $secondIndexingTime = $statistics->getLastIndexingTime();
+
+            $this->assertTrue($firstIndexingTime < $secondIndexingTime);
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCanExecuteManyIndexes(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $store->executeIndexes([new UsersIndex()]);
+
+            $indexNamesOperation = new GetIndexNamesOperation(0, 10);
+            $indexNames = $store->maintenance()->send($indexNamesOperation);
+
+            $this->assertCount(1, $indexNames);
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCanDelete(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $store->executeIndex(new UsersIndex());
+
+            $store->maintenance()->send(new DeleteIndexOperation((new UsersIndex())->getIndexName()));
+
+            $command = new GetStatisticsCommand();
+            $store->getRequestExecutor()->execute($command);
+
+            /** @var DatabaseStatistics $statistics */
+            $statistics = $command->getResult();
+
+            $this->assertEmpty($statistics->getIndexes());
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCanStopAndStart(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            (new Users_ByName())->execute($store);
+
+            /** @var IndexingStatus $status */
+            $status = $store->maintenance()->send(new GetIndexingStatusOperation());
+
+            $this->assertTrue($status->getStatus()->isRunning());
+
+            $this->assertCount(1, $status->getIndexes());
+
+            $this->assertTrue($status->getIndexes()[0]->getStatus()->isRunning());
+
+            $store->maintenance()->send(new StopIndexingOperation());
+
+            /** @var IndexingStatus $status */
+            $status = $store->maintenance()->send(new GetIndexingStatusOperation());
+
+            $this->assertTrue($status->getStatus()->isPaused());
+
+            $this->assertTrue($status->getIndexes()[0]->getStatus()->isPaused());
+
+            $store->maintenance()->send(new StartIndexingOperation());
+
+            /** @var IndexingStatus $status */
+            $status = $store->maintenance()->send(new GetIndexingStatusOperation());
+
+            $this->assertTrue($status->getStatus()->isRunning());
+
+            $this->assertCount(1, $status->getIndexes());
+
+            $this->assertTrue($status->getIndexes()[0]->getStatus()->isRunning());
+
+            $store->maintenance()->send(new StopIndexOperation($status->getIndexes()[0]->getName()));
+
+            /** @var IndexingStatus $status */
+            $status = $store->maintenance()->send(new GetIndexingStatusOperation());
+
+            $this->assertTrue($status->getStatus()->isRunning());
+
+            $this->assertCount(1, $status->getIndexes());
+
+            $this->assertTrue($status->getIndexes()[0]->getStatus()->isPaused());
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testSetLockModeAndSetPriority(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+
+            (new Users_ByName())->execute($store);
+
+            $session = $store->openSession();
+            try {
+                $user1 = new User();
+                $user1->setName("Fitzchak");
+                $session->store($user1);
+
+                $user2 = new User();
+                $user2->setName("Arek");
+                $session->store($user2);
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                $users = $session
+                        ->query(User::class, Users_ByName::class)
+                        ->waitForNonStaleResults()
+                        ->whereEquals("name", "Arek")
+                        ->toList();
+
+                $this->assertCount(1, $users);
+            } finally {
+                $session->close();
+            }
+
+            /** @var IndexDefinitionArray $indexes */
+            $indexes = $store->maintenance()->send(new GetIndexesOperation(0, 128));
+            $this->assertCount(1, $indexes);
+
+            /** @var IndexDefinition $index */
+            $index = $indexes[0];
+            /** @var IndexStats $stats */
+            $stats = $store->maintenance()->send(new GetIndexStatisticsOperation($index->getName()));
+
+            $this->assertTrue($stats->getLockMode()->isUnlock());
+            $this->assertTrue($stats->getPriority()->isNormal());
+
+            $store->maintenance()->send(new SetIndexesLockOperation($index->getName(), IndexLockMode::lockedIgnore()));
+            $store->maintenance()->send(new SetIndexesPriorityOperation($index->getName(), IndexPriority::low()));
+
+            /** @var IndexStats $stats */
+            $stats = $store->maintenance()->send(new GetIndexStatisticsOperation($index->getName()));
+
+            $this->assertTrue($stats->getLockMode()->isLockedIgnore());
+            $this->assertTrue($stats->getPriority()->isLow());
+        } finally {
+            $store->close();
+        }
+    }
 
     public function testGetTerms(): void
     {
@@ -255,12 +287,11 @@ class IndexesFromClientTest extends RemoteTestBase
             try {
                 $stats = new QueryStatistics();
                 $users = $session
-                        ->query(User::class)
-                        ->waitForNonStaleResults()
-                        ->statistics($stats)
-                        ->whereEquals("name", "Arek")
-                        ->toList()
-                ;
+                    ->query(User::class)
+                    ->waitForNonStaleResults()
+                    ->statistics($stats)
+                    ->whereEquals("name", "Arek")
+                    ->toList();
 
                 $indexName = $stats->getIndexName();
             } finally {
@@ -278,91 +309,107 @@ class IndexesFromClientTest extends RemoteTestBase
         }
     }
 
-//    @Test
-//    public void getIndexNames() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            try (IDocumentSession session = store.openSession()) {
-//                User user1 = new User();
-//                user1.setName("Fitzchak");
-//                session.store(user1);
-//
-//                User user2 = new User();
-//                user2.setName("Arek");
-//                session.store(user2);
-//
-//                session.saveChanges();
-//            }
-//
-//            String indexName;
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                Reference<QueryStatistics> statsRef = new Reference<>();
-//                List<User> users = session
-//                        .query(User.class)
-//                        .waitForNonStaleResults()
-//                        .statistics(statsRef)
-//                        .whereEquals("name", "Arek")
-//                        .toList();
-//
-//                indexName = statsRef.value.getIndexName();
-//            }
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                String[] indexNames = store.maintenance().send(new GetIndexNamesOperation(0, 10));
-//
-//                assertThat(indexNames)
-//                        .hasSize(1);
-//
-//                assertThat(indexNames)
-//                        .contains(indexName);
-//            }
-//        }
-//    }
-//
-//    @SuppressWarnings("UnusedAssignment")
-//    @Test
-//    public void canExplain() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            User user1 = new User();
-//            user1.setName("Fitzchak");
-//
-//            User user2 = new User();
-//            user2.setName("Arek");
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                session.store(user1);
-//                session.store(user2);
-//                session.saveChanges();
-//            }
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                Reference<QueryStatistics> statsRef = new Reference<>();
-//                List<User> users = session.query(User.class)
-//                        .statistics(statsRef)
-//                        .whereEquals("name", "Arek")
-//                        .toList();
-//
-//                users = session.query(User.class)
-//                        .statistics(statsRef)
-//                        .whereGreaterThan("age", 10)
-//                        .toList();
-//            }
-//
-//            IndexQuery indexQuery = new IndexQuery("from users");
-//            ExplainQueryCommand command = new ExplainQueryCommand(store.getConventions(), indexQuery);
-//
-//            store.getRequestExecutor().execute(command);
-//
-//            ExplainQueryCommand.ExplainQueryResult[] explanations = command.getResult();
-//            assertThat(explanations)
-//                    .hasSize(1);
-//            assertThat(explanations[0].getIndex())
-//                    .isNotNull();
-//            assertThat(explanations[0].getReason())
-//                    .isNotNull();
-//        }
-//    }
-//
+    public function testGetIndexNames(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+
+            $session = $store->openSession();
+            try {
+                $user1 = new User();
+                $user1->setName("Fitzchak");
+                $session->store($user1);
+
+                $user2 = new User();
+                $user2->setName("Arek");
+                $session->store($user2);
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $indexName = '';
+
+            $session = $store->openSession();
+            try {
+                $statsRef = new QueryStatistics();
+                $users = $session
+                    ->query(User::class)
+                    ->waitForNonStaleResults()
+                    ->statistics($statsRef)
+                    ->whereEquals("name", "Arek")
+                    ->toList();
+
+                $indexName = $statsRef->getIndexName();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                $indexNames = $store->maintenance()->send(new GetIndexNamesOperation(0, 10));
+
+                $this->assertCount(1, $indexNames);
+                $this->assertContains($indexName, $indexNames);
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCanExplain(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $user1 = new User();
+            $user1->setName("Fitzchak");
+
+            $user2 = new User();
+            $user2->setName("Arek");
+
+            $session = $store->openSession();
+            try {
+                $session->store($user1);
+                $session->store($user2);
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                $statsRef = new QueryStatistics();
+                $users = $session->query(User::class)
+                    ->statistics($statsRef)
+                    ->whereEquals("name", "Arek")
+                    ->toList();
+
+                $users = $session->query(User::class)
+                    ->statistics($statsRef)
+                    ->whereGreaterThan("age", 10)
+                    ->toList();
+            } finally {
+                $session->close();
+            }
+
+            $indexQuery = new IndexQuery("from users");
+            $command = new ExplainQueryCommand($store->getConventions(), $indexQuery);
+
+            $store->getRequestExecutor()->execute($command);
+
+            /** @var ExplainQueryResultArray $explanations */
+            $explanations = $command->getResult();
+            $this->assertCount(1, $explanations);
+            $this->assertNotNull($explanations[0]->getIndex());
+            $this->assertNotNull($explanations[0]->getReason());
+        } finally {
+            $store->close();
+        }
+    }
+
 //    @Test
 //    public void moreLikeThis() throws Exception {
 //        try (IDocumentStore store = getDocumentStore()) {
