@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Identity;
 
+use RavenDB\Type\StringArray;
 use Throwable;
 use InvalidArgumentException;
 
@@ -17,8 +18,14 @@ class GenerateEntityIdOnTheClient
     /** @var callable */
     private $generateId;
 
+    private StringArray $identityGetterList;
+    private StringArray $identitySetterList;
+
     public function __construct(DocumentConventions $conventions, callable $generateId)
     {
+        $this->identityGetterList = new StringArray();
+        $this->identitySetterList = new StringArray();
+
         $this->conventions = $conventions;
         $this->generateId = $generateId;
     }
@@ -31,13 +38,13 @@ class GenerateEntityIdOnTheClient
     /**
      * Attempts to get the document key from an instance
      *
-     * @param ?Object $entity    Entity to get id from
+     * @param ?Object $entity Entity to get id from
      *
      * @return null|string      Return id that was read from entity, otherwise null
      *
      * @throws InvalidArgumentException|IllegalStateException
      */
-    public function tryGetIdFromInstance(?Object $entity): ?string
+    public function tryGetIdFromInstance(?object $entity): ?string
     {
         if ($entity == null) {
             throw new InvalidArgumentException("Entity cannot be null");
@@ -54,7 +61,7 @@ class GenerateEntityIdOnTheClient
                 return null;
             }
 
-            $value = $entity->$identityProperty;
+            $value = $this->extractPropertyValue($entity, $identityProperty);
 
             if (!is_string($value)) {
                 return null;
@@ -132,7 +139,8 @@ class GenerateEntityIdOnTheClient
         }
 
         try {
-            $identity = property_exists($identityProperty, $entity) ? $entity->$identityProperty : null;
+            $identity = $this->extractPropertyValue($entity, $identityProperty);
+
             if ($isProjection && $identity != null) {
                 // identity property was already set
                 return;
@@ -153,7 +161,7 @@ class GenerateEntityIdOnTheClient
     {
         try {
             if ($propertyOrFieldType == 'string') {
-                $entity->$field = $id;
+                $this->setStringPropertyOrField($entity, $field, $id);
             } else {
                 throw new InvalidArgumentException("Cannot set identity value '" . $id .
                     "' on field " . $propertyOrFieldType . " because field type is not string.");
@@ -161,5 +169,111 @@ class GenerateEntityIdOnTheClient
         } catch (Throwable $e) {
             throw new IllegalStateException($e->getMessage());
         }
+    }
+
+    private function extractPropertyValue(object $entity, string $identityProperty)
+    {
+        $value = null;
+        try {
+            $value = $entity->$identityProperty;
+        } catch (Throwable $e) {
+            // ignore
+        }
+
+        $identityGetter = $this->identityGetterList->get(get_class($entity));
+        if ($identityGetter == null) {
+            $identityGetter = $this->getIdentityGetter($entity, $identityProperty);
+            $this->identityGetterList->offsetSet(get_class($entity), $identityGetter);
+        }
+
+        try {
+            $value = $entity->$identityGetter();
+        } catch (Throwable $e) {
+            // ignore
+        }
+
+        return $value;
+    }
+
+    private function getIdentityGetter(object $entity, string $identityProperty): ?string
+    {
+
+        try {
+            $method = 'get' . ucfirst($identityProperty);
+            if (method_exists($entity, $method)) {
+                $value = $entity->$method();
+            }
+            return $method;
+        } catch (Throwable $e) {
+            // ignore
+        }
+
+        try {
+            if (method_exists($entity, $identityProperty)) {
+                $value = $entity->$identityProperty();
+            }
+            return $identityProperty;
+        } catch (Throwable $e) {
+            // ignore
+        }
+
+        try {
+            $method = 'get_' . $identityProperty;
+            if (method_exists($entity, $method)) {
+                $value = $entity->$method();
+            }
+            return $method;
+        } catch (Throwable $e) {
+            // ignore
+        }
+
+        return null;
+    }
+
+    private function setStringPropertyOrField(object &$entity, ?string $identityProperty, ?string $value): void
+    {
+        try {
+            $entity->$identityProperty = $value;
+            return;
+        } catch (Throwable $e) {
+            // ignore
+        }
+
+        $identitySetter = $this->identitySetterList->get(get_class($entity));
+        if ($identitySetter == null) {
+            $identitySetter = $this->getIdentitySetter($entity, $identityProperty, $value);
+            $this->identitySetterList->offsetSet(get_class($entity), $identitySetter);
+        }
+
+        try {
+            $entity->$identitySetter($value);
+        } catch (Throwable $e) {
+            // ignore
+        }
+    }
+
+    private function getIdentitySetter(object $entity, string $identityProperty, $value): ?string
+    {
+        try {
+            $method = 'set' . ucfirst($identityProperty);
+            if (method_exists($entity, $method)) {
+                $entity->$method($value);
+            }
+            return $method;
+        } catch (Throwable $e) {
+            // ignore
+        }
+
+        try {
+            $method = 'set_' . $identityProperty;
+            if (method_exists($entity, $method)) {
+                 $entity->$method($value);
+            }
+            return $method;
+        } catch (Throwable $e) {
+            // ignore
+        }
+
+        return null;
     }
 }

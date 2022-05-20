@@ -57,4 +57,13 @@ class StringArray extends ExtendedArrayObject implements \JsonSerializable
     {
         return $this->getArrayCopy();
     }
+
+    public function get(string $key): ?string
+    {
+        if ($this->offsetExists($key)) {
+            return $this->offsetGet($key);
+        }
+
+        return null;
+    }
 }

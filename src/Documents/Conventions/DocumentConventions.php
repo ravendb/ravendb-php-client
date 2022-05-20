@@ -173,7 +173,9 @@ class DocumentConventions
         // @todo: implement this constructor
 
         $this->readBalanceBehavior = ReadBalanceBehavior::none();
-//        _findIdentityProperty = q -> q.getName().equals("id");
+        $this->findIdentityProperty = function($q) {
+            return $q->getName() == 'id';
+        };
         $this->identityPartsSeparator = '/';
 //        _findIdentityPropertyNameFromCollectionName = entityName -> "Id";
 //        _findJavaClass = (String id, ObjectNode doc) -> {
@@ -924,14 +926,16 @@ class DocumentConventions
 
 
         try {
-            $idField = '';
+            $idField = null;
 
-            // @todo: Implement this!!!!
-            //          Field idField = Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
-            //                    .filter(x -> _findIdentityProperty.apply(x))
-            //                    .findFirst()
-            //                    .map(x -> getField(clazz, x.getName()))
-            //                    .orElse(null);
+            $reflectionClass = new ReflectionClass($className);
+            $findIdentityProperty = $this->findIdentityProperty;
+            foreach ($reflectionClass->getProperties() as $property) {
+                if ($findIdentityProperty($property)) {
+                    $idField = $property->getName();
+                    break;
+                }
+            }
 
             $this->idPropertyCache[$className] = $idField;
 

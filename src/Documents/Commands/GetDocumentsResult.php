@@ -3,16 +3,27 @@
 namespace RavenDB\Documents\Commands;
 
 use RavenDB\Http\ResultInterface;
+use Symfony\Component\Serializer\Annotation\SerializedName;
 
 // !status: DONE
 class GetDocumentsResult implements ResultInterface
 {
+    /** @SerializedName ("Includes") */
     private array $includes = [];
+
+    /** @SerializedName ("Results") */
     private array $results = [];
 
+    /** @SerializedName ("CounterIncludes") */
     private array $counterIncludes = [];
+
+    /** @SerializedName ("TimeSeriesIncludes") */
     private array $timeSeriesIncludes = [];
+
+    /** @SerializedName ("CompareExchangeValueIncludes") */
     private array $compareExchangeValueIncludes = [];
+
+    /** @SerializedName ("NextPageStart") */
     private int $nextPageStart = 0;
 
     public function getResults(): array
