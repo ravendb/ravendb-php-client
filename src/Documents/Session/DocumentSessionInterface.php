@@ -6,6 +6,7 @@ namespace RavenDB\Documents\Session;
 use RavenDB\Documents\Queries\Query;
 use RavenDB\Documents\Session\Loaders\LoaderWithIncludeInterface;
 use RavenDB\Type\ObjectArray;
+use RavenDB\Type\StringArray;
 
 interface DocumentSessionInterface
 {
@@ -70,14 +71,23 @@ interface DocumentSessionInterface
     //TBD expr another includes here?
 
     /**
-     *  Loads the specified entity with the specified id.
+     * Loads the specified entity with the specified id.
      *
      * load(string $className, string $id): ?object
+     * load(string $className, string $id, Consumer $includes) ?Object;
      *
-     *  @param string $className Object class
-     *  @param string $params    Identifier of a entity that will be loaded.
+     * load(string $className, StringArray $ids): ObjectArray
+     * load(string $className, StringArray $ids, Consumer $includes): ObjectArray;
      *
-     *  @return null|object|ObjectArray Loaded entity or entities
+     * load(string $className, array $ids): ObjectArray
+     * load(string $className, array $ids, Consumer $includes): ObjectArray;
+     *
+     * load(string $className, string $id1, string $id2, string $id3 ... ): ObjectArray
+     *
+     * @param string $className Object class
+     * @param string|array|StringArray $params Identifier of a entity that will be loaded.
+     *
+     * @return null|object|ObjectArray Loaded entity or entities
      */
     public function load(string $className, ...$params);
 

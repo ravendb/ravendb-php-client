@@ -3,6 +3,7 @@
 namespace RavenDB\Documents\Session;
 
 use RavenDB\Documents\Indexes\AbstractCommonApiForIndexes;
+use RavenDB\Type\ObjectArray;
 
 interface AdvancedSessionOperationsInterface extends
     AdvancedDocumentSessionOperationsInterface,
@@ -79,75 +80,28 @@ interface AdvancedSessionOperationsInterface extends
      */
     function exists(?string $id): bool;
 
-//    /**
-//     * Loads multiple entities that contain common prefix.
-//     * @param clazz entity class
-//     * @param idPrefix prefix for which documents should be returned e.g. "products/"
-//     * @param <T> entity class
-//     * @return Matched entities
-//     */
-//    <T> T[] loadStartingWith(Class<T> clazz, String idPrefix);
-//
-//    /**
-//     * Loads multiple entities that contain common prefix.
-//     * @param clazz entity class
-//     * @param idPrefix prefix for which documents should be returned e.g. "products/"
-//     * @param matches  pipe ('|') separated values for which document IDs (after 'idPrefix') should be matched ('?' any single character, '*' any characters)
-//     * @param <T> entity class
-//     * @return Matched entities
-//     */
-//    <T> T[] loadStartingWith(Class<T> clazz, String idPrefix, String matches);
-//
-//    /**
-//     * Loads multiple entities that contain common prefix.
-//     * @param clazz entity class
-//     * @param idPrefix prefix for which documents should be returned e.g. "products/"
-//     * @param matches  pipe ('|') separated values for which document IDs (after 'idPrefix') should be matched ('?' any single character, '*' any characters)
-//     * @param start number of documents that should be skipped. By default: 0.
-//     * @param <T> entity class
-//     * @return Matched entities
-//     */
-//    <T> T[] loadStartingWith(Class<T> clazz, String idPrefix, String matches, int start);
-//
-//    /**
-//     * Loads multiple entities that contain common prefix.
-//     * @param clazz entity class
-//     * @param idPrefix prefix for which documents should be returned e.g. "products/"
-//     * @param matches  pipe ('|') separated values for which document IDs (after 'idPrefix') should be matched ('?' any single character, '*' any characters)
-//     * @param start number of documents that should be skipped. By default: 0.
-//     * @param pageSize maximum number of documents that will be retrieved. By default: 25.
-//     * @param <T> entity class
-//     * @return Matched entities
-//     */
-//    <T> T[] loadStartingWith(Class<T> clazz, String idPrefix, String matches, int start, int pageSize);
-//
-//    /**
-//     * Loads multiple entities that contain common prefix.
-//     * @param clazz entity class
-//     * @param idPrefix prefix for which documents should be returned e.g. "products/"
-//     * @param matches  pipe ('|') separated values for which document IDs (after 'idPrefix') should be matched ('?' any single character, '*' any characters)
-//     * @param start number of documents that should be skipped. By default: 0.
-//     * @param pageSize maximum number of documents that will be retrieved. By default: 25.
-//     * @param exclude pipe ('|') separated values for which document IDs (after 'idPrefix') should not be matched ('?' any single character, '*' any characters)
-//     * @param <T> entity class
-//     * @return Matched entities
-//     */
-//    <T> T[] loadStartingWith(Class<T> clazz, String idPrefix, String matches, int start, int pageSize, String exclude);
-//
-//    /**
-//     * Loads multiple entities that contain common prefix.
-//     * @param clazz entity class
-//     * @param idPrefix prefix for which documents should be returned e.g. "products/"
-//     * @param matches  pipe ('|') separated values for which document IDs (after 'idPrefix') should be matched ('?' any single character, '*' any characters)
-//     * @param start number of documents that should be skipped. By default: 0.
-//     * @param pageSize maximum number of documents that will be retrieved. By default: 25.
-//     * @param exclude pipe ('|') separated values for which document IDs (after 'idPrefix') should not be matched ('?' any single character, '*' any characters)
-//     * @param startAfter skip document fetching until given ID is found and return documents after that ID (default: null)
-//     * @param <T> entity class
-//     * @return Matched entities
-//     */
-//    <T> T[] loadStartingWith(Class<T> clazz, String idPrefix, String matches, int start, int pageSize, String exclude, String startAfter);
-//
+    /**
+     *
+     * @param string $className entity class
+     * @param string|null $idPrefix prefix for which documents should be returned e.g. "products/"
+     * @param string|null $matches  pipe ('|') separated values for which document IDs (after 'idPrefix') should be matched ('?' any single character, '*' any characters)
+     * @param int $start number of documents that should be skipped. By default: 0.
+     * @param int $pageSize maximum number of documents that will be retrieved. By default: 25.
+     * @param string|null $exclude pipe ('|') separated values for which document IDs (after 'idPrefix') should not be matched ('?' any single character, '*' any characters)
+     * @param string|null $startAfter skip document fetching until given ID is found and return documents after that ID (default: null)
+     *
+     * @return ObjectArray Matched entities
+     */
+    public function loadStartingWith(
+        string $className,
+        ?string $idPrefix,
+        ?string $matches = null,
+        int $start = 0,
+        int $pageSize = 25,
+        ?string $exclude = null,
+        ?string $startAfter = null
+    ): ObjectArray;
+
 //    /**
 //     * Loads multiple entities that contain common prefix into a given stream.
 //     * @param idPrefix prefix for which documents should be returned e.g. "products/"

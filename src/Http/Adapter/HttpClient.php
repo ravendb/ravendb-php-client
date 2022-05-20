@@ -39,6 +39,7 @@ class HttpClient implements HttpClientInterface
 
 
 //        $needle = 'http://127.0.0.1:8080/databases/test_db_1/queries?queryHash=';
+//        $needle = 'http://127.0.0.1:8080/databases/test_db_1/docs?&pageSize=25&startsWith=A';
 //        if (str_starts_with($request->getUrl(), $needle)) {
 //            echo PHP_EOL . PHP_EOL;
 //            echo 'URL: ' . $request->getUrl() . PHP_EOL;

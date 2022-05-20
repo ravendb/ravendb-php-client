@@ -2,8 +2,10 @@
 
 namespace RavenDB\Documents\Session;
 
+use Amp\ByteStream\OutputStream;
 use InvalidArgumentException;
 use Ramsey\Uuid\UuidInterface;
+use RavenDB\Documents\Commands\GetDocumentsCommand;
 use RavenDB\Documents\Commands\GetDocumentsResult;
 use RavenDB\Documents\Commands\HeadDocumentCommand;
 use RavenDB\Documents\DocumentStore;
@@ -17,8 +19,10 @@ use RavenDB\Documents\Session\Loaders\LoaderWithIncludeInterface;
 use RavenDB\Documents\Session\Loaders\MultiLoaderWithInclude;
 use RavenDB\Documents\Session\Operations\BatchOperation;
 use RavenDB\Documents\Session\Operations\LoadOperation;
+use RavenDB\Documents\Session\Operations\LoadStartingWithOperation;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Exceptions\NotImplementedException;
 use RavenDB\Http\ResultMap;
 use RavenDB\Primitives\Consumer;
 use RavenDB\Type\ObjectArray;
@@ -350,7 +354,7 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
      * load(string $className, string $id1, string $id2, string $id3 ... ): ObjectArray
      *
      * @param string $className Object class
-     * @param string|StringArray $params Identifier of a entity that will be loaded.
+     * @param string|array|StringArray $params Identifier of a entity that will be loaded.
      *
      * @return null|object|ObjectArray Loaded entity or entities
      *
@@ -364,6 +368,10 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 
         // called: load(string $className, string $id): object
         if (count($params) == 1) {
+            if ($params[0] == null) {
+                return null;
+            }
+
             if (is_string($params[0])) {
                 return $this->loadById($className, $params[0]);
             }
@@ -378,7 +386,12 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
             }
 
             if (is_array($params[0])) {
-                $ids = StringArray::fromArray($params[0]);
+                $ids = new StringArray();
+                foreach ($params[0] as $id) {
+                    if (!empty(trim($id))) {
+                        $ids->append($id);
+                    }
+                }
             }
         }
 
@@ -426,8 +439,9 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
      */
     private function loadById(string $className, string $id): ?object
     {
+        $id = trim($id);
         if (empty($id)) {
-            return new $className();
+            return null;
         }
 
         $loadOperation = new LoadOperation($this);
@@ -559,32 +573,20 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         return $loadOperation->getDocuments($className);
     }
 
-//    public <T> T[] loadStartingWith(Class<T> clazz, String idPrefix) {
-//        return loadStartingWith(clazz, idPrefix, null, 0, 25, null, null);
-//    }
-//
-//    public <T> T[] loadStartingWith(Class<T> clazz, String idPrefix, String matches) {
-//        return loadStartingWith(clazz, idPrefix, matches, 0, 25, null, null);
-//    }
-//
-//    public <T> T[] loadStartingWith(Class<T> clazz, String idPrefix, String matches, int start) {
-//        return loadStartingWith(clazz, idPrefix, matches, start, 25, null, null);
-//    }
-//
-//    public <T> T[] loadStartingWith(Class<T> clazz, String idPrefix, String matches, int start, int pageSize) {
-//        return loadStartingWith(clazz, idPrefix, matches, start, pageSize, null, null);
-//    }
-//
-//    public <T> T[] loadStartingWith(Class<T> clazz, String idPrefix, String matches, int start, int pageSize, String exclude) {
-//        return loadStartingWith(clazz, idPrefix, matches, start, pageSize, exclude, null);
-//    }
-//
-//    public <T> T[] loadStartingWith(Class<T> clazz, String idPrefix, String matches, int start, int pageSize, String exclude, String startAfter) {
-//        LoadStartingWithOperation loadStartingWithOperation = new LoadStartingWithOperation(this);
-//        loadStartingWithInternal(idPrefix, loadStartingWithOperation, null, matches, start, pageSize, exclude, startAfter);
-//        return loadStartingWithOperation.getDocuments(clazz);
-//    }
-//
+    public function loadStartingWith(
+        string $className,
+        ?string $idPrefix,
+        ?string $matches = null,
+        int $start = 0,
+        int $pageSize = 25,
+        ?string $exclude = null,
+        ?string $startAfter = null
+    ): ObjectArray {
+        $loadStartingWithOperation = new LoadStartingWithOperation($this);
+        $this->loadStartingWithInternal($idPrefix, $loadStartingWithOperation, null, $matches, $start, $pageSize, $exclude, $startAfter);
+      return $loadStartingWithOperation->getDocuments($className);
+    }
+
 //    @Override
 //    public void loadStartingWithIntoStream(String idPrefix, OutputStream output) {
 //        loadStartingWithIntoStream(idPrefix, output, null, 0, 25, null, null);
@@ -620,30 +622,40 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //        }
 //        loadStartingWithInternal(idPrefix, new LoadStartingWithOperation(this), output, matches, start, pageSize, exclude, startAfter);
 //    }
-//
-//    @SuppressWarnings("UnusedReturnValue")
-//    private GetDocumentsCommand loadStartingWithInternal(String idPrefix, LoadStartingWithOperation operation, OutputStream stream,
-//                                                         String matches, int start, int pageSize, String exclude, String startAfter) {
-//        operation.withStartWith(idPrefix, matches, start, pageSize, exclude, startAfter);
-//
-//        GetDocumentsCommand command = operation.createRequest();
-//        if (command != null) {
-//            _requestExecutor.execute(command, sessionInfo);
-//
-//            if (stream != null) {
+
+    private function loadStartingWithInternal(
+        ?string $idPrefix,
+        ?LoadStartingWithOperation & $operation,
+        $stream,
+        ?string $matches,
+        int $start,
+        int $pageSize,
+        ?string $exclude = null,
+        ?string $startAfter = null
+    ): GetDocumentsCommand {
+        $operation->withStartWith($idPrefix, $matches, $start, $pageSize, $exclude, $startAfter);
+
+        $command = $operation->createRequest();
+        if ($command != null) {
+            $this->requestExecutor->execute($command, $this->sessionInfo);
+
+            if ($stream != null) {
+                throw new NotImplementedException('Working with streams not implemented yet');
 //                try {
 //                    GetDocumentsResult result = command.getResult();
 //                    JsonExtensions.getDefaultMapper().writeValue(stream, result);
 //                } catch (IOException e) {
 //                    throw new RuntimeException("Unable to serialize returned value into stream" + e.getMessage(), e);
 //                }
-//            } else {
-//                operation.setResult(command.getResult());
-//            }
-//        }
-//        return command;
-//    }
-//
+            } else {
+                /** @var GetDocumentsResult $result */
+                $result = $command->getResult();
+                $operation->setResult($result);
+            }
+        }
+        return $command;
+    }
+
 //    @Override
 //    public void loadIntoStream(Collection<String> ids, OutputStream output) {
 //        if (ids == null) {
