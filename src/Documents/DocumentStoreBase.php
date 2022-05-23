@@ -21,7 +21,7 @@ use RavenDB\Utils\StringUtils;
 abstract class DocumentStoreBase implements DocumentStoreInterface
 {
 //      private final List<EventHandler<BeforeStoreEventArgs>> onBeforeStore = new ArrayList<>();
-//    private final List<EventHandler<AfterSaveChangesEventArgs>> onAfterSaveChanges = new ArrayList<>();
+    private ?ClosureArray $onAfterSaveChanges = null;
 //    private final List<EventHandler<BeforeDeleteEventArgs>> onBeforeDelete = new ArrayList<>();
     private ClosureArray $onBeforeQuery;
 //    private final List<EventHandler<SessionCreatedEventArgs>> onSessionCreated = new ArrayList<>();
@@ -43,6 +43,7 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
         $this->urls = new UrlArray();
 
         $this->onBeforeQuery = new ClosureArray();
+        $this->onAfterSaveChanges = new ClosureArray();
 
 //        $this->subscriptions = new DocumentSubscriptions($this);
     }
@@ -292,15 +293,19 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //    public void removeBeforeStoreListener(EventHandler<BeforeStoreEventArgs> handler) {
 //        this.onBeforeStore.remove(handler);
 //    }
-//
-//    public void addAfterSaveChangesListener(EventHandler<AfterSaveChangesEventArgs> handler) {
-//        this.onAfterSaveChanges.add(handler);
-//    }
-//
-//    public void removeAfterSaveChangesListener(EventHandler<AfterSaveChangesEventArgs> handler) {
-//        this.onAfterSaveChanges.remove(handler);
-//    }
-//
+
+    /** AfterSaveChangesEventArgs */
+    public function addAfterSaveChangesListener(Closure $handler): void
+    {
+        $this->onAfterSaveChanges->append($handler);
+    }
+
+    /** AfterSaveChangesEventArgs */
+    public function removeAfterSaveChangesListener(Closure $handler): void
+    {
+        $this->onAfterSaveChanges->removeValue($handler);
+    }
+
 //    public void addBeforeDeleteListener(EventHandler<BeforeDeleteEventArgs> handler) {
 //        this.onBeforeDelete.add(handler);
 //    }
@@ -497,11 +502,11 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //        for (EventHandler<BeforeStoreEventArgs> handler : onBeforeStore) {
 //            session.addBeforeStoreListener(handler);
 //        }
-//
-//            for (EventHandler<AfterSaveChangesEventArgs> handler : onAfterSaveChanges) {
-//            session.addAfterSaveChangesListener(handler);
-//        }
-//
+
+        foreach ($this->onAfterSaveChanges as $handler) {
+            $session->addAfterSaveChangesListener($handler);
+        }
+
 //            for (EventHandler<BeforeDeleteEventArgs> handler : onBeforeDelete) {
 //            session.addBeforeDeleteListener(handler);
 //        }

@@ -2,11 +2,11 @@
 
 namespace RavenDB\Documents;
 
+use Closure;
 use RavenDB\Auth\AuthOptions;
 use RavenDB\Documents\Indexes\AbstractIndexCreationTaskArray;
 use RavenDB\Documents\Indexes\AbstractIndexCreationTaskInterface;
 use RavenDB\Documents\Operations\MaintenanceOperationExecutor;
-use RavenDB\Documents\Session\DocumentSession;
 use RavenDB\Documents\Session\DocumentSessionInterface;
 use RavenDB\Documents\Session\SessionOptions;
 use RavenDB\Type\UrlArray;
@@ -22,10 +22,12 @@ interface DocumentStoreInterface
 //
 //    void addBeforeStoreListener(EventHandler<BeforeStoreEventArgs> handler);
 //    void removeBeforeStoreListener(EventHandler<BeforeStoreEventArgs> handler);
-//
-//    void addAfterSaveChangesListener(EventHandler<AfterSaveChangesEventArgs> handler);
-//    void removeAfterSaveChangesListener(EventHandler<AfterSaveChangesEventArgs> handler);
-//
+
+    /** AfterSaveChangesEventArgs */
+    function addAfterSaveChangesListener(Closure $handler): void;
+    /** AfterSaveChangesEventArgs */
+    function removeAfterSaveChangesListener(Closure $handler): void;
+
 //    void addBeforeDeleteListener(EventHandler<BeforeDeleteEventArgs> handler);
 //    void removeBeforeDeleteListener(EventHandler<BeforeDeleteEventArgs> handler);
 //
@@ -190,18 +192,11 @@ interface DocumentStoreInterface
     /**
      * Opens the session for a particular database
      *
-     * @param string $database Database to use
-     * @return DocumentSessionInterface Document session
-     */
-    public function openSession(string $database = ''): DocumentSessionInterface;
-
-    /**
-     * Opens the session with the specified options.
+     * @param string|SessionOptions $dbNameOrOptions Database to use
      *
-     * @param SessionOptions $sessionOptions Session options to use
      * @return DocumentSessionInterface Document session
      */
-    public function openSessionWithOptions(SessionOptions $sessionOptions): DocumentSessionInterface;
+    public function openSession($dbNameOrOptions = ''): DocumentSessionInterface;
 
     /**
      * Executes the index creation

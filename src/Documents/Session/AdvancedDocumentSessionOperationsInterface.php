@@ -3,7 +3,9 @@
 namespace RavenDB\Documents\Session;
 
 use Closure;
+use DateTimeInterface;
 use RavenDB\Documents\Commands\Batches\CommandDataInterface;
+use RavenDB\Exceptions\Documents\Session\NonUniqueObjectException;
 use RavenDB\Http\RequestExecutor;
 
 interface AdvancedDocumentSessionOperationsInterface
@@ -28,10 +30,12 @@ interface AdvancedDocumentSessionOperationsInterface
 //
 //    void addBeforeStoreListener(EventHandler<BeforeStoreEventArgs> handler);
 //    void removeBeforeStoreListener(EventHandler<BeforeStoreEventArgs> handler);
-//
-//    void addAfterSaveChangesListener(EventHandler<AfterSaveChangesEventArgs> handler);
-//    void removeAfterSaveChangesListener(EventHandler<AfterSaveChangesEventArgs> handler);
-//
+
+    /** AfterSaveChangesEventArgs */
+    function addAfterSaveChangesListener(Closure $handler): void;
+    /** AfterSaveChangesEventArgs */
+    function removeAfterSaveChangesListener(Closure $handler): void;
+
 //    void addBeforeDeleteListener(EventHandler<BeforeDeleteEventArgs> handler);
 //    void removeBeforeDeleteListener(EventHandler<BeforeDeleteEventArgs> handler);
 //
@@ -135,16 +139,16 @@ interface AdvancedDocumentSessionOperationsInterface
      */
     function getDocumentId(?object $instance): ?string;
 
-//    /**
-//     * Gets the metadata for the specified entity.
-//     * If the entity is transient, it will load the metadata from the store
-//     * and associate the current state of the entity with the metadata from the server.
-//     * @param <T> class of instance
-//     * @param instance instance to get metadata from
-//     * @return Entity metadata
-//     */
-//    <T> IMetadataDictionary getMetadataFor(T instance);
-//
+    /**
+     * Gets the metadata for the specified entity.
+     * If the entity is transient, it will load the metadata from the store
+     * and associate the current state of the entity with the metadata from the server.
+     * @template T class of instance
+     * @param T $instance instance to get metadata from
+     * @return MetadataDictionaryInterface Entity metadata
+     */
+    function & getMetadataFor($instance): MetadataDictionaryInterface;
+
     /**
      * Gets change vector for the specified entity.
      * If the entity is transient, it will load the metadata from the store
@@ -170,17 +174,20 @@ interface AdvancedDocumentSessionOperationsInterface
 //     * @return List of time series names
 //     */
 //    <T> List<String> getTimeSeriesFor(T instance);
-//
-//    /**
-//     * Gets last modified date for the specified entity.
-//     * If the entity is transient, it will load the metadata from the store
-//     * and associate the current state of the entity with the metadata from the server.
-//     * @param instance Instance to get last modified date from
-//     * @param <T> Class of instance
-//     * @return Last modified date
-//     */
-//    <T> Date getLastModifiedFor(T instance);
-//
+
+    /**
+     * Gets last modified date for the specified entity.
+     * If the entity is transient, it will load the metadata from the store
+     * and associate the current state of the entity with the metadata from the server.
+     *
+     * @template T
+     * @param ?T $instance
+     * @return DateTimeInterface|null
+     *
+     * @throws NonUniqueObjectException
+     */
+    public function getLastModifiedFor($instance): ?DateTimeInterface;
+
 //    /**
 //     * Determines whether the specified entity has changed.
 //     * @param entity Entity to check

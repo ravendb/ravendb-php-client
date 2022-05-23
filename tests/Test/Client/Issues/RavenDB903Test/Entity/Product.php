@@ -1,6 +1,6 @@
 <?php
 
-namespace tests\RavenDB\Test\Client\Issues\Entity;
+namespace tests\RavenDB\Test\Client\Issues\RavenDB903Test\Entity;
 
 class Product
 {

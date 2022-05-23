@@ -1,12 +1,12 @@
 <?php
 
-namespace tests\RavenDB\Test\Client\Issues;
+namespace tests\RavenDB\Test\Client\Issues\RavenDB903Test;
 
 use RavenDB\Documents\Session\DocumentQueryInterface;
 use RavenDB\Documents\Session\DocumentSessionInterface;
 use tests\RavenDB\RemoteTestBase;
-use tests\RavenDB\Test\Client\Issues\Entity\Product;
-use tests\RavenDB\Test\Client\Issues\Entity\TestIndex;
+use tests\RavenDB\Test\Client\Issues\RavenDB903Test\Entity\Product;
+use tests\RavenDB\Test\Client\Issues\RavenDB903Test\Entity\TestIndex;
 
 class RavenDB903Test extends RemoteTestBase
 {

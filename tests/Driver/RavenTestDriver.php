@@ -2,6 +2,7 @@
 
 namespace tests\RavenDB\Driver;
 
+use Closure;
 use PHPUnit\Framework\TestCase;
 use RavenDB\Constants\DocumentsIndexing;
 use RavenDB\Documents\DocumentStore;
@@ -288,34 +289,40 @@ abstract class RavenTestDriver extends TestCase
 //
 //        return false;
 //    }
-//
-//    protected static <T> T waitForValue(Supplier<T> act, T expectedValue) throws InterruptedException {
-//        return waitForValue(act, expectedValue, Duration.ofSeconds(15));
-//    }
-//
-//    protected static <T> T waitForValue(Supplier<T> act, T expectedValue, Duration timeout) throws InterruptedException {
-//        Stopwatch sw = Stopwatch.createStarted();
-//
-//        do {
-//            try {
-//                T currentVal = act.get();
-//                if (expectedValue.equals(currentVal)) {
-//                    return currentVal;
-//                }
-//
-//                if (sw.elapsed().compareTo(timeout) > 0) {
-//                    return currentVal;
-//                }
-//            } catch (Exception e) {
-//                if (sw.elapsed().compareTo(timeout) > 0) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//
-//            Thread.sleep(16);
-//        } while (true);
-//    }
-//
+
+    /**
+     * @param Closure $act
+     * @param mixed $expectedValue
+     * @param Duration|null $timeout
+     * @return mixed
+     */
+    protected static function waitForValue(Closure $act, $expectedValue, ?Duration $timeout = null)
+    {
+        if ($timeout == null) {
+            $timeout = Duration::ofSeconds(15);
+        }
+
+        $sw = Stopwatch::createStarted();
+        do {
+            try {
+                $currentVal = $act();
+                if ($expectedValue == $currentVal) {
+                    return $currentVal;
+                }
+
+                if ($sw->elapsed() > $timeout->getSeconds()) {
+                    return $currentVal;
+                }
+            } catch (\Throwable $exception) {
+                if ($sw->elapsed() > $timeout->getSeconds()) {
+                    throw new RuntimeException($exception);
+                }
+            }
+
+            usleep(16000); // 16 milliseconds
+        } while (true);
+    }
+
 //    protected static void killProcess(Process p) {
 //        if (p != null && p.isAlive()) {
 //            reportInfo("Kill global server");

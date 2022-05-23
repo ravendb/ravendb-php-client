@@ -1,6 +1,6 @@
 <?php
 
-namespace tests\RavenDB\Test\Issues\RavendDB_15693Test;
+namespace tests\RavenDB\Test\Issues\RavenDB_15693Test;
 
 class Doc
 {

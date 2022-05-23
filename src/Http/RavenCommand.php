@@ -22,11 +22,13 @@ use Throwable;
 
 abstract class RavenCommand
 {
-    private ?string $resultClass;
-    protected ?ResultInterface $result = null;
+    private ?string $resultClass = null;
+
+    /** @var ResultInterface|mixed|null  */
+    protected $result = null;
 
     protected int $statusCode = 0;
-    protected RavenCommandResponseType $responseType;
+    protected ?RavenCommandResponseType $responseType = null;
 
     protected ?Duration $timeout = null;
     protected bool $canCache = false;
@@ -49,7 +51,7 @@ abstract class RavenCommand
 
     abstract public function createRequest(ServerNode $serverNode): HttpRequestInterface;
 
-    protected function __construct(?string $resultClass)
+    protected function __construct(?string $resultClass = null)
     {
         $this->resultClass = $resultClass;
         $this->mapper = JsonExtensions::getDefaultEntityMapper();
@@ -87,20 +89,27 @@ abstract class RavenCommand
         $this->statusCode = $statusCode;
     }
 
-    public function getResult(): ?ResultInterface
+    /**
+     * @return ResultInterface|mixed|null
+     */
+    public function getResult()
     {
         return $this->result;
     }
 
     /**
+     * @param ResultInterface|mixed|null $result
+     *
      * @throws InvalidResultAssignedToCommandException
      * @throws ReflectionException
      */
-    public function setResult(?ResultInterface $result): void
+    public function setResult($result): void
     {
-        $reflectionClass = new ReflectionClass($this->resultClass);
-        if (!$reflectionClass->isInstance($result)) {
-            throw new InvalidResultAssignedToCommandException($this->resultClass);
+        if ($this->resultClass != null) {
+            $reflectionClass = new ReflectionClass($this->resultClass);
+            if (!$reflectionClass->isInstance($result)) {
+                throw new InvalidResultAssignedToCommandException($this->resultClass);
+            }
         }
 
         $this->result = $result;

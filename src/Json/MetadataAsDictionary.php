@@ -5,6 +5,7 @@ namespace RavenDB\Json;
 use _PHPStan_76800bfb5\Nette\NotImplementedException;
 use RavenDB\Documents\Session\MetadataDictionaryInterface;
 use RavenDB\Exceptions\IllegalArgumentException;
+use RavenDB\Type\StringSet;
 
 class MetadataAsDictionary implements MetadataDictionaryInterface
 {
@@ -107,36 +108,39 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
         throw new NotImplementedException("Implement support for numbers and more");
     }
 
-//    @SuppressWarnings("ConstantConditions")
-//    @Override
-//    public int size() {
-//        if (_metadata != null) {
-//            return _metadata.size();
-//        }
-//
-//        return _source.size();
-//    }
-//
-//    @Override
-//    public Object put(String key, Object value) {
-//        if (_metadata == null) {
-//            initialize(_source);
-//        }
-//        dirty = true;
-//
-//        return _metadata.put(key, value);
-//    }
-//
-//    @SuppressWarnings("ConstantConditions")
-//    @Override
-//    public Object get(Object key) {
-//        if (_metadata != null) {
-//            return _metadata.get(key);
-//        }
-//
-//        return convertValue((String) key, _source.get((String) key));
-//    }
-//
+    public function size(): int
+    {
+        if ($this->metadata != null) {
+            return count($this->metadata);
+        }
+
+        return count($this->source);
+    }
+
+    /**
+     * @param string|null $key
+     * @param null|mixed $value
+     * @return mixed
+     */
+    public function put(?string $key, $value)
+    {
+        if ($this->metadata == null) {
+            $this->initialize($this->source);
+        }
+        $this->dirty = true;
+
+        return $this->metadata[$key] = $value;
+    }
+
+    public function get($key)
+    {
+        if ($this->metadata != null) {
+            return $this->metadata[$key];
+        }
+
+        return $this->convertValue($key, $this->source->get($key));
+    }
+
 //    public static MetadataAsDictionary materializeFromJson(ObjectNode metadata) {
 //        MetadataAsDictionary result = new MetadataAsDictionary((Map<String, Object>) null);
 //        result.initialize(metadata);
@@ -157,12 +161,12 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
 //
 //        return list;
 //    }
-//
-//    @Override
-//    public boolean isEmpty() {
-//        return size() == 0;
-//    }
-//
+
+    public function isEmpty(): bool
+    {
+        return $this->size() == 0;
+    }
+
 //    @Override
 //    public void putAll(Map<? extends String, ? > m) {
 //        if (_metadata == null) {
@@ -230,15 +234,16 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
 //        return _metadata.values();
 //    }
 //
-//    @Override
-//    public Set<String> keySet() {
-//        if (_metadata == null) {
-//            initialize(_source);
-//        }
-//
-//        return _metadata.keySet();
-//    }
-//
+
+    public function keySet(): StringSet
+    {
+        if ($this->metadata == null) {
+            $this->initialize($this->source);
+        }
+
+        return StringSet::fromArray(array_keys($this->metadata));
+    }
+
 //    @Override
 //    public String getString(String key) {
 //        Object obj = get(key);

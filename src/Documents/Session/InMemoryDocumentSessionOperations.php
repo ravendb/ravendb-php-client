@@ -3,6 +3,7 @@
 namespace RavenDB\Documents\Session;
 
 use Closure;
+use DateTimeInterface;
 use InvalidArgumentException;
 use Ramsey\Uuid\UuidInterface;
 use RavenDB\Constants\DocumentsMetadata;
@@ -14,6 +15,7 @@ use RavenDB\Documents\Commands\Batches\DeleteCommandData;
 use RavenDB\Documents\Commands\Batches\ForceRevisionCommandData;
 use RavenDB\Documents\Commands\Batches\IdAndChangeVector;
 use RavenDB\Documents\Commands\Batches\PutCommandDataWithJson;
+use RavenDB\Documents\Commands\GetDocumentsResult;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\DocumentStoreBase;
 use RavenDB\Documents\DocumentStoreInterface;
@@ -24,6 +26,7 @@ use RavenDB\Exceptions\Documents\Session\NonUniqueObjectException;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Extensions\JsonExtensions;
+use RavenDB\Http\RavenCommand;
 use RavenDB\Http\RequestExecutor;
 use RavenDB\Http\ServerNode;
 use RavenDB\Json\BatchCommandResult;
@@ -460,7 +463,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     /**
      * Gets the metadata for the specified entity.
      */
-    public function getMetadataFor(?object $instance): MetadataDictionaryInterface
+    public function & getMetadataFor($instance): MetadataDictionaryInterface
     {
         if ($instance == null) {
             throw new IllegalArgumentException('Instance cannot be null');
@@ -554,18 +557,26 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         return $metadata[DocumentsMetadata::CHANGE_VECTOR];
     }
 
-//    public <T> Date getLastModifiedFor(T instance) {
-//        if (instance == null) {
-//            throw new IllegalArgumentException("Instance cannot be null");
-//        }
-//
-//        DocumentInfo documentInfo = getDocumentInfo(instance);
-//        JsonNode lastModified = documentInfo.getMetadata().get(Constants.Documents.Metadata.LAST_MODIFIED);
-//        if (lastModified != null && !lastModified.isNull()) {
-//            return mapper.convertValue(lastModified, Date.class);
-//        }
-//        return null;
-//    }
+    /**
+     * @template T
+     * @param ?T $instance
+     * @return DateTimeInterface|null
+     *
+     * @throws NonUniqueObjectException
+     */
+    public function getLastModifiedFor($instance): ?DateTimeInterface
+    {
+        if ($instance == null) {
+            throw new IllegalArgumentException("Instance cannot be null");
+        }
+
+        $documentInfo = $this->getDocumentInfo($instance);
+        $lastModified = $documentInfo->getMetadata()[DocumentsMetadata::LAST_MODIFIED];
+        if (!empty($lastModified)) {
+            return $this->getConventions()->getEntityMapper()->denormalize($lastModified, DateTimeInterface::class);
+        }
+        return null;
+    }
 
     /**
      * @throws NonUniqueObjectException
@@ -722,7 +733,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
      */
     public function trackEntityInternal(
         string $entityType,
-        string $id,
+        ?string $id,
         array $document,
         array $metadata,
         bool $noTracking
@@ -753,7 +764,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             return $docInfo->getEntity();
         }
 
-        $docInfo = $this->includedDocumentsById[$id];
+        $docInfo = $this->includedDocumentsById->getValue($id);
         if ($docInfo != null) {
             if ($docInfo->getEntity() == null) {
                 $docInfo->setEntity($this->entityToJson->convertToEntity($entityType, $id, $document, !$noTracking));
@@ -784,22 +795,22 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             $newDocumentInfo->setChangeVector($changeVector);
 
             $this->documentsById->add($newDocumentInfo);
-            $$this->documentsByEntity->put($entity, $newDocumentInfo);
+            $this->documentsByEntity->put($entity, $newDocumentInfo);
         }
 
         return $entity;
     }
 
-//    /**
-//     * Gets the default value of the specified type.
-//     *
-//     * @param clazz Class
-//     * @return Default value to given class
-//     */
-//    @SuppressWarnings("unchecked")
-//    public static Object getDefaultValue(Class clazz) {
-//        return Defaults.defaultValue(clazz);
-//    }
+    /**
+     * Gets the default value of the specified type.
+     *
+     * @param string $className Class
+     * @return mixed|null Default value to given class
+     */
+    public static function getDefaultValue(string $className)
+    {
+        return null; // Defaults::defaultValue($className);
+    }
 
     /**
      * Marks the specified entity for deletion. The entity will be deleted when IDocumentSession.saveChanges is called.
@@ -1147,7 +1158,6 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     public abstract function getClusterSession(): ClusterTransactionOperationsBase;
 
-
     /**
      * @throws ExceptionInterface
      */
@@ -1159,14 +1169,18 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             if ($documentInfo->getMetadataInstance()->isDirty()) {
                 $dirty = true;
             }
-            foreach ($documentInfo->getMetadataInstance() as $key => $value) {
-                if (($value == null) || (($value instanceof MetadataAsDictionary) && ($value->isDirty()))) {
+
+            foreach ($documentInfo->getMetadataInstance()->keySet() as $prop) {
+                $propValue = $documentInfo->getMetadataInstance()->get($prop);
+
+                if (($propValue == null) || (($propValue instanceof MetadataAsDictionary) && ($propValue->isDirty()))) {
                     $dirty = true;
                 }
 
-                $documentInfo->getMetadata()[$key] = $mapper->normalize($value);
+                $documentInfo->getMetadata()[$prop] = $mapper->normalize($propValue);
             }
         }
+
         return $dirty;
     }
 
@@ -2333,7 +2347,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     /**
      * @throws ExceptionInterface
      */
-    private function deserializeFromTransformer(string $entityType, string $id, array $document, bool $trackEntity)
+    private function deserializeFromTransformer(string $entityType, ?string $id, array $document, bool $trackEntity)
     {
         return $this->entityToJson->convertToEntity($entityType, $id, $document, $trackEntity);
     }
@@ -2424,40 +2438,48 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //        return true;
 //    }
 
-//    protected <T> void refreshInternal(T entity, RavenCommand<GetDocumentsResult> cmd, DocumentInfo documentInfo) {
-//        ObjectNode document = (ObjectNode) cmd.getResult().getResults().get(0);
-//        if (document == null) {
-//            throw new IllegalStateException("Document '" + documentInfo.getId() + "' no longer exists and was probably deleted");
-//        }
-//
-//        ObjectNode value = (ObjectNode) document.get(Constants.Documents.Metadata.KEY);
-//        documentInfo.setMetadata(value);
-//
-//        if (documentInfo.getMetadata() != null) {
-//            JsonNode changeVector = value.get(Constants.Documents.Metadata.CHANGE_VECTOR);
-//            documentInfo.setChangeVector(changeVector.asText());
-//        }
-//
-//        if (documentInfo.getEntity() != null && !noTracking) {
-//            entityToJson.removeFromMissing(documentInfo.getEntity());
-//        }
-//
-//        documentInfo.setEntity(entityToJson.convertToEntity(entity.getClass(), documentInfo.getId(), document, !noTracking));
-//        documentInfo.setDocument(document);
-//
-//        try {
-//            BeanUtils.copyProperties(entity, documentInfo.getEntity());
-//        } catch (ReflectiveOperationException e) {
-//            throw new RuntimeException("Unable to refresh entity: " + e.getMessage(), e);
-//        }
-//
-//        DocumentInfo documentInfoById = documentsById.getValue(documentInfo.getId());
-//
-//        if (documentInfoById != null) {
-//            documentInfoById.setEntity(entity);
-//        }
-//    }
-//
+    /**
+     * @template T
+     *
+     * @param T $entity
+     * @param RavenCommand<GetDocumentsResult> $cmd
+     * @param DocumentInfo $documentInfo
+     *
+     * @throws ExceptionInterface
+     */
+    protected function refreshInternal($entity, RavenCommand $cmd, DocumentInfo $documentInfo): void
+    {
+        /** @var GetDocumentsResult $result */
+        $result = $cmd->getResult();
+        $document = $result->getResults()[0];
+        if ($document == null) {
+            throw new IllegalStateException("Document '" . $documentInfo->getId() . "' no longer exists and was probably deleted");
+        }
+
+        $value = $document[DocumentsMetadata::KEY];
+        $documentInfo->setMetadata($value);
+
+        if ($documentInfo->getMetadata() != null) {
+            $changeVector = $value[DocumentsMetadata::CHANGE_VECTOR];
+            $documentInfo->setChangeVector($changeVector);
+        }
+
+        if ($documentInfo->getEntity() != null && !$this->noTracking) {
+            $this->entityToJson->removeFromMissing($documentInfo->getEntity());
+        }
+
+        $documentInfo->setEntity($this->entityToJson->convertToEntity(get_class($entity), $documentInfo->getId(), $document, !$this->noTracking));
+        $documentInfo->setDocument($document);
+
+        $this->entityToJson->populateEntity($entity, $documentInfo->getId(), $document);
+
+        $documentInfoById = $this->documentsById->getValue($documentInfo->getId());
+
+        if ($documentInfoById != null) {
+            $documentInfoById->setEntity($entity);
+        }
+    }
+
 //    @SuppressWarnings("unchecked")
 //    protected static <T> T getOperationResult(Class<T> clazz, Object result) {
 //        if (result == null) {
@@ -2521,21 +2543,23 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
     }
 
-//    public void onBeforeConversionToEntityInvoke(String id, Class clazz, Reference<ObjectNode> document) {
-//        if (!onBeforeConversionToEntity.isEmpty()) {
-//            BeforeConversionToEntityEventArgs eventArgs = new BeforeConversionToEntityEventArgs(this, id, clazz, document);
-//            EventHelper.invoke(onBeforeConversionToEntity, this, eventArgs);
-//
-//            if (eventArgs.getDocument() != null && eventArgs.getDocument().value != document.value) {
-//                document.value = eventArgs.getDocument().value;
-//            }
-//        }
-//    }
-//
-//    public void onAfterConversionToEntityInvoke(String id, ObjectNode document, Object entity) {
-//        AfterConversionToEntityEventArgs eventArgs = new AfterConversionToEntityEventArgs(this, id, document, entity);
-//        EventHelper.invoke(onAfterConversionToEntity, this, eventArgs);
-//    }
+    public function onBeforeConversionToEntityInvoke(?string $id, string $className, array & $document): void
+    {
+        if (!$this->onBeforeConversionToEntity->isEmpty()) {
+            $eventArgs = new BeforeConversionToEntityEventArgs($this, $id, $className, $document);
+            EventHelper::invoke($this->onBeforeConversionToEntity, $this, $eventArgs);
+
+            if ($eventArgs->getDocument() != null && $eventArgs->getDocument() != $document) {
+                $document = $eventArgs->getDocument();
+            }
+        }
+    }
+
+    public function onAfterConversionToEntityInvoke(?string $id, array $document, object $entity): void
+    {
+        $eventArgs = new AfterConversionToEntityEventArgs($this, $id, $entity, $document);
+        EventHelper::invoke($this->onAfterConversionToEntity, $this, $eventArgs);
+    }
 
     protected function processQueryParameters(string $className, ?string $indexName, ?string $collectionName, DocumentConventions $conventions): array
     {

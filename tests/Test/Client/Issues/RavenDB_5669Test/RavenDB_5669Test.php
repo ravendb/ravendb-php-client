@@ -1,11 +1,11 @@
 <?php
 
-namespace tests\RavenDB\Test\Client\Issues;
+namespace tests\RavenDB\Test\Client\Issues\RavenDB_5669Test;
 
 use RavenDB\Documents\DocumentStore;
 use tests\RavenDB\RemoteTestBase;
-use tests\RavenDB\Test\Client\Issues\Entity\Animal;
-use tests\RavenDB\Test\Client\Issues\Entity\Animal_Index;
+use tests\RavenDB\Test\Client\Issues\RavenDB_5669Test\Entity\Animal;
+use tests\RavenDB\Test\Client\Issues\RavenDB_5669Test\Entity\Animal_Index;
 
 class RavenDB_5669Test extends RemoteTestBase
 {

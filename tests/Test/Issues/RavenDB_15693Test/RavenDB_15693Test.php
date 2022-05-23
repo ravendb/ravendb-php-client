@@ -1,9 +1,8 @@
 <?php
 
-namespace tests\RavenDB\Test\Issues;
+namespace tests\RavenDB\Test\Issues\RavenDB_15693Test;
 
 use tests\RavenDB\RemoteTestBase;
-use tests\RavenDB\Test\Issues\RavendDB_15693Test\Doc;
 
 class RavenDB_15693Test extends RemoteTestBase
 {

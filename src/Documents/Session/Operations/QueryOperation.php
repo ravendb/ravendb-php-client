@@ -218,7 +218,9 @@ class QueryOperation
      */
     public static function deserialize(?string $className, ?string $id, array $document, array $metadata, ?FieldsToFetchToken $fieldsToFetch, bool $disableEntitiesTracking, InMemoryDocumentSessionOperations $session, bool $isProjectInto)
     {
-        if (array_key_exists('@projection', $metadata) && $metadata['@projection'] !== null && !boolval($metadata['@projection'])) {
+        $projection = array_key_exists('@projection', $metadata) ? $metadata['@projection'] : null;
+
+        if ($projection == null || !boolval($projection)) {
             //@todo: I think we should not track entity if className is null. Check this in nodeJs client
             return $session->trackEntity($className, $id, $document, $metadata, $disableEntitiesTracking);
         }
@@ -266,15 +268,13 @@ class QueryOperation
 //        if (ObjectNode.class.equals(clazz)) {
 //            return (T)document;
 //        }
-//
-//        Reference<ObjectNode> documentRef = new Reference<>(document);
-//        session.onBeforeConversionToEntityInvoke(id, clazz, documentRef);
-//        document = documentRef.value;
+
+        $session->onBeforeConversionToEntityInvoke($id, $className, $document);
 
         $result = $session->getConventions()->getEntityMapper()->denormalize($document, $className);
 
-//        session.onAfterConversionToEntityInvoke(id, document, result);
-//
+        $session->onAfterConversionToEntityInvoke($id, $document, $result);
+
         return $result;
     }
 

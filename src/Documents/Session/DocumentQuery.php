@@ -793,8 +793,7 @@ class DocumentQuery extends AbstractDocumentQuery
 //        _spatial(fieldName, shapeWkt, relation, units, distanceErrorPct);
 //        return this;
 //    }
-//
-//    @Override
+
 //    public IDocumentQuery<T> orderByDistance(DynamicSpatialField field, double latitude, double longitude) {
 //        _orderByDistance(field, latitude, longitude);
 //        return this;

@@ -6,12 +6,12 @@ use RavenDB\Primitives\EventArgs;
 
 class AfterConversionToEntityEventArgs extends EventArgs
 {
-    private string $id;
-    private object $entity;
+    private ?InMemoryDocumentSessionOperations $session;
+    private ?string $id;
+    private ?object $entity;
     private array $document;
-    private InMemoryDocumentSessionOperations $session;
 
-    public function __construct(string $id, object $entity, array $document, InMemoryDocumentSessionOperations $session)
+    public function __construct(?InMemoryDocumentSessionOperations $session, ?string $id, ?object $entity, array $document = [])
     {
         $this->id = $id;
         $this->entity = $entity;
@@ -19,12 +19,12 @@ class AfterConversionToEntityEventArgs extends EventArgs
         $this->session = $session;
     }
 
-    public function getId(): string
+    public function getId(): ?string
     {
         return $this->id;
     }
 
-    public function getEntity(): object
+    public function getEntity(): ?object
     {
         return $this->entity;
     }
@@ -34,7 +34,7 @@ class AfterConversionToEntityEventArgs extends EventArgs
         return $this->document;
     }
 
-    public function getSession(): InMemoryDocumentSessionOperations
+    public function getSession(): ?InMemoryDocumentSessionOperations
     {
         return $this->session;
     }
