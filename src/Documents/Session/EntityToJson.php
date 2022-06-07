@@ -72,7 +72,7 @@ class EntityToJson
 
         $jsonNode = $mapper->normalize($entity);
 
-         self::writeMetadata($mapper, $jsonNode, $documentInfo);
+        self::writeMetadata($mapper, $jsonNode, $documentInfo);
 
         if ($removeIdentityProperty) {
             self::tryRemoveIdentityProperty($jsonNode, get_class($entity), $conventions);
@@ -172,6 +172,12 @@ class EntityToJson
 
             return $entity;
         } catch (Throwable $e) {
+//            print_r($e->getMessage());
+//            echo PHP_EOL;
+//            print_r($e->getFile());
+//            echo ' ';
+//            print_r($e->getLine());
+//            print_r($e->getTrace());
             throw new IllegalStateException("Could not convert document " . $id . " to entity of type " . $entityType, $e);
         }
     }
