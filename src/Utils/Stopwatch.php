@@ -31,7 +31,7 @@ class Stopwatch
     }
 
     /**
-     * @return float Elapsed time in milliseconds
+     * @return float Elapsed time in seconds
      */
     public function elapsed(): float
     {

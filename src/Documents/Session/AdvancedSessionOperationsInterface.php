@@ -36,13 +36,14 @@ interface AdvancedSessionOperationsInterface extends
 //     * @return Access cluster transaction operations
 //     */
 //    IClusterTransactionOperations clusterTransaction();
-//
-//    /**
-//     * Updates entity with latest changes from server
-//     * @param <T> entity class
-//     * @param entity Entity to refresh
-//     */
-//    <T> void refresh(T entity);
+
+    /**
+     * Updates entity with latest changes from server
+     *
+     * @template T extends object
+     * @param T $entity
+     */
+    public function refresh($entity): void;
 
     /**
      * Query the specified index using provided raw query

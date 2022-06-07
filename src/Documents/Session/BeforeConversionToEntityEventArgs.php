@@ -7,27 +7,27 @@ use RavenDB\Primitives\EventArgs;
 // !status: DONE
 class BeforeConversionToEntityEventArgs extends EventArgs
 {
-    private string $id;
-    private object $entity;
+    private ?InMemoryDocumentSessionOperations $session = null;
+    private ?string $id = null;
+    private ?string $type = null;
     private array $document;
-    private InMemoryDocumentSessionOperations $session;
 
-    public function __construct(string $id, object $entity, array $document, InMemoryDocumentSessionOperations $session)
+    public function __construct(?InMemoryDocumentSessionOperations $session, ?string $id, ?string $type, array $document = [])
     {
-        $this->id = $id;
-        $this->entity = $entity;
-        $this->document = $document;
         $this->session = $session;
+        $this->id = $id;
+        $this->type = $type;
+        $this->document = $document;
     }
 
-    public function getId(): string
+    public function getId(): ?string
     {
         return $this->id;
     }
 
-    public function getEntity(): object
+    public function getType(): ?string
     {
-        return $this->entity;
+        return $this->type;
     }
 
     public function getDocument(): array
@@ -35,7 +35,7 @@ class BeforeConversionToEntityEventArgs extends EventArgs
         return $this->document;
     }
 
-    public function getSession(): InMemoryDocumentSessionOperations
+    public function getSession(): ?InMemoryDocumentSessionOperations
     {
         return $this->session;
     }

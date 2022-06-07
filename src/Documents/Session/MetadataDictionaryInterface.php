@@ -2,9 +2,21 @@
 
 namespace RavenDB\Documents\Session;
 
-interface MetadataDictionaryInterface
+use RavenDB\Type\TypedArrayInterface;
+
+interface MetadataDictionaryInterface extends TypedArrayInterface
 {
     public function isDirty(): bool;
+
+    /**
+     * @param string|null $key
+     * @param null|mixed $value
+     * @return mixed
+     */
+    public function put(?string $key, $value);
+
+
+    public function get(?string $key);
 
 //    public function getObjects(string key): MetadataDictionaryInterface;
 

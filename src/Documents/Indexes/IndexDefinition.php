@@ -4,13 +4,14 @@ namespace RavenDB\Documents\Indexes;
 
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Http\ResultInterface;
 use RavenDB\Type\StringArray;
 use RavenDB\Type\StringSet;
 
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
 // !status: DONE
-class IndexDefinition
+class IndexDefinition implements ResultInterface
 {
     public function __constructor()
     {
@@ -45,13 +46,13 @@ class IndexDefinition
     private ?IndexFieldOptionsArray $fields = null;
 
     /** @SerializedName ("Configuration") */
-    private ?IndexConfiguration $configuration;
+    private ?IndexConfiguration $configuration = null;
 
     /** @SerializedName ("SourceType") */
-    private ?IndexSourceType $indexSourceType = null;
+    private ?IndexSourceType $sourceType = null;
 
     /** @SerializedName ("Type") */
-    private ?IndexType $indexType = null;
+    private ?IndexType $type = null;
 
     /** @SerializedName ("OutputReduceToCollection") */
     private ?string $outputReduceToCollection = null;
@@ -239,7 +240,7 @@ class IndexDefinition
         $this->fields = $fields;
     }
 
-    public function getConfiguration(): ?IndexConfiguration
+    public function & getConfiguration(): ?IndexConfiguration
     {
         if ($this->configuration == null) {
             $this->configuration = new IndexConfiguration();
@@ -254,28 +255,28 @@ class IndexDefinition
 
     public function getSourceType(): ?IndexSourceType
     {
-        if ($this->indexSourceType == null || $this->indexSourceType->isNone()) {
-            $this->indexSourceType = $this->detectStaticIndexSourceType();
+        if ($this->sourceType == null || $this->sourceType->isNone()) {
+            $this->sourceType = $this->detectStaticIndexSourceType();
         }
-        return $this->indexSourceType;
+        return $this->sourceType;
     }
 
     public function setSourceType(?IndexSourceType $indexSourceType): void
     {
-        $this->indexSourceType = $indexSourceType;
+        $this->sourceType = $indexSourceType;
     }
 
     public function getType(): ?IndexType
     {
-        if ($this->indexType == null || $this->indexType->isNone()) {
-            $this->indexType = $this->detectStaticIndexType();
+        if ($this->type == null || $this->type->isNone()) {
+            $this->type = $this->detectStaticIndexType();
         }
-        return $this->indexType;
+        return $this->type;
     }
 
     public function setType(?IndexType $indexType): void
     {
-        $this->indexType = $indexType;
+        $this->type = $indexType;
     }
 
     public function detectStaticIndexSourceType(): IndexSourceType

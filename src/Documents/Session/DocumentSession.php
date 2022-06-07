@@ -2,7 +2,6 @@
 
 namespace RavenDB\Documents\Session;
 
-use Amp\ByteStream\OutputStream;
 use InvalidArgumentException;
 use Ramsey\Uuid\UuidInterface;
 use RavenDB\Documents\Commands\GetDocumentsCommand;
@@ -182,22 +181,28 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         return $command->getResult() != null;
     }
 
-//    /**
-//     * Refreshes the specified entity from Raven server.
-//     */
-//    public <T> void refresh(T entity) {
-//        DocumentInfo documentInfo = documentsByEntity.get(entity);
-//        if (documentInfo == null) {
-//            throw new IllegalStateException("Cannot refresh a transient instance");
-//        }
-//
-//        incrementRequestCount();
-//
-//        GetDocumentsCommand command = new GetDocumentsCommand(new String[]{documentInfo.getId()}, null, false);
-//        _requestExecutor.execute(command, sessionInfo);
-//
-//        refreshInternal(entity, command, documentInfo);
-//    }
+    /**
+     * Refreshes the specified entity from Raven server.
+     *
+     * @template T extends object
+     * @param T $entity
+     *
+     * @throws ExceptionInterface
+     */
+    public function refresh($entity): void
+    {
+        $documentInfo = $this->documentsByEntity->get($entity);
+        if ($documentInfo == null) {
+            throw new IllegalStateException("Cannot refresh a transient instance");
+        }
+
+        $this->incrementRequestCount();
+
+        $command = GetDocumentsCommand::forSingleDocument($documentInfo->getId());
+        $this->requestExecutor->execute($command, $this->sessionInfo);
+
+        $this->refreshInternal($entity, $command, $documentInfo);
+    }
 
     /**
      * Generates the document ID.

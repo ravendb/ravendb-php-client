@@ -47,14 +47,15 @@ class StringArrayNormalizer implements
         }
 
         $result = [];
-        foreach ($object as $item) {
-            $result[] = $this->normalizer->normalize($item, $format, $context);
+        foreach ($object as $key => $item) {
+            $result[$key] = $this->normalizer->normalize($item, $format, $context);
         }
         return $result;
     }
 
     public function supportsNormalization($data, string $format = null)
     {
-        return is_a($data, StringArray::class, true);
+//        return is_a($data, StringArray::class, true);
+        return $data instanceof StringArray;
     }
 }

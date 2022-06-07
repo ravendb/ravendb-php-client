@@ -11,6 +11,7 @@ use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use Symfony\Component\Serializer\Serializer;
 
 use Ds\Map as DSMap;
+use Throwable;
 
 // @todo: rewrite this class
 class EntityToJson
@@ -23,6 +24,8 @@ class EntityToJson
      */
     public function __construct(InMemoryDocumentSessionOperations $session)
     {
+        $this->missingDictionary = new DSMap();
+
         $this->session = $session;
     }
 
@@ -132,29 +135,18 @@ class EntityToJson
      *
      * @throws ExceptionInterface
      */
-    public function convertToEntity(string $entityType, string $id, array $document, bool $trackEntity): object
+    public function convertToEntity(string $entityType, ?string $id, array $document, bool $trackEntity): object
     {
-        // @todo: implement method
-        // note: this method is not implemented at all, just made to work somehow
-        $entity = $this->session->getConventions()->getEntityMapper()->denormalize($document, $entityType, 'json');
-
-        return $entity;
-    }
-
-//    @SuppressWarnings("unchecked")
-//    public Object convertToEntity(Class entityType, String id, ObjectNode document, boolean trackEntity) {
-//        try {
+        try {
 //            if (ObjectNode.class.equals(entityType)) {
 //                return document;
 //            }
-//
-//            Reference<ObjectNode> documentRef = new Reference<>(document);
-//            _session.onBeforeConversionToEntityInvoke(id, entityType, documentRef);
-//            document = documentRef.value;
-//
-//            Object defaultValue = InMemoryDocumentSessionOperations.getDefaultValue(entityType);
-//            Object entity = defaultValue;
-//
+
+            $this->session->onBeforeConversionToEntityInvoke($id, $entityType, $document);
+
+            $defaultValue = InMemoryDocumentSessionOperations::getDefaultValue($entityType);
+            $entity = $defaultValue;
+
 //            //TODO: if track! -> RegisterMissingProperties
 //
 //            String documentType =_session.getConventions().getJavaClass(id, document);
@@ -164,25 +156,25 @@ class EntityToJson
 //                    entity = _session.getConventions().getEntityMapper().treeToValue(document, type);
 //                }
 //            }
-//
-//            if (entity == defaultValue) {
-//                entity = _session.getConventions().getEntityMapper().treeToValue(document, entityType);
-//            }
-//
-//            JsonNode projectionNode = document.get(Constants.Documents.Metadata.PROJECTION);
-//            boolean isProjection = projectionNode != null && projectionNode.isBoolean() && projectionNode.asBoolean();
-//
-//            if (id != null) {
-//                _session.getGenerateEntityIdOnTheClient().trySetIdentity(entity, id, isProjection);
-//            }
-//
-//            _session.onAfterConversionToEntityInvoke(id, document, entity);
-//
-//            return entity;
-//        } catch (Exception e) {
-//            throw new IllegalStateException("Could not convert document " + id + " to entity of type " + entityType.getName(), e);
-//        }
-//    }
+
+            if ($entity == $defaultValue) {
+                $entity = $this->session->getConventions()->getEntityMapper()->denormalize($document, $entityType, 'json');
+            }
+
+            $projectionNode = array_key_exists(DocumentsMetadata::PROJECTION, $document) ? $document[DocumentsMetadata::PROJECTION] : null;
+            $isProjection = ($projectionNode != null) && is_bool($projectionNode) && boolval($projectionNode);
+
+            if ($id != null) {
+                $this->session->getGenerateEntityIdOnTheClient()->trySetIdentity($entity, $id, $isProjection);
+            }
+
+            $this->session->onAfterConversionToEntityInvoke($id, $document, $entity);
+
+            return $entity;
+        } catch (Throwable $e) {
+            throw new IllegalStateException("Could not convert document " . $id . " to entity of type " . $entityType, $e);
+        }
+    }
 
     public function populateEntity(?object &$entity, ?string $id, array $document): void
     {
@@ -209,7 +201,7 @@ class EntityToJson
 
         try {
             $objectMapper->updateValue($entity, $document);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             throw new IllegalStateException("Could not populate entity. " . $e->getMessage());
         }
     }
@@ -254,10 +246,13 @@ class EntityToJson
 //            throw new IllegalStateException("Could not convert document " + id + " to entity of type " + entityClass, e);
 //        }
 //    }
-//
-//    public void removeFromMissing(Object entity) {
-//        _missingDictionary.remove(entity);
-//    }
+
+    public function removeFromMissing(object $entity): void
+    {
+        if ($this->missingDictionary->hasKey($entity)) {
+            $this->missingDictionary->remove($entity);
+        }
+    }
 
     public function clear(): void
     {

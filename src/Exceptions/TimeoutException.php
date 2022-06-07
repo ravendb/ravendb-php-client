@@ -7,7 +7,9 @@ use Throwable;
 // !status: DONE
 class TimeoutException extends RavenException
 {
-    public function __construct(string $message, ?Throwable $cause = null)
+    const MESSAGE = 'Time expired';
+
+    public function __construct(string $message = self::MESSAGE, ?Throwable $cause = null)
     {
         parent::__construct($message, $cause);
     }

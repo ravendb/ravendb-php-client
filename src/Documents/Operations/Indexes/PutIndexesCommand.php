@@ -34,7 +34,7 @@ class PutIndexesCommand extends RavenCommand implements RaftCommandInterface
             throw new IllegalArgumentException("indexesToAdd cannot be null");
         }
 
-        $this->indexToAdd = [];// new ObjectNode[indexesToAdd.length];
+        $this->indexToAdd = [];
         $this->allJavaScriptIndexes = true;
 
         foreach ($indexesToAdd as $index) {

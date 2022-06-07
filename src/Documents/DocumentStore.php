@@ -10,6 +10,7 @@ use RavenDB\Documents\Operations\MaintenanceOperationExecutor;
 use RavenDB\Documents\Session\DocumentSession;
 use RavenDB\Documents\Session\DocumentSessionInterface;
 use RavenDB\Documents\Session\SessionOptions;
+use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Http\AggressiveCacheOptions;
 use RavenDB\Http\RequestExecutor;
@@ -136,12 +137,31 @@ class DocumentStore extends DocumentStoreBase
 //        executorService.shutdown();
 }
 
+    /**
+     * Opens the session for a particular database
+     *
+     * @param string|SessionOptions $dbNameOrOptions Database to use
+     *
+     * @return DocumentSessionInterface Document session
+     */
+    public function openSession($dbNameOrOptions = ''): DocumentSessionInterface
+    {
+        if (is_string($dbNameOrOptions)) {
+            return $this->openSessionWithDatabase($dbNameOrOptions);
+        }
+
+        if ($dbNameOrOptions instanceof SessionOptions) {
+            return $this->openSessionWithOptions($dbNameOrOptions);
+        }
+
+        throw new IllegalArgumentException('Illegal argument provided.');
+    }
 
     /**
      * @throws IllegalStateException
      * @throws InvalidArgumentException
      */
-    public function openSession(string $database = ''): DocumentSessionInterface
+    private function openSessionWithDatabase(string $database = ''): DocumentSessionInterface
     {
         $sessionOptions = new SessionOptions();
         $sessionOptions->setDisableAtomicDocumentWritesInClusterWideTransaction(
@@ -158,7 +178,7 @@ class DocumentStore extends DocumentStoreBase
      * @throws IllegalStateException
      * @throws InvalidArgumentException
      */
-    public function openSessionWithOptions(SessionOptions $sessionOptions): DocumentSessionInterface
+    private function openSessionWithOptions(SessionOptions $sessionOptions): DocumentSessionInterface
     {
         $this->assertInitialized();
         $this->ensureNotClosed();
