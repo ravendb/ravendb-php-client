@@ -1211,7 +1211,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
                     continue;
                 }
 
-                if ($changes != null) {
+                if ($changes !== null) {
                     $docChanges = [];
 
                     $change = new DocumentsChanges();
@@ -1450,38 +1450,42 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         return $changes;
     }
 
-//    /**
-//     * Gets a value indicating whether any of the entities tracked by the session has changes.
-//     *
-//     * @return true if session has changes
-//     */
-//    public boolean hasChanges() {
-//        for (DocumentsByEntityHolder.DocumentsByEntityEnumeratorResult entity : documentsByEntity) {
-//            ObjectNode document = entityToJson.convertEntityToJson(entity.getKey(), entity.getValue());
-//            if (entityChanged(document, entity.getValue(), null)) {
-//                return true;
-//            }
-//
-//        }
-//        return !deletedEntities.isEmpty();
-//    }
+    /**
+     * Gets a value indicating whether any of the entities tracked by the session has changes.
+     *
+     * @return bool true if session has changes
+     */
+    public function hasChanges(): bool
+    {
+        /** @var DocumentsByEntityEnumeratorResult $entity */
+        foreach ($this->documentsByEntity->getDocumentsByEntityEnumeratorResults() as $entity) {
+            $document = $this->entityToJson->convertEntityToJson($entity->getKey(), $entity->getValue());
 
-//  /**
-//     * Determines whether the specified entity has changed.
-//     *
-//     * @param entity Entity to check
-//     * @return true if entity has changed
-//     */
-//    public boolean hasChanged(Object entity) {
-//        DocumentInfo documentInfo = documentsByEntity.get(entity);
-//
-//        if (documentInfo == null) {
-//            return false;
-//        }
-//
-//        ObjectNode document = entityToJson.convertEntityToJson(entity, documentInfo);
-//        return entityChanged(document, documentInfo, null);
-//    }
+            if ($this->isEntityChanged($document, $entity->getValue())) {
+                return true;
+            }
+        }
+
+        return !$this->deletedEntities->isEmpty();
+    }
+
+  /**
+     * Determines whether the specified entity has changed.
+     *
+     * @param object $entity Entity to check
+     * @return bool true if entity has changed
+     */
+    public function hasChanged(?object $entity): bool
+    {
+        $documentInfo = $this->documentsByEntity->get($entity);
+
+        if ($documentInfo == null) {
+            return false;
+        }
+
+        $document = $this->entityToJson->convertEntityToJson($entity, $documentInfo);
+        return $this->isEntityChanged($document, $documentInfo);
+    }
 
 //    public void waitForReplicationAfterSaveChanges() {
 //        waitForReplicationAfterSaveChanges(options -> {

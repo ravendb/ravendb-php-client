@@ -2,7 +2,7 @@
 
 namespace RavenDB\Type;
 
-class Url
+class Url implements ValueObjectInterface
 {
     private string $value;
 

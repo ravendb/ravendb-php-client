@@ -57,12 +57,12 @@ interface AdvancedDocumentSessionOperationsInterface
 //
 //    void addOnSessionClosingListener(EventHandler<SessionClosingEventArgs> handler);
 //    void removeOnSessionClosingListener(EventHandler<SessionClosingEventArgs> handler);
-//    /**
-//     * Gets a value indicating whether any of the entities tracked by the session has changes.
-//     * @return true if any entity associated with session has changes
-//     */
-//    boolean hasChanges();
-//
+    /**
+     * Gets a value indicating whether any of the entities tracked by the session has changes.
+     * @return bool true if any entity associated with session has changes
+     */
+    function hasChanges(): bool;
+
 //    /**
 //     * Gets the max number of requests per session.
 //     * @return maximum number of requests per session
@@ -188,12 +188,12 @@ interface AdvancedDocumentSessionOperationsInterface
      */
     public function getLastModifiedFor($instance): ?DateTimeInterface;
 
-//    /**
-//     * Determines whether the specified entity has changed.
-//     * @param entity Entity to check
-//     * @return true if entity has changed
-//     */
-//    boolean hasChanged(Object entity);
+    /**
+     * Determines whether the specified entity has changed.
+     * @param object $entity Entity to check
+     * @return bool true if entity has changed
+     */
+    function hasChanged(object $entity): bool;
 
     /**
      * Returns whether a document with the specified id is loaded in the

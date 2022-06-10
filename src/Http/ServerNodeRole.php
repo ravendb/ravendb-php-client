@@ -2,18 +2,25 @@
 
 namespace RavenDB\Http;
 
-class ServerNodeRole
+use RavenDB\Type\ValueObjectInterface;
+
+class ServerNodeRole implements ValueObjectInterface
 {
-    public const NONE = 'NONE';
-    public const PROMOTABLE = 'PROMOTABLE';
-    public const MEMBER = 'MEMBER';
-    public const REHAB = 'REHAB';
+    public const NONE = 'None';
+    public const PROMOTABLE = 'Promotable';
+    public const MEMBER = 'Member';
+    public const REHAB = 'Rehab';
 
     private string $value;
 
     public function __construct(string $value)
     {
         $this->setValue($value);
+    }
+
+    public function __toString(): string
+    {
+        return $this->value;
     }
 
     public function getValue(): string

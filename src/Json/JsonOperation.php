@@ -206,19 +206,22 @@ class JsonOperation
                     if ($oldValue == null) {
                         break;
                     }
-                        $docChanges->append(
-                            DocumentsChanges::new(
-                                ChangeType::fieldChanged(),
-                                $fieldPath,
-                                $prop,
-                                null,
-                                $oldValue
-                            )
-                        );
+                    $docChanges->append(
+                        DocumentsChanges::new(
+                            ChangeType::fieldChanged(),
+                            $fieldPath,
+                            $prop,
+                            null,
+                            $oldValue
+                        )
+                    );
                     break;
 
                 case "array":
-                    if (!is_array($oldValue)) {
+                    $newValueIsArray = JsonArray::isArray($newValue);
+                    $oldValueIsArray = JsonArray::isArray($oldValue);
+
+                    if ($newValueIsArray != $oldValueIsArray) {
                         $docChanges->append(
                             DocumentsChanges::new(
                                 ChangeType::fieldChanged(),
@@ -230,22 +233,40 @@ class JsonOperation
                         );
                         break;
                     }
-                    $dcs = self::extractChangesFromJson(
-                        self::fieldPathCombine($fieldPath, (string)$prop),
-                        $oldValue,
-                        $newValue
-                    );
-                    foreach ($dcs as $dc) {
-                        $docChanges->append($dc);
+
+                    $dcs = null;
+                    if ($newValueIsArray && $oldValueIsArray) {
+                        $dcs = self::extractJsonArrayChanges(
+                            self::fieldPathCombine($fieldPath, (string)$prop),
+                            $oldValue,
+                            $newValue,
+                            (string)$prop
+                        );
+                    } else {
+                        if ($oldValue == null) {
+                            $docChanges->append(
+                                DocumentsChanges::new(
+                                    ChangeType::fieldChanged(),
+                                    $fieldPath,
+                                    $prop,
+                                    $newValue,
+                                    null
+                                )
+                            );
+                        } else {
+                            $dcs = self::extractChangesFromJson(
+                                self::fieldPathCombine($fieldPath, (string)$prop),
+                                $oldValue,
+                                $newValue
+                            );
+                        }
+
                     }
-//                        $docChanges = array_merge(
-//                            $docChanges,
-//                            self::extractChangesFromJson(
-//                                self::fieldPathCombine($fieldPath, (string)$prop),
-//                                $oldValue,
-//                                $newValue
-//                            )
-//                        );
+                    if ($dcs !== null) {
+                        foreach ($dcs as $dc) {
+                            $docChanges->append($dc);
+                        }
+                    }
                     break;
                 default:
                     throw new IllegalArgumentException();
@@ -255,120 +276,115 @@ class JsonOperation
         return $docChanges;
     }
 
-    // @todo: Check do we need this part of code or we should delete it
-//    /**
-//     * @throws IllegalArgumentException
-//     */
-//    private static function compareJsonArray(
-//        string $fieldPath,
-//        string $id,
-//        array $oldArray,
-//        array $newArray,
-//        ?array &$changes,
-//        ?DocumentsChangesArray $docChanges,
-//        string $propName
-//    ): bool {
-//
-//        if (count($oldArray) != count($newArray) && $changes == null) {
-//            return true;
-//        }
-//
-//        $position = 0;
-//        $changed = false;
-//
-//        $oldArrayItem = $oldArray[$position];
-//        $newArrayItem = $newArray[$position];
-//
-//        while ($position < count($oldArray) && $position < count($newArray)) {
-//            if (is_array($oldArrayItem)) {
-//                if (is_array($newArrayItem)) {
-//                    $changed = $changed || self::compareJsonArray(
-//                        self::addIndexFieldPath($fieldPath, $position),
-//                        $id,
-//                        $oldArrayItem,
-//                        $newArrayItem,
-//                        $changes,
-//                        $docChanges,
-//                        $propName
-//                    );
-//                } else {
-//                    $changed = true;
-//                    if ($changes) {
-//                        self::newChange(
-//                            self::addIndexFieldPath($fieldPath, $position),
-//                            $propName,
-//                            $newArrayItem,
-//                            $oldArrayItem,
-//                            $docChanges,
-//                            ChangeType::arrayValueChanged()
-//                        );
-//                    }
-//                }
-//            } elseif ($oldArrayItem == null) {
-//                if ($newArrayItem != null) {
-//                    $changed = true;
-//                    if ($changes) {
-//                        self::newChange(
-//                            self::addIndexFieldPath($fieldPath, $position),
-//                            $propName,
-//                            $newArrayItem,
-//                            $oldArrayItem,
-//                            $docChanges,
-//                            ChangeType::arrayValueAdded()
-//                        );
-//                    }
-//                }
-//            } else {
-//                if ($oldArrayItem !== $newArrayItem) {
-//                    if ($changes) {
-//                        self::newChange(
-//                            self::addIndexFieldPath($fieldPath, $position),
-//                            $propName,
-//                            $newArrayItem,
-//                            $oldArrayItem,
-//                            $docChanges,
-//                            ChangeType::arrayValueChanged()
-//                        );
-//                    }
-//                    $changed = true;
-//                }
-//            }
-//
-//            $position++;
-//            $oldArrayItem = $oldArray[$position];
-//            $newArrayItem = $newArray[$position];
-//        }
-//
-//        if ($changes == null) {
-//            return $changed;
-//        }
-//
-//        while ($position < count($oldArray)) {
-//            self::newChange(
-//                $fieldPath,
-//                $propName,
-//                null,
-//                $oldArray[$position],
-//                $docChanges,
-//                ChangeType::arrayValueRemoved()
-//            );
-//            $position++;
-//        }
-//
-//        while ($position < count($newArray)) {
-//            self::newChange(
-//                $fieldPath,
-//                $propName,
-//                $newArray[$position],
-//                null,
-//                $docChanges,
-//                ChangeType::arrayValueAdded()
-//            );
-//            $position++;
-//        }
-//
-//        return $changed;
-//    }
+    /**
+     * @throws IllegalArgumentException
+     */
+    private static function extractJsonArrayChanges(
+        string $fieldPath,
+        array $oldArray,
+        array $newArray,
+        string $propName
+    ): DocumentsChangesArray {
+        $docChanges = new DocumentsChangesArray();
+
+        $intersectKeys = array_intersect_key($oldArray, $newArray);
+
+        foreach ($intersectKeys as $propName => $value) {
+            $oldArrayItem = $oldArray[$propName];
+            $newArrayItem = $newArray[$propName];
+
+            $oldArrayItemIsArray = JsonArray::isArray($oldArrayItem);
+            $newArrayItemIsArray = JsonArray::isArray($newArrayItem);
+
+            if ($oldArrayItemIsArray) {
+                if ($newArrayItemIsArray) {
+                    $dcs = self::extractJsonArrayChanges(
+                            self::addIndexFieldPath($fieldPath, $propName),
+                            $oldArrayItem,
+                            $newArrayItem,
+                            $propName
+                        );
+                    foreach ($dcs as $c) {
+                        $docChanges->append($c);
+                    }
+                } else {
+                    $docChanges->append(
+                        DocumentsChanges::new(
+                            ChangeType::arrayValueChanged(),
+                            self::addIndexFieldPath($fieldPath, $propName),
+                            $propName,
+                            $newArrayItem,
+                            $oldArrayItem
+                        )
+                    );
+                }
+            } elseif ($oldArrayItem == null) {
+                if ($newArrayItem != null) {
+                    $docChanges->append(
+                        DocumentsChanges::new(
+                            ChangeType::arrayValueAdded(),
+                            self::addIndexFieldPath($fieldPath, $propName),
+                            $propName,
+                            $newArrayItem,
+                            $oldArrayItem
+                        )
+                    );
+                }
+            } else {
+                if ((gettype($oldArrayItem) !== gettype($newArrayItem)) || !is_array($oldArrayItem) || !is_array($newArrayItem)) {
+                    if ($oldArrayItem !== $newArrayItem) {
+                        $docChanges->append(
+                            DocumentsChanges::new(
+                                ChangeType::arrayValueChanged(),
+                                self::addIndexFieldPath($fieldPath, $propName),
+                                $propName,
+                                $newArrayItem,
+                                $oldArrayItem
+                            )
+                        );
+                    }
+                } else {
+                    $dcs = self::extractChangesFromJson(
+                        self::addIndexFieldPath($fieldPath, $propName),
+                        $oldArrayItem,
+                        $newArrayItem
+                    );
+                    foreach ($dcs as $c) {
+                        $docChanges->append($c);
+                    }
+                }
+            }
+        }
+
+        $removedFieldsKeys = array_diff_key($oldArray, $newArray);
+
+        foreach ($removedFieldsKeys as $propName => $oldArrayItem) {
+            $docChanges->append(
+                DocumentsChanges::new(
+                    ChangeType::arrayValueRemoved(),
+                    $fieldPath,
+                    $propName,
+                    null,
+                    $oldArrayItem
+                )
+            );
+        }
+
+        $newFieldsKeys = array_diff_key($newArray, $oldArray);
+        foreach ($newFieldsKeys as $propName => $newArrayItem) {
+            $docChanges->append(
+                DocumentsChanges::new(
+                    ChangeType::arrayValueAdded(),
+                    $fieldPath,
+                    $propName,
+                    $newArrayItem,
+                    null
+                )
+            );
+        }
+
+        return $docChanges;
+    }
 
     // @todo: Check if this is right
     private static function compareValues($oldProp, $newProp): bool
@@ -380,7 +396,12 @@ class JsonOperation
         }
     }
 
-    private static function addIndexFieldPath(string $fieldPath, int $position): string
+    /**
+     * @param string $fieldPath
+     * @param string|int $position
+     * @return string
+     */
+    private static function addIndexFieldPath(string $fieldPath, $position): string
     {
         return $fieldPath . "[" . $position . "]";
     }

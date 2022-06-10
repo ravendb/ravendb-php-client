@@ -9,7 +9,7 @@ use RavenDB\Utils\StringUtils;
 // !status: DONE
 class ServerNode
 {
-    private Url $url;
+    private ?Url $url = null;
     private ?string $database = null;
     private string $clusterTag;
     private ServerNodeRole $serverRole;
@@ -19,12 +19,12 @@ class ServerNode
         $this->serverRole = ServerNodeRole::none();
     }
 
-    public function getUrl(): Url
+    public function getUrl(): ?Url
     {
         return $this->url;
     }
 
-    public function setUrl(Url $url): void
+    public function setUrl(?Url $url): void
     {
         $this->url = $url;
     }

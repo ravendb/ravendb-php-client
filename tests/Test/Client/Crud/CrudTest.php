@@ -456,7 +456,6 @@ class CrudTest extends RemoteTestBase
 
                 $this->assertSame("name", $changes["family/1"][0]->getFieldName());
 
-
                 $this->assertTrue($changes["family/1"][0]->getChange()->isFieldChanged());
 
                 $this->assertSame(
