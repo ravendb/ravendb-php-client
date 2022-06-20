@@ -18,6 +18,7 @@ use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Primitives\ClosureArray;
 use RavenDB\Primitives\EventArgs;
 use RavenDB\Primitives\EventHelper;
+use RavenDB\Type\Url;
 use RavenDB\Type\UrlArray;
 
 // !status: IN PROGRESS
@@ -41,22 +42,21 @@ class DocumentStore extends DocumentStoreBase
     private string $identifier = '';
 
     /**
-     * @throws IllegalStateException
+     * @param UrlArray|Url|array|string|null $urls
+     * @param string|null $database
      */
-    public function __construct(string $database = '', ?UrlArray $urls = null)
+    public function __construct($urls = null, ?string $database = null)
     {
         parent::__construct();
 
-        if ($urls != null) {
+        if ($urls !== null) {
             $this->setUrls($urls);
         }
-
         $this->setDatabase($database);
 
         $this->beforeClose = new ClosureArray();
         $this->afterClose = new ClosureArray();
     }
-
 
 //    public function getExecutorService(): ExecutorService
 //    {
@@ -135,7 +135,7 @@ class DocumentStore extends DocumentStoreBase
 //        }
 //
 //        executorService.shutdown();
-}
+    }
 
     /**
      * Opens the session for a particular database
@@ -280,7 +280,7 @@ class DocumentStore extends DocumentStoreBase
                 $generator = new MultiDatabaseHiLoIdGenerator($this);
                 $this->multiDbHiLo = $generator;
 
-                $this->getConventions()->setDocumentIdGenerator(Closure::fromCallable([$generator,  'generateDocumentId']));
+                $this->getConventions()->setDocumentIdGenerator(Closure::fromCallable([$generator, 'generateDocumentId']));
             }
 
             $this->getConventions()->freeze();
@@ -426,7 +426,7 @@ class DocumentStore extends DocumentStoreBase
 
     public function removeBeforeCloseListener(Closure $event): void
     {
-        if(($key = array_search($event, $this->beforeClose->getArrayCopy())) !== FALSE) {
+        if (($key = array_search($event, $this->beforeClose->getArrayCopy())) !== FALSE) {
             $this->beforeClose->offsetUnset($key);
         }
     }
@@ -438,7 +438,7 @@ class DocumentStore extends DocumentStoreBase
 
     public function removeAfterCloseListener(Closure $event): void
     {
-        if(($key = array_search($event, $this->afterClose->getArrayCopy())) !== FALSE) {
+        if (($key = array_search($event, $this->afterClose->getArrayCopy())) !== FALSE) {
             $this->afterClose->offsetUnset($key);
         }
     }

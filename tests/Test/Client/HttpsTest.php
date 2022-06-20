@@ -218,7 +218,7 @@ class HttpsTest extends RemoteTestBase
             $certificatePath = tempnam(sys_get_temp_dir(), md5(uniqid(microtime(true))) . '.crt');
             $certificateRawData->extractCertificateToPem($certificatePath);
 
-            $storeWithOutCert = new DocumentStore($store->getDatabase(), $store->getUrls());
+            $storeWithOutCert = new DocumentStore($store->getUrls(), $store->getDatabase());
 
             try {
                 // using this certificate user won't have an access to current db
@@ -261,7 +261,7 @@ class HttpsTest extends RemoteTestBase
             $certificatePath = tempnam(sys_get_temp_dir(), md5(uniqid(microtime(true))) . '.crt');
             $certificateRawData->extractCertificateToPem($certificatePath);
 
-            $storeWithOutCert = new DocumentStore($store->getDatabase(), $store->getUrls());
+            $storeWithOutCert = new DocumentStore($store->getUrls(), $store->getDatabase());
 
             try {
                 $authOptions = AuthOptions::pem($certificatePath);

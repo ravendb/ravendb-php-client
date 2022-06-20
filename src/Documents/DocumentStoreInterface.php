@@ -223,9 +223,9 @@ interface DocumentStoreInterface
     /**
      * Gets the URL's
      *
-     * @return UrlArray Store urls
+     * @return UrlArray|null Store urls
      */
-    public function getUrls(): UrlArray;
+    public function getUrls(): ?UrlArray;
 
 //    BulkInsertOperation bulkInsert();
 //
@@ -233,7 +233,7 @@ interface DocumentStoreInterface
 //
 //    DocumentSubscriptions subscriptions();
 
-    public function getDatabase(): string;
+    public function getDatabase(): ?string;
 
     public function getRequestExecutor(string $databaseName = ''): RequestExecutor;
 

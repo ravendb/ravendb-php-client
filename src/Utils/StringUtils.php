@@ -95,6 +95,19 @@ class StringUtils
         return ltrim ($string, $stripChars);
     }
 
+    public static function stripEnd(?string $string, ?string $stripChars): ?string
+    {
+        if (empty($string)) {
+            return $string;
+        }
+
+        if (empty($stripChars)) {
+            return rtrim($string);
+        }
+
+        return rtrim($string, $stripChars);
+    }
+
     public static function repeat(string $string, int $times): string
     {
         return str_repeat($string, $times);

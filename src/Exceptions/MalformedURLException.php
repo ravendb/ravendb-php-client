@@ -4,10 +4,14 @@ namespace RavenDB\Exceptions;
 
 class MalformedURLException extends RavenException
 {
-    public const MESSAGE = 'Malformed URL exception';
+    public const MESSAGE = 'Malformed URL';
 
-    public function __construct()
+    public function __construct(?string $url = null)
     {
-        parent::__construct(self::MESSAGE);
+        $message = self::MESSAGE;
+        if (!empty($url)) {
+            $message .= ': ' . $url;
+        }
+        parent::__construct($message);
     }
 }
