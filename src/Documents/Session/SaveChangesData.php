@@ -41,7 +41,7 @@ class SaveChangesData
         $this->deferredCommands[] = $command;
     }
 
-    public function getDeferredCommandsMap(): DSMap
+    public function & getDeferredCommandsMap(): DSMap
     {
         return $this->deferredCommandsMap;
     }

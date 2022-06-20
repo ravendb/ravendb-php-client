@@ -366,10 +366,10 @@ class BatchOperation
         switch ($status->getValue()) {
             case PatchStatus::CREATED:
             case PatchStatus::PATCHED:
-                $document = $batchResult["ModifiedDocument"];
-                if ($document == null) {
+                if (!array_key_exists('ModifiedDocument', $batchResult)) {
                     return;
                 }
+                $document = $batchResult['ModifiedDocument'];
 
                 $id = $this->getStringField($batchResult, CommandType::put(), "Id");
 

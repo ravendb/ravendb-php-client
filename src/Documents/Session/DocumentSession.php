@@ -2,14 +2,20 @@
 
 namespace RavenDB\Documents\Session;
 
+use Closure;
 use InvalidArgumentException;
 use Ramsey\Uuid\UuidInterface;
+use RavenDB\Constants\DocumentsMetadata;
+use RavenDB\Documents\Commands\Batches\CommandType;
+use RavenDB\Documents\Commands\Batches\PatchCommandData;
 use RavenDB\Documents\Commands\GetDocumentsCommand;
 use RavenDB\Documents\Commands\GetDocumentsResult;
 use RavenDB\Documents\Commands\HeadDocumentCommand;
 use RavenDB\Documents\DocumentStore;
+use RavenDB\Documents\IdTypeAndName;
 use RavenDB\Documents\Indexes\AbstractCommonApiForIndexes;
 use RavenDB\Documents\Linq\DocumentQueryGeneratorInterface;
+use RavenDB\Documents\Operations\PatchRequest;
 use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRangeArray;
 use RavenDB\Documents\Queries\Query;
 use RavenDB\Documents\Session\Loaders\IncludeBuilder;
@@ -25,6 +31,7 @@ use RavenDB\Exceptions\NotImplementedException;
 use RavenDB\Http\ResultMap;
 use RavenDB\Primitives\Consumer;
 use RavenDB\Type\ObjectArray;
+use RavenDB\Type\ObjectMap;
 use RavenDB\Type\StringArray;
 use RavenDB\Utils\StringUtils;
 use RuntimeException;
@@ -669,43 +676,63 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //
 //        loadInternal(ids.toArray(new String[0]), new LoadOperation(this), output);
 //    }
-//
-//    @Override
-//    public <T, U> void increment(T entity, String path, U valueToAdd) {
-//        IMetadataDictionary metadata = getMetadataFor(entity);
-//        String id = (String) metadata.get(Constants.Documents.Metadata.ID);
-//        increment(id, path, valueToAdd);
-//    }
-//
-//    private int _valsCount;
-//    private int _customCount;
-//
-//    @Override
-//    public <T, U> void increment(String id, String path, U valueToAdd) {
-//        PatchRequest patchRequest = new PatchRequest();
-//
-//        String variable = "this." + path;
-//        String value = "args.val_" + _valsCount;
-//        patchRequest.setScript(variable + " = " + variable
-//                + " ? " + variable + " + " + value
-//                + " : " + value + ";");
-//        patchRequest.setValues(Collections.singletonMap("val_" + _valsCount, valueToAdd));
-//
-//        _valsCount++;
-//
-//        if (!tryMergePatches(id, patchRequest)) {
-//            defer(new PatchCommandData(id, null, patchRequest, null));
-//        }
-//    }
-//
+
+    /**
+     * @param object|string|null $idOrEntity
+     * @param string|null $path
+     * @param mixed $valueToAdd
+     */
+    public function increment($idOrEntity, ?string $path, $valueToAdd): void
+    {
+        if (is_object($idOrEntity)) {
+            $this->incrementByEntity($idOrEntity, $path, $valueToAdd);
+            return;
+        }
+        if (is_string($idOrEntity)) {
+            $this->incrementById($idOrEntity, $path, $valueToAdd);
+            return;
+        }
+        throw new IllegalArgumentException('Wrong argument type');
+    }
+
+    protected function incrementByEntity(?object $entity, ?string $path, $valueToAdd): void
+    {
+        $metadata = $this->getMetadataFor($entity);
+        $id = $metadata->get(DocumentsMetadata::ID);
+        $this->incrementById($id, $path, $valueToAdd);
+    }
+
+    private int $valsCount = 0;
+    private int $customCount = 0;
+
+    protected function incrementById(?string $id, ?string $path, $valueToAdd): void
+    {
+        $patchRequest = new PatchRequest();
+
+        $variable = "this." . $path;
+        $value = "args.val_" . $this->valsCount;
+        $patchRequest->setScript($variable . " = " . $variable
+                . " ? " . $variable . " + " . $value
+                . " : " . $value . ";");
+        $objectMap = new ObjectMap();
+        $objectMap->offsetSet("val_" . $this->valsCount, $valueToAdd);
+        $patchRequest->setValues($objectMap);
+
+        $this->valsCount++;
+
+        if (!$this->tryMergePatches($id, $patchRequest)) {
+            $this->defer(new PatchCommandData($id, null, $patchRequest, null));
+        }
+    }
+
 //    @Override
 //    public <T, TU> void addOrIncrement(String id, T entity, String pathToObject, TU valToAdd) {
 //        String variable = "this." + pathToObject;
-//        String value = "args.val_" + _valsCount;
+//        String value = "args.val_" + $this->valsCount;
 //
 //        PatchRequest patchRequest = new PatchRequest();
 //        patchRequest.setScript(variable + " = " + variable + " ? " + variable + " + " + value + " : " + value);
-//        patchRequest.setValues(Collections.singletonMap("val_" + _valsCount, valToAdd));
+//        patchRequest.setValues(Collections.singletonMap("val_" + $this->valsCount, valToAdd));
 //
 //        String collectionName = _requestExecutor.getConventions().getCollectionName(entity);
 //        String javaType = _requestExecutor.getConventions().getJavaClassName(entity.getClass());
@@ -721,7 +748,7 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //
 //        ObjectNode newInstance = getEntityToJson().convertEntityToJson(entity, documentInfo);
 //
-//        _valsCount++;
+//        $this->valsCount++;
 //
 //        PatchCommandData patchCommandData = new PatchCommandData(id, null, patchRequest);
 //        patchCommandData.setCreateIfMissing(newInstance);
@@ -752,7 +779,7 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //
 //        ObjectNode newInstance = getEntityToJson().convertEntityToJson(entity, documentInfo);
 //
-//        _valsCount++;
+//        $this->valsCount++;
 //
 //        PatchCommandData patchCommandData = new PatchCommandData(id, null, patchRequest);
 //        patchCommandData.setCreateIfMissing(newInstance);
@@ -762,8 +789,8 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //    @Override
 //    public <T, TU> void addOrPatch(String id, T entity, String pathToObject, TU value) {
 //        PatchRequest patchRequest = new PatchRequest();
-//        patchRequest.setScript("this." + pathToObject + " = args.val_" + _valsCount);
-//        patchRequest.setValues(Collections.singletonMap("val_" + _valsCount, value));
+//        patchRequest.setScript("this." + pathToObject + " = args.val_" + $this->valsCount);
+//        patchRequest.setValues(Collections.singletonMap("val_" + $this->valsCount, value));
 //
 //        String collectionName = _requestExecutor.getConventions().getCollectionName(entity);
 //        String javaType = _requestExecutor.getConventions().getJavaClassName(entity.getClass());
@@ -779,55 +806,113 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //
 //        ObjectNode newInstance = getEntityToJson().convertEntityToJson(entity, documentInfo);
 //
-//        _valsCount++;
+//        $this->valsCount++;
 //
 //        PatchCommandData patchCommandData = new PatchCommandData(id, null, patchRequest);
 //        patchCommandData.setCreateIfMissing(newInstance);
 //        defer(patchCommandData);
 //    }
-//
-//    @Override
-//    public <T, U> void patch(T entity, String path, U value) {
-//        IMetadataDictionary metadata = getMetadataFor(entity);
-//        String id = (String) metadata.get(Constants.Documents.Metadata.ID);
-//        patch(id, path, value);
-//    }
-//
-//    @Override
-//    public <T, U> void patch(String id, String path, U value) {
-//        PatchRequest patchRequest = new PatchRequest();
-//        patchRequest.setScript("this." + path + " = args.val_" + _valsCount + ";");
-//        patchRequest.setValues(Collections.singletonMap("val_" + _valsCount, value));
-//
-//        _valsCount++;
-//
-//        if (!tryMergePatches(id, patchRequest)) {
-//            defer(new PatchCommandData(id, null, patchRequest, null));
-//        }
-//    }
-//
-//    @Override
-//    public <T, U> void patchArray(T entity, String pathToArray, Consumer<JavaScriptArray<U>> arrayAdder) {
-//        IMetadataDictionary metadata = getMetadataFor(entity);
-//        String id = (String) metadata.get(Constants.Documents.Metadata.ID);
-//        patchArray(id, pathToArray, arrayAdder);
-//    }
-//
-//    @Override
-//    public <T, U> void patchArray(String id, String pathToArray, Consumer<JavaScriptArray<U>> arrayAdder) {
-//        JavaScriptArray<U> scriptArray = new JavaScriptArray<>(_customCount++, pathToArray);
-//
-//        arrayAdder.accept(scriptArray);
-//
-//        PatchRequest patchRequest = new PatchRequest();
-//        patchRequest.setScript(scriptArray.getScript());
-//        patchRequest.setValues(scriptArray.getParameters());
-//
-//        if (!tryMergePatches(id, patchRequest)) {
-//            defer(new PatchCommandData(id, null, patchRequest, null));
-//        }
-//    }
-//
+
+    /**
+     * @param string|object|null $idOrEntity
+     * @param string|null $path
+     * @param mixed $value
+     */
+    public function patch($idOrEntity, ?string $path, $value): void
+    {
+        if (is_object($idOrEntity)) {
+            $this->patchByEntity($idOrEntity, $path, $value);
+            return;
+        }
+        if (is_string($idOrEntity)) {
+            $this->patchById($idOrEntity, $path, $value);
+            return;
+        }
+        throw new IllegalArgumentException('Wrong argument type');
+    }
+
+    /**
+     * @param object|null $entity
+     * @param string|null $path
+     * @param mixed $value
+     */
+    protected function patchByEntity(?object $entity, ?string $path, $value): void
+    {
+        $metadata = $this->getMetadataFor($entity);
+        $id = $metadata->get(DocumentsMetadata::ID);
+        $this->patchById($id, $path, $value);
+    }
+
+    /**
+     * @param string|null $id
+     * @param string|null $path
+     * @param mixed $value
+     */
+    protected function patchById(?string $id, ?string $path, $value): void
+    {
+        $patchRequest = new PatchRequest();
+        $patchRequest->setScript("this." . $path . " = args.val_" . $this->valsCount . ";");
+        $objectMap = new ObjectMap();
+        $objectMap->offsetSet("val_" . $this->valsCount, $value);
+        $patchRequest->setValues($objectMap);
+
+        $this->valsCount++;
+
+        if (!$this->tryMergePatches($id, $patchRequest)) {
+            $this->defer(new PatchCommandData($id, null, $patchRequest, null));
+        }
+    }
+
+    /**
+     * @param string|object|null $idOrEntity
+     * @param string|null $pathToArray
+     * @param Closure $arrayAdder
+     */
+    public function patchArray($idOrEntity, ?string $pathToArray, Closure $arrayAdder): void
+    {
+        if (is_object($idOrEntity)) {
+            $this->patchArrayByEntity($idOrEntity, $pathToArray, $arrayAdder);
+            return;
+        }
+        if (is_string($idOrEntity)) {
+            $this->patchArrayById($idOrEntity, $pathToArray, $arrayAdder);
+            return;
+        }
+        throw new IllegalArgumentException('Wrong argument type');
+    }
+
+    /**
+     * @param object|null $entity
+     * @param string|null $pathToArray
+     * @param Closure  $arrayAdder
+     */
+    protected function patchArrayByEntity(?object $entity, ?string $pathToArray, Closure $arrayAdder): void
+    {
+        $metadata = $this->getMetadataFor($entity);
+        $id = $metadata->get(DocumentsMetadata::ID);
+        $this->patchArrayById($id, $pathToArray, $arrayAdder);
+    }
+
+    /**
+     * @param string|null $id
+     * @param string|null $pathToArray
+     * @param Closure  $arrayAdder
+     */
+    protected function patchArrayById(?string $id, ?string $pathToArray, Closure $arrayAdder): void
+    {
+        $scriptArray = new JavaScriptArray($this->customCount++, $pathToArray);
+
+        $arrayAdder($scriptArray);
+
+        $patchRequest = new PatchRequest();
+        $patchRequest->setScript($scriptArray->getScript());
+        $patchRequest->setValues($scriptArray->getParameters());
+
+        if (!$this->tryMergePatches($id, $patchRequest)) {
+            $this->defer(new PatchCommandData($id, null, $patchRequest, null));
+        }
+    }
+
 //    @Override
 //    public <T, TKey, TValue> void patchObject(T entity, String pathToObject, Consumer<JavaScriptMap<TKey, TValue>> mapAdder) {
 //        IMetadataDictionary metadata = getMetadataFor(entity);
@@ -849,34 +934,48 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //            defer(new PatchCommandData(id, null, patchRequest, null));
 //        }
 //    }
-//
-//    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-//    private boolean tryMergePatches(String id, PatchRequest patchRequest) {
-//        ICommandData command = deferredCommandsMap.get(IdTypeAndName.create(id, CommandType.PATCH, null));
-//        if (command == null) {
-//            return false;
+
+    private function tryMergePatches(?string $id, ?PatchRequest $patchRequest): bool
+    {
+//        $command = null;
+//        /** @var IdTypeAndName $commandMap */
+//        foreach ($this->deferredCommandsMap as $commandMap => $c) {
+//            if ($commandMap->getId() == $id && $commandMap->getType()->isPatch() && $commandMap->getName() == null) {
+//                $command = $c;
+//                break;
+//            }
 //        }
-//
-//        deferredCommands.remove(command);
-//        // We'll overwrite the deferredCommandsMap when calling Defer
-//        // No need to call deferredCommandsMap.remove((id, CommandType.PATCH, null));
-//
-//        PatchCommandData oldPatch = (PatchCommandData) command;
-//        String newScript = oldPatch.getPatch().getScript() + "\n" + patchRequest.getScript();
-//        Map<String, Object> newVals = new HashMap<>(oldPatch.getPatch().getValues());
-//
-//        for (Map.Entry<String, Object> kvp : patchRequest.getValues().entrySet()) {
-//            newVals.put(kvp.getKey(), kvp.getValue());
-//        }
-//
-//        PatchRequest newPatchRequest = new PatchRequest();
-//        newPatchRequest.setScript(newScript);
-//        newPatchRequest.setValues(newVals);
-//
-//        defer(new PatchCommandData(id, null, newPatchRequest, null));
-//
-//        return true;
-//    }
+
+        $commandMap = $this->getDeferredCommandsMapIndex($id, CommandType::patch(), null);
+        if ($commandMap == null) {
+            return false;
+        }
+        $command = $this->deferredCommandsMap->get($commandMap);
+
+        if(($key = array_search($command, $this->deferredCommands, true)) !== FALSE) {
+            unset($this->deferredCommands[$key]);
+        }
+
+        // We'll overwrite the deferredCommandsMap when calling Defer
+        // No need to call deferredCommandsMap.remove((id, CommandType.PATCH, null));
+
+        /** @var PatchCommandData $oldPatch */
+        $oldPatch = $command;
+        $newScript = $oldPatch->getPatch()->getScript() . "\n" . $patchRequest->getScript();
+        $newVals = $oldPatch->getPatch()->getValues();
+
+        foreach ($patchRequest->getValues() as $key => $value) {
+            $newVals->offsetSet($key, $value);
+        }
+
+        $newPatchRequest = new PatchRequest();
+        $newPatchRequest->setScript($newScript);
+        $newPatchRequest->setValues($newVals);
+
+        $this->defer(new PatchCommandData($id, null, $newPatchRequest, null));
+
+        return true;
+    }
 
     /**
      * Query the specified index using Lucene syntax

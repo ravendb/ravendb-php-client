@@ -223,7 +223,8 @@ class RemoteTestBase extends RavenTestDriver implements CleanCloseable
         $store->addAfterCloseListener(function($sender, $event) use (&$documentStores) {
             /** @var DocumentStore $store */
             $store = $sender;
-            if (!in_array($store, $documentStores->getArrayCopy())) {
+            $dbStores = $documentStores->getArrayCopy();
+            if (!in_array($store, $dbStores)) {
                 return;
             }
 

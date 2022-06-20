@@ -2,7 +2,7 @@
 
 namespace RavenDB\Type;
 
-class ObjectMap extends ObjectArray
+class ObjectMap extends ExtendedArrayObject
 {
 
 }
