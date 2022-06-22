@@ -19,6 +19,7 @@ class DocumentsMetadata
     public const INDEX_SCORE = "@index-score";
     public const LAST_MODIFIED = "@last-modified";
     public const RAVEN_JAVA_TYPE = "Raven-Java-Type";
+    public const RAVEN_PHP_TYPE = "Raven-PHP-Type";
     public const CHANGE_VECTOR = "@change-vector";
     public const EXPIRES = "@expires";
     public const ALL_DOCUMENTS_COLLECTION = "@all_docs";

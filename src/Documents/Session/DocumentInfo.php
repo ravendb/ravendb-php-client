@@ -14,8 +14,8 @@ class DocumentInfo
 
     private bool $ignoreChanges = false;
 
-    private array $metadata;
-    private array $document;
+    private ?array $metadata = null;
+    private ?array $document = null;
 
     private ?MetadataDictionaryInterface $metadataInstance = null;
 
@@ -119,7 +119,7 @@ class DocumentInfo
         $this->collection = $collection;
     }
 
-    public function & getMetadata(): array
+    public function getMetadata(): ?array
     {
         return $this->metadata;
     }

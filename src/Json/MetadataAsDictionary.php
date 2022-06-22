@@ -9,18 +9,17 @@ use RavenDB\Type\StringSet;
 
 class MetadataAsDictionary implements MetadataDictionaryInterface
 {
-    private MetadataDictionaryInterface $parent;
-    private string $parentKey;
+    private ?MetadataDictionaryInterface $parent = null;
+    private ?string $parentKey = null;
 
-    private array  $metadata;
-    private ?object $source;
+    private ?array  $metadata = null;
+    private array $source;
 
     private bool $dirty = false;
 
     public function __construct(array $metadata = array())
     {
-        $this->metadata = $metadata;
-        $this->source = null;
+        $this->source = $metadata;
     }
 
     static public function fromObject(object $object, ?MetadataDictionaryInterface $parent = null, ?string $parentKey = null): MetadataAsDictionary
@@ -54,13 +53,13 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
         return $this->dirty;
     }
 
-    private function initialize(object $metadata): void
+    private function initialize(array $metadata): void
     {
         $this->dirty = true;
         $this->metadata = [];
-        $fields = get_object_vars($metadata);
+        $fields = array_keys($metadata);
         foreach ($fields as $fieldName) {
-            $this->metadata[$fieldName] = $this->convertValue($fieldName, $metadata->$fieldName);
+            $this->metadata[$fieldName] = $this->convertValue($fieldName, $metadata[$fieldName]);
         }
 
         if ($this->parent != null) { // mark parent as dirty

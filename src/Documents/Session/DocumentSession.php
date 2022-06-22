@@ -3,8 +3,10 @@
 namespace RavenDB\Documents\Session;
 
 use Closure;
+use ReflectionException;
 use InvalidArgumentException;
 use Ramsey\Uuid\UuidInterface;
+use RavenDB\Json\MetadataAsDictionary;
 use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Documents\Commands\Batches\CommandType;
 use RavenDB\Documents\Commands\Batches\PatchCommandData;
@@ -12,7 +14,6 @@ use RavenDB\Documents\Commands\GetDocumentsCommand;
 use RavenDB\Documents\Commands\GetDocumentsResult;
 use RavenDB\Documents\Commands\HeadDocumentCommand;
 use RavenDB\Documents\DocumentStore;
-use RavenDB\Documents\IdTypeAndName;
 use RavenDB\Documents\Indexes\AbstractCommonApiForIndexes;
 use RavenDB\Documents\Linq\DocumentQueryGeneratorInterface;
 use RavenDB\Documents\Operations\PatchRequest;
@@ -28,7 +29,6 @@ use RavenDB\Documents\Session\Operations\LoadStartingWithOperation;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Exceptions\NotImplementedException;
-use RavenDB\Http\ResultMap;
 use RavenDB\Primitives\Consumer;
 use RavenDB\Type\ObjectArray;
 use RavenDB\Type\ObjectMap;
@@ -36,8 +36,6 @@ use RavenDB\Type\StringArray;
 use RavenDB\Utils\StringUtils;
 use RuntimeException;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
-
-use DS\Map as DSMap;
 
 class DocumentSession extends InMemoryDocumentSessionOperations implements
     AdvancedSessionOperationsInterface,
@@ -725,93 +723,115 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         }
     }
 
-//    @Override
-//    public <T, TU> void addOrIncrement(String id, T entity, String pathToObject, TU valToAdd) {
-//        String variable = "this." + pathToObject;
-//        String value = "args.val_" + $this->valsCount;
-//
-//        PatchRequest patchRequest = new PatchRequest();
-//        patchRequest.setScript(variable + " = " + variable + " ? " + variable + " + " + value + " : " + value);
-//        patchRequest.setValues(Collections.singletonMap("val_" + $this->valsCount, valToAdd));
-//
-//        String collectionName = _requestExecutor.getConventions().getCollectionName(entity);
-//        String javaType = _requestExecutor.getConventions().getJavaClassName(entity.getClass());
-//
-//        MetadataAsDictionary metadataAsDictionary = new MetadataAsDictionary();
-//        metadataAsDictionary.put(Constants.Documents.Metadata.COLLECTION, collectionName);
-//        metadataAsDictionary.put(Constants.Documents.Metadata.RAVEN_JAVA_TYPE, javaType);
-//
-//        DocumentInfo documentInfo = new DocumentInfo();
-//        documentInfo.setId(id);
-//        documentInfo.setCollection(collectionName);
-//        documentInfo.setMetadataInstance(metadataAsDictionary);
-//
-//        ObjectNode newInstance = getEntityToJson().convertEntityToJson(entity, documentInfo);
-//
-//        $this->valsCount++;
-//
-//        PatchCommandData patchCommandData = new PatchCommandData(id, null, patchRequest);
-//        patchCommandData.setCreateIfMissing(newInstance);
-//        defer(patchCommandData);
-//    }
-//
-//    @Override
-//    public <T, TU> void addOrPatchArray(String id, T entity, String pathToArray, Consumer<JavaScriptArray<TU>> arrayAdder) {
-//        JavaScriptArray<TU> scriptArray = new JavaScriptArray<>(_customCount++, pathToArray);
-//
-//        arrayAdder.accept(scriptArray);
-//
-//        PatchRequest patchRequest = new PatchRequest();
-//        patchRequest.setScript(scriptArray.getScript());
-//        patchRequest.setValues(scriptArray.getParameters());
-//
-//        String collectionName = _requestExecutor.getConventions().getCollectionName(entity);
-//        String javaType = _requestExecutor.getConventions().getJavaClassName(entity.getClass());
-//
-//        MetadataAsDictionary metadataAsDictionary = new MetadataAsDictionary();
-//        metadataAsDictionary.put(Constants.Documents.Metadata.COLLECTION, collectionName);
-//        metadataAsDictionary.put(Constants.Documents.Metadata.RAVEN_JAVA_TYPE, javaType);
-//
-//        DocumentInfo documentInfo = new DocumentInfo();
-//        documentInfo.setId(id);
-//        documentInfo.setCollection(collectionName);
-//        documentInfo.setMetadataInstance(metadataAsDictionary);
-//
-//        ObjectNode newInstance = getEntityToJson().convertEntityToJson(entity, documentInfo);
-//
-//        $this->valsCount++;
-//
-//        PatchCommandData patchCommandData = new PatchCommandData(id, null, patchRequest);
-//        patchCommandData.setCreateIfMissing(newInstance);
-//        defer(patchCommandData);
-//    }
-//
-//    @Override
-//    public <T, TU> void addOrPatch(String id, T entity, String pathToObject, TU value) {
-//        PatchRequest patchRequest = new PatchRequest();
-//        patchRequest.setScript("this." + pathToObject + " = args.val_" + $this->valsCount);
-//        patchRequest.setValues(Collections.singletonMap("val_" + $this->valsCount, value));
-//
-//        String collectionName = _requestExecutor.getConventions().getCollectionName(entity);
-//        String javaType = _requestExecutor.getConventions().getJavaClassName(entity.getClass());
-//
-//        MetadataAsDictionary metadataAsDictionary = new MetadataAsDictionary();
-//        metadataAsDictionary.put(Constants.Documents.Metadata.COLLECTION, collectionName);
-//        metadataAsDictionary.put(Constants.Documents.Metadata.RAVEN_JAVA_TYPE, javaType);
-//
-//        DocumentInfo documentInfo = new DocumentInfo();
-//        documentInfo.setId(id);
-//        documentInfo.setCollection(collectionName);
-//        documentInfo.setMetadataInstance(metadataAsDictionary);
-//
-//        ObjectNode newInstance = getEntityToJson().convertEntityToJson(entity, documentInfo);
-//
-//        $this->valsCount++;
-//
-//        PatchCommandData patchCommandData = new PatchCommandData(id, null, patchRequest);
-//        patchCommandData.setCreateIfMissing(newInstance);
-//        defer(patchCommandData);
-//    }
+    /**
+     * @param string|null $id
+     * @param object      $entity
+     * @param string|null $pathToObject
+     * @param mixed       $valToAdd
+     *
+     * @throws ReflectionException
+     */
+    public function addOrIncrement(?string $id, object $entity, ?string $pathToObject, $valToAdd): void
+    {
+        $variable = "this." . $pathToObject;
+        $value = "args.val_" . $this->valsCount;
+
+        $patchRequest = new PatchRequest();
+        $patchRequest->setScript($variable . " = " . $variable . " ? " . $variable . " + " . $value . " : " . $value);
+
+        $values = new ObjectMap();
+        $values->offsetSet("val_" . $this->valsCount, $valToAdd);
+        $patchRequest->setValues($values);
+
+        $collectionName = $this->requestExecutor->getConventions()->getCollectionName($entity);
+        $phpType = $this->requestExecutor->getConventions()->getPhpClassName($entity);
+
+        $metadataAsDictionary = new MetadataAsDictionary();
+        $metadataAsDictionary->put(DocumentsMetadata::COLLECTION, $collectionName);
+        $metadataAsDictionary->put(DocumentsMetadata::RAVEN_PHP_TYPE, $phpType);
+
+        $documentInfo = new DocumentInfo();
+        $documentInfo->setId($id);
+        $documentInfo->setCollection($collectionName);
+        $documentInfo->setMetadataInstance($metadataAsDictionary);
+
+        $newInstance = $this->getEntityToJson()->convertEntityToJson($entity, $documentInfo);
+
+        $this->valsCount++;
+
+        $patchCommandData = new PatchCommandData($id, null, $patchRequest);
+        $patchCommandData->setCreateIfMissing($newInstance);
+        $this->defer($patchCommandData);
+    }
+
+    public function addOrPatchArray(?string $id, object $entity, ?string $pathToArray, Closure $arrayAdder): void
+    {
+        $scriptArray = new JavaScriptArray($this->customCount++, $pathToArray);
+
+        $arrayAdder($scriptArray);
+
+        $patchRequest = new PatchRequest();
+        $patchRequest->setScript($scriptArray->getScript());
+        $patchRequest->setValues($scriptArray->getParameters());
+
+        $collectionName = $this->requestExecutor->getConventions()->getCollectionName($entity);
+        $phpType = $this->requestExecutor->getConventions()->getPhpClassName($entity);
+
+        $metadataAsDictionary = new MetadataAsDictionary();
+        $metadataAsDictionary->put(DocumentsMetadata::COLLECTION, $collectionName);
+        $metadataAsDictionary->put(DocumentsMetadata::RAVEN_PHP_TYPE, $phpType);
+
+        $documentInfo = new DocumentInfo();
+        $documentInfo->setId($id);
+        $documentInfo->setCollection($collectionName);
+        $documentInfo->setMetadataInstance($metadataAsDictionary);
+
+        $newInstance = $this->getEntityToJson()->convertEntityToJson($entity, $documentInfo);
+
+        $this->valsCount++;
+
+        $patchCommandData = new PatchCommandData($id, null, $patchRequest);
+        $patchCommandData->setCreateIfMissing($newInstance);
+        $this->defer($patchCommandData);
+    }
+
+    /**
+     * @param string|null $id
+     * @param object      $entity
+     * @param string|null $pathToObject
+     * @param mixed       $value
+     *
+     * @throws ReflectionException
+     */
+    public function addOrPatch(?string $id, object $entity, ?string $pathToObject, $value): void
+    {
+        $patchRequest = new PatchRequest();
+        $patchRequest->setScript("this." . $pathToObject . " = args.val_" . $this->valsCount);
+
+        $values = new ObjectMap();
+        $values->offsetSet("val_" . $this->valsCount, $value);
+        $patchRequest->setValues($values);
+
+        $collectionName = $this->requestExecutor->getConventions()->getCollectionName($entity);
+        $phpType = $this->requestExecutor->getConventions()->getPhpClassName($entity);
+
+        $metadataAsDictionary = new MetadataAsDictionary();
+        $metadataAsDictionary->put(DocumentsMetadata::COLLECTION, $collectionName);
+        $metadataAsDictionary->put(DocumentsMetadata::RAVEN_PHP_TYPE, $phpType);
+
+        $documentInfo = new DocumentInfo();
+        $documentInfo->setId($id);
+        $documentInfo->setCollection($collectionName);
+        $documentInfo->setMetadataInstance($metadataAsDictionary);
+
+        $newInstance = $this->getEntityToJson()->convertEntityToJson($entity, $documentInfo);
+
+        $this->valsCount++;
+
+        $patchCommandData = new PatchCommandData($id, null, $patchRequest);
+        $patchCommandData->setCreateIfMissing($newInstance);
+        $this->defer($patchCommandData);
+    }
 
     /**
      * @param string|object|null $idOrEntity
@@ -1000,7 +1020,7 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 
     protected function _documentQuery(string $className, ?string $indexName = null, ?string $collectionName = null, bool $isMapReduce = false): DocumentQueryInterface
     {
-        list($indexName, $collectionName) = $this->processQueryParameters($className, $indexName, $collectionName, $this->getConventions());
+        [$indexName, $collectionName] = $this->processQueryParameters($className, $indexName, $collectionName, $this->getConventions());
 
         return new DocumentQuery($className, $this, $indexName, $collectionName, $isMapReduce);
     }

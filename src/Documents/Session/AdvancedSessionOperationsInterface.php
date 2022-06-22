@@ -3,6 +3,7 @@
 namespace RavenDB\Documents\Session;
 
 use Closure;
+use ReflectionException;
 use RavenDB\Documents\Indexes\AbstractCommonApiForIndexes;
 use RavenDB\Type\ObjectArray;
 
@@ -195,13 +196,26 @@ interface AdvancedSessionOperationsInterface extends
 //    <T, TKey, TValue> void patchObject(T entity, String pathToObject, Consumer<JavaScriptMap<TKey, TValue>> dictionaryAdder);
 //
 //    <T, TKey, TValue> void patchObject(String id, String pathToObject, Consumer<JavaScriptMap<TKey, TValue>> dictionaryAdder);
-//
-//    <T, TU> void addOrPatch(String id, T entity, String pathToObject, TU value);
-//
-//    <T, TU> void addOrPatchArray(String id, T entity, String pathToObject, Consumer<JavaScriptArray<TU>> arrayAdder);
-//
-//    <T, TU> void addOrIncrement(String id, T entity, String pathToObject, TU valToAdd);
-//
+
+    /**
+     * @param string|null $id
+     * @param object      $entity
+     * @param string|null $pathToObject
+     * @param mixed       $value
+     */
+    public function addOrPatch(?string $id, object $entity, ?string $pathToObject, $value): void;
+
+    public function addOrPatchArray(?string $id, object $entity, ?string $pathToArray, Closure $arrayAdder): void;
+
+    /**
+     * @param string|null $id
+     * @param object      $entity
+     * @param string|null $pathToObject
+     * @param mixed       $valToAdd
+     */
+    public function addOrIncrement(?string $id, object $entity, ?string $pathToObject, $valToAdd): void;
+
+
 //    /**
 //     * Stream the results on the query to the client, converting them to
 //     * Java types along the way.

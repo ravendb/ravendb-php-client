@@ -4,6 +4,7 @@ namespace RavenDB\Documents\Conventions;
 
 use Closure;
 use InvalidArgumentException;
+use RavenDB\Exceptions\RavenException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Extensions\EntityMapper;
 use RavenDB\Extensions\JsonExtensions;
@@ -79,9 +80,10 @@ class DocumentConventions
 
     private ?string $findCollectionName = null;
 
-    private ?Closure $findJavaClassName = null;
-    private ?Closure $findJavaClass = null;
-    private ?Closure $findJavaClassByName = null;
+    private ?Closure $findPhpClassName = null;
+
+//    private ?Closure $findPhpClass = null;
+//    private ?Closure $findPhpClassByName = null;
 
     private bool $useOptimisticConcurrency = false;
     private bool $throwIfQueryPageSizeIsNotSet = false;
@@ -178,7 +180,7 @@ class DocumentConventions
         };
         $this->identityPartsSeparator = '/';
 //        _findIdentityPropertyNameFromCollectionName = entityName -> "Id";
-//        _findJavaClass = (String id, ObjectNode doc) -> {
+//      _findJavaClass = (String id, ObjectNode doc) -> {
 //            JsonNode metadata = doc.get(Constants.Documents.Metadata.KEY);
 //            if (metadata != null) {
 //                TextNode javaType = (TextNode) metadata.get(Constants.Documents.Metadata.RAVEN_JAVA_TYPE);
@@ -189,7 +191,12 @@ class DocumentConventions
 //
 //            return null;
 //        };
-//        _findJavaClassName = type -> ReflectionUtil.getFullNameWithoutVersionInformation(type);
+
+        $this->findPhpClassName = function($entity) {
+            // ReflectionUtil.getFullNameWithoutVersionInformation(type);
+            return get_class($entity);
+        };
+
 //        _findJavaClassByName = name -> {
 //            try {
 //                return Class.forName(name);
@@ -197,6 +204,8 @@ class DocumentConventions
 //                throw new RavenException("Unable to find class by name = " + name, e);
 //            }
 //        };
+
+
         $this->transformClassCollectionNameToDocumentIdPrefix = Closure::fromCallable([$this, 'defaultTransformCollectionNameToDocumentIdPrefix']);
 
         $this->findCollectionName = 'defaultGetCollectionName';
@@ -814,34 +823,45 @@ class DocumentConventions
                 //
                 // return this;
                 // }
-                //
-                // /**
-                // * Get the java class (if exists) from the document
-                // * @param id document id
-                // * @param document document to get java class from
-                // * @return java class
-                // */
-                // public String getJavaClass(String id, ObjectNode document) {
-                // return _findJavaClass.apply(id, document);
-                // }
-                //
-                // /**
-                // * Get the class instance by it's name
-                // * @param name class name
-                // * @return java class
-                // */
-                // public Class getJavaClassByName(String name) {
-                // return _findJavaClassByName.apply(name);
-                // }
-                //
-                // /**
-                // * Get the Java class name to be stored in the entity metadata
-                // * @param entityType Entity type
-                // * @return java class name
-                // */
-                // public String getJavaClassName(Class entityType) {
-                // return _findJavaClassName.apply(entityType);
-                // }
+
+
+//    /**
+//     * Get the java class (if exists) from the document
+//     * @param id document id
+//     * @param document document to get java class from
+//     * @return java class
+//     */
+//    public String getJavaClass(String id, ObjectNode document) {
+//        return _findJavaClass.apply(id, document);
+//    }
+//
+//    /**
+//     * Get the class instance by it's name
+//     * @param name class name
+//     * @return java class
+//     */
+//    public Class getJavaClassByName(String name) {
+//        return _findJavaClassByName.apply(name);
+//    }
+//
+//    /**
+//     * Get the Java class name to be stored in the entity metadata
+//     * @param entityType Entity type
+//     * @return java class name
+//     */
+//    public String getJavaClassName(Class entityType) {
+//        return _findJavaClassName.apply(entityType);
+//    }
+    /**
+     * Get the PHP class name to be stored in the entity metadata
+     * @param object $entity Entity
+     * @return string|null PHP class name
+     */
+    public function getPhpClassName(object $entity): ?string
+    {
+        $f = $this->findPhpClassName;
+        return $f($entity);
+    }
 
     /**
      * EXPERT: Disable automatic atomic writes with cluster write transactions. If set to 'true', will only consider explicitly

@@ -899,16 +899,16 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $this->knownMissingIds[] = $id;
         $changeVector = $this->isUseOptimisticConcurrency() ? $changeVector : null;
         if ($this->countersByDocId !== null) {
-            if (($key = array_search($value->getId(), $this->countersByDocId)) !== false) {
+            if (($key = array_search($id, $this->countersByDocId)) !== false) {
                 unset($this->countersByDocId[$key]);
             }
         }
 
-//        defer(new DeleteCommandData(
-//                id,
-//                ObjectUtils.firstNonNull(expectedChangeVector, changeVector),
-//                ObjectUtils.firstNonNull(expectedChangeVector, documentInfo != null ? documentInfo.getChangeVector() : null
-//            )));
+        $this->defer(new DeleteCommandData(
+                $id,
+                $expectedChangeVector ?? $changeVector,
+                $expectedChangeVector ?? ($documentInfo != null ? $documentInfo->getChangeVector() : null)
+            ));
     }
 
     /**
