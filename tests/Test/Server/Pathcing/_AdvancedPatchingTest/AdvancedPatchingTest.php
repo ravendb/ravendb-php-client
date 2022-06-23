@@ -152,8 +152,8 @@ class AdvancedPatchingTest extends RemoteTestBase
             $store->close();
         }
     }
-
-    public function canDeserializeModifiedDocument(): void
+    
+    public function testCanDeserializeModifiedDocument(): void
     {
         $store = $this->getDocumentStore();
         try {

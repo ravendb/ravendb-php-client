@@ -133,13 +133,13 @@ class OperationExecutor
         return $command->getResult()->getStatus();
     }
 
-    public function sendEntityClass(string $entityClass, ?PatchOperation $operation, ?SessionInfo $sessionInfo = null): PatchResult
+    public function sendEntityClass(string $entityClass, ?PatchOperation $operation, ?SessionInfo $sessionInfo = null): PatchOperationResult
     {
         $command = $operation->getCommand($this->store, $this->requestExecutor->getConventions(), $this->requestExecutor->getCache());
 
         $this->requestExecutor->execute($command, $sessionInfo);
 
-        $result = new PatchResult();
+        $result = new PatchOperationResult();
 
         if ($command->getStatusCode() == HttpStatusCode::NOT_MODIFIED) {
             $result->setStatus(PatchStatus::notModified());
@@ -153,10 +153,10 @@ class OperationExecutor
 
         try {
             $result->setStatus($command->getResult()->getStatus());
-            $result->setDocument($this->requestExecutor->getConventions()->getEntityMapper()->deserialize($command->getResult()->getModifiedDocument(), $entityClass, 'json'));
+            $result->setDocument($this->requestExecutor->getConventions()->getEntityMapper()->denormalize($command->getResult()->getModifiedDocument(), $entityClass));
             return $result;
         } catch (Throwable $e) {
-            throw new RuntimeException("Unable to read patch result: " . $e->getMessage(), $e);
+            throw new RuntimeException("Unable to read patch result: " . $e->getMessage(), $e->getCode(), $e);
         }
     }
 }
