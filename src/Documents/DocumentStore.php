@@ -5,6 +5,7 @@ namespace RavenDB\Documents;
 use Closure;
 use InvalidArgumentException;
 use Ramsey\Uuid\Uuid;
+use RavenDB\Documents\Operations\OperationExecutor;
 use RavenDB\Documents\Identity\MultiDatabaseHiLoIdGenerator;
 use RavenDB\Documents\Operations\MaintenanceOperationExecutor;
 use RavenDB\Documents\Session\DocumentSession;
@@ -35,10 +36,10 @@ class DocumentStore extends DocumentStoreBase
     private ?MultiDatabaseHiLoIdGenerator $multiDbHiLo = null;
 
     private ?MaintenanceOperationExecutor $maintenanceOperationExecutor = null;
-//    private OperationExecutor operationExecutor;
-//
+    private ?OperationExecutor $operationExecutor = null;
+
 //    private DatabaseSmuggler _smuggler;
-//
+
     private string $identifier = '';
 
     /**
@@ -466,17 +467,15 @@ class DocumentStore extends DocumentStoreBase
         return $this->maintenanceOperationExecutor;
     }
 
-//
-//    @Override
-//    public OperationExecutor operations() {
-//        if (operationExecutor == null) {
-//            operationExecutor = new OperationExecutor(this);
-//        }
-//
-//        return operationExecutor;
-//    }
-//
-//
+    public function operations(): OperationExecutor
+    {
+        if ($this->operationExecutor == null) {
+            $this->operationExecutor = new OperationExecutor($this);
+        }
+
+        return $this->operationExecutor;
+    }
+
 //    public function bulkInsert(string $database = ''): BulkInsertOperation
 //    {
 //        $this->assertInitialized();

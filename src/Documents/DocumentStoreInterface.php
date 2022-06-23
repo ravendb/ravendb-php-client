@@ -4,6 +4,7 @@ namespace RavenDB\Documents;
 
 use Closure;
 use RavenDB\Auth\AuthOptions;
+use RavenDB\Documents\Operations\OperationExecutor;
 use RavenDB\Documents\Indexes\AbstractIndexCreationTaskArray;
 use RavenDB\Documents\Indexes\AbstractIndexCreationTaskInterface;
 use RavenDB\Documents\Operations\MaintenanceOperationExecutor;
@@ -238,9 +239,9 @@ interface DocumentStoreInterface
     public function getRequestExecutor(string $databaseName = ''): RequestExecutor;
 
     public function maintenance(): MaintenanceOperationExecutor;
-//
-//    OperationExecutor operations();
-//
+
+    public function operations(): OperationExecutor;
+
 //    DatabaseSmuggler smuggler();
 //
 //    CleanCloseable setRequestTimeout(Duration timeout);

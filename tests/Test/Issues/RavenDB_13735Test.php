@@ -24,7 +24,6 @@ class RavenDB_13735Test extends RemoteTestBase
         $store->maintenance()->send(new ConfigureRefreshOperation($config));
     }
 
-    // @todo: implement this
     public function testRefreshWillUpdateDocumentChangeVector(): void
     {
         $store = $this->getDocumentStore();
