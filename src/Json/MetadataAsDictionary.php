@@ -137,7 +137,7 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
             return $this->metadata[$key];
         }
 
-        return $this->convertValue($key, $this->source->get($key));
+        return $this->convertValue($key, $this->source[$key]);
     }
 
 //    public static MetadataAsDictionary materializeFromJson(ObjectNode metadata) {
