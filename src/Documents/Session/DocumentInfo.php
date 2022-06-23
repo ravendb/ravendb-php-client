@@ -119,7 +119,7 @@ class DocumentInfo
         $this->collection = $collection;
     }
 
-    public function getMetadata(): ?array
+    public function & getMetadata(): ?array
     {
         return $this->metadata;
     }

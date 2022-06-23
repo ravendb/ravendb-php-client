@@ -25,7 +25,7 @@ class RavenDB_13735Test extends RemoteTestBase
     }
 
     // @todo: implement this
-    public function aTestRefreshWillUpdateDocumentChangeVector(): void
+    public function testRefreshWillUpdateDocumentChangeVector(): void
     {
         $store = $this->getDocumentStore();
         try {
