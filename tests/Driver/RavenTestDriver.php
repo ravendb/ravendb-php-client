@@ -116,8 +116,9 @@ abstract class RavenTestDriver extends TestCase
             throw new IllegalStateException('Unable to start server');
         }
 
-        $store = new DocumentStore('test.manager');
+        $store = new DocumentStore();
         $store->setUrls($urls);
+        $store->setDatabase('test.manager');
         $store->getConventions()->setDisableTopologyUpdates(true);
 
         if ($configureStore != null) {

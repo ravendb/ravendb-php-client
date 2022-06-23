@@ -11,9 +11,12 @@ use RavenDB\Documents\Indexes\AbstractIndexCreationTaskInterface;
 use RavenDB\Documents\Indexes\IndexCreation;
 use RavenDB\Documents\Operations\Indexes\PutIndexesOperation;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
+use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Exceptions\MalformedURLException;
 use RavenDB\Http\RequestExecutor;
 use RavenDB\Primitives\ClosureArray;
+use RavenDB\Type\Url;
 use RavenDB\Type\UrlArray;
 use RavenDB\Utils\StringUtils;
 
@@ -39,8 +42,8 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 
     public function __construct()
     {
-        $this->database = '';
-        $this->urls = new UrlArray();
+        $this->database = null;
+        $this->urls = null;
 
         $this->onBeforeQuery = new ClosureArray();
         $this->onAfterSaveChanges = new ClosureArray();
@@ -158,39 +161,79 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
     }
 
 
-    protected UrlArray $urls;
+    protected ?UrlArray $urls = null;
 
-    public function getUrls(): UrlArray
+    public function getUrls(): ?UrlArray
     {
         return $this->urls;
     }
 
     /**
+     * @param UrlArray|Url|array|string|null $value
      * @throws IllegalStateException
      */
-    public function setUrls(UrlArray $urls): void
+    public function setUrls($value = null): void
     {
         $this->assertNotInitialized('urls');
 
-//        @todo: validate data in this method
-//        if (value == null) {
-//            throw new IllegalArgumentException("value is null");
-//        }
-//
-//        for (int i = 0; i < value.length; i++) {
-//            if (value[i] == null)
-//                throw new IllegalArgumentException("Urls cannot contain null");
-//
-//            try {
-//                new URL(value[i]);
-//            } catch (MalformedURLException e) {
-//                throw new IllegalArgumentException("The url '" + value[i] + "' is not valid");
-//            }
-//
-//            value[i] = StringUtils.stripEnd(value[i], "/");
-//        }
+        $urls = $this->_convertToUrlArray($value);
 
         $this->urls = $urls;
+    }
+
+    /**
+     * @param UrlArray|Url|array|string|null $urls
+     * @return UrlArray
+     */
+    private function _convertToUrlArray($urls): UrlArray
+    {
+        if ($urls == null) {
+            throw new IllegalArgumentException("Url is null");
+        }
+
+        $urlArray = null;
+
+        if (is_string($urls)) {
+            $urls = [$urls];
+        }
+
+        if (is_array($urls)) {
+            $urlArray = new UrlArray();
+            foreach ($urls as $url) {
+                if ($url == null) {
+                    throw new IllegalArgumentException("Urls cannot contain null");
+                }
+                if (is_string($url)) {
+                    try {
+                        $url = new Url($url);
+                    } catch (MalformedURLException $exception) {
+                        throw new IllegalArgumentException("The url '" . $url . "' is not valid");
+                    }
+                }
+
+                $urlArray->append($url);
+            }
+        }
+
+        if ($urls instanceof Url) {
+            $urlArray = new UrlArray();
+            $urlArray->append($urls);
+        }
+
+        if ($urls instanceof UrlArray) {
+            $urlArray = $urls;
+        }
+
+        if ($urlArray == null) {
+            throw new IllegalArgumentException("Urls invalid value");
+        }
+
+        /** @var Url $urlItem */
+        foreach ($urlArray as $urlItem) {
+            $urlItem->setValue(StringUtils::stripEnd($urlItem->getValue(), '/'));
+        }
+
+        return $urlArray;
     }
 
     protected bool $initialized = false;
@@ -403,9 +446,9 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //        this.onTopologyUpdated.remove(handler);
 //    }
 
-    protected string $database;
+    protected ?string $database = null;
 
-    public function getDatabase(): string
+    public function getDatabase(): ?string
     {
         return $this->database;
     }
@@ -415,7 +458,7 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
      *
      * @throws IllegalStateException
      */
-    public function setDatabase(string $database): void
+    public function setDatabase(?string $database): void
     {
         $this->assertNotInitialized('database');
         $this->database = $database;

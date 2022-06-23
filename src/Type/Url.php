@@ -2,6 +2,9 @@
 
 namespace RavenDB\Type;
 
+use RavenDB\Exceptions\MalformedURLException;
+use RavenDB\Utils\StringUtils;
+
 class Url implements ValueObjectInterface
 {
     private string $value;
@@ -23,6 +26,10 @@ class Url implements ValueObjectInterface
 
     public function setValue(string $url): void
     {
+        if (filter_var($url, FILTER_VALIDATE_URL) === FALSE) {
+            throw new MalformedURLException($url);
+        }
+
         $this->value = $url;
     }
 
