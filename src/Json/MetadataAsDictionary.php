@@ -53,11 +53,11 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
         return $this->dirty;
     }
 
-    private function initialize(array $metadata): void
+    private function initialize(?array $metadata): void
     {
         $this->dirty = true;
         $this->metadata = [];
-        $fields = array_keys($metadata);
+        $fields = $metadata ? array_keys($metadata) : [];
         foreach ($fields as $fieldName) {
             $this->metadata[$fieldName] = $this->convertValue($fieldName, $metadata[$fieldName]);
         }
