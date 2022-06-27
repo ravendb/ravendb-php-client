@@ -149,6 +149,7 @@ class ServerOperationExecutor implements CleanCloseable
 
         return new ServerWideOperation(
             $this->requestExecutor,
+            null,
             $this->requestExecutor->getConventions(),
             $command->getResult()->getOperationId(),
             $command->getSelectedNodeTag() ?? $command->getResult()->getOperationNodeTag()

@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Operations;
 
+use Closure;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Exceptions\ExceptionDispatcher;
 use RavenDB\Exceptions\ExceptionSchema;
@@ -15,6 +16,7 @@ class Operation
 {
     private RequestExecutor $requestExecutor;
     private DocumentConventions $conventions;
+    private ?Closure $changes = null;
     private int $id;
     private ?string $nodeTag;
 
@@ -25,18 +27,20 @@ class Operation
 
     public function __construct(
         RequestExecutor $requestExecutor,
+        ?Closure $changes,
         DocumentConventions $conventions,
         int $id,
         ?string $nodeTag = null
     )
     {
         $this->requestExecutor = $requestExecutor;
+        $this->changes = $changes;
         $this->conventions = $conventions;
         $this->id = $id;
         $this->nodeTag = $nodeTag;
     }
 
-    private function fetchOperationsStatus(): object
+    private function fetchOperationsStatus(): array
     {
         $command = $this->getOperationStateCommand($this->conventions, $this->id, $this->nodeTag);
         $this->requestExecutor->execute($command);
@@ -74,6 +78,7 @@ class Operation
                 case 'Faulted':
                     $result = $status['Result'];
 
+                    /** @var OperationCancelledException $exceptionResult */
                     $exceptionResult = JsonExtensions::getDefaultMapper()->denormalize($result, OperationCancelledException::class);
                     $schema = new ExceptionSchema();
 
@@ -82,8 +87,11 @@ class Operation
                     $schema->setMessage($exceptionResult->getMessage());
                     $schema->setType($exceptionResult->getType());
 
-                    throw new ExceptionDispatcher::get($schema, $exceptionResult->getStatusCode());
+                    $exception = ExceptionDispatcher::get($schema, $exceptionResult->getCode());
+                    throw new $exception;
             }
+
+            usleep(500000);
         }
     }
 }

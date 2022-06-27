@@ -4,7 +4,6 @@ namespace RavenDB\ServerWide\Operations;
 
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Http\RavenCommand;
-use RavenDB\ServerWide\Commands\GetDatabaseNamesCommand;
 
 // !status: DONE
 class GetDatabaseNamesOperation implements ServerOperationInterface
@@ -17,7 +16,6 @@ class GetDatabaseNamesOperation implements ServerOperationInterface
         $this->start = $start;
         $this->pageSize = $pageSize;
     }
-
 
     public function getCommand(DocumentConventions $conventions): RavenCommand
     {

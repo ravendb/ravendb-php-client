@@ -5,6 +5,7 @@ namespace RavenDB\Documents;
 use Closure;
 use RavenDB\Auth\AuthOptions;
 use RavenDB\Documents\Operations\OperationExecutor;
+use RavenDB\Documents\Changes\DatabaseChangesInterface;
 use RavenDB\Documents\Indexes\AbstractIndexCreationTaskArray;
 use RavenDB\Documents\Indexes\AbstractIndexCreationTaskInterface;
 use RavenDB\Documents\Operations\MaintenanceOperationExecutor;
@@ -55,28 +56,16 @@ interface DocumentStoreInterface
 //
 //    void addOnSessionClosingListener(EventHandler<SessionClosingEventArgs> handler);
 //    void removeOnSessionClosingListener(EventHandler<SessionClosingEventArgs> handler);
-//
-//    /**
-//     * Subscribe to change notifications from the server
-//     * @return Database changes object
-//     */
-//    IDatabaseChanges changes();
-//
-//    /**
-//     * Subscribe to change notifications from the server
-//     * @param database Database to use
-//     * @return Database changes object
-//     */
-//    IDatabaseChanges changes(String database);
-//
-//    /**
-//     * Subscribe to change notifications from the server
-//     * @param database Database to use
-//     * @param nodeTag The node tag of selected server
-//     * @return Database changes object
-//     */
-//    IDatabaseChanges changes(String database, String nodeTag);
-//
+
+    /**
+     * Subscribe to change notifications from the server
+     *
+     * @param ?string $database Database to use
+     * @param ?string $nodeTag The node tag of selected server
+     * @return DatabaseChangesInterface Database changes object
+     */
+    function changes(?string $database =  null, ?string $nodeTag = null): DatabaseChangesInterface;
+
 //    /**
 //     * Setup the context for aggressive caching.
 //     *

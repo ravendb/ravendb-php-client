@@ -5,6 +5,8 @@ namespace RavenDB\Documents\Operations\TimeSeries;
 use DateInterval;
 use RavenDB\Type\StringArray;
 
+use Symfony\Component\Serializer\Annotation\SerializedName;
+
 // !status: DONE
 class TimeSeriesConfiguration
 {

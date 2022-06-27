@@ -2,6 +2,8 @@
 
 namespace RavenDB\Utils;
 
+use RavenDB\Type\Duration;
+
 class TimeUtils
 {
 //     private static Duration parseMiddlePart(String input) {
@@ -46,20 +48,22 @@ class TimeUtils
 //
 //    }
 
-    static public function durationToTimeSpan(\DateInterval $duration): string
+    static public function durationToTimeSpan(Duration $duration): string
     {
-        $result = "";
+        return $duration->format();
 
-        if ($duration->days) {
-            $result .= $duration->format("a.");
-        }
-
-        $result .=  $duration->format("H:I:S");
-
-        if ($duration->f) {
-            $result .= $duration->format(".F");
-        }
-
-        return $result;
+//        $result = "";
+//
+//        if ($duration->days) {
+//            $result .= $duration->format("a.");
+//        }
+//
+//        $result .=  $duration->format("H:I:S");
+//
+//        if ($duration->f) {
+//            $result .= $duration->format(".F");
+//        }
+//
+//        return $result;
     }
 }

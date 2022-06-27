@@ -2,10 +2,14 @@
 
 namespace RavenDB\Documents;
 
+use Ds\Map as DSMap;
 use Closure;
 use InvalidArgumentException;
 use Ramsey\Uuid\Uuid;
+use RavenDB\Documents\Changes\DatabaseChanges;
 use RavenDB\Documents\Operations\OperationExecutor;
+use RavenDB\Documents\Changes\DatabaseChangesOptions;
+use RavenDB\Documents\Changes\DatabaseChangesInterface;
 use RavenDB\Documents\Identity\MultiDatabaseHiLoIdGenerator;
 use RavenDB\Documents\Operations\MaintenanceOperationExecutor;
 use RavenDB\Documents\Session\DocumentSession;
@@ -26,8 +30,9 @@ use RavenDB\Type\UrlArray;
 class DocumentStore extends DocumentStoreBase
 {
 //    private ExecutorService $executorService = Executors::newCachedThreadPool();
-//
-//    private final ConcurrentMap<DatabaseChangesOptions, IDatabaseChanges> _databaseChanges = new ConcurrentHashMap<>();
+
+    // ConcurrentMap<DatabaseChangesOptions, IDatabaseChanges>
+    private ?DSMap $databaseChanges = null;
 //
 //    private final ConcurrentMap<String, Lazy<EvictItemsFromCacheBasedOnChanges>> _aggressiveCacheChanges = new ConcurrentHashMap<>();
 //
@@ -48,6 +53,8 @@ class DocumentStore extends DocumentStoreBase
      */
     public function __construct($urls = null, ?string $database = null)
     {
+        $this->databaseChanges = new DSMap();
+
         parent::__construct();
 
         if ($urls !== null) {
@@ -323,28 +330,38 @@ class DocumentStore extends DocumentStoreBase
 
     }
 
-//    @Override
-//    public IDatabaseChanges changes() {
-//        return changes(null, null);
-//    }
-//
-//    @Override
-//    public IDatabaseChanges changes(String database) {
-//        return changes(database, null);
-//    }
-//
-//    @Override
-//    public IDatabaseChanges changes(String database, String nodeTag) {
-//        assertInitialized();
-//
-//        DatabaseChangesOptions changesOptions = new DatabaseChangesOptions(ObjectUtils.firstNonNull(database, getDatabase()), nodeTag);
-//
-//        return _databaseChanges.computeIfAbsent(changesOptions, this::createDatabaseChanges);
-//    }
-//
-//    protected IDatabaseChanges createDatabaseChanges(DatabaseChangesOptions node) {
-//        return new DatabaseChanges(getRequestExecutor(node.getDatabaseName()), node.getDatabaseName(), executorService, () -> _databaseChanges.remove(node), node.getNodeTag());
-//    }
+    public function changes(?string $database = null, ?string $nodeTag = null): DatabaseChangesInterface
+    {
+        $this->assertInitialized();
+
+        $changesOptions = new DatabaseChangesOptions($database ?? $this->getDatabase(), $nodeTag);
+
+        foreach ($this->databaseChanges as $key => $change) {
+            if ($changesOptions->equals($change)) {
+                return $change;
+            }
+        }
+
+        $dbChanges = $this->createDatabaseChanges($changesOptions);
+        $this->databaseChanges->put($changesOptions, $dbChanges);
+
+        return $dbChanges;
+    }
+
+    protected function createDatabaseChanges(DatabaseChangesOptions $node): DatabaseChangesInterface
+    {
+        $databaseChanges = $this->databaseChanges;
+
+        return new DatabaseChanges(
+            $this->getRequestExecutor($node->getDatabaseName()),
+            $node->getDatabaseName(),
+            $this->executorService,
+            function() use ($node, $databaseChanges) {
+                return $databaseChanges->remove($node);
+            },
+            $node->getNodeTag()
+        );
+    }
 //
 //    public Exception getLastDatabaseChangesStateException() {
 //        return getLastDatabaseChangesStateException(null, null);

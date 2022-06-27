@@ -229,18 +229,14 @@ interface AdvancedDocumentSessionOperationsInterface
 //     * @param options Configuration options
 //     */
 //    void waitForReplicationAfterSaveChanges(Consumer<InMemoryDocumentSessionOperations.ReplicationWaitOptsBuilder> options);
-//
-//    /**
-//     * SaveChanges will wait for the indexes to catch up with the saved changes
-//     */
-//    void waitForIndexesAfterSaveChanges();
-//
-//    /**
-//     * SaveChanges will wait for the indexes to catch up with the saved changes
-//     * @param options Configuration options
-//     */
-//    void waitForIndexesAfterSaveChanges(Consumer<InMemoryDocumentSessionOperations.IndexesWaitOptsBuilder> options);
-//
+
+    /**
+     * SaveChanges will wait for the indexes to catch up with the saved changes
+     *
+     * @param Closure|null $options
+     */
+    public function waitForIndexesAfterSaveChanges(?Closure $options = null): void;
+
 //    /**
 //     * Overwrite the existing transaction mode for the current session.
 //     * @param mode Transaction mode

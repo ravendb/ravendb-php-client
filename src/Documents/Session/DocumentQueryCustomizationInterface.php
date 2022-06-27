@@ -68,9 +68,9 @@ interface DocumentQueryCustomizationInterface
     /**
      * Disables tracking for queried entities by Raven's Unit of Work.
      * Usage of this option will prevent holding query results in memory.
-     * @return customization object
+     * @return DocumentQueryCustomizationInterface customization object
      */
-//    IDocumentQueryCustomization noTracking();
+    function noTracking(): DocumentQueryCustomizationInterface;
 
     /**
      * Disables tracking for queried entities by Raven's Unit of Work.

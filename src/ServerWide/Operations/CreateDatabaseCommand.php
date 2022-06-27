@@ -1,6 +1,6 @@
 <?php
 
-namespace RavenDB\ServerWide\Commands;
+namespace RavenDB\ServerWide\Operations;
 
 use InvalidArgumentException;
 use RavenDB\Documents\Conventions\DocumentConventions;

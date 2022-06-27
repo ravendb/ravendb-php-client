@@ -341,7 +341,7 @@ class DocumentQuery extends AbstractDocumentQuery
     public function include($includes): DocumentQueryInterface
     {
         if (is_string($includes)) {
-            $this->includeWithString($includes);
+            return $this->includeWithString($includes);
         }
 
         if (is_callable($includes)) {

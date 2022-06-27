@@ -32,9 +32,11 @@ class TypedArrayNormalizer implements
     {
         $object = new $type();
 
-        foreach ($data as $key => $item) {
-            $itemObject = $this->denormalizer->denormalize($item, $object->getType(), $format, $context);
-            $object->offsetSet($key, $itemObject);
+        if ($data) {
+            foreach ($data as $key => $item) {
+                $itemObject = $this->denormalizer->denormalize($item, $object->getType(), $format, $context);
+                $object->offsetSet($key, $itemObject);
+            }
         }
 
         return $object;

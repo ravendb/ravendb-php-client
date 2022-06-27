@@ -2,16 +2,18 @@
 
 namespace RavenDB\Documents\Commands\Batches;
 
+use RavenDB\Type\Duration;
+
 class IndexBatchOptions
 {
     private bool $waitForIndexes = false;
-    private \DateInterval $waitForIndexesTimeout;
+    private Duration $waitForIndexesTimeout;
     private bool $throwOnTimeoutInWaitForIndexes = false;
     private array $waitForSpecificIndexes = [];
 
     public function __construct()
     {
-        $this->waitForIndexesTimeout = new \DateInterval("P0");
+        $this->waitForIndexesTimeout = new Duration();
     }
 
     public function isWaitForIndexes(): bool
@@ -24,12 +26,12 @@ class IndexBatchOptions
         $this->waitForIndexes = $waitForIndexes;
     }
 
-    public function getWaitForIndexesTimeout(): \DateInterval
+    public function getWaitForIndexesTimeout(): ?Duration
     {
         return $this->waitForIndexesTimeout;
     }
 
-    public function setWaitForIndexesTimeout(\DateInterval $waitForIndexesTimeout): void
+    public function setWaitForIndexesTimeout(?Duration $waitForIndexesTimeout): void
     {
         $this->waitForIndexesTimeout = $waitForIndexesTimeout;
     }

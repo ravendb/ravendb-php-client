@@ -3,7 +3,6 @@
 namespace RavenDB\ServerWide\Operations;
 
 use RavenDB\Documents\Conventions\DocumentConventions;
-use RavenDB\ServerWide\Commands\CreateDatabaseCommand;
 use RavenDB\ServerWide\DatabaseRecord;
 
 // !status: DONE

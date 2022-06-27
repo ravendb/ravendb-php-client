@@ -72,12 +72,11 @@ class ExceptionDispatcher
             } catch (Throwable $e) {
                 throw RavenException::generic($schema->getError(), $json);
             }
-
-            if (!is_a($type, RavenException::class)) {
+            if (!($exception instanceof RavenException)) {
                 throw new RavenException($schema->getError(), $exception);
             }
 
-            if (is_a($exception, IndexCompilationException::class)) {
+            if ($exception instanceof IndexCompilationException) {
                 /** @var IndexCompilationException $indexCompilationException */
                 $indexCompilationException = $exception;
                 $jsonNode = JsonExtensions::getDefaultMapper()->denormalize($json, \ArrayObject::class);
@@ -132,11 +131,11 @@ class ExceptionDispatcher
             $exceptionName = substr($typeAsString, strlen($prefix));
 
             if (strpos($exceptionName, '.') != false) {
-                $tokens = preg_split("\\.", $exceptionName);
+                $tokens = preg_split("/\\./", $exceptionName);
 
-                for( $i = 0; count($tokens); $i++) {
-                    $tokens[$i] = strtolower($tokens[$i]);
-                }
+//                for( $i = 0; $i<count($tokens); $i++) {
+//                    $tokens[$i] = strtolower($tokens[$i]);
+//                }
                 $exceptionName = join("\\", $tokens);
             }
 
