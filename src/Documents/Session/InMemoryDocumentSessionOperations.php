@@ -1221,14 +1221,9 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
                     $docChanges[] = $change;
                     $changes[$documentInfo->getId()] = $docChanges;
                 } else {
-                    $command = null;
-                    $idTypeAndName = IdTypeAndName::create($documentInfo->getId(), CommandType::clientAnyCommand(), null);
-                    if ($result->getDeferredCommandsMap()->hasKey($idTypeAndName)) {
-                        $command = $result->getDeferredCommandsMap()->get($idTypeAndName);
-                    }
-
-                    if ($command != null) {
-                        $this->throwInvalidDeletedDocumentWithDeferredCommand($command);
+                    $commandIndex = $this->getDeferredCommandsMapIndex($documentInfo->getId(), CommandType::clientAnyCommand(), null);
+                    if ($commandIndex != null) {
+                        $this->throwInvalidDeletedDocumentWithDeferredCommand($this->deferredCommandsMap->get($commandIndex));
                     }
 
                     $changeVector = null;
@@ -1264,7 +1259,6 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
     }
 
-    // @todo: implement this method
     private function prepareForEntitiesPuts(?SaveChangesData $result): void
     {
         $putsContext = $this->documentsByEntity->prepareEntitiesPuts();
@@ -1300,13 +1294,9 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
                     continue;
                 }
 
-                $command = null;
-                $idTypeAndName = IdTypeAndName::create($entity->getValue()->getId(), CommandType::clientModifyDocumentCommand(), null);
-                if ($result->getDeferredCommandsMap()->hasKey($idTypeAndName)) {
-                    $command = $result->getDeferredCommandsMap()->get($idTypeAndName);
-                }
-                if ($command != null) {
-                    $this->throwInvalidModifiedDocumentWithDeferredCommand($command);
+                $commandIndex = $this->getDeferredCommandsMapIndex($entity->getValue()->getId(), CommandType::clientModifyDocumentCommand(), null);
+                if ($commandIndex !== null) {
+                    $this->throwInvalidModifiedDocumentWithDeferredCommand($this->deferredCommandsMap->get($commandIndex));
                 }
 
                 $onBeforeStore = $this->onBeforeStore;

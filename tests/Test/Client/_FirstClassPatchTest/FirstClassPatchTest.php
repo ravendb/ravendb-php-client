@@ -76,7 +76,7 @@ class FirstClassPatchTest extends RemoteTestBase
     }
 
     /** @todo: implement this test */
-    public function atestCanPatchAndModify(): void
+    public function testCanPatchAndModify(): void
     {
         $user = new User();
         $user->setNumbers([66]);
@@ -99,8 +99,6 @@ class FirstClassPatchTest extends RemoteTestBase
                 $loaded->getNumbers()[0] = 1;
                 $session->advanced()->patch($loaded, "numbers[0]", 2);
 
-//                @todo: uncomment this
-//                assertThatThrownBy(() -> session.saveChanges()).isExactlyInstanceOf(IllegalStateException.class);
                 $this->expectException(IllegalStateException::class);
                 $session->saveChanges();
             } finally {
