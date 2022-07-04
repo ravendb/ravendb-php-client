@@ -899,16 +899,16 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $this->knownMissingIds[] = $id;
         $changeVector = $this->isUseOptimisticConcurrency() ? $changeVector : null;
         if ($this->countersByDocId !== null) {
-            if (($key = array_search($value->getId(), $this->countersByDocId)) !== false) {
+            if (($key = array_search($id, $this->countersByDocId)) !== false) {
                 unset($this->countersByDocId[$key]);
             }
         }
 
-//        defer(new DeleteCommandData(
-//                id,
-//                ObjectUtils.firstNonNull(expectedChangeVector, changeVector),
-//                ObjectUtils.firstNonNull(expectedChangeVector, documentInfo != null ? documentInfo.getChangeVector() : null
-//            )));
+        $this->defer(new DeleteCommandData(
+                $id,
+                $expectedChangeVector ?? $changeVector,
+                $expectedChangeVector ?? ($documentInfo != null ? $documentInfo->getChangeVector() : null)
+            ));
     }
 
     /**
@@ -1081,8 +1081,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         // @todo: CONTINUE HERE !!!! implement following lines
         $this->prepareForEntitiesDeletion($result);
         $this->prepareForEntitiesPuts($result);
-//        $this->prepareForCreatingRevisionsFromIds($result);
-//        $this->prepareCompareExchangeEntities($result);
+        $this->prepareForCreatingRevisionsFromIds($result);
+        $this->prepareCompareExchangeEntities($result);
 
         if (count($this->deferredCommands) > $deferredCommandsCount) {
             // this allow OnBeforeStore to call Defer during the call to include
@@ -1105,33 +1105,32 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         return $result;
     }
 
-    // @todo: implement this
     public function validateClusterTransaction(SaveChangesData $result): void
     {
-//        if (transactionMode != TransactionMode.CLUSTER_WIDE) {
-//            return;
-//        }
-//
-//        if (isUseOptimisticConcurrency()) {
-//            throw new IllegalStateException("useOptimisticConcurrency is not supported with TransactionMode set to " + TransactionMode.CLUSTER_WIDE);
-//        }
-//
-//        for (ICommandData commandData : result.getSessionCommands()) {
-//
-//            switch (commandData.getType()) {
-//                case PUT:
-//                case DELETE:
-//                    if (commandData.getChangeVector() != null) {
-//                        throw new IllegalStateException("Optimistic concurrency for " + commandData.getId() + " is not supported when using a cluster transaction");
-//                    }
-//                    break;
-//                case COMPARE_EXCHANGE_DELETE:
-//                case COMPARE_EXCHANGE_PUT:
-//                    break;
-//                default:
-//                    throw new IllegalStateException("The command '" + commandData.getType() + "' is not supported in a cluster session.");
-//            }
-//        }
+        if (!$this->transactionMode->isClusterWide()) {
+            return;
+        }
+
+        if ($this->isUseOptimisticConcurrency()) {
+            throw new IllegalStateException("useOptimisticConcurrency is not supported with TransactionMode set to " . TransactionMode::CLUSTER_WIDE);
+        }
+
+        /** @var  CommandDataInterface $commandData */
+        foreach ($result->getSessionCommands() as $commandData) {
+            switch ($commandData->getType()->getValue()) {
+                case CommandType::PUT :
+                case CommandType::DELETE :
+                    if ($commandData->getChangeVector() != null) {
+                        throw new IllegalStateException("Optimistic concurrency for " . $commandData->getId() . " is not supported when using a cluster transaction");
+                    }
+                    break;
+                case CommandType::COMPARE_EXCHANGE_DELETE :
+                case CommandType::COMPARE_EXCHANGE_PUT :
+                    break;
+                default:
+                    throw new IllegalStateException("The command '" . $commandData->getType()->getValue() . "' is not supported in a cluster session.");
+            }
+        }
     }
 
     private function prepareCompareExchangeEntities(SaveChangesData $result): void
@@ -1222,14 +1221,9 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
                     $docChanges[] = $change;
                     $changes[$documentInfo->getId()] = $docChanges;
                 } else {
-                    $command = null;
-                    $idTypeAndName = IdTypeAndName::create($documentInfo->getId(), CommandType::clientAnyCommand(), null);
-                    if ($result->getDeferredCommandsMap()->hasKey($idTypeAndName)) {
-                        $command = $result->getDeferredCommandsMap()->get($idTypeAndName);
-                    }
-
-                    if ($command != null) {
-                        $this->throwInvalidDeletedDocumentWithDeferredCommand($command);
+                    $commandIndex = $this->getDeferredCommandsMapIndex($documentInfo->getId(), CommandType::clientAnyCommand(), null);
+                    if ($commandIndex != null) {
+                        $this->throwInvalidDeletedDocumentWithDeferredCommand($this->deferredCommandsMap->get($commandIndex));
                     }
 
                     $changeVector = null;
@@ -1265,7 +1259,6 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
     }
 
-    // @todo: implement this method
     private function prepareForEntitiesPuts(?SaveChangesData $result): void
     {
         $putsContext = $this->documentsByEntity->prepareEntitiesPuts();
@@ -1301,13 +1294,9 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
                     continue;
                 }
 
-                $command = null;
-                $idTypeAndName = IdTypeAndName::create($entity->getValue()->getId(), CommandType::clientModifyDocumentCommand(), null);
-                if ($result->getDeferredCommandsMap()->hasKey($idTypeAndName)) {
-                    $command = $result->getDeferredCommandsMap()->get($idTypeAndName);
-                }
-                if ($command != null) {
-                    $this->throwInvalidModifiedDocumentWithDeferredCommand($command);
+                $commandIndex = $this->getDeferredCommandsMapIndex($entity->getValue()->getId(), CommandType::clientModifyDocumentCommand(), null);
+                if ($commandIndex !== null) {
+                    $this->throwInvalidModifiedDocumentWithDeferredCommand($this->deferredCommandsMap->get($commandIndex));
                 }
 
                 $onBeforeStore = $this->onBeforeStore;
@@ -1697,8 +1686,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     private function addCommand(CommandDataInterface $command, string $id, CommandType $commandType, ?string $commandName): void
     {
-        $this->deferredCommandsMap->put(IdTypeAndName::create($id, $commandType, $commandName), $command);
-        $this->deferredCommandsMap->put(IdTypeAndName::create($id, CommandType::clientAnyCommand(), null), $command);
+        $this->deferredCommandsMap->put($this->getDeferredCommandsMapIndexOrCreateNew($id, $commandType, $commandName), $command);
+        $this->deferredCommandsMap->put($this->getDeferredCommandsMapIndexOrCreateNew($id, CommandType::clientAnyCommand(), null), $command);
 
         if (!$command->getType()->isAttachmentPut() &&
             !$command->getType()->isAttachmentDelete() &&
@@ -1708,8 +1697,31 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             !$command->getType()->isTimeSeries() &&
             !$command->getType()->isTimeSeriesCopy()
         ) {
-            $this->deferredCommandsMap->put(IdTypeAndName::create($id, CommandType::clientModifyDocumentCommand(), null), $command);
+            $this->deferredCommandsMap->put($this->getDeferredCommandsMapIndexOrCreateNew($id, CommandType::clientModifyDocumentCommand(), null), $command);
         }
+    }
+
+    protected function getDeferredCommandsMapIndex(string $id, CommandType $type, ?string $name): ?IdTypeAndName
+    {
+        /**
+         * @var IdTypeAndName $commandMap
+         */
+        foreach ($this->deferredCommandsMap as $commandMap => $command) {
+            if ($commandMap->getId() == $id && $commandMap->getType()->equals($type) && $commandMap->getName() == $name) {
+                return $commandMap;
+            }
+        }
+        return null;
+    }
+
+    protected function getDeferredCommandsMapIndexOrCreateNew(string $id, CommandType $type, ?string $name): IdTypeAndName
+    {
+        $idTypeName = $this->getDeferredCommandsMapIndex($id, $type, $name);
+        if ($idTypeName != null) {
+            return $idTypeName;
+        }
+
+        return IdTypeAndName::create($id, $type, $name);
     }
 
     public function close(bool $isDisposing = true): void

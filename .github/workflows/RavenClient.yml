@@ -3,7 +3,7 @@ on:
     schedule:
         -   cron: "0 10 * * 6"
     push:
-        branches: [ v5.2 ]
+        branches: [ v5.2, rdbc-573 ]
     pull_request:
         branches: [ v5.2 ]
 

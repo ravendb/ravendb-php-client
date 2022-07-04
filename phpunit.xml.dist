@@ -20,6 +20,7 @@
         <testsuite name="AllWithoutHttps">
             <directory>tests</directory>
             <exclude>./tests/Test/Client/HttpsTest.php</exclude>
+            <exclude>./tests/Test/Issues/RavenDB_13735Test.php</exclude>
         </testsuite>
     </testsuites>
     <logging>

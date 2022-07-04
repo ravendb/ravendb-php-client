@@ -9,21 +9,21 @@ use RavenDB\Type\StringSet;
 
 class MetadataAsDictionary implements MetadataDictionaryInterface
 {
-    private MetadataDictionaryInterface $parent;
-    private string $parentKey;
+    private ?MetadataDictionaryInterface $parent = null;
+    private ?string $parentKey = null;
 
-    private array  $metadata;
-    private ?object $source;
+    private ?array $metadata = null;
+    private ?array $source = null;
 
     private bool $dirty = false;
 
-    public function __construct(array $metadata = array())
+    public function __construct(array $metadata = [])
     {
         $this->metadata = $metadata;
         $this->source = null;
     }
 
-    static public function fromObject(object $object, ?MetadataDictionaryInterface $parent = null, ?string $parentKey = null): MetadataAsDictionary
+    static public function fromObject(array $object, ?MetadataDictionaryInterface $parent = null, ?string $parentKey = null): MetadataAsDictionary
     {
         $instance = new self();
 
@@ -33,10 +33,9 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
         return $instance;
     }
 
-    static public function fromObjectAndParent(object $object, ?MetadataDictionaryInterface $parent = null, ?string $parentKey = null): MetadataAsDictionary
+    static public function fromObjectAndParent(array $object, ?MetadataDictionaryInterface $parent = null, ?string $parentKey = null): MetadataAsDictionary
     {
         $instance = self::fromObject($object);
-
 
         if ($parent == null) {
             throw new IllegalArgumentException("Parent cannot be null");
@@ -54,13 +53,13 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
         return $this->dirty;
     }
 
-    private function initialize(object $metadata): void
+    private function initialize(?array $metadata): void
     {
         $this->dirty = true;
         $this->metadata = [];
-        $fields = get_object_vars($metadata);
+        $fields = $metadata ? array_keys($metadata) : [];
         foreach ($fields as $fieldName) {
-            $this->metadata[$fieldName] = $this->convertValue($fieldName, $metadata->$fieldName);
+            $this->metadata[$fieldName] = $this->convertValue($fieldName, $metadata[$fieldName]);
         }
 
         if ($this->parent != null) { // mark parent as dirty
@@ -138,7 +137,7 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
             return $this->metadata[$key];
         }
 
-        return $this->convertValue($key, $this->source->get($key));
+        return $this->convertValue($key, $this->source[$key]);
     }
 
 //    public static MetadataAsDictionary materializeFromJson(ObjectNode metadata) {

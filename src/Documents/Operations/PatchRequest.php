@@ -46,11 +46,16 @@ class PatchRequest
 
     /**
      * Additional arguments passed to JavaScript function from Script.
-     * @param ObjectMap $values Sets patch arguments
+     * @param ObjectMap|array $values Sets patch arguments
      */
-    public function setValues(ObjectMap $values): void
+    public function setValues($values): void
     {
-        $this->values = $values;
+        if ($values instanceof ObjectMap) {
+            $this->values = $values;
+            return;
+        }
+
+        $this->values = ObjectMap::fromArray($values);
     }
 
     public function __construct()

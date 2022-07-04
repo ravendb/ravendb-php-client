@@ -44,4 +44,17 @@ class DateUtils
         $newDateTime->add($interval);
         return $newDateTime;
     }
+
+    public static function unixEpochStart(): DateTimeInterface
+    {
+        $d = new DateTime();
+        $d->setTimestamp(0);
+        return $d;
+    }
+
+    public static function setYears(DateTime $date, int $year): DateTime
+    {
+        $date->setDate($year, $date->format('m'), $date->format('d'));
+        return $date;
+    }
 }

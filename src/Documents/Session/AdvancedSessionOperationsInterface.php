@@ -2,6 +2,8 @@
 
 namespace RavenDB\Documents\Session;
 
+use Closure;
+use ReflectionException;
 use RavenDB\Documents\Indexes\AbstractCommonApiForIndexes;
 use RavenDB\Type\ObjectArray;
 
@@ -166,30 +168,54 @@ interface AdvancedSessionOperationsInterface extends
 //     * @param output the stream that will contain the load results
 //     */
 //    void loadIntoStream(Collection<String> ids, OutputStream output);
-//
-//
-//    <T, U> void increment(String id, String path, U valueToAdd);
-//
-//    <T, U> void increment(T entity, String path, U valueToAdd);
-//
-//    <T, U> void patch(String id, String path, U value);
-//
-//    <T, U> void patch(T entity, String path, U value);
-//
+
+    /**
+     * @param string|object|null $idOrEntity
+     * @param string|null $path
+     * @param mixed $valueToAdd
+     */
+    function increment($idOrEntity, ?string $path, $valueToAdd): void;
+
+    /**
+     * @param string|object|null $idOrEntity
+     * @param string|null $path
+     * @param mixed $value
+     */
+    function patch($idOrEntity, ?string $path, $value): void;
+
+    /**
+     * @param string|object|null $idOrEntity
+     * @param string|null $pathToArray
+     * @param Closure $arrayAdder
+     */
+    public function patchArray($idOrEntity, ?string $pathToArray, Closure $arrayAdder): void;
+
 //    <T, U> void patchArray(T entity, String pathToArray, Consumer<JavaScriptArray<U>> arrayAdder);
-//
 //    <T, U> void patchArray(String id, String pathToArray, Consumer<JavaScriptArray<U>> arrayAdder);
-//
+
 //    <T, TKey, TValue> void patchObject(T entity, String pathToObject, Consumer<JavaScriptMap<TKey, TValue>> dictionaryAdder);
 //
 //    <T, TKey, TValue> void patchObject(String id, String pathToObject, Consumer<JavaScriptMap<TKey, TValue>> dictionaryAdder);
-//
-//    <T, TU> void addOrPatch(String id, T entity, String pathToObject, TU value);
-//
-//    <T, TU> void addOrPatchArray(String id, T entity, String pathToObject, Consumer<JavaScriptArray<TU>> arrayAdder);
-//
-//    <T, TU> void addOrIncrement(String id, T entity, String pathToObject, TU valToAdd);
-//
+
+    /**
+     * @param string|null $id
+     * @param object      $entity
+     * @param string|null $pathToObject
+     * @param mixed       $value
+     */
+    public function addOrPatch(?string $id, object $entity, ?string $pathToObject, $value): void;
+
+    public function addOrPatchArray(?string $id, object $entity, ?string $pathToArray, Closure $arrayAdder): void;
+
+    /**
+     * @param string|null $id
+     * @param object      $entity
+     * @param string|null $pathToObject
+     * @param mixed       $valToAdd
+     */
+    public function addOrIncrement(?string $id, object $entity, ?string $pathToObject, $valToAdd): void;
+
+
 //    /**
 //     * Stream the results on the query to the client, converting them to
 //     * Java types along the way.
