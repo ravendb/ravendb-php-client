@@ -140,14 +140,14 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
         return $this->convertValue($key, $this->source[$key]);
     }
 
-//    public static MetadataAsDictionary materializeFromJson(ObjectNode metadata) {
-//        MetadataAsDictionary result = new MetadataAsDictionary((Map<String, Object>) null);
-//        result.initialize(metadata);
-//
-//        return result;
-//    }
-//
-//    @Override
+    public static function materializeFromJson(?array $metadata): MetadataAsDictionary
+    {
+        $result = new MetadataAsDictionary(null);
+        $result->initialize($metadata);
+
+        return $result;
+    }
+
 //    public IMetadataDictionary[] getObjects(String key) {
 //        Object[] obj = (Object[]) get(key);
 //        if (obj == null) {
@@ -185,18 +185,16 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
 //
 //        _metadata.clear();
 //    }
-//
-//    @SuppressWarnings("ConstantConditions")
-//    @Override
-//    public boolean containsKey(Object key) {
-//        if (_metadata != null) {
-//            return _metadata.containsKey(key);
-//        }
-//
-//        return _source.has((String)key);
-//    }
-//
-//    @Override
+
+    public function containsKey($key): bool
+    {
+        if ($this->metadata != null) {
+            return array_key_exists($key, $this->metadata);
+        }
+
+        return array_key_exists($key, $this->source);
+    }
+
 //    public Set<Entry<String, Object>> entrySet() {
 //        if (_metadata == null) {
 //            initialize(_source);

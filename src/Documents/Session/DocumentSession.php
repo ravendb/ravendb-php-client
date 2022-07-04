@@ -105,7 +105,6 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
             return;
         }
 
-        // @todo: implement this
         $this->getClusterSession()->clear();
     }
 
@@ -353,18 +352,18 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
      * Loads the specified entity with the specified id.
      *
      * load(string $className, string $id): ?object
-     * load(string $className, string $id, Consumer $includes) ?Object;
+     * load(string $className, string $id, Closure $includes) ?Object;
      *
      * load(string $className, StringArray $ids): ObjectArray
-     * load(string $className, StringArray $ids, Consumer $includes): ObjectArray;
+     * load(string $className, StringArray $ids, Closure $includes): ObjectArray;
      *
      * load(string $className, array $ids): ObjectArray
-     * load(string $className, array $ids, Consumer $includes): ObjectArray;
+     * load(string $className, array $ids, Closure $includes): ObjectArray;
      *
      * load(string $className, string $id1, string $id2, string $id3 ... ): ObjectArray
      *
      * @param string $className Object class
-     * @param string|array|StringArray $params Identifier of a entity that will be loaded.
+     * @param mixed $params Identifier of an entity that will be loaded.
      *
      * @return null|object|ObjectArray Loaded entity or entities
      *
@@ -406,14 +405,14 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         }
 
         if (count($params) == 2) {
-            if ($params[1] instanceof Consumer) {
+            if ($params[1] instanceof Closure) {
 
-                    // called: load(string $className, StringArray $ids, Consumer $includes): ObjectArray;
+                    // called: load(string $className, StringArray $ids, Closure $includes): ObjectArray;
                     if ($params[0] instanceof StringArray) {
                         return $this->loadMultipleWithIncludes($className, $params[0], $params[1]);
                     }
 
-                    // called: load(string $className, string $id, Consumer $includes) ?Object;
+                    // called: load(string $className, string $id, Closure $includes) ?Object;
                     if (is_string($params[0])) {
                         return $this->loadSingleWithIncludes($className, $params[0], $params[1]);
                     }
@@ -497,10 +496,10 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
     /**
      * @param string $className
      * @param string|null $id
-     * @param Consumer<IncludeBuilderInterface> $includes
+     * @param Closure $includes
      * @return object|null
      */
-    private function loadSingleWithIncludes(string $className, ?string $id, Consumer $includes): ?object
+    private function loadSingleWithIncludes(string $className, ?string $id, Closure $includes): ?object
     {
         if ($id == null) {
             return null;
@@ -513,17 +512,17 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
     /**
      * @param string $className
      * @param StringArray|null $ids
-     * @param Consumer<IncludeBuilderInterface> $includes
+     * @param Closure $includes
      * @return ObjectArray
      */
-    private function loadMultipleWithIncludes(string $className, ?StringArray $ids, Consumer $includes): ObjectArray
+    private function loadMultipleWithIncludes(string $className, ?StringArray $ids, Closure $includes): ObjectArray
     {
         if ($ids == null) {
             throw new IllegalArgumentException("ids cannot be null");
         }
 
         $includeBuilder = new IncludeBuilder($this->getConventions());
-        $includes->accept($includeBuilder);
+        $includes($includeBuilder);
 
         // @todo: continue work with includes from here
         $timeSeriesIncludes = null;
@@ -531,10 +530,9 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //                ? new ArrayList<>(includeBuilder.getTimeSeriesToInclude())
 //                : null;
 
-        $compareExchangeValuesToInclude = null;
-//        String[] compareExchangeValuesToInclude = includeBuilder.getCompareExchangeValuesToInclude() != null
-//                ? includeBuilder.getCompareExchangeValuesToInclude().toArray(new String[0])
-//                : null;
+        $compareExchangeValuesToInclude = $includeBuilder->getCompareExchangeValuesToInclude() != null
+            ? $includeBuilder->getCompareExchangeValuesToInclude()
+            : null;
 
         return $this->loadInternal($className,
                 $ids,

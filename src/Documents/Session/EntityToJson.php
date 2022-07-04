@@ -188,12 +188,12 @@ class EntityToJson
             throw new IllegalArgumentException("Id cannot be null");
         }
 
-        self::populateEntityS($entity, $document, $this->session->getConventions()->getEntityMapper());
+        self::populateEntityStatic($entity, $document, $this->session->getConventions()->getEntityMapper());
 
         $this->session->getGenerateEntityIdOnTheClient()->trySetIdentity($entity, $id);
     }
 
-    public static function populateEntityS(?object &$entity, ?array $document, ?EntityMapper $objectMapper): void
+    public static function populateEntityStatic(?object &$entity, ?array $document, ?EntityMapper $objectMapper): void
     {
         if ($entity == null) {
             throw new IllegalArgumentException("Entity cannot be null");
@@ -227,31 +227,41 @@ class EntityToJson
         return true;
     }
 
-//    @SuppressWarnings("UnnecessaryLocalVariable")
-//    public static Object convertToEntity(Class< ? > entityClass, String id, ObjectNode document, DocumentConventions conventions) {
-//        try {
-//
-//            Object defaultValue = InMemoryDocumentSessionOperations.getDefaultValue(entityClass);
-//
-//            Object entity = defaultValue;
-//
-//            String documentType = conventions.getJavaClass(id, document);
-//            if (documentType != null) {
-//                Class<? > clazz = class.forName(documentType);
+    /**
+     * @param string                   $entityClass
+     * @param string|null              $id
+     * @param object|array             $document
+     * @param DocumentConventions|null $conventions
+     *
+     * @return object
+     */
+    public static function convertToEntityStatic(string $entityClass, ?string $id, $document, ?DocumentConventions $conventions): object
+    {
+        try {
+
+            $defaultValue = InMemoryDocumentSessionOperations::getDefaultValue($entityClass);
+
+            $entity = $defaultValue;
+
+            $documentType = $conventions->getPhpClassName($document);
+            if ($documentType != null) {
+                $className = $documentType; //class.forName(documentType);
 //                if (clazz != null && entityClass.isAssignableFrom(clazz)) {
-//                    entity = conventions.getEntityMapper().treeToValue(document, clazz);
-//                }
-//            }
-//
-//            if (entity == null) {
-//                entity = conventions.getEntityMapper().treeToValue(document, entityClass);
-//            }
-//
-//            return entity;
-//        } catch (Exception e) {
-//            throw new IllegalStateException("Could not convert document " + id + " to entity of type " + entityClass, e);
-//        }
-//    }
+                if (is_a($entityClass, $className, true)) {
+                    $entity = $document; //$conventions->getEntityMapper()->denormalize($document, $className);
+                }
+            }
+
+            if ($entity == null) {
+                $arr = $conventions->getEntityMapper()->normalize($document);
+                $entity = $conventions->getEntityMapper()->denormalize($arr, $entityClass);
+            }
+
+            return $entity;
+        } catch (Throwable $e) {
+            throw new IllegalStateException('Could not convert document ' . $id . ' to entity of type ' . $entityClass, $e);
+        }
+    }
 
     public function removeFromMissing(object $entity): void
     {

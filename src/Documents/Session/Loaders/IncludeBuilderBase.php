@@ -71,13 +71,14 @@ class IncludeBuilderBase
         $this->conventions = $conventions;
     }
 
-//    protected void _includeCompareExchangeValue(String path) {
-//        if (compareExchangeValuesToInclude == null) {
-//            compareExchangeValuesToInclude = new HashSet<>();
-//        }
-//
-//        compareExchangeValuesToInclude.add(path);
-//    }
+    protected function _includeCompareExchangeValue(?string $path): void
+    {
+        if ($this->compareExchangeValuesToInclude == null) {
+            $this->compareExchangeValuesToInclude = new StringSet();
+        }
+
+        $this->compareExchangeValuesToInclude->append($path);
+    }
 
     /**
      * @param string|null $path
@@ -303,11 +304,12 @@ class IncludeBuilderBase
 //            }
 //        }
 //    }
-//
-//    public Set<String> getCompareExchangeValuesToInclude() {
-//        return compareExchangeValuesToInclude;
-//    }
-//
+
+    public function getCompareExchangeValuesToInclude(): StringSet
+    {
+        return $this->compareExchangeValuesToInclude;
+    }
+
 //    public static class AbstractTimeSeriesRangeComparer implements Comparator<AbstractTimeSeriesRange> {
 //        public final static AbstractTimeSeriesRangeComparer INSTANCE = new AbstractTimeSeriesRangeComparer();
 //

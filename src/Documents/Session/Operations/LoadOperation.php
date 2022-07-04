@@ -23,10 +23,10 @@ class LoadOperation
 
     private static ?Logger $logger = null;
 
-    private StringArray $ids;
-    private StringArray $includes;
-    private StringArray $countersToInclude;
-    private StringArray $compareExchangeValuesToInclude;
+    private ?StringArray $ids = null;
+    private ?StringArray $includes = null;
+    private ?StringArray $countersToInclude = null;
+    private ?StringArray $compareExchangeValuesToInclude = null;
 
     private bool  $includeAllCounters = false;
     private AbstractTimeSeriesRangeArray $timeSeriesToInclude;
@@ -41,7 +41,6 @@ class LoadOperation
         $this->ids = new StringArray();
         $this->includes = new StringArray();
         $this->countersToInclude = new StringArray();
-        $this->compareExchangeValuesToInclude = new StringArray();
 
         $this->timeSeriesToInclude = new AbstractTimeSeriesRangeArray();
 
@@ -102,7 +101,7 @@ class LoadOperation
         return $this;
     }
 
-    public function withIncludes(StringArray $includes): LoadOperation
+    public function withIncludes(?StringArray $includes): LoadOperation
     {
         $this->includes = $includes;
         return $this;
@@ -138,10 +137,9 @@ class LoadOperation
         return $this;
     }
 
-    public function byIds(StringArray $ids): LoadOperation
+    public function byIds(?StringArray $ids): LoadOperation
     {
-        // @todo: check this TreeSet or we can leave array for now
-        $distinct = new StringArray(); //new TreeSet<>(String::compareToIgnoreCase);
+        $distinct = new StringArray();
 
         foreach($ids as $id) {
             if (!StringUtils::isBlank($id)) {
@@ -293,8 +291,7 @@ class LoadOperation
         }
 
         if ($this->compareExchangeValuesToInclude != null) {
-            // @todo: uncomment this
-//            $this->session->getClusterSession()->registerCompareExchangeValues($result->getCompareExchangeValueIncludes());
+            $this->session->getClusterSession()->registerCompareExchangeValues($result->getCompareExchangeValueIncludes());
         }
 
         // JsonNode document

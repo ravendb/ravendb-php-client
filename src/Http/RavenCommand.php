@@ -20,6 +20,9 @@ use ReflectionException;
 use Symfony\Component\Serializer\Serializer;
 use Throwable;
 
+/**
+ * @template T
+ */
 abstract class RavenCommand
 {
     private ?string $resultClass = null;

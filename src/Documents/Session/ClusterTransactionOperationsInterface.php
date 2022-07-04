@@ -2,15 +2,24 @@
 
 namespace RavenDB\Documents\Session;
 
+use RavenDB\Type\StringArray;
+use RavenDB\Documents\Operations\CompareExchange\CompareExchangeValue;
+use RavenDB\Documents\Operations\CompareExchange\CompareExchangeValueMap;
+
+//@todo: implement this interfaces
 interface ClusterTransactionOperationsInterface extends ClusterTransactionOperationsBaseInterface
 {
+    function getCompareExchangeValue(string $className, ?string $key): ?CompareExchangeValue;
 
-    //@todo: add this interfaces
+    /**
+     * @param string                   $className
+     * @param string|StringArray|array $keysOrStartsWith
+     * @param int                      $start
+     * @param int                      $pageSize
+     *
+     * @return CompareExchangeValueMap
+     */
+    public function getCompareExchangeValues(string $className, $keysOrStartsWith, int $start = 0, int $pageSize = 25): CompareExchangeValueMap;
 
-//    <T> CompareExchangeValue<T> getCompareExchangeValue(Class<T> clazz, String key);
-//    <T> Map<String, CompareExchangeValue<T>> getCompareExchangeValues(Class<T> clazz, String[] keys);
-//    <T> Map<String, CompareExchangeValue<T>> getCompareExchangeValues(Class<T> clazz, String startsWith);
-//    <T> Map<String, CompareExchangeValue<T>> getCompareExchangeValues(Class<T> clazz, String startsWith, int start);
-//    <T> Map<String, CompareExchangeValue<T>> getCompareExchangeValues(Class<T> clazz, String startsWith, int start, int pageSize);
 //    ILazyClusterTransactionOperations lazily();
 }

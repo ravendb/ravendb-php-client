@@ -7,8 +7,10 @@ use DateTimeInterface;
 use InvalidArgumentException;
 use Ramsey\Uuid\UuidInterface;
 use RavenDB\Constants\DocumentsMetadata;
+use RavenDB\Documents\Operations\OperationExecutor;
 use RavenDB\Documents\Commands\Batches\BatchOptions;
 use RavenDB\Documents\Commands\Batches\IndexBatchOptions;
+use RavenDB\Documents\Operations\SessionOperationExecutor;
 use RavenDB\Documents\Commands\Batches\BatchPatchCommandData;
 use RavenDB\Documents\Commands\Batches\CommandDataInterface;
 use RavenDB\Documents\Commands\Batches\CommandType;
@@ -48,7 +50,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 {
     protected RequestExecutor $requestExecutor;
 
-//    private OperationExecutor _operationExecutor;
+    private ?OperationExecutor $operationExecutor = null;
 
 //    protected final List<ILazyOperation> pendingLazyOperations = new ArrayList<>();
 //    protected final Map<ILazyOperation, Consumer<Object>> onEvaluateLazy = new HashMap<>();
@@ -261,13 +263,14 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         return $this->sessionInfo;
     }
 
-//        public OperationExecutor getOperations() {
-//        if (_operationExecutor == null) {
-//            _operationExecutor = new SessionOperationExecutor(this);
-//        }
-//
-//        return _operationExecutor;
-//    }
+    public function getOperations(): OperationExecutor
+    {
+        if ($this->operationExecutor == null) {
+            $this->operationExecutor = new SessionOperationExecutor($this);
+        }
+
+        return $this->operationExecutor;
+    }
 
     private int $numberOfRequests = 0;
 
@@ -1797,7 +1800,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
     }
 
-    public function registerMissingIncludes(array $results, array $includes, StringArray $includePaths): void
+    public function registerMissingIncludes(array $results, array $includes, ?StringArray $includePaths): void
     {
 
     }
@@ -2378,7 +2381,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
 
 
-    public function checkIfIdAlreadyIncluded(StringArray $ids, StringArray $includes): bool
+    public function checkIfIdAlreadyIncluded(?StringArray $ids, ?StringArray $includes): bool
     {
         foreach ($ids as $id) {
             if (in_array($id, $this->knownMissingIds)) {

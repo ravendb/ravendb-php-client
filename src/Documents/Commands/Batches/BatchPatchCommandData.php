@@ -108,7 +108,7 @@ class BatchPatchCommandData implements CommandDataInterface
         return CommandType::batchPatch();
     }
 
-    public function serialize(DocumentConventions $conventions): array
+    public function serialize(?DocumentConventions $conventions): array
     {
         $data = [];
 
@@ -138,7 +138,7 @@ class BatchPatchCommandData implements CommandDataInterface
         return $data;
     }
 
-    public function onBeforeSaveChanges(InMemoryDocumentSessionOperations $session): void
+    public function onBeforeSaveChanges(?InMemoryDocumentSessionOperations $session): void
     {
         // this command does not update session state after SaveChanges call!
     }

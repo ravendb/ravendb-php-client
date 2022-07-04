@@ -48,13 +48,13 @@ class IncludeBuilder extends IncludeBuilderBase implements IncludeBuilderInterfa
 //        _includeTimeSeriesFromTo("", name, from, to);
 //        return this;
 //    }
-//
-//    @Override
-//    public IIncludeBuilder includeCompareExchangeValue(String path) {
-//        _includeCompareExchangeValue(path);
-//        return this;
-//    }
-//
+
+    public function includeCompareExchangeValue(?string $path): IncludeBuilderInterface
+    {
+        $this->_includeCompareExchangeValue($path);
+        return $this;
+    }
+
 //    @Override
 //    public IIncludeBuilder includeTimeSeries(String name, TimeSeriesRangeType type, TimeValue time) {
 //        _includeTimeSeriesByRangeTypeAndTime("", name, type, time);
