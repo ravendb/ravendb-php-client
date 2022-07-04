@@ -16,7 +16,6 @@ class Operation
 {
     private RequestExecutor $requestExecutor;
     private DocumentConventions $conventions;
-    private ?Closure $changes = null;
     private int $id;
     private ?string $nodeTag;
 
@@ -27,14 +26,12 @@ class Operation
 
     public function __construct(
         RequestExecutor $requestExecutor,
-        ?Closure $changes,
         DocumentConventions $conventions,
         int $id,
         ?string $nodeTag = null
     )
     {
         $this->requestExecutor = $requestExecutor;
-        $this->changes = $changes;
         $this->conventions = $conventions;
         $this->id = $id;
         $this->nodeTag = $nodeTag;

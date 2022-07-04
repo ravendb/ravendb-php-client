@@ -11,9 +11,9 @@ use RavenDB\Http\RequestExecutor;
 // !status: DONE
 class ServerWideOperation extends Operation
 {
-    public function __construct(RequestExecutor $requestExecutor, ?Closure $changes, DocumentConventions $conventions, int $id, ?string $nodeTag = null)
+    public function __construct(RequestExecutor $requestExecutor, DocumentConventions $conventions, int $id, ?string $nodeTag = null)
     {
-        parent::__construct($requestExecutor, $changes, $conventions, $id, $nodeTag);
+        parent::__construct($requestExecutor, $conventions, $id, $nodeTag);
         $this->setNodeTag($nodeTag);
     }
 

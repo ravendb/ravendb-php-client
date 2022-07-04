@@ -2,14 +2,10 @@
 
 namespace RavenDB\Documents;
 
-use Ds\Map as DSMap;
 use Closure;
 use InvalidArgumentException;
 use Ramsey\Uuid\Uuid;
-use RavenDB\Documents\Changes\DatabaseChanges;
 use RavenDB\Documents\Operations\OperationExecutor;
-use RavenDB\Documents\Changes\DatabaseChangesOptions;
-use RavenDB\Documents\Changes\DatabaseChangesInterface;
 use RavenDB\Documents\Identity\MultiDatabaseHiLoIdGenerator;
 use RavenDB\Documents\Operations\MaintenanceOperationExecutor;
 use RavenDB\Documents\Session\DocumentSession;
@@ -17,9 +13,7 @@ use RavenDB\Documents\Session\DocumentSessionInterface;
 use RavenDB\Documents\Session\SessionOptions;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
-use RavenDB\Http\AggressiveCacheOptions;
 use RavenDB\Http\RequestExecutor;
-use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Primitives\ClosureArray;
 use RavenDB\Primitives\EventArgs;
 use RavenDB\Primitives\EventHelper;
@@ -31,11 +25,6 @@ class DocumentStore extends DocumentStoreBase
 {
 //    private ExecutorService $executorService = Executors::newCachedThreadPool();
 
-    // ConcurrentMap<DatabaseChangesOptions, IDatabaseChanges>
-    private ?DSMap $databaseChanges = null;
-//
-//    private final ConcurrentMap<String, Lazy<EvictItemsFromCacheBasedOnChanges>> _aggressiveCacheChanges = new ConcurrentHashMap<>();
-//
 //    private final ConcurrentMap<String, Lazy<RequestExecutor>> requestExecutors = new ConcurrentSkipListMap<>(String.CASE_INSENSITIVE_ORDER);
 //
     private ?MultiDatabaseHiLoIdGenerator $multiDbHiLo = null;
@@ -53,8 +42,6 @@ class DocumentStore extends DocumentStoreBase
      */
     public function __construct($urls = null, ?string $database = null)
     {
-        $this->databaseChanges = new DSMap();
-
         parent::__construct();
 
         if ($urls !== null) {
@@ -110,12 +97,6 @@ class DocumentStore extends DocumentStoreBase
 //            }
 //
 //            value.getValue().close();
-//        }
-//
-//        for (IDatabaseChanges changes : _databaseChanges.values()) {
-//            try (CleanCloseable value = changes) {
-//                // try will close all values
-//            }
 //        }
 //
 //        if (_multiDbHiLo != null) {
@@ -311,128 +292,6 @@ class DocumentStore extends DocumentStoreBase
             throw new InvalidArgumentException("Document store URLs cannot be empty");
         }
     }
-
-    /**
-     * Setup the context for no aggressive caching
-     *
-     * This is mainly useful for internal use inside RavenDB, when we are executing
-     * queries that have been marked with WaitForNonStaleResults, we temporarily disable
-     * aggressive caching.
-     */
-    public function disableAggressiveCaching(string $databaseName = ''): CleanCloseable
-    {
-        $this->assertInitialized();
-        $re = $this->getRequestExecutor($this->getEffectiveDatabase($databaseName));
-        /** @var AggressiveCacheOptions $old */
-//        $old = $re->aggressiveCaching->get();
-//        $re->aggressiveCaching->set(null);
-//        return () -> re.aggressiveCaching.set(old);
-
-    }
-
-    public function changes(?string $database = null, ?string $nodeTag = null): DatabaseChangesInterface
-    {
-        $this->assertInitialized();
-
-        $changesOptions = new DatabaseChangesOptions($database ?? $this->getDatabase(), $nodeTag);
-
-        foreach ($this->databaseChanges as $key => $change) {
-            if ($changesOptions->equals($change)) {
-                return $change;
-            }
-        }
-
-        $dbChanges = $this->createDatabaseChanges($changesOptions);
-        $this->databaseChanges->put($changesOptions, $dbChanges);
-
-        return $dbChanges;
-    }
-
-    protected function createDatabaseChanges(DatabaseChangesOptions $node): DatabaseChangesInterface
-    {
-        $databaseChanges = $this->databaseChanges;
-
-        return new DatabaseChanges(
-            $this->getRequestExecutor($node->getDatabaseName()),
-            $node->getDatabaseName(),
-            $this->executorService,
-            function() use ($node, $databaseChanges) {
-                return $databaseChanges->remove($node);
-            },
-            $node->getNodeTag()
-        );
-    }
-//
-//    public Exception getLastDatabaseChangesStateException() {
-//        return getLastDatabaseChangesStateException(null, null);
-//    }
-//
-//    public Exception getLastDatabaseChangesStateException(String database) {
-//        return getLastDatabaseChangesStateException(database, null);
-//    }
-//
-//    public Exception getLastDatabaseChangesStateException(String database, String nodeTag) {
-//
-//        DatabaseChangesOptions node = new DatabaseChangesOptions(ObjectUtils.firstNonNull(database, getDatabase()), nodeTag);
-//
-//        DatabaseChanges databaseChanges = (DatabaseChanges) _databaseChanges.get(node);
-//
-//        if (databaseChanges != null) {
-//            return databaseChanges.getLastConnectionStateException();
-//        }
-//
-//        return null;
-//    }
-//
-//    @Override
-//    public CleanCloseable aggressivelyCacheFor(Duration cacheDuration) {
-//        return aggressivelyCacheFor(cacheDuration, getConventions().aggressiveCache().getMode(), null);
-//    }
-//
-//    @Override
-//    public CleanCloseable aggressivelyCacheFor(Duration cacheDuration, String database) {
-//        return aggressivelyCacheFor(cacheDuration, getConventions().aggressiveCache().getMode(), database);
-//    }
-//
-//    @Override
-//    public CleanCloseable aggressivelyCacheFor(Duration cacheDuration, AggressiveCacheMode mode) {
-//        return aggressivelyCacheFor(cacheDuration, mode, null);
-//    }
-//
-//    @Override
-//    public CleanCloseable aggressivelyCacheFor(Duration cacheDuration, AggressiveCacheMode mode, String database) {
-//        assertInitialized();
-//
-//        database = ObjectUtils.firstNonNull(database, getDatabase());
-//
-//        if (database == null) {
-//            throw new IllegalStateException("Cannot use aggressivelyCache and aggressivelyCacheFor without a default database defined " +
-//                    "unless 'database' parameter is provided. Did you forget to pass 'database' parameter?");
-//        }
-//
-//        if (mode != AggressiveCacheMode.DO_NOT_TRACK_CHANGES) {
-//            listenToChangesAndUpdateTheCache(database);
-//        }
-//
-//        RequestExecutor re = getRequestExecutor(database);
-//        AggressiveCacheOptions old = re.aggressiveCaching.get();
-//
-//        AggressiveCacheOptions newOptions = new AggressiveCacheOptions(cacheDuration, mode);
-//        re.aggressiveCaching.set(newOptions);
-//
-//        return () -> re.aggressiveCaching.set(old);
-//    }
-//
-//    private void listenToChangesAndUpdateTheCache(String database) {
-//        Lazy<EvictItemsFromCacheBasedOnChanges> lazy = _aggressiveCacheChanges.get(database);
-//
-//        if (lazy == null) {
-//            lazy = _aggressiveCacheChanges.computeIfAbsent(database, db -> new Lazy<>(() -> new EvictItemsFromCacheBasedOnChanges(this, database)));
-//        }
-//
-//        lazy.getValue(); // force evaluation
-//    }
-//
 
     private ClosureArray $afterClose;
     private ClosureArray $beforeClose;

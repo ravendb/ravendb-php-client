@@ -68,9 +68,6 @@ class OperationExecutor
         $store = $this->store;
         return new Operation(
                 $this->requestExecutor,
-                function () use ($node, $store) {
-                    $store->changes($this->databaseName, $node);
-                },
                 $this->requestExecutor->getConventions(),
                 $command->getResult()->getOperationId(),
                 $node);

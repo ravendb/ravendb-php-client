@@ -5,7 +5,6 @@ namespace RavenDB\Documents;
 use Closure;
 use RavenDB\Auth\AuthOptions;
 use RavenDB\Documents\Operations\OperationExecutor;
-use RavenDB\Documents\Changes\DatabaseChangesInterface;
 use RavenDB\Documents\Indexes\AbstractIndexCreationTaskArray;
 use RavenDB\Documents\Indexes\AbstractIndexCreationTaskInterface;
 use RavenDB\Documents\Operations\MaintenanceOperationExecutor;
@@ -57,110 +56,6 @@ interface DocumentStoreInterface
 //    void addOnSessionClosingListener(EventHandler<SessionClosingEventArgs> handler);
 //    void removeOnSessionClosingListener(EventHandler<SessionClosingEventArgs> handler);
 
-    /**
-     * Subscribe to change notifications from the server
-     *
-     * @param ?string $database Database to use
-     * @param ?string $nodeTag The node tag of selected server
-     * @return DatabaseChangesInterface Database changes object
-     */
-    function changes(?string $database =  null, ?string $nodeTag = null): DatabaseChangesInterface;
-
-//    /**
-//     * Setup the context for aggressive caching.
-//     *
-//     * Aggressive caching means that we will not check the server to see whether the response
-//     * we provide is current or not, but will serve the information directly from the local cache
-//     * without touching the server.
-//     *
-//     * @param cacheDuration Specify the aggressive cache duration
-//     * @return Context for aggressive caching
-//     */
-//    CleanCloseable aggressivelyCacheFor(Duration cacheDuration);
-//
-//    /**
-//     * Setup the context for aggressive caching.
-//     *
-//     * Aggressive caching means that we will not check the server to see whether the response
-//     * we provide is current or not, but will serve the information directly from the local cache
-//     * without touching the server.
-//     *
-//     * @param cacheDuration Specify the aggressive cache duration
-//     * @param database The database to cache, if not specified, the default database will be used
-//     * @return Context for aggressive caching
-//     */
-//    CleanCloseable aggressivelyCacheFor(Duration cacheDuration, String database);
-//
-//    /**
-//     * Setup the context for aggressive caching.
-//     *
-//     * Aggressive caching means that we will not check the server to see whether the response
-//     * we provide is current or not, but will serve the information directly from the local cache
-//     * without touching the server.
-//     *
-//     * @param cacheDuration Specify the aggressive cache duration
-//     * @param mode Aggressive caching mode, if not specified, TrackChanges mode will be used
-//     * @return Context for aggressive caching
-//     */
-//    CleanCloseable aggressivelyCacheFor(Duration cacheDuration, AggressiveCacheMode mode);
-//
-//    /**
-//     * Setup the context for aggressive caching.
-//     *
-//     * Aggressive caching means that we will not check the server to see whether the response
-//     * we provide is current or not, but will serve the information directly from the local cache
-//     * without touching the server.
-//     *
-//     * @param cacheDuration Specify the aggressive cache duration
-//     * @param mode Aggressive caching mode, if not specified, TrackChanges mode will be used
-//     * @param database The database to cache, if not specified, the default database will be used
-//     * @return Context for aggressive caching
-//     */
-//    CleanCloseable aggressivelyCacheFor(Duration cacheDuration, AggressiveCacheMode mode, String database);
-//
-//    /**
-//     * Setup the context for aggressive caching.
-//     *
-//     * Aggressive caching means that we will not check the server to see whether the response
-//     * we provide is current or not, but will serve the information directly from the local cache
-//     * without touching the server.
-//     * @return Context for aggressive caching
-//     */
-//    CleanCloseable aggressivelyCache();
-//
-//    /**
-//     * Setup the context for aggressive caching.
-//     *
-//     * Aggressive caching means that we will not check the server to see whether the response
-//     * we provide is current or not, but will serve the information directly from the local cache
-//     * without touching the server.
-//     *
-//     * @param database The database to cache, if not specified, the default database will be used
-//     * @return Context for aggressive caching
-//     */
-//    CleanCloseable aggressivelyCache(String database);
-//
-//    /**
-//     * Setup the context for no aggressive caching
-//     *
-//     * This is mainly useful for internal use inside RavenDB, when we are executing
-//     * queries that have been marked with WaitForNonStaleResults, we temporarily disable
-//     * aggressive caching.
-//     * @return Context for aggressive caching
-//     */
-//    CleanCloseable disableAggressiveCaching();
-//
-//    /**
-//     * Setup the context for no aggressive caching
-//     *
-//     * This is mainly useful for internal use inside RavenDB, when we are executing
-//     * queries that have been marked with WaitForNonStaleResults, we temporarily disable
-//     * aggressive caching.
-//     * @param database Database name
-//     * @return Context for aggressive caching
-//     */
-//    CleanCloseable disableAggressiveCaching(String database);
-//
 //    /**
 //     * @return Gets the identifier for this store.
 //     */
