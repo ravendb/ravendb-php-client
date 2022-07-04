@@ -7,7 +7,7 @@ use RavenDB\Type\ValueObjectInterface;
 // !status: DONE
 class DatabaseStateStatus implements ValueObjectInterface
 {
-    public const NORMAL = 'NORMAL';
+    public const NORMAL = 'Normal';
     public const RESTORE_IN_PROGRESS = 'RESTORE_IN_PROGRESS';
 
     private string $value;

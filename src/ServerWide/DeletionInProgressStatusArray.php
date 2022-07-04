@@ -11,4 +11,15 @@ class DeletionInProgressStatusArray extends TypedArray
     {
         parent::__construct(DeletionInProgressStatus::class);
     }
+
+    public static function fromArray(array $array): DeletionInProgressStatusArray
+    {
+        $a = new DeletionInProgressStatusArray();
+
+        foreach ($array as $key => $item) {
+            $a[$key] = $item;
+        }
+
+        return $a;
+    }
 }

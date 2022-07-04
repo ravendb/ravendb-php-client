@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Operations;
 
+use Closure;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Exceptions\ExceptionDispatcher;
 use RavenDB\Exceptions\ExceptionSchema;
@@ -36,7 +37,7 @@ class Operation
         $this->nodeTag = $nodeTag;
     }
 
-    private function fetchOperationsStatus(): object
+    private function fetchOperationsStatus(): array
     {
         $command = $this->getOperationStateCommand($this->conventions, $this->id, $this->nodeTag);
         $this->requestExecutor->execute($command);
@@ -74,6 +75,7 @@ class Operation
                 case 'Faulted':
                     $result = $status['Result'];
 
+                    /** @var OperationCancelledException $exceptionResult */
                     $exceptionResult = JsonExtensions::getDefaultMapper()->denormalize($result, OperationCancelledException::class);
                     $schema = new ExceptionSchema();
 
@@ -82,8 +84,11 @@ class Operation
                     $schema->setMessage($exceptionResult->getMessage());
                     $schema->setType($exceptionResult->getType());
 
-                    throw new ExceptionDispatcher::get($schema, $exceptionResult->getStatusCode());
+                    $exception = ExceptionDispatcher::get($schema, $exceptionResult->getCode());
+                    throw new $exception;
             }
+
+            usleep(500000);
         }
     }
 }

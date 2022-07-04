@@ -12,8 +12,14 @@ class GetIndexErrorsOperation implements MaintenanceOperationInterface
 {
     private ?StringArray $indexNames = null;
 
-    public function __construct(?StringArray $indexNames = null)
+    /**
+     * @param StringArray|array|null $indexNames
+     */
+    public function __construct($indexNames = null)
     {
+        if (is_array($indexNames)) {
+            $indexNames = StringArray::fromArray($indexNames);
+        }
         $this->indexNames = $indexNames;
     }
 

@@ -58,6 +58,11 @@ class Duration
         return "$hours:$minutes:$seconds.$f";
     }
 
+    public function toString(): string
+    {
+        return $this->format();
+    }
+
     public function hashCode(): int
     {
         return HashUtils::hashCode($this->format());

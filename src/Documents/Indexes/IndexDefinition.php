@@ -197,10 +197,13 @@ class IndexDefinition implements ResultInterface
 
     /**
      * All the map functions for this index
-     * @param ?StringSet $maps Sets the value
+     * @param StringSet|array|null $maps Sets the value
      */
-    public function setMaps(?StringSet $maps): void
+    public function setMaps($maps): void
     {
+        if (is_array($maps)) {
+            $maps = StringSet::fromArray($maps);
+        }
         $this->maps = $maps;
     }
 

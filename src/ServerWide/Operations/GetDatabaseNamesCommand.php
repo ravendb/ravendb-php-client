@@ -1,6 +1,6 @@
 <?php
 
-namespace RavenDB\ServerWide\Commands;
+namespace RavenDB\ServerWide\Operations;
 
 use RavenDB\Http\GetDatabaseNamesResponse;
 use RavenDB\Http\HttpRequest;

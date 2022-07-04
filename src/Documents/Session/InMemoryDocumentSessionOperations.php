@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Ramsey\Uuid\UuidInterface;
 use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Documents\Commands\Batches\BatchOptions;
+use RavenDB\Documents\Commands\Batches\IndexBatchOptions;
 use RavenDB\Documents\Commands\Batches\BatchPatchCommandData;
 use RavenDB\Documents\Commands\Batches\CommandDataInterface;
 use RavenDB\Documents\Commands\Batches\CommandType;
@@ -1498,28 +1499,35 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //        replicationOptions.setWaitForReplicas(true);
 //    }
 
-//    public void waitForIndexesAfterSaveChanges() {
-//        waitForIndexesAfterSaveChanges(options -> {
+//    public function waitForIndexesAfterSaveChanges(): void
+//    {
+//        $waitForIndexesAfterSaveChanges(options -> {
 //        });
 //    }
-//
-//    public void waitForIndexesAfterSaveChanges(Consumer<InMemoryDocumentSessionOperations.IndexesWaitOptsBuilder> options) {
-//        IndexesWaitOptsBuilder builder = new IndexesWaitOptsBuilder();
-//        options.accept(builder);
-//
-//        BatchOptions builderOptions = builder.getOptions();
-//        IndexBatchOptions indexOptions = builderOptions.getIndexOptions();
-//
-//        if (indexOptions == null) {
-//            builderOptions.setIndexOptions(indexOptions = new IndexBatchOptions());
-//        }
-//
-//        if (indexOptions.getWaitForIndexesTimeout() == null) {
-//            indexOptions.setWaitForIndexesTimeout(getConventions().getWaitForIndexesAfterSaveChangesTimeout());
-//        }
-//
-//        indexOptions.setWaitForIndexes(true);
-//    }
+
+    /**
+     * @param ?Closure $options
+     */
+    public function waitForIndexesAfterSaveChanges(?Closure $options = null): void
+    {
+        $builder = new IndexesWaitOptsBuilder($this);
+        if ($options) {
+            $options($builder);
+        }
+
+        $builderOptions = $builder->getOptions();
+        $indexOptions = $builderOptions->getIndexOptions();
+
+        if ($indexOptions == null) {
+            $builderOptions->setIndexOptions($indexOptions = new IndexBatchOptions());
+        }
+
+        if ($indexOptions->getWaitForIndexesTimeout() == null) {
+            $indexOptions->setWaitForIndexesTimeout($this->getConventions()->getWaitForIndexesAfterSaveChangesTimeout());
+        }
+
+        $indexOptions->setWaitForIndexes(true);
+    }
 
     /**
      * @throws ExceptionInterface
@@ -2735,36 +2743,6 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //
 //        public ReplicationWaitOptsBuilder majority(boolean waitForMajority) {
 //            getOptions().getReplicationOptions().setMajority(waitForMajority);
-//            return this;
-//        }
-//    }
-//
-//    public class IndexesWaitOptsBuilder {
-//
-//        private BatchOptions getOptions() {
-//            if (InMemoryDocumentSessionOperations.this._saveChangesOptions == null) {
-//                InMemoryDocumentSessionOperations.this._saveChangesOptions = new BatchOptions();
-//            }
-//
-//            if (InMemoryDocumentSessionOperations.this._saveChangesOptions.getIndexOptions() == null) {
-//                InMemoryDocumentSessionOperations.this._saveChangesOptions.setIndexOptions(new IndexBatchOptions());
-//            }
-//
-//            return InMemoryDocumentSessionOperations.this._saveChangesOptions;
-//        }
-//
-//        public IndexesWaitOptsBuilder withTimeout(Duration timeout) {
-//            getOptions().getIndexOptions().setWaitForIndexesTimeout(timeout);
-//            return this;
-//        }
-//
-//        public IndexesWaitOptsBuilder throwOnTimeout(boolean shouldThrow) {
-//            getOptions().getIndexOptions().setThrowOnTimeoutInWaitForIndexes(shouldThrow);
-//            return this;
-//        }
-//
-//        public IndexesWaitOptsBuilder waitForIndexes(String... indexes) {
-//            getOptions().getIndexOptions().setWaitForSpecificIndexes(indexes);
 //            return this;
 //        }
 //    }

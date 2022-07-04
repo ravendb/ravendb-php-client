@@ -10,48 +10,58 @@ use tests\RavenDB\RemoteTestBase;
 
 class RavenDB_11552Test extends RemoteTestBase
 {
-//    @Test
-//    public void patchWillUpdateTrackedDocumentAfterSaveChanges() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            try (IDocumentSession session = store.openSession()) {
-//                Company company = new Company();
-//                company.setName("HR");
-//                session.store(company, "companies/1");
-//
-//                session.saveChanges();
-//            }
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                Company company = session.load(Company.class, "companies/1");
-//                session.advanced().patch(company, "name", "CF");
-//
-//                String cv = session.advanced().getChangeVectorFor(company);
-//                Date lastModified = session.advanced().getLastModifiedFor(company);
-//
-//                session.saveChanges();
-//
-//                assertThat(company.getName())
-//                        .isEqualTo("CF");
-//
-//                assertThat(session.advanced().getChangeVectorFor(company))
-//                        .isNotEqualTo(cv);
-//                assertThat(session.advanced().getLastModifiedFor(company))
-//                        .isNotEqualTo(lastModified);
-//
-//                company.setPhone(123);
-//                session.saveChanges();
-//            }
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                Company company = session.load(Company.class, "companies/1");
-//
-//                assertThat(company.getName())
-//                        .isEqualTo("CF");
-//                assertThat(company.getPhone())
-//                        .isEqualTo(123);
-//            }
-//        }
-//    }
+    public function testPatchWillUpdateTrackedDocumentAfterSaveChanges(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+
+            $session = $store->openSession();
+            try {
+                $company = new Company();
+                $company->setName("HR");
+                $session->store($company, "companies/1");
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                /** @var Company $company */
+                $company = $session->load(Company::class, "companies/1");
+                $session->advanced()->patch($company, "name", "CF");
+
+                $cv = $session->advanced()->getChangeVectorFor($company);
+                $lastModified = $session->advanced()->getLastModifiedFor($company);
+
+                $session->saveChanges();
+
+                $this->assertEquals("CF", $company->getName());
+
+                $this->assertNotEquals($cv, $session->advanced()->getChangeVectorFor($company));
+                $this->assertNotEquals($lastModified, $session->advanced()->getLastModifiedFor($company));
+
+                $company->setPhone(123);
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                /** @var Company $company */
+                $company = $session->load(Company::class, "companies/1");
+
+                $this->assertEquals("CF", $company->getName());
+                $this->assertEquals(123, $company->getPhone());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
 
     public function testDeleteWillWork(): void
     {
@@ -137,7 +147,7 @@ class RavenDB_11552Test extends RemoteTestBase
                 $this->assertTrue($session->advanced()->isLoaded("companies/1"));
                 $this->assertEquals(2, $session->advanced()->getNumberOfRequests());
 
-                 $this->assertEquals($company, $company2);
+                $this->assertEquals($company, $company2);
 
                 $this->assertEquals("HR2", $company2->getName());
             } finally {

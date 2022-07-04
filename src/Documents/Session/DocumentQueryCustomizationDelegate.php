@@ -62,12 +62,13 @@ class DocumentQueryCustomizationDelegate implements DocumentQueryCustomizationIn
 //        return this;
 //    }
 //
-//    @Override
-//    public IDocumentQueryCustomization noTracking() {
-//        query._noTracking();
-//        return this;
-//    }
-//
+
+    public function noTracking(): DocumentQueryCustomizationInterface
+    {
+        $this->query->noTracking();
+        return $this;
+    }
+
 //    @Override
 //    public IDocumentQueryCustomization timings(Reference<QueryTimings> timings) {
 //        query._includeTimings(timings);

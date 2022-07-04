@@ -6,8 +6,10 @@ use Closure;
 use PHPUnit\Framework\TestCase;
 use RavenDB\Constants\DocumentsIndexing;
 use RavenDB\Documents\DocumentStore;
+use RavenDB\Documents\Indexes\IndexErrors;
 use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Documents\Indexes\IndexState;
+use RavenDB\Documents\Indexes\IndexErrorsArray;
 use RavenDB\Documents\Operations\DatabaseStatistics;
 use RavenDB\Documents\Operations\GetStatisticsOperation;
 use RavenDB\Documents\Operations\IndexInformation;
@@ -20,6 +22,7 @@ use RavenDB\Type\Url;
 use RavenDB\Type\UrlArray;
 use RavenDB\Utils\Stopwatch;
 use RuntimeException;
+use RavenDB\Documents\Operations\Indexes\GetIndexErrorsOperation;
 
 abstract class RavenTestDriver extends TestCase
 {
@@ -257,24 +260,31 @@ abstract class RavenTestDriver extends TestCase
         throw new TimeoutException("The indexes stayed stale for more than " . $timeout->getSeconds() . "." . $allIndexErrorsText);
     }
 
-//    public static IndexErrors[] waitForIndexingErrors(IDocumentStore store, Duration timeout, String... indexNames) throws InterruptedException {
-//        Stopwatch sw = Stopwatch.createStarted();
-//
-//        while (sw.elapsed().compareTo(timeout) < 0) {
-//            IndexErrors[] indexes = store.maintenance().send(new GetIndexErrorsOperation(indexNames));
-//
-//            for (IndexErrors index : indexes) {
-//                if (index.getErrors() != null && index.getErrors().length > 0) {
-//                    return indexes;
-//                }
-//            }
-//
-//            Thread.sleep(32);
-//        }
-//
-//        throw new TimeoutException("Got no index error for more than " + timeout.toString());
-//    }
-//
+    public static function waitForIndexingErrors(?DocumentStoreInterface $store, ?Duration $timeout, string ...$indexNames): IndexErrorsArray
+    {
+        if ($timeout == null) {
+            $timeout = Duration::ofSeconds(15);
+        }
+
+        $sw = Stopwatch::createStarted();
+
+        while ($sw->elapsed() < $timeout->getSeconds()) {
+            /** @var IndexErrorsArray $indexes */
+            $indexes = $store->maintenance()->send(new GetIndexErrorsOperation($indexNames));
+
+            /** @var IndexErrors $index */
+            foreach ($indexes as $index) {
+                if ($index->getErrors() != null && count($index->getErrors()) > 0) {
+                    return $indexes;
+                }
+            }
+
+            usleep(32000);
+        }
+
+        throw new TimeoutException("Got no index error for more than " . $timeout->toString());
+    }
+
 //    protected boolean waitForDocumentDeletion(IDocumentStore store, String id) throws InterruptedException {
 //        Stopwatch sw = Stopwatch.createStarted();
 //

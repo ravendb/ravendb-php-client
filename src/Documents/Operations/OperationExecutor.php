@@ -57,23 +57,21 @@ class OperationExecutor
 //
 //        return command.getResult();
 //    }
-//
-//    public Operation sendAsync(IOperation<OperationIdResult> operation) {
-//        return sendAsync(operation, null);
-//    }
-//
-//    public Operation sendAsync(IOperation<OperationIdResult> operation, SessionInfo sessionInfo) {
-//        RavenCommand<OperationIdResult> command = operation.getCommand(store, requestExecutor.getConventions(), requestExecutor.getCache());
-//
-//        requestExecutor.execute(command, sessionInfo);
-//        String node = ObjectUtils.firstNonNull(command.getSelectedNodeTag(), command.getResult().getOperationNodeTag());
-//        return new Operation(
-//                requestExecutor,
-//                () -> store.changes(databaseName, node),
-//                requestExecutor.getConventions(),
-//                command.getResult().getOperationId(),
-//                node);
-//    }
+
+    public function sendAsync(?OperationInterface $operation, ?SessionInfo $sessionInfo = null): Operation
+    {
+        $command = $operation->getCommand($this->store, $this->requestExecutor->getConventions(), $this->requestExecutor->getCache());
+
+        $this->requestExecutor->execute($command, $sessionInfo);
+        $node = $command->getSelectedNodeTag() ?? $command->getResult()->getOperationNodeTag();
+
+        $store = $this->store;
+        return new Operation(
+                $this->requestExecutor,
+                $this->requestExecutor->getConventions(),
+                $command->getResult()->getOperationId(),
+                $node);
+    }
 
 
     /**

@@ -24,9 +24,17 @@ class DatabaseRecord
     /** @SerializedName("Encrypted") */
     private bool $encrypted = false;
     private int $etagForBackup = 0;
-    private DeletionInProgressStatusArray $deletionInProgress;
+
+    /** @SerializedName("DeletionInProgress") */
+    private ?DeletionInProgressStatusArray $deletionInProgress = null;
+
+    /** @SerializedName("RollingIndexes") */
     private RollingIndexArray $rollingIndexes;
+
+    /** @SerializedName("DatabaseState") */
     private DatabaseStateStatus $databaseState;
+
+    /** @SerializedName("LockMode") */
     private DatabaseLockMode $lockMode;
     private ?DatabaseTopology $topology = null;
     private ConflictSolver $conflictSolverConfig;
@@ -135,7 +143,7 @@ class DatabaseRecord
         $this->etagForBackup = $etagForBackup;
     }
 
-    public function getDeletionInProgress(): DeletionInProgressStatusArray
+    public function getDeletionInProgress(): ?DeletionInProgressStatusArray
     {
         return $this->deletionInProgress;
     }
@@ -145,8 +153,14 @@ class DatabaseRecord
         $this->deletionInProgress[$key] = $status;
     }
 
-    public function setDeletionInProgress(DeletionInProgressStatusArray $deletionInProgress): void
+    /**
+     * @param DeletionInProgressStatusArray|null|array $deletionInProgress
+     */
+    public function setDeletionInProgress($deletionInProgress): void
     {
+        if (is_array($deletionInProgress)) {
+            $deletionInProgress = DeletionInProgressStatusArray::fromArray($deletionInProgress);
+        }
         $this->deletionInProgress = $deletionInProgress;
     }
 
@@ -155,8 +169,14 @@ class DatabaseRecord
         return $this->rollingIndexes;
     }
 
-    public function setRollingIndexes(RollingIndexArray $rollingIndexes): void
+    /**
+     * @param RollingIndexArray|array|null $rollingIndexes
+     */
+    public function setRollingIndexes($rollingIndexes): void
     {
+        if (is_array($rollingIndexes)) {
+            $rollingIndexes = RollingIndexArray::fromArray($rollingIndexes);
+        }
         $this->rollingIndexes = $rollingIndexes;
     }
 

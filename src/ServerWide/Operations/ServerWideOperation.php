@@ -2,6 +2,7 @@
 
 namespace RavenDB\ServerWide\Operations;
 
+use Closure;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Operations\Operation;
 use RavenDB\Http\RavenCommand;

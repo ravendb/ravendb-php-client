@@ -2,18 +2,25 @@
 
 namespace RavenDB\ServerWide;
 
+use RavenDB\Type\ValueObjectInterface;
+
 // !status: DONE
-class DatabaseLockMode
+class DatabaseLockMode implements ValueObjectInterface
 {
-    public const UNLOCK = 'UNLOCK';
-    public const PREVENT_DELETES_IGNORE = 'PREVENT_DELETES_IGNORE';
-    public const PREVENT_DELETES_ERROR = 'PREVENT_DELETES_ERROR';
+    public const UNLOCK = 'Unlock';
+    public const PREVENT_DELETES_IGNORE = 'PreventDeletesIgnore';
+    public const PREVENT_DELETES_ERROR = 'PreventDeletesError';
 
     private string $value = '';
 
-    public function __construct(string $value)
+    public function __construct(string $value = '')
     {
         $this->setValue($value);
+    }
+
+    public function __toString(): string
+    {
+        return $this->value;
     }
 
     public function getValue(): string
@@ -31,7 +38,7 @@ class DatabaseLockMode
         return $this->value == self::UNLOCK;
     }
 
-    public function isPreventDeletesIgnose(): bool
+    public function isPreventDeletesIgnore(): bool
     {
         return $this->value == self::PREVENT_DELETES_IGNORE;
     }
@@ -42,6 +49,11 @@ class DatabaseLockMode
     }
 
     public static function none(): DatabaseLockMode
+    {
+        return new DatabaseLockMode(self::UNLOCK);
+    }
+
+    public static function unlock(): DatabaseLockMode
     {
         return new DatabaseLockMode(self::UNLOCK);
     }

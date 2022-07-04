@@ -636,8 +636,7 @@ class QueryTest extends RemoteTestBase
         }
     }
 
-    // @todo: uncomment this when id is auto added to entities
-    public function atestQueryNoTracking(): void
+    public function testQueryNoTracking(): void
     {
         $store = $this->getDocumentStore();
         try {

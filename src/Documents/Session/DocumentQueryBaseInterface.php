@@ -72,9 +72,9 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
 
     /**
      * Includes the specified path in the query, loading the document specified in that path
-     * @param Callable|string $path Path to include
+     * @param Callable|string $includes Path to include
      */
-    function include($path);
+    function include($includes);
 
     //TBD expr TSelf Include(Expression<Func<T, object>> path);
 

@@ -21,7 +21,6 @@ class GetOperationStateCommand extends RavenCommand
         $this->selectedNodeTag = $nodeTag;
     }
 
-
     public function isReadRequest(): bool
     {
         return true;
@@ -48,8 +47,7 @@ class GetOperationStateCommand extends RavenCommand
             return;
         }
 
-        // @todo: check this line how to implement it correctly
-        $array = $this->getMapper()->denormalize($response, ArrayObject::class);
+        $array = json_decode($response, true);
 
         $this->result = $array;
     }

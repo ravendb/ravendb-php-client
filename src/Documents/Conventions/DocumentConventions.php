@@ -315,15 +315,16 @@ class DocumentConventions
         $this->firstBroadcastAttemptTimeout = $firstBroadcastAttemptTimeout;
     }
 
-//    /**
-//     * Get the wait for indexes after save changes timeout
-//     * Default: 15 seconds
-//     * @return wait timeout
-//     */
-//    public Duration getWaitForIndexesAfterSaveChangesTimeout() {
-//        return _waitForIndexesAfterSaveChangesTimeout;
-//    }
-//
+    /**
+     * Get the wait for indexes after save changes timeout
+     * Default: 15 seconds
+     * @return Duration wait timeout
+     */
+    public function getWaitForIndexesAfterSaveChangesTimeout(): Duration
+    {
+        return $this->waitForIndexesAfterSaveChangesTimeout;
+    }
+
 //    /**
 //     * Set the wait for indexes after save changes timeout
 //     * Default: 15 seconds
