@@ -127,10 +127,10 @@ class BatchOperation
                     $this->handleDelete($batchResult);
                     break;
                 case CommandType::COMPARE_EXCHANGE_PUT:
-//                    handleCompareExchangePut(batchResult);
+                    $this->handleCompareExchangePut($batchResult);
                     break;
                 case CommandType::COMPARE_EXCHANGE_DELETE:
-//                    handleCompareExchangeDelete(batchResult);
+                    $this->handleCompareExchangeDelete($batchResult);
                     break;
                 default:
                     throw new IllegalStateException("Command " . $type . " is not supported");
@@ -244,29 +244,32 @@ class BatchOperation
         return $modifiedDocumentInfo;
     }
 
-//    private void handleCompareExchangePut(ObjectNode batchResult) {
-//        handleCompareExchangeInternal(CommandType.COMPARE_EXCHANGE_PUT, batchResult);
-//    }
-//
-//    private void handleCompareExchangeDelete(ObjectNode batchResult) {
-//        handleCompareExchangeInternal(CommandType.COMPARE_EXCHANGE_DELETE, batchResult);
-//    }
-//
-//    private void handleCompareExchangeInternal(CommandType commandType, ObjectNode batchResult) {
-//        TextNode key = (TextNode) batchResult.get("Key");
-//        if (key == null || key.isNull()) {
-//            throwMissingField(commandType, "Key");
-//        }
-//
-//        NumericNode index = (NumericNode) batchResult.get("Index");
-//        if (index == null || index.isNull()) {
-//            throwMissingField(commandType, "Index");
-//        }
-//
-//        ClusterTransactionOperationsBase clusterSession = _session.getClusterSession();
-//        clusterSession.updateState(key.asText(), index.asLong());
-//    }
-//
+    private function handleCompareExchangePut($batchResult): void
+    {
+        $this->handleCompareExchangeInternal(CommandType::compareExchangePut(), $batchResult);
+    }
+
+    private function handleCompareExchangeDelete($batchResult): void
+    {
+        $this->handleCompareExchangeInternal(CommandType::compareExchangeDelete(), $batchResult);
+    }
+
+    private function handleCompareExchangeInternal(CommandType $commandType, $batchResult): void
+    {
+        if (!array_key_exists('Key', $batchResult) || empty($batchResult['Key'])) {
+            $this->throwMissingField($commandType, 'Key');
+        }
+        $key = strval($batchResult['Key']);
+
+        if (!array_key_exists('Index', $batchResult) || empty($batchResult['Index'])) {
+            $this->throwMissingField($commandType, 'Index');
+        }
+        $index = intval($batchResult['Index']);
+
+        $clusterSession = $this->session->getClusterSession();
+        $clusterSession->updateState($key, $index);
+    }
+
 //    private void handleAttachmentCopy(ObjectNode batchResult) {
 //        handleAttachmentPutInternal(batchResult, CommandType.ATTACHMENT_COPY, "Id", "Name", "DocumentChangeVector");
 //    }

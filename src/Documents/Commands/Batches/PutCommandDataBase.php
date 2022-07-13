@@ -90,7 +90,7 @@ class PutCommandDataBase implements CommandDataInterface
 //        generator.writeEndObject();
 //    }
 
-    public function serialize(DocumentConventions $conventions): array
+    public function serialize(?DocumentConventions $conventions): array
     {
         $data = [
             'Id' => $this->id,
@@ -111,7 +111,7 @@ class PutCommandDataBase implements CommandDataInterface
         return $data;
     }
 
-    public function onBeforeSaveChanges(InMemoryDocumentSessionOperations $session): void
+    public function onBeforeSaveChanges(?InMemoryDocumentSessionOperations $session): void
     {
         // TODO: Implement onBeforeSaveChanges() method.
     }

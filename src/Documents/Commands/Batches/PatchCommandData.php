@@ -83,7 +83,7 @@ class PatchCommandData implements CommandDataInterface
         return $this->patchIfMissing;
     }
 
-    public function serialize(DocumentConventions $conventions): array
+    public function serialize(?DocumentConventions $conventions): array
     {
         $data = [];
 
@@ -109,7 +109,7 @@ class PatchCommandData implements CommandDataInterface
         return $data;
     }
 
-    public function onBeforeSaveChanges(InMemoryDocumentSessionOperations $session): void
+    public function onBeforeSaveChanges(?InMemoryDocumentSessionOperations $session): void
     {
         $this->returnDocument = $session->isLoaded($this->getId());
     }

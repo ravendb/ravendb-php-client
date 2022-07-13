@@ -33,11 +33,11 @@ interface AdvancedSessionOperationsInterface extends
 //     * @return Access the revisions operations
 //     */
 //    IRevisionsSessionOperations revisions();
-//
-//    /**
-//     * @return Access cluster transaction operations
-//     */
-//    IClusterTransactionOperations clusterTransaction();
+
+    /**
+     * @return ClusterTransactionOperationsInterface Access cluster transaction operations
+     */
+    function clusterTransaction(): ClusterTransactionOperationsInterface;
 
     /**
      * Updates entity with latest changes from server

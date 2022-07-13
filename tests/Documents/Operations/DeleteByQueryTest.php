@@ -46,38 +46,4 @@ class DeleteByQueryTest extends RemoteTestBase
             $store->close();
         }
     }
-
-//    public void canDeleteByQueryWaitUsingChanges() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            try (IDocumentSession session = store.openSession()) {
-//                User user1 = new User();
-//                user1.setAge(5);
-//                session.store(user1);
-//
-//                User user2 = new User();
-//                user2.setAge(10);
-//                session.store(user2);
-//
-//                session.saveChanges();
-//            }
-//
-//            Semaphore semaphore = new Semaphore(0);
-//
-//            try (IDatabaseChanges changes = store.changes()) {
-//                changes.ensureConnectedNow();
-//
-//                IChangesObservable<OperationStatusChange> allOperationChanges = changes.forAllOperations();
-//                allOperationChanges.subscribe(Observers.create(x -> semaphore.release()));
-//
-//                IndexQuery indexQuery = new IndexQuery();
-//                indexQuery.setQuery("from users where age == 5");
-//                DeleteByQueryOperation operation = new DeleteByQueryOperation(indexQuery);
-//                Operation asyncOp = store.operations().sendAsync(operation);
-//
-//                assertThat(semaphore.tryAcquire(15, TimeUnit.SECONDS))
-//                        .isTrue();
-//
-//            }
-//        }
-//    }
 }

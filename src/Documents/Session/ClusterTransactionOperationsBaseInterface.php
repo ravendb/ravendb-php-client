@@ -2,13 +2,17 @@
 
 namespace RavenDB\Documents\Session;
 
+use RavenDB\Documents\Operations\CompareExchange\CompareExchangeValue;
+
 interface ClusterTransactionOperationsBaseInterface
 {
-    // @todo add this methods to interface
+    /**
+     * @template T
+     *
+     * @param CompareExchangeValue<T>|string|null $keyOrItem
+     * @param int         $index
+     */
+    function deleteCompareExchangeValue($keyOrItem, int $index): void;
 
-//    void deleteCompareExchangeValue(String key, long index);
-//
-//    <T> void deleteCompareExchangeValue(CompareExchangeValue<T> item);
-//
-//    <T> CompareExchangeValue<T> createCompareExchangeValue(String key, T value);
+    function createCompareExchangeValue(?string $key, $value): CompareExchangeValue;
 }

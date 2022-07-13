@@ -4,32 +4,34 @@ namespace RavenDB\Documents\Session;
 
 use Closure;
 use DateTimeInterface;
+use RavenDB\Http\ServerNode;
+use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Documents\Commands\Batches\CommandDataInterface;
 use RavenDB\Exceptions\Documents\Session\NonUniqueObjectException;
 use RavenDB\Http\RequestExecutor;
 
 interface AdvancedDocumentSessionOperationsInterface
 {
-//    /**
-//     * The document store associated with this session
-//     * @return Document store
-//     */
-//    IDocumentStore getDocumentStore();
-//
+    /**
+     * The document store associated with this session
+     * @return DocumentStoreInterface Document store
+     */
+    function getDocumentStore(): DocumentStoreInterface;
+
 //    /**
 //     * Allow extensions to provide additional state per session
 //     * @return External state
 //     */
 //    Map<String, Object> getExternalState();
-//
-//    ServerNode getCurrentSessionNode();
+
+    function getCurrentSessionNode(): ServerNode;
 
     public function getRequestExecutor(): RequestExecutor;
 
-//    SessionInfo getSessionInfo();
-//
-//    void addBeforeStoreListener(EventHandler<BeforeStoreEventArgs> handler);
-//    void removeBeforeStoreListener(EventHandler<BeforeStoreEventArgs> handler);
+    function getSessionInfo(): SessionInfo;
+
+    function addBeforeStoreListener(Closure $handler): void;
+    function removeBeforeStoreListener(Closure $handler): void;
 
     /** AfterSaveChangesEventArgs */
     function addAfterSaveChangesListener(Closure $handler): void;
@@ -237,11 +239,11 @@ interface AdvancedDocumentSessionOperationsInterface
      */
     public function waitForIndexesAfterSaveChanges(?Closure $options = null): void;
 
-//    /**
-//     * Overwrite the existing transaction mode for the current session.
-//     * @param mode Transaction mode
-//     */
-//    void setTransactionMode(TransactionMode mode);
-//
-//    EntityToJson getEntityToJson();
+    /**
+     * Overwrite the existing transaction mode for the current session.
+     * @param TransactionMode $mode Transaction mode
+     */
+    function setTransactionMode(TransactionMode $mode): void;
+
+    function getEntityToJson(): EntityToJson;
 }

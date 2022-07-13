@@ -40,12 +40,12 @@ class ForceRevisionCommandData implements CommandDataInterface
         return CommandType::forceRevisionCreation();
     }
 
-    public function serialize(DocumentConventions $conventions): void
+    public function serialize(?DocumentConventions $conventions): void
     {
         // TODO: Implement serialize() method.
     }
 
-    public function onBeforeSaveChanges(InMemoryDocumentSessionOperations $session): void
+    public function onBeforeSaveChanges(?InMemoryDocumentSessionOperations $session): void
     {
         // TODO: Implement onBeforeSaveChanges() method.
     }

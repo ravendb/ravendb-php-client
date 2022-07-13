@@ -63,7 +63,7 @@ class DeleteCommandData implements CommandDataInterface
         $this->document = $document;
     }
 
-    public function serialize(DocumentConventions $conventions): array
+    public function serialize(?DocumentConventions $conventions): array
     {
         $data = [];
         $data['Id'] = $this->id;
@@ -86,7 +86,7 @@ class DeleteCommandData implements CommandDataInterface
         return [];
     }
 
-    public function onBeforeSaveChanges(InMemoryDocumentSessionOperations $session): void
+    public function onBeforeSaveChanges(?InMemoryDocumentSessionOperations $session): void
     {
         $session->onBeforeDeleteInvoke(new BeforeDeleteEventArgs($session, $this->id, null));
     }

@@ -79,14 +79,20 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
             $commands[] = $command->serialize($this->conventions);
         }
 
-        $request->setOptions([
+        $options = [
             'headers' => [
                 'Accept' => 'application/json',
             ],
             'json' => [
                 'Commands' => $commands
             ]
-        ]);
+        ];
+
+        if ($this->mode->isClusterWide()) {
+            $options['json']['TransactionMode'] = 'ClusterWide';
+        }
+
+        $request->setOptions($options);
 
 //        request.setEntity(new ContentProviderHttpEntity(outputStream -> {
 //            try (JsonGenerator generator = mapper.getFactory().createGenerator(outputStream)) {

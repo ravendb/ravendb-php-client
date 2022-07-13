@@ -74,18 +74,18 @@ interface DocumentSessionInterface
      * Loads the specified entity with the specified id.
      *
      * load(string $className, string $id): ?object
-     * load(string $className, string $id, Consumer $includes) ?Object;
+     * load(string $className, string $id, Closure $includes) ?Object;
      *
      * load(string $className, StringArray $ids): ObjectArray
-     * load(string $className, StringArray $ids, Consumer $includes): ObjectArray;
+     * load(string $className, StringArray $ids, Closure $includes): ObjectArray;
      *
      * load(string $className, array $ids): ObjectArray
-     * load(string $className, array $ids, Consumer $includes): ObjectArray;
+     * load(string $className, array $ids, Closure $includes): ObjectArray;
      *
      * load(string $className, string $id1, string $id2, string $id3 ... ): ObjectArray
      *
      * @param string $className Object class
-     * @param string|array|StringArray $params Identifier of a entity that will be loaded.
+     * @param mixed $params Identifier of a entity that will be loaded.
      *
      * @return null|object|ObjectArray Loaded entity or entities
      */

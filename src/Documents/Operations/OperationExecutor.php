@@ -6,12 +6,14 @@ use Throwable;
 use RuntimeException;
 use RavenDB\Utils\StringUtils;
 use RavenDB\Http\RequestExecutor;
+use RavenDB\Http\VoidRavenCommand;
 use RavenDB\Constants\HttpStatusCode;
 use RavenDB\Documents\Session\SessionInfo;
 use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Exceptions\IllegalArgumentException;
 
+// !status: DONE
 class OperationExecutor
 {
     private ?DocumentStoreInterface $store = null;
@@ -38,26 +40,6 @@ class OperationExecutor
         return new OperationExecutor($this->store, $databaseName);
     }
 
-//    public void send(IVoidOperation operation) {
-//        send(operation, null);
-//    }
-//
-//    public void send(IVoidOperation operation, SessionInfo sessionInfo = null) {
-//        RavenCommand<Void> command = operation.getCommand(store, requestExecutor.getConventions(), requestExecutor.getCache());
-//        requestExecutor.execute(command, sessionInfo);
-//    }
-//
-//    public <TResult> TResult send(IOperation<TResult> operation) {
-//        return send(operation, null);
-//    }
-//
-//    public <TResult> TResult send(IOperation<TResult> operation, SessionInfo sessionInfo) {
-//        RavenCommand<TResult> command = operation.getCommand(store, requestExecutor.getConventions(), requestExecutor.getCache());
-//        requestExecutor.execute(command, sessionInfo);
-//
-//        return command.getResult();
-//    }
-
     public function sendAsync(?OperationInterface $operation, ?SessionInfo $sessionInfo = null): Operation
     {
         $command = $operation->getCommand($this->store, $this->requestExecutor->getConventions(), $this->requestExecutor->getCache());
@@ -83,7 +65,18 @@ class OperationExecutor
             throw new IllegalArgumentException('Illegal arguments');
         }
 
-        if ($parameters[0] instanceof PatchOperation) {
+//        if ($parameters[0] instanceof PatchOperation) {
+//            $sessionInfo = null;
+//            if (count($parameters) > 1) {
+//                if (!$parameters[1] instanceof SessionInfo) {
+//                    throw new IllegalArgumentException('Illegal arguments');
+//                }
+//                $sessionInfo = $parameters[1];
+//            }
+//            return $this->sendPatchOperation($parameters[0], $sessionInfo);
+//        }
+
+        if ($parameters[0] instanceof OperationInterface) {
             $sessionInfo = null;
             if (count($parameters) > 1) {
                 if (!$parameters[1] instanceof SessionInfo) {
@@ -91,7 +84,8 @@ class OperationExecutor
                 }
                 $sessionInfo = $parameters[1];
             }
-            return $this->sendPatchOperation($parameters[0], $sessionInfo);
+
+            return $this->sendOperation($parameters[0], $sessionInfo);
         }
 
         if (is_string($parameters[0])) {
@@ -112,6 +106,18 @@ class OperationExecutor
         }
 
         throw new IllegalArgumentException('Illegal arguments');
+    }
+
+    protected function sendOperation(?OperationInterface $operation, ?SessionInfo $sessionInfo = null)
+    {
+        if ($operation instanceof PatchOperation) {
+            return $this->sendPatchOperation($operation, $sessionInfo);
+        }
+
+        $command = $operation->getCommand($this->store, $this->requestExecutor->getConventions(), $this->requestExecutor->getCache());
+        $this->requestExecutor->execute($command, $sessionInfo);
+
+        return $command->getResult();
     }
 
     protected function sendPatchOperation(?PatchOperation $operation, ?SessionInfo $sessionInfo = null): PatchStatus
