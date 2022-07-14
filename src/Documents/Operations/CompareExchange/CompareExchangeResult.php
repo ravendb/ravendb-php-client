@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Operations\CompareExchange;
 
+use RavenDB\Http\ResultInterface;
 use RavenDB\Constants\CompareExchange;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Documents\Conventions\DocumentConventions;
@@ -10,7 +11,7 @@ use Symfony\Component\Serializer\Exception\ExceptionInterface;
 /**
  * @template T
  */
-class CompareExchangeResult
+class CompareExchangeResult implements ResultInterface
 {
     /** @var ?T */
     private $value = null;
@@ -29,7 +30,7 @@ class CompareExchangeResult
      * @throws ExceptionInterface
      */
     public static function parseFromString(
-        string $className,
+        ?string $className,
         ?string $responseString,
         ?DocumentConventions $conventions
     ): CompareExchangeResult {
@@ -60,7 +61,9 @@ class CompareExchangeResult
             return $exchangeResult;
         }
 
-        $result = $conventions->getEntityMapper()->denormalize($val, $className);
+        $result = ($className == null) || !is_array($val)
+                ? $val
+                : $conventions->getEntityMapper()->denormalize($val, $className);
 
         $exchangeResult = new CompareExchangeResult();
         $exchangeResult->index = $index;

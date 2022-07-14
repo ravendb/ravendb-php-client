@@ -18,6 +18,10 @@ interface MetadataDictionaryInterface extends TypedArrayInterface
 
     public function get(?string $key);
 
+    public function containsKey($key): bool;
+    public function count(): int;
+    public function toSimpleArray(): array;
+
 //    public function getObjects(string key): MetadataDictionaryInterface;
 
 //    public function getString(string key): string;

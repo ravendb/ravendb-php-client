@@ -7,16 +7,15 @@ use RavenDB\Documents\Conventions\DocumentConventions;
 
 class CompareExchangeValueJsonConverter
 {
-    public static function convertToJson(?object $value, ?DocumentConventions $conventions): ?array
+    public static function convertToJson($value, ?DocumentConventions $conventions)
     {
-        if ($value == null) {
+        if ($value === null) {
             return null;
         }
 
-        // @todo: with tests we should check do we need this line
-//        if (ClassUtils.isPrimitiveOrWrapper(value.getClass()) || value instanceof String || value.getClass().isArray()) {
-//            return value;
-//        }
+        if (!is_object($value)) {
+            return $value;
+        }
 
         return EntityToJson::convertEntityToJsonStatic($value, $conventions, null);
     }

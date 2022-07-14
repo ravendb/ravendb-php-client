@@ -91,7 +91,8 @@ class PutCompareExchangeValueCommand extends RavenCommand
 
     public function setResponse(?string $response, bool $fromCache): void
     {
-        $this->result = CompareExchangeResult::parseFromString(get_class($this->value), $response, $this->conventions);
+        $className    = is_object($this->value) ? get_class($this->value) : null;
+        $this->result = CompareExchangeResult::parseFromString($className, $response, $this->conventions);
     }
 
 

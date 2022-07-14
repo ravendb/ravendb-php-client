@@ -2,8 +2,12 @@
 
 namespace RavenDB\Documents\Session;
 
-use InvalidArgumentException;
 use RavenDB\Constants\DocumentsIndexingFields;
+use RavenDB\Documents\Queries\Facets\AggregationDocumentQuery;
+use RavenDB\Documents\Queries\Facets\AggregationDocumentQueryInterface;
+use RavenDB\Documents\Queries\Facets\FacetBase;
+use RavenDB\Documents\Queries\Facets\FacetBaseArray;
+use RavenDB\Documents\Queries\Facets\FacetBuilder;
 use RavenDB\Documents\Queries\GroupBy;
 use RavenDB\Documents\Queries\ProjectionBehavior;
 use RavenDB\Documents\Queries\QueryData;
@@ -15,7 +19,6 @@ use RavenDB\Documents\Session\Tokens\LoadTokenList;
 use RavenDB\Documents\Session\Tokens\QueryTokenList;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Parameters;
-use RavenDB\Primitives\Consumer;
 use RavenDB\Type\Collection;
 use RavenDB\Type\Duration;
 use RavenDB\Type\StringArray;
@@ -695,30 +698,41 @@ class DocumentQuery extends AbstractDocumentQuery
         return $query;
     }
 
-//    @Override
-//    public IAggregationDocumentQuery<T> aggregateBy(Consumer<IFacetBuilder<T>> builder) {
-//        FacetBuilder<T> ff = new FacetBuilder<>();
-//        builder.accept(ff);
-//
-//        return aggregateBy(ff.getFacet());
-//    }
-//
-//    @Override
-//    public IAggregationDocumentQuery<T> aggregateBy(FacetBase facet) {
-//        _aggregateBy(facet);
-//
-//        return new AggregationDocumentQuery<>(this);
-//    }
-//
-//    @Override
-//    public IAggregationDocumentQuery<T> aggregateBy(FacetBase... facets) {
-//        for (FacetBase facet : facets) {
-//            _aggregateBy(facet);
-//        }
-//
-//        return new AggregationDocumentQuery<>(this);
-//    }
-//
+
+    /**
+     * @param Callable|FacetBase $builderOrFacets
+     * @return AggregationDocumentQueryInterface
+     */
+    public function aggregateBy(...$builderOrFacets): AggregationDocumentQueryInterface
+    {
+        if (count($builderOrFacets) == 0) {
+            throw new IllegalArgumentException('You must provide argument.');
+        }
+
+        if (is_callable($builderOrFacets[0])) {
+            return $this->aggregateByBuilder($builderOrFacets[0]);
+        }
+
+        return $this->aggregateByFacets(FacetBaseArray::fromArray($builderOrFacets));
+    }
+
+    protected function aggregateByBuilder(Callable $builder): AggregationDocumentQueryInterface
+    {
+        $ff = new FacetBuilder();
+        $builder($ff);
+
+        return $this->aggregateByFacets(FacetBaseArray::fromArray([$ff->getFacet()]));
+    }
+
+    protected function aggregateByFacets(FacetBaseArray $facets): AggregationDocumentQueryInterface
+    {
+        foreach ($facets as $facet) {
+            $this->_aggregateBy($facet);
+        }
+
+        return new AggregationDocumentQuery($this);
+    }
+
 //    @Override
 //    public IAggregationDocumentQuery<T> aggregateUsing(String facetSetupDocumentId) {
 //        _aggregateUsing(facetSetupDocumentId);

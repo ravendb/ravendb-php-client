@@ -24,6 +24,7 @@
         "doctrine/annotations": "^1.13",
         "doctrine/inflector": "^2.0",
         "ramsey/uuid": "^4.2",
+        "spatie/async": "^1.5",
         "symfony/http-client": "^5.3",
         "symfony/property-access": "^5.3",
         "symfony/serializer": "^5.3"

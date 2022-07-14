@@ -8,5 +8,5 @@ class WhereMethodCall
 {
     public ?MethodsType $methodType = null;
     public StringArray $parameters;
-    public string $property;
+    public ?string $property = null;
 }

@@ -57,13 +57,15 @@ class HttpExtensions
 //        }
 //    }
 
-//    public static Boolean getBooleanHeader(CloseableHttpResponse response, String header) {
-//        if (response.containsHeader(header)) {
-//            Header firstHeader = response.getFirstHeader(header);
-//            String value = firstHeader.getValue();
-//            return Boolean.valueOf(value);
-//        } else {
-//            return null;
-//        }
-//    }
+    public static function getBooleanHeader(?HttpResponse $response, ?string $header): ?bool
+    {
+        if ($response->containsHeader($header)) {
+            $firstHeader =  $response->getFirstHeader($header);
+            if ($firstHeader !== null) {
+                return boolval($firstHeader);
+            }
+        }
+
+        return null;
+    }
 }

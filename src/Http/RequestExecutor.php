@@ -7,8 +7,12 @@ use DateTime;
 use Ds\Map as DSMap;
 use Exception;
 use Ramsey\Uuid\Uuid;
+use Spatie\Async\Pool;
 use RavenDB\Auth\AuthOptions;
+use RavenDB\Constants\Headers;
 use RavenDB\Constants\HttpStatusCode;
+use RavenDB\Extensions\HttpExtensions;
+use phpDocumentor\Reflection\Types\Callable_;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Session\BeforeRequestEventArgs;
 use RavenDB\Documents\Session\SessionInfo;
@@ -31,6 +35,8 @@ use RavenDB\Type\UrlArray;
 use RavenDB\Utils\AtomicInteger;
 use RavenDB\Utils\UrlUtils;
 use RuntimeException;
+use RavenDB\Documents\Operations\Configuration\GetClientConfigurationResult;
+use RavenDB\Documents\Operations\Configuration\GetClientConfigurationCommand;
 
 // !status: IN PROGRESS
 class RequestExecutor implements CleanCloseable
@@ -145,7 +151,7 @@ class RequestExecutor implements CleanCloseable
     {
         $this->nodeSelector = $nodeSelector;
     }
-    private Duration $defaultTimeout;
+    private ?Duration $defaultTimeout = null;
 
     public AtomicInteger $numberOfServerRequests;
 
@@ -162,6 +168,8 @@ class RequestExecutor implements CleanCloseable
 
         return $preferredNode != null ? $preferredNode->currentNode->getUrl() : null;
     }
+
+
 
     protected int $topologyEtag = -2;
 
@@ -190,12 +198,13 @@ class RequestExecutor implements CleanCloseable
         return $this->lastServerVersion;
     }
 
-    public function getDefaultTimeout(): Duration
+    public function getDefaultTimeout(): ?Duration
     {
         return $this->defaultTimeout;
     }
 
-    public function setDefaultTimeout(Duration $timeout): void {
+    public function setDefaultTimeout(?Duration $timeout): void
+    {
         $this->defaultTimeout = $timeout;
     }
 
@@ -415,43 +424,44 @@ class RequestExecutor implements CleanCloseable
 //        return executor;
 //    }
 //
-//    protected CompletableFuture<Void> updateClientConfigurationAsync(ServerNode serverNode) {
-//        if (_disposed) {
-//            return CompletableFuture.completedFuture(null);
-//        }
-//
-//        return CompletableFuture.runAsync(() -> {
-//            try {
-//                _updateClientConfigurationSemaphore.acquire();
-//            } catch (InterruptedException e) {
-//                throw new RuntimeException(e);
-//            }
-//
-//            boolean oldDisableClientConfigurationUpdates = _disableClientConfigurationUpdates;
-//            _disableClientConfigurationUpdates = true;
-//
-//            try {
-//                if (_disposed) {
-//                    return;
-//                }
-//
-//                GetClientConfigurationOperation.GetClientConfigurationCommand command = new GetClientConfigurationOperation.GetClientConfigurationCommand();
-//                execute(serverNode, null, command, false, null);
-//
-//                GetClientConfigurationOperation.Result result = command.getResult();
-//                if (result == null) {
-//                    return;
-//                }
-//
-//                conventions.updateFrom(result.getConfiguration());
-//                clientConfigurationEtag = result.getEtag();
-//            } finally {
-//                _disableClientConfigurationUpdates = oldDisableClientConfigurationUpdates;
-//                _updateClientConfigurationSemaphore.release();
-//            }
-//        }, _executorService);
-//    }
-//
+    protected function updateClientConfigurationAsync(?ServerNode $serverNode): ?Closure
+    {
+        if ($this->disposed) {
+            return null;
+        }
+
+        $self = & $this;
+        return function() use ($self, $serverNode) {
+
+            $oldDisableClientConfigurationUpdates = $self->disableClientConfigurationUpdates;
+            $self->disableClientConfigurationUpdates = true;
+
+            try {
+                if ($self->disposed) {
+                    return;
+                }
+
+                $command = new GetClientConfigurationCommand();
+
+                $options = new ExecuteOptions();
+                $options->setChosenNode($serverNode);
+                $options->setShouldRetry(false);
+                $self->execute($command, null, $options);
+
+                /** @var GetClientConfigurationResult $result */
+                $result = $command->getResult();
+                if ($result == null) {
+                    return;
+                }
+
+                $self->conventions->updateFrom($result->getConfiguration());
+                $self->clientConfigurationEtag = $result->getEtag();
+            } finally {
+                $self->disableClientConfigurationUpdates = $oldDisableClientConfigurationUpdates;
+            }
+        };
+    }
+
 //    public CompletableFuture<Boolean> updateTopologyAsync(UpdateTopologyParameters parameters) {
 //        if (parameters == null) {
 //            throw new IllegalArgumentException("Parameters cannot be null");
@@ -605,7 +615,7 @@ class RequestExecutor implements CleanCloseable
                 }
             }
 
-//            $this->setRequestHeaders($sessionInfo, $cachedChangeVector, $request);
+            $this->setRequestHeaders($sessionInfo, $cachedChangeVector, $request);
 
             $command->setNumberOfAttempts($command->getNumberOfAttempts() + 1);
             $attemptNum = $command->getNumberOfAttempts();
@@ -624,8 +634,7 @@ class RequestExecutor implements CleanCloseable
                 return ;
             }
 
-//            $refreshTask = $this->refreshIfNeeded($chosenNode, $response);
-
+            $refreshTask = $this->refreshIfNeeded($options->getChosenNode(), $response);
 
             $command->setStatusCode($response->getStatusCode());
 
@@ -678,13 +687,13 @@ class RequestExecutor implements CleanCloseable
                     // @todo: check what to do with this - initial idea is to do nothing 'cause this is Java
 //                    IOUtils::closeQuietly($response, null);
                 }
-//
-//                try {
-//                    refreshTask.get();
-//                } catch (Exception e) {
-//                    //noinspection ThrowFromFinallyBlock
-//                    throw ExceptionsUtils.unwrapException(e);
-//                }
+
+                try {
+                    $refreshTask->wait();
+                } catch (\Throwable $e) {
+                    //noinspection ThrowFromFinallyBlock
+                    throw ExceptionsUtils::unwrapException($e);
+                }
             }
         } finally {
             $cachedItem->close();
@@ -1078,28 +1087,40 @@ class RequestExecutor implements CleanCloseable
 //            }
 //        }
 //    }
-//
-//    private CompletableFuture<Void> refreshIfNeeded(ServerNode chosenNode, CloseableHttpResponse response) {
-//        Boolean refreshTopology = Optional.ofNullable(HttpExtensions.getBooleanHeader(response, Constants.Headers.REFRESH_TOPOLOGY)).orElse(false);
-//        Boolean refreshClientConfiguration = Optional.ofNullable(HttpExtensions.getBooleanHeader(response, Constants.Headers.REFRESH_CLIENT_CONFIGURATION)).orElse(false);
-//
-//        if (refreshTopology || refreshClientConfiguration) {
-//            ServerNode serverNode = new ServerNode();
-//            serverNode.setUrl(chosenNode.getUrl());
-//            serverNode.setDatabase(_databaseName);
-//
-//            UpdateTopologyParameters updateParameters = new UpdateTopologyParameters(serverNode);
-//            updateParameters.setTimeoutInMs(0);
-//            updateParameters.setDebugTag("refresh-topology-header");
-//
-//            CompletableFuture<Boolean> topologyTask = refreshTopology ? updateTopologyAsync(updateParameters) : CompletableFuture.completedFuture(false);
-//            CompletableFuture<Void> clientConfiguration = refreshClientConfiguration ? updateClientConfigurationAsync(serverNode) : CompletableFuture.completedFuture(null);
-//
-//            return CompletableFuture.allOf(topologyTask, clientConfiguration);
-//        }
-//
-//        return CompletableFuture.allOf();
-//    }
+
+    private function refreshIfNeeded(?ServerNode $chosenNode, ?HttpResponse $response): Pool
+    {
+        $pool = Pool::create();
+
+        $refreshTopology = HttpExtensions::getBooleanHeader($response, Headers::REFRESH_TOPOLOGY) ?? false;
+        $refreshClientConfiguration = HttpExtensions::getBooleanHeader($response, Headers::REFRESH_CLIENT_CONFIGURATION) ?? false;
+
+        if ($refreshTopology || $refreshClientConfiguration) {
+            $serverNode = new ServerNode();
+            $serverNode->setUrl($chosenNode->getUrl());
+            $serverNode->setDatabase($this->databaseName);
+
+            $updateParameters = new UpdateTopologyParameters($serverNode);
+            $updateParameters->setTimeoutInMs(0);
+            $updateParameters->setDebugTag("refresh-topology-header");
+
+//            if ($refreshTopology) {
+//                $pool->add($this->updateTopologyAsync($updateParameters));
+//            }
+
+            if ($refreshClientConfiguration) {
+                $updateClientConfigurationAsync =
+                    $this->updateClientConfigurationAsync($serverNode);
+                if ($updateClientConfigurationAsync != null) {
+                    // $todo: move this to $pool to have async calls
+                    $updateClientConfigurationAsync();
+//                    $pool->add($updateClientConfigurationAsync);
+                }
+            }
+        }
+
+        return $pool;
+    }
 
     /**
      * @throws \Exception
@@ -1305,55 +1326,59 @@ class RequestExecutor implements CleanCloseable
 //
 //        return response;
 //    }
-//
-//    private void setRequestHeaders(SessionInfo sessionInfo, String cachedChangeVector, HttpRequest request) {
-//        if (cachedChangeVector != null) {
-//            request.addHeader("If-None-Match", "\"" + cachedChangeVector + "\"");
-//        }
-//
-//        if (!_disableClientConfigurationUpdates) {
-//            request.addHeader(Constants.Headers.CLIENT_CONFIGURATION_ETAG, "\"" + clientConfigurationEtag + "\"");
-//        }
-//
-//        if (sessionInfo != null && sessionInfo.getLastClusterTransactionIndex() != null) {
-//            request.addHeader(Constants.Headers.LAST_KNOWN_CLUSTER_TRANSACTION_INDEX, sessionInfo.getLastClusterTransactionIndex().toString());
-//        }
-//
-//        if (!_disableTopologyUpdates) {
-//            request.addHeader(Constants.Headers.TOPOLOGY_ETAG, "\"" + topologyEtag + "\"");
-//        }
-//
-//        if (request.getFirstHeader(Constants.Headers.CLIENT_VERSION) == null) {
-//            request.addHeader(Constants.Headers.CLIENT_VERSION, RequestExecutor.CLIENT_VERSION);
-//        }
-//    }
 
-    private function tryGetFromCache(RavenCommand $command, ReleaseCacheItem $cachedItem, string $cachedValue): bool
+    private function setRequestHeaders(?SessionInfo $sessionInfo, ?string $cachedChangeVector, HttpRequest &$request): void
     {
-        $aggressiveCacheOptions = $this->aggressiveCaching;
-        if ($aggressiveCacheOptions != null &&
-                $cachedItem->getAge()->compareTo($aggressiveCacheOptions->getDuration()) < 0 &&
-                (!$cachedItem->getMightHaveBeenModified() || $aggressiveCacheOptions->getMode()->isTrackChanges()) &&
-                $command->canCacheAggressively()
-        ) {
-            try {
-                if ($cachedItem->getItem()->flags->contains(ItemFlags::notFound())) {
-                    // if this is a cached delete, we only respect it if it _came_ from an aggressively cached
-                    // block, otherwise, we'll run the request again
-
-                    if ($cachedItem->getItem()->flags->contains(ItemFlags::aggressivelyCached())) {
-                        $command->setResponse($cachedValue, true);
-                        return true;
-                    }
-                } else {
-                    $command->setResponse($cachedValue, true);
-                    return true;
-                }
-            } catch (\Throwable $e) {
-                throw new RuntimeException($e);
-            }
+        if ($cachedChangeVector != null) {
+            $request->addHeader("If-None-Match", strval($cachedChangeVector));
         }
+
+        if (!$this->disableClientConfigurationUpdates) {
+            $request->addHeader(Headers::CLIENT_CONFIGURATION_ETAG, strval($this->clientConfigurationEtag));
+        }
+
+        if ($sessionInfo != null && $sessionInfo->getLastClusterTransactionIndex() != null) {
+            $request->addHeader(Headers::LAST_KNOWN_CLUSTER_TRANSACTION_INDEX, strval($sessionInfo->getLastClusterTransactionIndex()));
+        }
+
+        if (!$this->disableTopologyUpdates) {
+            $request->addHeader(Headers::TOPOLOGY_ETAG, strval($this->topologyEtag));
+        }
+
+        if ($request->getFirstHeader(Headers::CLIENT_VERSION) == null) {
+            $request->addHeader(Headers::CLIENT_VERSION, RequestExecutor::CLIENT_VERSION);
+        }
+    }
+
+    private function tryGetFromCache(RavenCommand $command, ReleaseCacheItem $cachedItem, ?string $cachedValue): bool
+    {
+        // we don't have aggressive caching in PHP, so we will return false immediately from this method
         return false;
+
+//        $aggressiveCacheOptions = $this->aggressiveCaching;
+//        if ($aggressiveCacheOptions != null &&
+//            $cachedItem->getAge()->compareTo($aggressiveCacheOptions->getDuration()) < 0 &&
+//            (!$cachedItem->getMightHaveBeenModified() || $aggressiveCacheOptions->getMode()->isTrackChanges()) &&
+//            $command->canCacheAggressively()
+//        ) {
+//            try {
+//                if ($cachedItem->getItem()->flags->contains(ItemFlags::notFound())) {
+//                    // if this is a cached delete, we only respect it if it _came_ from an aggressively cached
+//                    // block, otherwise, we'll run the request again
+//
+//                    if ($cachedItem->getItem()->flags->contains(ItemFlags::aggressivelyCached())) {
+//                        $command->setResponse($cachedValue, true);
+//                        return true;
+//                    }
+//                } else {
+//                    $command->setResponse($cachedValue, true);
+//                    return true;
+//                }
+//            } catch (\Throwable $e) {
+//                throw new RuntimeException($e);
+//            }
+//        }
+//        return false;
     }
 
 //    private static String tryGetServerVersion(CloseableHttpResponse response) {
@@ -2075,15 +2100,16 @@ class RequestExecutor implements CleanCloseable
 
 //    protected CompletableFuture<Void> _firstTopologyUpdate;
 //    protected String[] _lastKnownUrls;
-//    protected boolean _disposed;
+    protected bool $disposed = false;
 //
 //    @Override
-//    public void close() {
-//        if (_disposed) {
-//            return;
-//        }
-//
-//        _disposed = true;
+    public function close(): void
+    {
+        if ($this->disposed) {
+            return;
+        }
+
+        $this->disposed = true;
 //        cache.close();
 //
 //        if (_updateTopologyTimer != null) {
@@ -2091,8 +2117,8 @@ class RequestExecutor implements CleanCloseable
 //        }
 //
 //        disposeAllFailedNodesTimers();
-//    }
-//
+    }
+
 //    private CloseableHttpClient createClient() {
 //        HttpClientBuilder httpClientBuilder = HttpClients
 //                .custom()
@@ -2251,9 +2277,4 @@ class RequestExecutor implements CleanCloseable
 //            this.response = response;
 //        }
 //    }
-
-    public function close(): void
-    {
-        // TODO: Implement close() method.
-    }
 }

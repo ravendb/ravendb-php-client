@@ -14,7 +14,7 @@ class QueryIncludeBuilder extends IncludeBuilderBase implements QueryIncludeBuil
 
     /**
      * @param string|null $path
-     * @param string $name
+     * @param string|null $name
      * @return QueryIncludeBuilder
      */
     public function includeCounter(?string $path, ?string $name): QueryIncludeBuilder
@@ -74,12 +74,13 @@ class QueryIncludeBuilder extends IncludeBuilderBase implements QueryIncludeBuil
 //        _includeTimeSeriesFromTo(path, name, from, to);
 //        return this;
 //    }
-//
-//    public function includeCompareExchangeValue(?string path): QueryIncludeBuilder {
-//        _includeCompareExchangeValue(path);
-//        return this;
-//    }
-//
+
+    public function includeCompareExchangeValue(?string $path): QueryIncludeBuilder
+    {
+        $this->_includeCompareExchangeValue($path);
+        return $this;
+    }
+
 //    public function includeTimeSeries(?string name, TimeSeriesRangeType type, TimeValue time): QueryIncludeBuilder {
 //        _includeTimeSeriesByRangeTypeAndTime("", name, type, time);
 //        return this;

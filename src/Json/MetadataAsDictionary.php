@@ -17,7 +17,7 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
 
     private bool $dirty = false;
 
-    public function __construct(array $metadata = [])
+    public function __construct(?array $metadata = null)
     {
         $this->metadata = $metadata;
         $this->source = null;
@@ -113,7 +113,7 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
             return count($this->metadata);
         }
 
-        return count($this->source);
+        return $this->source != null ? count($this->source) : 0;
     }
 
     /**
@@ -193,6 +193,23 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
         }
 
         return array_key_exists($key, $this->source);
+    }
+
+    public function count(): int
+    {
+        if ($this->metadata == null) {
+            return 0;
+        }
+
+        return count($this->metadata);
+    }
+
+    public function toSimpleArray(): array
+    {
+        if ($this->metadata == null) {
+            return [];
+        }
+        return $this->metadata;
     }
 
 //    public Set<Entry<String, Object>> entrySet() {

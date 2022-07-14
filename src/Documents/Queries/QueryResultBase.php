@@ -23,13 +23,17 @@ class QueryResultBase
      */
     private ?array $includes = null;
 
-//    private ObjectNode counterIncludes;
-//
-//    private Map<String, String[]> includedCounterNames;
-//
-//    private ObjectNode timeSeriesIncludes;
-//
-//    private ObjectNode compareExchangeValueIncludes;
+    /** @SerializedName ("CounterIncludes") */
+    private array $counterIncludes = [];
+
+    /** @SerializedName ("IncludedCounterNames") */
+    private array $includedCounterNames = [];
+
+    /** @SerializedName ("TimeSeriesIncludes") */
+    private array $timeSeriesIncludes = [];
+
+    /** @SerializedName ("CompareExchangeValueIncludes") */
+    private array $compareExchangeValueIncludes = [];
 
     /** @SerializedName ("IncludedPaths") */
     private StringArray $includedPaths;
@@ -95,61 +99,67 @@ class QueryResultBase
         $this->includes = $includes;
     }
 
-//    /**
-//     * @return Gets the Counters included in the result.
-//     */
-//    public ObjectNode getCounterIncludes() {
-//        return counterIncludes;
-//    }
-//
-//    /**
-//     * @param counterIncludes Sets the Counters included in the result.
-//     */
-//    public void setCounterIncludes(ObjectNode counterIncludes) {
-//        this.counterIncludes = counterIncludes;
-//    }
-//
-//    /**
-//     * @return The names of all the counters that the server was asked to include in the result, by document id.
-//     */
-//    public Map<String, String[]> getIncludedCounterNames() {
-//        return includedCounterNames;
-//    }
-//
-//    /**
-//     * @param includedCounterNames The names of all the counters that the server was asked to include in the result, by document id.
-//     */
-//    public void setIncludedCounterNames(Map<String, String[]> includedCounterNames) {
-//        this.includedCounterNames = includedCounterNames;
-//    }
-//
-//    /**
-//     * @return Gets the TimeSeries included in the result.
-//     */
-//    public ObjectNode getTimeSeriesIncludes() {
-//        return timeSeriesIncludes;
-//    }
-//
-//    /**
-//     * @param timeSeriesIncludes Sets the TimeSeries included in the result.
-//     */
-//    public void setTimeSeriesIncludes(ObjectNode timeSeriesIncludes) {
-//        this.timeSeriesIncludes = timeSeriesIncludes;
-//    }
-//
-//    /**
-//     * @return Gets the Compare Exchange Values included in the result.
-//     */
-//    public ObjectNode getCompareExchangeValueIncludes() {
-//        return compareExchangeValueIncludes;
-//    }
-//
-//    /**
-//     * @param compareExchangeValueIncludes Sets the Compare Exchange Values included in the result.
-//     */
-//    public void setCompareExchangeValueIncludes(ObjectNode compareExchangeValueIncludes) {
-//        this.compareExchangeValueIncludes = compareExchangeValueIncludes;
-//    }
+    /**
+     * @return array Gets the Counters included in the result.
+     */
+    public function getCounterIncludes(): array
+    {
+        return $this->counterIncludes;
+    }
+
+    /**
+     * @param array $counterIncludes Sets the Counters included in the result.
+     */
+    public function setCounterIncludes(array $counterIncludes): void {
+        $this->counterIncludes = $counterIncludes;
+    }
+
+    /**
+     * @return array The names of all the counters that the server was asked to include in the result, by document id.
+     */
+    public function getIncludedCounterNames(): array
+    {
+        return $includedCounterNames;
+    }
+
+    /**
+     * @param array includedCounterNames The names of all the counters that the server was asked to include in the result, by document id.
+     */
+    public function setIncludedCounterNames(array $includedCounterNames): void
+    {
+        $this->includedCounterNames = $includedCounterNames;
+    }
+
+    /**
+     * @return array Gets the TimeSeries included in the result.
+     */
+    public function getTimeSeriesIncludes(): array {
+        return $this->timeSeriesIncludes;
+    }
+
+    /**
+     * @param array $timeSeriesIncludes Sets the TimeSeries included in the result.
+     */
+    public function setTimeSeriesIncludes(array $timeSeriesIncludes): void
+    {
+        $this->timeSeriesIncludes = $timeSeriesIncludes;
+    }
+
+    /**
+     * @return array Gets the Compare Exchange Values included in the result.
+     */
+    public function getCompareExchangeValueIncludes(): array
+    {
+        return $this->compareExchangeValueIncludes;
+    }
+
+    /**
+     * @param array $compareExchangeValueIncludes Sets the Compare Exchange Values included in the result.
+     */
+    public function setCompareExchangeValueIncludes(array $compareExchangeValueIncludes): void
+    {
+        $this->compareExchangeValueIncludes = $compareExchangeValueIncludes;
+    }
 
     /**
      * The paths that the server included in the results

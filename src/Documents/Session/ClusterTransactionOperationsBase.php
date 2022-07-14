@@ -44,7 +44,7 @@ class ClusterTransactionOperationsBase
         return $this->tryGetCompareExchangeValueFromSession($key) != null;
     }
 
-    public function createCompareExchangeValue(?string $key, $item): CompareExchangeValue
+    public function & createCompareExchangeValue(?string $key, $item): CompareExchangeValue
     {
         if ($key == null) {
             throw new IllegalArgumentException("Key cannot be null");
@@ -105,7 +105,7 @@ class ClusterTransactionOperationsBase
         $this->state = [];
     }
 
-    protected function getCompareExchangeValueInternal(string $className, ?string $key = null): ?CompareExchangeValue
+    protected function getCompareExchangeValueInternal(?string $className, ?string $key = null): ?CompareExchangeValue
     {
         $notTrackedReference = false;
         $v                   = $this->getCompareExchangeValueFromSessionInternal($className, $key, $notTrackedReference);
@@ -116,7 +116,7 @@ class ClusterTransactionOperationsBase
         $this->session->incrementRequestCount();
 
         $value = $this->session->getOperations()->send(
-            new GetCompareExchangeValueOperation($className, $key, false),
+            new GetCompareExchangeValueOperation(null, $key, false),
             $this->session->getSessionInfo()
         );
 
@@ -162,19 +162,19 @@ class ClusterTransactionOperationsBase
         $this->session->incrementRequestCount();
 
         $keysArray = $notTrackedKeys->getArrayCopy();
-        $values = $this->session->getOperations()->send(new GetCompareExchangeValuesOperation($className, $keysArray), $this->session->getSessionInfo());
+        $values    = $this->session->getOperations()->send(new GetCompareExchangeValuesOperation($className, $keysArray), $this->session->getSessionInfo());
 
         foreach ($keysArray as $key) {
 
             /** @var CompareExchangeValue $value */
-            if (!array_key_exists($key, $values) || $values[$key] == null) {
+            if (!$values->offsetExists($key) || $values->offsetGet($key) == null) {
                 $this->registerMissingCompareExchangeValue($key);
                 $results[$key] = null;
                 continue;
             }
             $value = $values[$key];
 
-            $sessionValue = $this->registerCompareExchangeValue($value);
+            $sessionValue              = $this->registerCompareExchangeValue($value);
             $results[$value->getKey()] = $sessionValue->getValue($className, $this->session->getConventions());
         }
 
@@ -183,32 +183,32 @@ class ClusterTransactionOperationsBase
 
     protected function getCompareExchangeValuesInternalByPagination(string $className, ?string $startsWith, int $start, int $pageSize): CompareExchangeValueMap
     {
-//        session.incrementRequestCount();
-//
-//        Map<String, CompareExchangeValue<ObjectNode>> values = session.getOperations().send(
-//                new GetCompareExchangeValuesOperation<ObjectNode>(ObjectNode.class, startsWith, start, pageSize), session.getSessionInfo());
-//
-//        Map<String, CompareExchangeValue<T>> results = new HashMap<>();
-//
-//        for (Map.Entry<String, CompareExchangeValue<ObjectNode>> keyValue : values.entrySet()) {
-//
-//            String key = keyValue.getKey();
-//            CompareExchangeValue<ObjectNode> value = keyValue.getValue();
-//
-//            if (value == null) {
-//                registerMissingCompareExchangeValue(key);
-//                results.put(key, null);
-//                continue;
-//            }
-//
-//            CompareExchangeSessionValue sessionValue = registerCompareExchangeValue(value);
-//            results.put(key, sessionValue.getValue(clazz, session.getConventions()));
-//        }
-//
-//        return results;
+        $this->session->incrementRequestCount();
+
+        $values = $this->session->getOperations()->send(
+            new GetCompareExchangeValuesOperation(null, $startsWith, $start, $pageSize), $this->session->getSessionInfo()
+        );
+
+        $results = new CompareExchangeValueMap();
+        /**
+         * @var string               $key
+         * @var CompareExchangeValue $value
+         */
+        foreach ($values as $key => $value) {
+            if ($value == null) {
+                $this->registerMissingCompareExchangeValue($key);
+                $results->offsetSet($key, null);
+                continue;
+            }
+
+            $sessionValue = $this->registerCompareExchangeValue($value);
+            $results->offsetSet($key, $sessionValue->getValue($className, $this->session->getConventions()));
+        }
+
+        return $results;
     }
 
-    public function getCompareExchangeValueFromSessionInternal(string $className, ?string $key, bool &$notTracked): ?CompareExchangeValue
+    public function getCompareExchangeValueFromSessionInternal(?string $className, ?string $key, bool &$notTracked): ?CompareExchangeValue
     {
         $sessionValueReference = $this->tryGetCompareExchangeValueFromSession($key);
         if ($sessionValueReference != null) {
@@ -264,21 +264,13 @@ class ClusterTransactionOperationsBase
             foreach ($values as $value) {
                 $this->registerCompareExchangeValue(
                     CompareExchangeValueResultParser::getSingleValue(
-                        \stdClass::class,
+                        null,
                         $value,
                         false,
                         $this->session->getConventions()
                     )
                 );
             }
-//            Iterator<Map.Entry<String, JsonNode>> fields = values.fields();
-//            while (fields.hasNext()) {
-//                Map.Entry<String, JsonNode> propertyDetails = fields.next();
-//
-//                registerCompareExchangeValue(
-//                        CompareExchangeValueResultParser.getSingleValue(
-//                                ObjectNode.class, (ObjectNode) propertyDetails.getValue(), false, session.getConventions()));
-//            }
         }
     }
 

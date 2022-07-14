@@ -40,7 +40,7 @@ class QueryFieldUtil
         return $escape;
     }
 
-    public static function escapeIfNecessary(string $name, bool $isPath = false): string
+    public static function escapeIfNecessary(?string $name, bool $isPath = false): ?string
     {
         if (empty($name) || in_array($name, [
                 DocumentsIndexingFields::DOCUMENT_ID_FIELD_NAME,

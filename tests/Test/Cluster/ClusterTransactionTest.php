@@ -46,8 +46,7 @@ class ClusterTransactionTest extends RemoteTestBase
         }
     }
 
-    /** @todo: implement this test (it was not in the task list) */
-    public function canDeleteCompareExchangeValue(): void
+    public function testCanDeleteCompareExchangeValue(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -72,26 +71,26 @@ class ClusterTransactionTest extends RemoteTestBase
 
             $session = $store->openSession($sessionOptions);
             try {
-//                $compareExchangeValue = $session->advanced()->clusterTransaction()->getCompareExchangeValue(User::class, "usernames/ayende");
-//                $this->assertNotNull($compareExchangeValue);
-//                $session->advanced()->clusterTransaction()->deleteCompareExchangeValue($compareExchangeValue);
-//
-//                $compareExchangeValue2 = $session->advanced()->clusterTransaction()->getCompareExchangeValue(User::class, "usernames/marcin");
-//                $this->assertNotNull($compareExchangeValue2);
-//                $session->advanced()->clusterTransaction()->deleteCompareExchangeValue("usernames/marcin", $compareExchangeValue2->getIndex());
-//
-//                $session->saveChanges();
+                $compareExchangeValue = $session->advanced()->clusterTransaction()->getCompareExchangeValue(User::class, "usernames/ayende");
+                $this->assertNotNull($compareExchangeValue);
+                $session->advanced()->clusterTransaction()->deleteCompareExchangeValue($compareExchangeValue);
+
+                $compareExchangeValue2 = $session->advanced()->clusterTransaction()->getCompareExchangeValue(User::class, "usernames/marcin");
+                $this->assertNotNull($compareExchangeValue2);
+                $session->advanced()->clusterTransaction()->deleteCompareExchangeValue("usernames/marcin", $compareExchangeValue2->getIndex());
+
+                $session->saveChanges();
             } finally {
                 $session->close();
             }
 
             $session = $store->openSession($sessionOptions);
             try {
-//                $compareExchangeValue = $session->advanced()->clusterTransaction()->getCompareExchangeValue(User::class, "usernames/ayende");
-//                $compareExchangeValue2 = $session->advanced()->clusterTransaction()->getCompareExchangeValue(User::class, "usernames/marcin");
-//
-//                $this->assertNull($compareExchangeValue);
-//                $this->assertNull($compareExchangeValue2);
+                $compareExchangeValue = $session->advanced()->clusterTransaction()->getCompareExchangeValue(User::class, "usernames/ayende");
+                $compareExchangeValue2 = $session->advanced()->clusterTransaction()->getCompareExchangeValue(User::class, "usernames/marcin");
+
+                $this->assertNull($compareExchangeValue);
+                $this->assertNull($compareExchangeValue2);
             } finally {
                 $session->close();
             }

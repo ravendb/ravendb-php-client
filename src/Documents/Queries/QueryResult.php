@@ -32,7 +32,7 @@ class QueryResult extends GenericQueryResult implements ResultInterface
 //        queryResult.setCounterIncludes(getCounterIncludes());
 //        queryResult.setIncludedCounterNames(getIncludedCounterNames());
 //        queryResult.setTimeSeriesIncludes(getTimeSeriesIncludes());
-//        queryResult.setCompareExchangeValueIncludes(getCompareExchangeValueIncludes());
+        $queryResult->setCompareExchangeValueIncludes($this->getCompareExchangeValueIncludes());
         return $queryResult;
     }
 }

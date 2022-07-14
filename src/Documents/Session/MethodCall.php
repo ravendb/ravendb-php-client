@@ -5,6 +5,6 @@ namespace RavenDB\Documents\Session;
 // !status: DONE
 abstract class MethodCall
 {
-    public array $args;
-    public string $accessPath;
+    public array $args = [];
+    public ?string $accessPath = null;
 }

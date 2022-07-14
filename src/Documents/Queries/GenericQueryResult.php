@@ -20,7 +20,7 @@ class GenericQueryResult extends QueryResultBase
     private int $cappedMaxResults;
 
     /** @SerializedName("SkippedResults"); */
-    private int $skippedResults;
+    private int $skippedResults = 0;
 
 //    private Map<String, Map<String, String[]>> highlightings;
 
@@ -88,7 +88,7 @@ class GenericQueryResult extends QueryResultBase
 
     /**
      * Gets the skipped results
-     * @return int Amount of skipped results
+     * @return ?int Amount of skipped results
      */
     public function getSkippedResults(): int
     {
@@ -97,7 +97,7 @@ class GenericQueryResult extends QueryResultBase
 
     /**
      * Sets the skipped results
-     * @param int $skippedResults Sets the skipped results
+     * @param ?int $skippedResults Sets the skipped results
      */
     public function setSkippedResults(int $skippedResults): void
     {

@@ -85,7 +85,7 @@ class WhereOptions
         $this->distanceErrorPct = $distance;
     }
 
-    private function initWithMethod(MethodsType $methodType, StringArray $parameters, string $property, bool $exact): void
+    private function initWithMethod(MethodsType $methodType, StringArray $parameters, ?string $property, bool $exact): void
     {
         $method = new WhereMethodCall();
         $method->methodType = $methodType;

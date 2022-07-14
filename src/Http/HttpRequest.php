@@ -61,4 +61,21 @@ class HttpRequest implements HttpRequestInterface
 
         $this->options['headers'][$parameter] = $value;
     }
+
+    /**
+     * @param string $parameter
+     * @return mixed
+     */
+    public function getFirstHeader(string $parameter)
+    {
+        if (!array_key_exists('headers', $this->options)) {
+            return null;
+        }
+
+        if (!array_key_exists($parameter, $this->options['headers'])) {
+            return null;
+        }
+
+        return $this->options['headers'][$parameter];
+    }
 }

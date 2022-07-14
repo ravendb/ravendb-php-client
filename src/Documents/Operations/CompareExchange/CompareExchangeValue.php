@@ -71,7 +71,7 @@ class CompareExchangeValue implements CompareExchangeValueInterface, ResultInter
         $this->value = $value;
     }
 
-    public function getMetadata(): ?MetadataDictionaryInterface
+    public function & getMetadata(): ?MetadataDictionaryInterface
     {
         if ($this->metadataAsDictionary == null) {
             $this->metadataAsDictionary = new MetadataAsDictionary();
