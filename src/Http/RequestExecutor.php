@@ -7,12 +7,10 @@ use DateTime;
 use Ds\Map as DSMap;
 use Exception;
 use Ramsey\Uuid\Uuid;
-use Spatie\Async\Pool;
 use RavenDB\Auth\AuthOptions;
 use RavenDB\Constants\Headers;
 use RavenDB\Constants\HttpStatusCode;
 use RavenDB\Extensions\HttpExtensions;
-use phpDocumentor\Reflection\Types\Callable_;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Session\BeforeRequestEventArgs;
 use RavenDB\Documents\Session\SessionInfo;
@@ -34,7 +32,6 @@ use RavenDB\Type\Duration;
 use RavenDB\Type\UrlArray;
 use RavenDB\Utils\AtomicInteger;
 use RavenDB\Utils\UrlUtils;
-use RuntimeException;
 use RavenDB\Documents\Operations\Configuration\GetClientConfigurationResult;
 use RavenDB\Documents\Operations\Configuration\GetClientConfigurationCommand;
 
@@ -1088,9 +1085,9 @@ class RequestExecutor implements CleanCloseable
 //        }
 //    }
 
-    private function refreshIfNeeded(?ServerNode $chosenNode, ?HttpResponse $response): Pool
+    private function refreshIfNeeded(?ServerNode $chosenNode, ?HttpResponse $response): RefreshTask
     {
-        $pool = Pool::create();
+        $refreshTask = RefreshTask::create();
 
         $refreshTopology = HttpExtensions::getBooleanHeader($response, Headers::REFRESH_TOPOLOGY) ?? false;
         $refreshClientConfiguration = HttpExtensions::getBooleanHeader($response, Headers::REFRESH_CLIENT_CONFIGURATION) ?? false;
@@ -1105,21 +1102,18 @@ class RequestExecutor implements CleanCloseable
             $updateParameters->setDebugTag("refresh-topology-header");
 
 //            if ($refreshTopology) {
-//                $pool->add($this->updateTopologyAsync($updateParameters));
+//                $refreshTask->add($this->updateTopologyAsync($updateParameters));
 //            }
 
             if ($refreshClientConfiguration) {
-                $updateClientConfigurationAsync =
-                    $this->updateClientConfigurationAsync($serverNode);
+                $updateClientConfigurationAsync = $this->updateClientConfigurationAsync($serverNode);
                 if ($updateClientConfigurationAsync != null) {
-                    // $todo: move this to $pool to have async calls
-                    $updateClientConfigurationAsync();
-//                    $pool->add($updateClientConfigurationAsync);
+                    $refreshTask->add($updateClientConfigurationAsync);
                 }
             }
         }
 
-        return $pool;
+        return $refreshTask;
     }
 
     /**
