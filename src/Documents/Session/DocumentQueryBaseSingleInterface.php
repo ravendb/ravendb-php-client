@@ -13,18 +13,21 @@ interface DocumentQueryBaseSingleInterface
 
     /**
      * Returns first element or throws if sequence is empty.
+     *
      * @return mixed first result
      */
     function first();
 
     /**
      * Returns first element or default value for type if sequence is empty.
+     *
      * @return mixed first result of default
      */
     function firstOrDefault();
 
     /**
      * Returns first element or throws if sequence is empty or contains more than one element.
+     *
      * @return mixed single result or throws
      */
     function single();
@@ -32,6 +35,7 @@ interface DocumentQueryBaseSingleInterface
     /**
      * Returns first element or default value for given type if sequence is empty. Throws if sequence contains more than
      * one element.
+     *
      * @return mixed single result, default or throws
      */
     function singleOrDefault();
@@ -45,12 +49,14 @@ interface DocumentQueryBaseSingleInterface
 
     /**
      * Gets the total count of records for this query
+     *
      * @return int total count of records
      */
     function count(): int;
 
     /**
      * Gets the total count of records for this query as long
+     *
      * @return int total count of records (as long)
      */
     function longCount(): int;

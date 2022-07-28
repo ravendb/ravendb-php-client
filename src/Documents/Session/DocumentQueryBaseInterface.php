@@ -37,6 +37,8 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
 
     /**
      * Apply distinct operation to this query
+     *
+     * @return static
      */
     function distinct();
 
@@ -61,6 +63,7 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
      *
      * http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Fuzzy%20Searches
      * @param float $fuzzy Fuzzy value
+     *
      * @return QueryBaseInterface Query instance
      */
     function fuzzy(float $fuzzy): QueryBaseInterface;
@@ -73,6 +76,8 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
     /**
      * Includes the specified path in the query, loading the document specified in that path
      * @param Callable|string $includes Path to include
+     *
+     * @return static
      */
     function include($includes);
 
@@ -93,6 +98,8 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
      *
      * @param string $field
      * @param OrderingType|string|null $sorterNameOrOrdering
+     *
+     * @return static
      */
     function orderBy(string $field, $sorterNameOrOrdering = null);
 
@@ -104,6 +111,8 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
      * The field is the name of the field to sort, defaulting to sorting by descending.
      * @param string $field Field to use in order by
      * @param string|OrderingType|null $sorterNameOrOrdering Sorter to use
+     *
+     * @return static
      */
     function orderByDescending(string $field, $sorterNameOrOrdering = null);
 
@@ -126,6 +135,7 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
      * Specifies a proximity distance for the phrase in the last search clause
      * http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Proximity%20Searches
      * @param int $proximity Proximity value
+     *
      * @return QueryBaseInterface Query instance
      */
     function proximity(int $proximity): QueryBaseInterface;
@@ -134,6 +144,8 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
      * Order the search results randomly using the specified seed
      * this is useful if you want to have repeatable random queries
      * @param ?string $seed Seed to use
+     *
+     * @return static
      */
     function randomOrdering(?string $seed = null);
 
