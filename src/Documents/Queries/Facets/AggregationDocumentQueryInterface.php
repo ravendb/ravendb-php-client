@@ -5,9 +5,11 @@ namespace RavenDB\Documents\Queries\Facets;
 //    @todo: implement this
 interface AggregationDocumentQueryInterface
 {
-//    public function andAggregateBy(Consumer<IFacetBuilder<T>> $builder): AggregationDocumentQueryInterface;
-
-    public function andAggregateBy(FacetBase $facet): AggregationDocumentQueryInterface;
+    /**
+     * @param Callable|FacetBase $builderOrFacets
+     * @return AggregationDocumentQueryInterface
+     */
+    public function andAggregateBy($builderOrFacets): AggregationDocumentQueryInterface;
 
     public function execute(): FacetResultArray;
 

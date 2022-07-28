@@ -55,16 +55,16 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
 //     */
 //    TSelf includeExplanations(ExplanationOptions options, Reference<Explanations> explanations);
 //
-//    /**
-//     * Specifies a fuzziness factor to the single word term in the last where clause
-//     * 0.0 to 1.0 where 1.0 means closer match
-//     *
-//     * http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Fuzzy%20Searches
-//     * @param fuzzy Fuzzy value
-//     * @return Query instance
-//     */
-//    TSelf fuzzy(double fuzzy);
-//
+    /**
+     * Specifies a fuzziness factor to the single word term in the last where clause
+     * 0.0 to 1.0 where 1.0 means closer match
+     *
+     * http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Fuzzy%20Searches
+     * @param float $fuzzy Fuzzy value
+     * @return QueryBaseInterface Query instance
+     */
+    function fuzzy(float $fuzzy): QueryBaseInterface;
+
 //    TSelf highlight(String fieldName, int fragmentLength, int fragmentCount, Reference<Highlightings> highlightings);
 //    TSelf highlight(String fieldName, int fragmentLength, int fragmentCount, HighlightingOptions options, Reference<Highlightings> highlightings);
 //    //TBD expr TSelf Highlight(Expression<Func<T, object>> path, int fragmentLength, int fragmentCount, out Highlightings highlightings);
@@ -121,14 +121,14 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
 //     * @return Query instance
 //     */
 //    TSelf orderByScoreDescending();
-//
-//    /**
-//     * Specifies a proximity distance for the phrase in the last search clause
-//     * http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Proximity%20Searches
-//     * @param proximity Proximity value
-//     * @return Query instance
-//     */
-//    TSelf proximity(int proximity);
+
+    /**
+     * Specifies a proximity distance for the phrase in the last search clause
+     * http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Proximity%20Searches
+     * @param int $proximity Proximity value
+     * @return QueryBaseInterface Query instance
+     */
+    function proximity(int $proximity): QueryBaseInterface;
 
     /**
      * Order the search results randomly using the specified seed

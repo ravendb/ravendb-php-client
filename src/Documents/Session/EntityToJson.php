@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Session;
 
+use ArrayObject;
 use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Exceptions\IllegalArgumentException;
@@ -63,11 +64,11 @@ class EntityToJson
     }
 
     private static function convertEntityToJsonInternal(
-        object $entity,
+        $entity,
         DocumentConventions $conventions,
         ?DocumentInfo $documentInfo,
         bool $removeIdentityProperty = true
-    ): array {
+    ) {
         $mapper = $conventions->getEntityMapper();
 
         $jsonNode = $mapper->normalize($entity);
@@ -81,12 +82,20 @@ class EntityToJson
         return $jsonNode;
     }
 
+    /**
+     * @param mixed               $entity
+     * @param DocumentConventions $conventions
+     * @param DocumentInfo|null   $documentInfo
+     * @param bool                $removeIdentityProperty
+     *
+     * @return array|ArrayObject|bool|float|int|mixed|string|null
+     */
     public static function convertEntityToJsonStatic(
-        object $entity,
+        $entity,
         DocumentConventions $conventions,
         ?DocumentInfo $documentInfo,
         bool $removeIdentityProperty = true
-    ): array {
+    ) {
         if (is_array($entity)) {
             return $entity;
         }
@@ -94,7 +103,7 @@ class EntityToJson
         return self::convertEntityToJsonInternal($entity, $conventions, $documentInfo, $removeIdentityProperty);
     }
 
-    private static function writeMetadata(Serializer $mapper, array &$jsonNode, ?DocumentInfo $documentInfo): void
+    private static function writeMetadata(Serializer $mapper, &$jsonNode, ?DocumentInfo $documentInfo): void
     {
         if ($documentInfo == null) {
             return;
@@ -212,7 +221,7 @@ class EntityToJson
         }
     }
 
-    private static function tryRemoveIdentityProperty(array $document, string $className, DocumentConventions $conventions): bool
+    private static function tryRemoveIdentityProperty(array &$document, string $className, DocumentConventions $conventions): bool
     {
         $identityProperty = $conventions->getIdentityProperty($className);
 
@@ -243,7 +252,7 @@ class EntityToJson
 
             $entity = $defaultValue;
 
-            $documentType = $conventions->getPhpClassName($document);
+            $documentType = !is_array($document) ? $conventions->getPhpClassName($document) : null;
             if ($documentType != null) {
                 $className = $documentType; //class.forName(documentType);
 //                if (clazz != null && entityClass.isAssignableFrom(clazz)) {

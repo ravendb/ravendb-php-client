@@ -41,7 +41,7 @@ class CompareExchangeValueResultParser
     }
 
     public static function getValue(
-        string               $className,
+        ?string              $className,
         ?string              $response,
         bool                 $materializeMetadata,
         ?DocumentConventions $conventions
@@ -99,12 +99,13 @@ class CompareExchangeValueResultParser
         }
 
 //        if (clazz.isPrimitive() || String.class.equals(clazz)) {
+//        if ($className != null) {
             // simple
             $value = null;
 
             if ($raw != null) {
                 $rawValue = array_key_exists('Object', $raw) ? $raw["Object"] : null;
-                $value = (object) $rawValue;// $conventions->getEntityMapper()->denormalize($rawValue, $className);
+                $value = $className == null ? $rawValue : $conventions->getEntityMapper()->denormalize($rawValue, $className);
             }
 
             return new CompareExchangeValue($key, $index, $value, $metadata);

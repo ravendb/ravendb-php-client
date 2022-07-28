@@ -105,12 +105,12 @@ interface AdvancedDocumentSessionOperationsInterface
 //     * @param useOptimisticConcurrency Sets the optimistic concurrency
 //     */
 //    void setUseOptimisticConcurrency(boolean useOptimisticConcurrency);
-//
-//    /**
-//     * Clears this instance.
-//     * Remove all entities from the delete queue and stops tracking changes for all entities.
-//     */
-//    void clear();
+
+    /**
+     * Clears this instance.
+     * Remove all entities from the delete queue and stops tracking changes for all entities.
+     */
+    public function clear(): void;
 
     /**
      * Defer commands to be executed on saveChanges()

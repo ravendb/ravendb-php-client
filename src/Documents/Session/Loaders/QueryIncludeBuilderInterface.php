@@ -10,9 +10,9 @@ interface QueryIncludeBuilderInterface
     public function includeCounter(?string $path, ?string $name): QueryIncludeBuilderInterface;
 
     /**
-     * @param string|array|StringArray|null $pathOrNames
-     * @param array|StringArray $names
-     * @return QueryIncludeBuilderInterface
+     * @param string|null $pathOrNames
+     * @param null|string|StringArray|array $names
+     * @return QueryIncludeBuilder
      */
     public function includeCounters(?string $pathOrNames, $names): QueryIncludeBuilderInterface;
 

@@ -9,7 +9,7 @@ use RavenDB\Documents\Operations\CompareExchange\CompareExchangeValueMap;
 //@todo: implement this interfaces
 interface ClusterTransactionOperationsInterface extends ClusterTransactionOperationsBaseInterface
 {
-    function getCompareExchangeValue(string $className, ?string $key): ?CompareExchangeValue;
+    function getCompareExchangeValue(?string $className, ?string $key): ?CompareExchangeValue;
 
     /**
      * @param string                   $className

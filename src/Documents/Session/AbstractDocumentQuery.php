@@ -5,6 +5,7 @@ namespace RavenDB\Documents\Session;
 use Closure;
 use RavenDB\Constants\DocumentsIndexingFields;
 use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Documents\Queries\Facets\FacetBase;
 use RavenDB\Documents\Queries\GroupBy;
 use RavenDB\Documents\Queries\IndexQuery;
 use RavenDB\Documents\Queries\ProjectionBehavior;
@@ -23,6 +24,7 @@ use RavenDB\Documents\Session\Tokens\CounterIncludesTokenArray;
 use RavenDB\Documents\Session\Tokens\DeclareTokenArray;
 use RavenDB\Documents\Session\Tokens\DistinctToken;
 use RavenDB\Documents\Session\Tokens\ExplanationToken;
+use RavenDB\Documents\Session\Tokens\FacetToken;
 use RavenDB\Documents\Session\Tokens\FieldsToFetchToken;
 use RavenDB\Documents\Session\Tokens\FromToken;
 use RavenDB\Documents\Session\Tokens\GraphQueryToken;
@@ -537,7 +539,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        }
 
         if ($includes->compareExchangeValuesToInclude != null) {
-            $compareExchangeValueIncludesTokens = new CompareExchangeValueIncludesTokenArray();
+            $this->compareExchangeValueIncludesTokens = new CompareExchangeValueIncludesTokenArray();
 
             foreach($includes->compareExchangeValuesToInclude as $compareExchangeValue) {
                 $this->compareExchangeValueIncludesTokens->append(CompareExchangeValueIncludesToken::create($compareExchangeValue));
@@ -991,25 +993,25 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
      */
     public function _fuzzy(float $fuzzy): void
     {
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        if (tokens.isEmpty()) {
-//            throw new IllegalStateException("Fuzzy can only be used right after where clause");
-//        }
-//
-//        QueryToken whereToken = tokens.get(tokens.size() - 1);
-//        if (!(whereToken instanceof WhereToken)) {
-//            throw new IllegalStateException("Fuzzy can only be used right after where clause");
-//        }
-//
-//        if (((WhereToken) whereToken).getWhereOperator() != WhereOperator.EQUALS) {
-//            throw new IllegalStateException("Fuzzy can only be used right after where clause with equals operator");
-//        }
-//
-//        if (fuzzy < 0.0 || fuzzy > 1.0) {
-//            throw new IllegalArgumentException("Fuzzy distance must be between 0.0 and 1.0");
-//        }
-//
-//        ((WhereToken) whereToken).getOptions().setFuzzy(fuzzy);
+        $tokens = $this->getCurrentWhereTokens();
+        if ($tokens->isEmpty()) {
+            throw new IllegalStateException('Fuzzy can only be used right after where clause');
+        }
+
+        $whereToken = $tokens->last();
+        if (!($whereToken instanceof WhereToken)) {
+            throw new IllegalStateException('Fuzzy can only be used right after where clause');
+        }
+
+        if (!$whereToken->getWhereOperator()->isEquals()) {
+            throw new IllegalStateException('Fuzzy can only be used right after where clause with equals operator');
+        }
+
+        if ($fuzzy < 0.0 || $fuzzy > 1.0) {
+            throw new IllegalArgumentException('Fuzzy distance must be between 0.0 and 1.0');
+        }
+
+        $whereToken->getOptions()->setFuzzy($fuzzy);
     }
 
     /**
@@ -1020,25 +1022,25 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
      */
     public function _proximity(int $proximity): void
     {
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        if (tokens.isEmpty()) {
-//            throw new IllegalStateException("Proximity can only be used right after search clause");
-//        }
-//
-//        QueryToken whereToken = tokens.get(tokens.size() - 1);
-//        if (!(whereToken instanceof WhereToken)) {
-//            throw new IllegalStateException("Proximity can only be used right after search clause");
-//        }
-//
-//        if (((WhereToken) whereToken).getWhereOperator() != WhereOperator.SEARCH) {
-//            throw new IllegalStateException("Proximity can only be used right after search clause");
-//        }
-//
-//        if (proximity < 1) {
-//            throw new IllegalArgumentException("Proximity distance must be a positive number");
-//        }
-//
-//        ((WhereToken) whereToken).getOptions().setProximity(proximity);
+        $tokens = $this->getCurrentWhereTokens();
+        if ($tokens->isEmpty()) {
+            throw new IllegalStateException("Proximity can only be used right after search clause");
+        }
+
+        $whereToken = $tokens->last();
+        if (!($whereToken instanceof WhereToken)) {
+            throw new IllegalStateException('Proximity can only be used right after search clause');
+        }
+
+        if (!$whereToken->getWhereOperator()->isSearch()) {
+            throw new IllegalStateException('Proximity can only be used right after search clause');
+        }
+
+        if ($proximity < 1) {
+            throw new IllegalArgumentException('Proximity distance must be a positive number');
+        }
+
+        $whereToken->getOptions()->setProximity($proximity);
     }
 
     /**
@@ -2199,18 +2201,20 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->initSync();
     }
 
-//    public void _aggregateBy(FacetBase facet) {
-//        for (QueryToken token : selectTokens) {
-//            if (token instanceof FacetToken) {
-//                continue;
-//            }
-//
-//            throw new IllegalStateException("Aggregation query can select only facets while it got " + token.getClass().getSimpleName() + " token");
-//        }
-//
-//        selectTokens.add(FacetToken.create(facet, this::addQueryParameter));
-//    }
-//
+    public function _aggregateBy(FacetBase $facet): void
+    {
+        foreach ($this->selectTokens as $token) {
+            if ($token instanceof FacetToken) {
+                continue;
+            }
+
+            $reflection = new \ReflectionClass($token);
+            throw new IllegalStateException("Aggregation query can select only facets while it got " . $reflection->getShortName() . " token");
+        }
+
+        $this->selectTokens->append(FacetToken::createForFacetBase($facet, Closure::fromCallable([$this, 'addQueryParameter'])));
+    }
+
 //    public void _aggregateUsing(String facetSetupDocumentId) {
 //        selectTokens.add(FacetToken.create(facetSetupDocumentId));
 //    }

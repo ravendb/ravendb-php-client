@@ -19,7 +19,7 @@ class ClusterTransactionOperations extends ClusterTransactionOperationsBase
 //        return new LazyClusterTransactionOperations($this->session);
 //    }
 
-    public function getCompareExchangeValue(string $className, ?string $key): ?CompareExchangeValue
+    public function getCompareExchangeValue(?string $className, ?string $key): ?CompareExchangeValue
     {
         return $this->getCompareExchangeValueInternal($className, $key);
     }

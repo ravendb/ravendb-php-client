@@ -10,9 +10,9 @@ interface ClusterTransactionOperationsBaseInterface
      * @template T
      *
      * @param CompareExchangeValue<T>|string|null $keyOrItem
-     * @param int         $index
+     * @param ?int         $index
      */
-    function deleteCompareExchangeValue($keyOrItem, int $index): void;
+    function deleteCompareExchangeValue($keyOrItem, ?int $index = null): void;
 
     function createCompareExchangeValue(?string $key, $value): CompareExchangeValue;
 }

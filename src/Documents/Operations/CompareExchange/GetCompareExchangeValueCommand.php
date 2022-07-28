@@ -52,8 +52,6 @@ class GetCompareExchangeValueCommand extends RavenCommand
      */
     public function setResponse(?string $response, bool $fromCache): void
     {
-        $this->setResult(
-            CompareExchangeValueResultParser::getValue($this->className, $response, $this->materializeMetadata, $this->conventions)
-        );
+        $this->result =  CompareExchangeValueResultParser::getValue($this->className, $response, $this->materializeMetadata, $this->conventions);
     }
 }

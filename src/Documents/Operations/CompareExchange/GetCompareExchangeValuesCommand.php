@@ -2,7 +2,6 @@
 
 namespace RavenDB\Documents\Operations\CompareExchange;
 
-use RavenDB\Type\TypedMap;
 use RavenDB\Utils\UrlUtils;
 use RavenDB\Http\ServerNode;
 use RavenDB\Http\HttpRequest;
@@ -19,7 +18,7 @@ class GetCompareExchangeValuesCommand extends RavenCommand
 
     public function __construct(?GetCompareExchangeValuesOperation $operation, bool $materializeMetadata, ?DocumentConventions $conventions)
     {
-        parent::__construct(TypedMap::class);
+        parent::__construct(CompareExchangeValueArray::class);
 
         $this->operation           = $operation;
         $this->materializeMetadata = $materializeMetadata;
@@ -33,7 +32,7 @@ class GetCompareExchangeValuesCommand extends RavenCommand
 
     public function createUrl(ServerNode $serverNode): string
     {
-        $url = '/databases/' . $serverNode->getDatabase() . '/cmpxchg?';
+        $url = $serverNode->getUrl() . '/databases/' . $serverNode->getDatabase() . '/cmpxchg?';
 
         if ($this->operation->getKeys() != null) {
             foreach ($this->operation->getKeys() as $key) {

@@ -68,7 +68,7 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      *
      * @return static
      */
-    public function search(string $fieldName, string $searchTerms, ?SearchOperator $operator = null);
+    public function search(string $fieldName, string $searchTerms, ?SearchOperator $operator = null): QueryBaseInterface;
 
     //TBD expr TSelf Search<TValue>(Expression<Func<T, TValue>> propertySelector, string searchTerms, SearchOperator @operator = SearchOperator.Or);
 

@@ -1082,7 +1082,6 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $result = new SaveChangesData($this);
         $deferredCommandsCount = count($this->deferredCommands);
 
-        // @todo: CONTINUE HERE !!!! implement following lines
         $this->prepareForEntitiesDeletion($result);
         $this->prepareForEntitiesPuts($result);
         $this->prepareForCreatingRevisionsFromIds($result);
@@ -1604,9 +1603,9 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
         $this->deferredCommands = [];
         $this->deferredCommandsMap->clear();
-//        $this->clearClusterSession();
+        $this->clearClusterSession();
 //        $this->pendingLazyOperations->clear();
-//        $this->entityToJson->clear();
+        $this->entityToJson->clear();
     }
 
     /**

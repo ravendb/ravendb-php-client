@@ -17,6 +17,7 @@ use RavenDB\Http\RequestExecutor;
 use RavenDB\Primitives\ClosureArray;
 use RavenDB\Primitives\EventArgs;
 use RavenDB\Primitives\EventHelper;
+use RavenDB\Primitives\ExceptionsUtils;
 use RavenDB\Type\Url;
 use RavenDB\Type\UrlArray;
 
@@ -263,7 +264,7 @@ class DocumentStore extends DocumentStoreBase
         $this->assertValidConfiguration();
 
 //        RequestExecutor.validateUrls(urls, getCertificate());
-//
+
         try {
             if ($this->getConventions()->getDocumentIdGenerator() == null) { // don't overwrite what the user is doing
                 $generator = new MultiDatabaseHiLoIdGenerator($this);
@@ -276,7 +277,7 @@ class DocumentStore extends DocumentStoreBase
             $this->initialized = true;
         } catch (\Throwable $exception) {
             $this->close();
-//            throw ExceptionsUtils.unwrapException(e);
+            throw ExceptionsUtils::unwrapException($exception);
         }
 
         return $this;
@@ -292,6 +293,9 @@ class DocumentStore extends DocumentStoreBase
             throw new InvalidArgumentException("Document store URLs cannot be empty");
         }
     }
+
+
+
 
     private ClosureArray $afterClose;
     private ClosureArray $beforeClose;

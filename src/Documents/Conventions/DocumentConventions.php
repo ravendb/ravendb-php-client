@@ -3,7 +3,10 @@
 namespace RavenDB\Documents\Conventions;
 
 use Closure;
+use RavenDB\Type\TypedList;
+use RavenDB\Type\StringList;
 use InvalidArgumentException;
+use RavenDB\Primitives\ClosureArray;
 use RavenDB\Exceptions\RavenException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Extensions\EntityMapper;
@@ -17,6 +20,7 @@ use ReflectionClass;
 use ReflectionException;
 use RuntimeException;
 use Throwable;
+use RavenDB\Documents\Operations\Configuration\ClientConfiguration;
 
 // !status: IN PROGRESS
 class DocumentConventions
@@ -27,7 +31,7 @@ class DocumentConventions
     public static function getDefaultConventions(): DocumentConventions
     {
         if (self::$defaultConventions == null) {
-            self::$defaultConventions =  new DocumentConventions();
+            self::$defaultConventions = new DocumentConventions();
         }
 
         return self::$defaultConventions;
@@ -53,14 +57,14 @@ class DocumentConventions
     protected array $cachedDefaultTypeCollectionNames = []; // @todo: check if this is ok
 
 //    private final List<Tuple<Class, IValueForQueryConverter<Object>>> _listOfQueryValueToObjectConverters = new ArrayList<>();
-//
-//    private List<Tuple<Class, BiFunction<String, Object, String>>> _listOfRegisteredIdConventions = new ArrayList<>();
+
+    private ?ClosureArray $listOfRegisteredIdConventions = null;
 
     protected bool $frozen = false;
-//    private ClientConfiguration _originalConfiguration;
+    private ?ClientConfiguration $originalConfiguration = null;
 
 //    private final Map<Class, Field> _idPropertyCache = new HashMap<>();
-    protected array $idPropertyCache = []; // @todo: check if this is ok?
+    protected array $idPropertyCache = [];                  // @todo: check if this is ok?
 //    private boolean _saveEnumsAsIntegers;
 
     protected ?string $identityPartsSeparator = null; // @todo: check if this is ok?
@@ -89,7 +93,7 @@ class DocumentConventions
     private bool $throwIfQueryPageSizeIsNotSet = false;
     protected int $maxNumberOfRequestsPerSession;
 
-    private Duration $requestTimeout;
+    private ?Duration $requestTimeout = null;
     private ?Duration $firstBroadcastAttemptTimeout = null;
     private ?Duration $secondBroadcastAttemptTimeout = null;
     private ?Duration $waitForIndexesAfterSaveChangesTimeout = null;
@@ -172,10 +176,11 @@ class DocumentConventions
         $this->loadBalanceBehavior = LoadBalanceBehavior::none();
         $this->requestTimeout = new Duration();
 
+        $this->listOfRegisteredIdConventions = new ClosureArray();
         // @todo: implement this constructor
 
-        $this->readBalanceBehavior = ReadBalanceBehavior::none();
-        $this->findIdentityProperty = function($q) {
+        $this->readBalanceBehavior    = ReadBalanceBehavior::none();
+        $this->findIdentityProperty   = function ($q) {
             return $q->getName() == 'id';
         };
         $this->identityPartsSeparator = '/';
@@ -192,7 +197,7 @@ class DocumentConventions
 //            return null;
 //        };
 
-        $this->findPhpClassName = function($entity) {
+        $this->findPhpClassName = function ($entity) {
             // ReflectionUtil.getFullNameWithoutVersionInformation(type);
             return get_class($entity);
         };
@@ -233,12 +238,12 @@ class DocumentConventions
 //        return _useCompression != null;
 //    }
 //
-    public function getRequestTimeout(): Duration
+    public function getRequestTimeout(): ?Duration
     {
         return $this->requestTimeout;
     }
 
-    public function setRequestTimeout(Duration $requestTimeout): void
+    public function setRequestTimeout(?Duration $requestTimeout): void
     {
         $this->assertNotFrozen();
         $this->requestTimeout = $requestTimeout;
@@ -268,9 +273,11 @@ class DocumentConventions
      * Default: 30 seconds
      *
      * Upon failure of the first attempt the request executor will resend the command to all nodes simultaneously.
+     *
      * @return ?Duration broadcast timeout
      */
-    public function getSecondBroadcastAttemptTimeout(): ?Duration {
+    public function getSecondBroadcastAttemptTimeout(): ?Duration
+    {
         return $this->secondBroadcastAttemptTimeout;
     }
 
@@ -279,11 +286,13 @@ class DocumentConventions
      * Default: 30 seconds
      *
      * Upon failure of the first attempt the request executor will resend the command to all nodes simultaneously.
+     *
      * @param ?Duration $secondBroadcastAttemptTimeout broadcast timeout
      *
      * @throws IllegalStateException
      */
-    public function setSecondBroadcastAttemptTimeout(?Duration $secondBroadcastAttemptTimeout): void {
+    public function setSecondBroadcastAttemptTimeout(?Duration $secondBroadcastAttemptTimeout): void
+    {
         $this->assertNotFrozen();
         $this->secondBroadcastAttemptTimeout = $secondBroadcastAttemptTimeout;
     }
@@ -293,6 +302,7 @@ class DocumentConventions
      * Default: 5 seconds
      *
      * First attempt will send a single request to a selected node.
+     *
      * @return ?Duration broadcast timeout
      */
     public function getFirstBroadcastAttemptTimeout(): ?Duration
@@ -305,6 +315,7 @@ class DocumentConventions
      * Default: 5 seconds
      *
      * First attempt will send a single request to a selected node.
+     *
      * @param ?Duration $firstBroadcastAttemptTimeout broadcast timeout
      *
      * @throws IllegalStateException
@@ -318,6 +329,7 @@ class DocumentConventions
     /**
      * Get the wait for indexes after save changes timeout
      * Default: 15 seconds
+     *
      * @return Duration wait timeout
      */
     public function getWaitForIndexesAfterSaveChangesTimeout(): Duration
@@ -338,6 +350,7 @@ class DocumentConventions
     /**
      * Get the default timeout for DocumentSession waitForNonStaleResults methods.
      * Default: 15 seconds
+     *
      * @return ?Duration wait timeout
      */
     public function getWaitForNonStaleResultsTimeout(): ?Duration
@@ -421,6 +434,7 @@ class DocumentConventions
     /**
      * We have to make this check so if admin activated this, but client code did not provide the selector,
      * it is still disabled. Relevant if we have multiple clients / versions at once.
+     *
      * @return LoadBalanceBehavior load balance behavior
      */
     public function getLoadBalanceBehavior(): LoadBalanceBehavior
@@ -451,6 +465,7 @@ class DocumentConventions
      * Sets the function that allow to specialize the topology
      *  selection for a particular session. Used in load balancing
      *  scenarios
+     *
      * @param Closure loadBalancerPerSessionContextSelector selector to use
      */
     public function setLoadBalancerPerSessionContextSelector(Closure $loadBalancerPerSessionContextSelector): void
@@ -494,7 +509,8 @@ class DocumentConventions
      *
      * @return bool - true if should we throw if page size is not set
      */
-    public function isThrowIfQueryPageSizeIsNotSet(): bool {
+    public function isThrowIfQueryPageSizeIsNotSet(): bool
+    {
         return $this->throwIfQueryPageSizeIsNotSet;
     }
 
@@ -516,6 +532,7 @@ class DocumentConventions
 
     /**
      * Whether UseOptimisticConcurrency is set to true by default for all opened sessions
+     *
      * @return bool - true if optimistic concurrency is enabled
      */
     public function isUseOptimisticConcurrency(): bool
@@ -595,7 +612,8 @@ class DocumentConventions
 
     /**
      *  Translates the types collection name to the document id prefix
-     *  @return Closure translation function
+     *
+     * @return Closure translation function
      */
     public function getTransformClassCollectionNameToDocumentIdPrefix(): ?Closure
     {
@@ -604,7 +622,8 @@ class DocumentConventions
 
     /**
      *  Translates the types collection name to the document id prefix
-     *  @param ?Closure $transformClassCollectionNameToDocumentIdPrefix value to set
+     *
+     * @param ?Closure $transformClassCollectionNameToDocumentIdPrefix value to set
      */
     public function setTransformClassCollectionNameToDocumentIdPrefix(?Closure $transformClassCollectionNameToDocumentIdPrefix): void
     {
@@ -612,14 +631,16 @@ class DocumentConventions
         $this->transformClassCollectionNameToDocumentIdPrefix = $transformClassCollectionNameToDocumentIdPrefix;
     }
 
-//    public Function<PropertyDescriptor, Boolean> getFindIdentityProperty() {
-//        return _findIdentityProperty;
-//    }
-//
-//    public void setFindIdentityProperty(Function<PropertyDescriptor, Boolean> findIdentityProperty) {
-//        assertNotFrozen();
-//        this._findIdentityProperty = findIdentityProperty;
-//    }
+    public function getFindIdentityProperty(): ?Closure
+    {
+        return $this->findIdentityProperty;
+    }
+
+    public function setFindIdentityProperty(?Closure $findIdentityProperty): void
+    {
+        $this->assertNotFrozen();
+        $this->findIdentityProperty = $findIdentityProperty;
+    }
 
     public function getShouldIgnoreEntityChanges(): ?ShouldIgnoreEntityChangesInterface
     {
@@ -720,8 +741,8 @@ class DocumentConventions
 
         if ($reflectionClass->isAbstract()) {
             throw new IllegalStateException(
-              "Cannot find collection name for abstract class " . $className .
-              ", only concrete class are supported. Did you forget to customize conventions.findCollectionName?"
+                "Cannot find collection name for abstract class " . $className .
+                ", only concrete class are supported. Did you forget to customize conventions.findCollectionName?"
             );
 
         }
@@ -764,7 +785,7 @@ class DocumentConventions
     {
         $collectionName = null;
         if (!empty($this->findCollectionName)) {
-            $methodName = $this->findCollectionName;
+            $methodName     = $this->findCollectionName;
             $collectionName = $this->$methodName($className);
         }
 
@@ -778,52 +799,54 @@ class DocumentConventions
     /**
      * Generates the document id.
      *
-     * @param string $databaseName Database name
-     * @param Object|null $entity Entity
+     * @param string      $databaseName Database name
+     * @param Object|null $entity       Entity
+     *
      * @return string document id
      */
     public function generateDocumentId(string $databaseName, ?object $entity): string
     {
         $className = get_class($entity);
-        //        for (Tuple<Class, BiFunction<String, Object, String>> listOfRegisteredIdConvention : _listOfRegisteredIdConventions) {
-    //            if (listOfRegisteredIdConvention.first.isAssignableFrom(clazz)) {
-    //                return listOfRegisteredIdConvention.second.apply(databaseName, entity);
-    //            }
-    //        }
+        foreach ($this->listOfRegisteredIdConventions as $keyClassName => $listOfRegisteredIdConvention) {
+            if (is_a($className, $keyClassName, true)) {
+                return $listOfRegisteredIdConvention($databaseName, $entity);
+            }
+        }
 
         $generator = $this->documentIdGenerator;
-        return  $generator($databaseName, $entity);
+        return $generator($databaseName, $entity);
     }
 
-    //    /**
-    //     * Register an id convention for a single type (and all of its derived types.
-    //     * Note that you can still fall back to the DocumentIdGenerator if you want.
-    //     * @param <TEntity> Entity class
-        // * @param clazz Class
-        // * @param function Function to use
-        // * @return document conventions
-        // */
-        // @SuppressWarnings("unchecked")
-        // public <TEntity> DocumentConventions registerIdConvention(Class<TEntity> clazz, BiFunction<String, TEntity, String> function) {
-                // assertNotFrozen();
-                //
-                // _listOfRegisteredIdConventions.stream()
-                // .filter(x -> x.first.equals(clazz))
-                // .findFirst()
-                // .ifPresent(x -> _listOfRegisteredIdConventions.remove(x));
-                //
-                // int index;
-                // for (index = 0; index < _listOfRegisteredIdConventions.size(); index++) {
-                // Tuple<Class, BiFunction<String, Object, String>> entry = _listOfRegisteredIdConventions.get(index);
-                // if (entry.first.isAssignableFrom(clazz)) {
-                // break;
-                // }
-                // }
-                //
-                // _listOfRegisteredIdConventions.add(index, Tuple.create(clazz, (BiFunction<String, Object, String>) function));
-                //
-                // return this;
-                // }
+    /**
+     * Register an id convention for a single type (and all of its derived types.
+     * Note that you can still fall back to the DocumentIdGenerator if you want.
+     *
+     * @param ?string $className Entity class
+     * @param closure $function  Function to use
+     *
+     * @return DocumentConventions document conventions
+     */
+    public function registerIdConvention(?string $className, Closure $function): DocumentConventions
+    {
+        $this->assertNotFrozen();
+
+        // remove exact class id convention
+        if ($this->listOfRegisteredIdConventions->offsetExists($className)) {
+            unset($this->listOfRegisteredIdConventions[$className]);
+        }
+
+        // if some class can handle given class id convention, we should replace it in database
+        foreach ($this->listOfRegisteredIdConventions as $parentClass => $convention) {
+            if (is_a($className, $parentClass, true)) {
+                $className = $parentClass;
+                break;
+            }
+        }
+
+        $this->listOfRegisteredIdConventions->offsetSet($className, $function);
+
+        return $this;
+    }
 
 
 //    /**
@@ -855,7 +878,9 @@ class DocumentConventions
 //    }
     /**
      * Get the PHP class name to be stored in the entity metadata
+     *
      * @param object $entity Entity
+     *
      * @return string|null PHP class name
      */
     public function getPhpClassName(object $entity): ?string
@@ -867,6 +892,7 @@ class DocumentConventions
     /**
      * EXPERT: Disable automatic atomic writes with cluster write transactions. If set to 'true', will only consider explicitly
      * added compare exchange values to validate cluster wide transactions.
+     *
      * @return bool disable atomic writes
      */
     public function getDisableAtomicDocumentWritesInClusterWideTransaction(): bool
@@ -877,6 +903,7 @@ class DocumentConventions
     /**
      * EXPERT: Disable automatic atomic writes with cluster write transactions. If set to 'true', will only consider explicitly
      * added compare exchange values to validate cluster wide transactions.
+     *
      * @param bool $value disable atomic writes
      */
     public function setDisableAtomicDocumentWritesInClusterWideTransaction(bool $value): void
@@ -884,40 +911,40 @@ class DocumentConventions
         $this->disableAtomicDocumentWritesInClusterWideTransaction = $value;
     }
 
-                // /**
-                // * Clone the current conventions to a new instance
-                // */
-                // @SuppressWarnings("MethodDoesntCallSuperMethod")
-                // public DocumentConventions clone() {
-                // DocumentConventions cloned = new DocumentConventions();
-                // cloned._listOfRegisteredIdConventions = new ArrayList<>(_listOfRegisteredIdConventions);
-                // cloned._frozen = _frozen;
-                // cloned._shouldIgnoreEntityChanges = _shouldIgnoreEntityChanges;
-                // cloned._originalConfiguration = _originalConfiguration;
-                // cloned._saveEnumsAsIntegers = _saveEnumsAsIntegers;
-                // cloned._identityPartsSeparator = _identityPartsSeparator;
-                // cloned._disableTopologyUpdates = _disableTopologyUpdates;
-                // cloned._findIdentityProperty = _findIdentityProperty;
-                // cloned._transformClassCollectionNameToDocumentIdPrefix = _transformClassCollectionNameToDocumentIdPrefix;
-                // cloned._documentIdGenerator = _documentIdGenerator;
-                // cloned._findIdentityPropertyNameFromCollectionName = _findIdentityPropertyNameFromCollectionName;
-                // cloned._findCollectionName = _findCollectionName;
-                // cloned._findJavaClassName = _findJavaClassName;
-                // cloned._findJavaClass = _findJavaClass;
-                // cloned._findJavaClassByName = _findJavaClassByName;
-                // cloned._useOptimisticConcurrency = _useOptimisticConcurrency;
-                // cloned._throwIfQueryPageSizeIsNotSet = _throwIfQueryPageSizeIsNotSet;
-                // cloned._maxNumberOfRequestsPerSession = _maxNumberOfRequestsPerSession;
-                // cloned._loadBalancerPerSessionContextSelector = _loadBalancerPerSessionContextSelector;
-                // cloned._readBalanceBehavior = _readBalanceBehavior;
-                // cloned._loadBalanceBehavior = _loadBalanceBehavior;
-                // cloned._maxHttpCacheSize = _maxHttpCacheSize;
-                // cloned._entityMapper = _entityMapper;
-                // cloned._useCompression = _useCompression;
-                // return cloned;
-                // }
-                //
-                // private static Field getField(Class<? > clazz, String name) {
+    // /**
+    // * Clone the current conventions to a new instance
+    // */
+    // @SuppressWarnings("MethodDoesntCallSuperMethod")
+    // public DocumentConventions clone() {
+    // DocumentConventions cloned = new DocumentConventions();
+    // cloned._listOfRegisteredIdConventions = new ArrayList<>(_listOfRegisteredIdConventions);
+    // cloned._frozen = _frozen;
+    // cloned._shouldIgnoreEntityChanges = _shouldIgnoreEntityChanges;
+    // cloned._originalConfiguration = _originalConfiguration;
+    // cloned._saveEnumsAsIntegers = _saveEnumsAsIntegers;
+    // cloned._identityPartsSeparator = _identityPartsSeparator;
+    // cloned._disableTopologyUpdates = _disableTopologyUpdates;
+    // cloned._findIdentityProperty = _findIdentityProperty;
+    // cloned._transformClassCollectionNameToDocumentIdPrefix = _transformClassCollectionNameToDocumentIdPrefix;
+    // cloned._documentIdGenerator = _documentIdGenerator;
+    // cloned._findIdentityPropertyNameFromCollectionName = _findIdentityPropertyNameFromCollectionName;
+    // cloned._findCollectionName = _findCollectionName;
+    // cloned._findJavaClassName = _findJavaClassName;
+    // cloned._findJavaClass = _findJavaClass;
+    // cloned._findJavaClassByName = _findJavaClassByName;
+    // cloned._useOptimisticConcurrency = _useOptimisticConcurrency;
+    // cloned._throwIfQueryPageSizeIsNotSet = _throwIfQueryPageSizeIsNotSet;
+    // cloned._maxNumberOfRequestsPerSession = _maxNumberOfRequestsPerSession;
+    // cloned._loadBalancerPerSessionContextSelector = _loadBalancerPerSessionContextSelector;
+    // cloned._readBalanceBehavior = _readBalanceBehavior;
+    // cloned._loadBalanceBehavior = _loadBalanceBehavior;
+    // cloned._maxHttpCacheSize = _maxHttpCacheSize;
+    // cloned._entityMapper = _entityMapper;
+    // cloned._useCompression = _useCompression;
+    // return cloned;
+    // }
+    //
+    // private static Field getField(Class<? > clazz, String name) {
 //        Field field = null;
 //        while (clazz != null && field == null) {
 //            try {
@@ -949,7 +976,7 @@ class DocumentConventions
         try {
             $idField = null;
 
-            $reflectionClass = new ReflectionClass($className);
+            $reflectionClass      = new ReflectionClass($className);
             $findIdentityProperty = $this->findIdentityProperty;
             foreach ($reflectionClass->getProperties() as $property) {
                 if ($findIdentityProperty($property)) {
@@ -967,62 +994,58 @@ class DocumentConventions
     }
 
 
-//    public void updateFrom(ClientConfiguration configuration) {
-//        if (configuration == null) {
-//            return;
-//        }
-//
-//        synchronized (this) {
-//            if (configuration.isDisabled() && _originalConfiguration == null) { // nothing to do
-//                return;
-//            }
-//
-//            if (configuration.isDisabled() && _originalConfiguration != null) { // need to revert to original values
-//                _maxNumberOfRequestsPerSession = ObjectUtils.firstNonNull(_originalConfiguration.getMaxNumberOfRequestsPerSession(), _maxNumberOfRequestsPerSession);
-//                _readBalanceBehavior = ObjectUtils.firstNonNull(_originalConfiguration.getReadBalanceBehavior(), _readBalanceBehavior);
-//                _identityPartsSeparator = ObjectUtils.firstNonNull(_originalConfiguration.getIdentityPartsSeparator(), _identityPartsSeparator);
-//                _loadBalanceBehavior = ObjectUtils.firstNonNull(_originalConfiguration.getLoadBalanceBehavior(), _loadBalanceBehavior);
-//                _loadBalancerContextSeed = ObjectUtils.firstNonNull(_originalConfiguration.getLoadBalancerContextSeed(), _loadBalancerContextSeed);
-//
-//                _originalConfiguration = null;
-//                return;
-//            }
-//
-//            if (_originalConfiguration == null) {
-//                _originalConfiguration = new ClientConfiguration();
-//                _originalConfiguration.setEtag(-1);
-//                _originalConfiguration.setMaxNumberOfRequestsPerSession(_maxNumberOfRequestsPerSession);
-//                _originalConfiguration.setReadBalanceBehavior(_readBalanceBehavior);
-//                _originalConfiguration.setIdentityPartsSeparator(_identityPartsSeparator);
-//                _originalConfiguration.setLoadBalanceBehavior(_loadBalanceBehavior);
-//                _originalConfiguration.setLoadBalancerContextSeed(_loadBalancerContextSeed);
-//            }
-//
-//            _maxNumberOfRequestsPerSession = ObjectUtils.firstNonNull(
-//                    configuration.getMaxNumberOfRequestsPerSession(),
-//                    _originalConfiguration.getMaxNumberOfRequestsPerSession(),
-//                    _maxNumberOfRequestsPerSession);
-//            _readBalanceBehavior = ObjectUtils.firstNonNull(
-//                    configuration.getReadBalanceBehavior(),
-//                    _originalConfiguration.getReadBalanceBehavior(),
-//                    _readBalanceBehavior
-//            );
-//            _loadBalanceBehavior = ObjectUtils.firstNonNull(
-//                    configuration.getLoadBalanceBehavior(),
-//                    _originalConfiguration.getLoadBalanceBehavior(),
-//                    _loadBalanceBehavior
-//            );
-//            _loadBalancerContextSeed = ObjectUtils.firstNonNull(
-//                    configuration.getLoadBalancerContextSeed(),
-//                    _originalConfiguration.getLoadBalancerContextSeed(),
-//                    _loadBalancerContextSeed
-//            );
-//            _identityPartsSeparator = ObjectUtils.firstNonNull(
-//                    configuration.getIdentityPartsSeparator(),
-//                    _originalConfiguration.getIdentityPartsSeparator(),
-//                    _identityPartsSeparator);
-//        }
-//    }
+    public function updateFrom(?ClientConfiguration $configuration): void
+    {
+        if ($configuration == null) {
+            return;
+        }
+
+        if ($configuration->isDisabled() && $this->originalConfiguration == null) { // nothing to do
+            return;
+        }
+
+        if ($configuration->isDisabled() && $this->originalConfiguration != null) { // need to revert to original values
+            $this->maxNumberOfRequestsPerSession = $this->originalConfiguration->getMaxNumberOfRequestsPerSession() ?? $this->maxNumberOfRequestsPerSession;
+            $this->readBalanceBehavior           = $this->originalConfiguration->getReadBalanceBehavior() ?? $this->readBalanceBehavior;
+            $this->identityPartsSeparator        = $this->originalConfiguration->getIdentityPartsSeparator() ?? $this->identityPartsSeparator;
+            $this->loadBalanceBehavior           = $this->originalConfiguration->getLoadBalanceBehavior() ?? $this->loadBalanceBehavior;
+            $this->loadBalancerContextSeed       = $this->originalConfiguration->getLoadBalancerContextSeed() ?? $this->loadBalancerContextSeed;
+
+            $this->originalConfiguration = null;
+            return;
+        }
+
+        if ($this->originalConfiguration == null) {
+            $this->originalConfiguration = new ClientConfiguration();
+            $this->originalConfiguration->setEtag(-1);
+            $this->originalConfiguration->setMaxNumberOfRequestsPerSession($this->maxNumberOfRequestsPerSession);
+            $this->originalConfiguration->setReadBalanceBehavior($this->readBalanceBehavior);
+            $this->originalConfiguration->setIdentityPartsSeparator($this->identityPartsSeparator);
+            $this->originalConfiguration->setLoadBalanceBehavior($this->loadBalanceBehavior);
+            $this->originalConfiguration->setLoadBalancerContextSeed($this->loadBalancerContextSeed);
+        }
+
+        $this->maxNumberOfRequestsPerSession =
+            $configuration->getMaxNumberOfRequestsPerSession() ??
+            $this->originalConfiguration->getMaxNumberOfRequestsPerSession() ??
+            $this->maxNumberOfRequestsPerSession;
+        $this->readBalanceBehavior           =
+            $configuration->getReadBalanceBehavior() ??
+            $this->originalConfiguration->getReadBalanceBehavior() ??
+            $this->readBalanceBehavior;
+        $this->loadBalanceBehavior           =
+            $configuration->getLoadBalanceBehavior() ??
+            $this->originalConfiguration->getLoadBalanceBehavior() ??
+            $this->loadBalanceBehavior;
+        $this->loadBalancerContextSeed       =
+            $configuration->getLoadBalancerContextSeed() ??
+            $this->originalConfiguration->getLoadBalancerContextSeed() ??
+            $this->loadBalancerContextSeed;
+        $this->identityPartsSeparator        =
+            $configuration->getIdentityPartsSeparator() ??
+            $this->originalConfiguration->getIdentityPartsSeparator() ??
+            $this->identityPartsSeparator;
+    }
 
     public static function defaultTransformCollectionNameToDocumentIdPrefix(?string $collectionName): string
     {

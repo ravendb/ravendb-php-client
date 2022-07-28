@@ -16,11 +16,11 @@ class SucceedRequestEventArgs extends EventArgs
 
     public function __construct(?string $database, ?string $url, ?HttpResponse $response, ?HttpRequest $request, ?int $attemptNumber)
     {
-        $this->$database = $database;
-        $this->$url = $url;
-        $this->$response = $response;
-        $this->$request = $request;
-        $this->$attemptNumber = $attemptNumber;
+        $this->database = $database;
+        $this->url = $url;
+        $this->response = $response;
+        $this->request = $request;
+        $this->attemptNumber = $attemptNumber;
     }
 
     public function getDatabase(): ?string

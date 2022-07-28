@@ -48,7 +48,7 @@ class IndexQuery extends IndexQueryWithParameters
             $hasher->write($this->getQueryParameters(), $serializer);
             return $hasher->getHash();
         } catch (\Throwable $e) {
-            throw new RuntimeException("Unable to calculate hash", $e);
+            throw new RuntimeException("Unable to calculate hash", $e->getCode(), $e);
         }
     }
 

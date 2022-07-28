@@ -47,7 +47,7 @@ abstract class AggregationQueryBase
 //                new LazyAggregationQueryOperation(_session, _query, result -> invokeAfterQueryExecuted(result), this::processResults), onEval);
 //    }
 
-    protected abstract function getIndexQuery(bool $updateAfterQueryExecuted = false): IndexQuery;
+    protected abstract function getIndexQuery(bool $updateAfterQueryExecuted = true): IndexQuery;
 
     protected abstract function invokeAfterQueryExecuted(QueryResult $result): void;
 
@@ -57,7 +57,7 @@ abstract class AggregationQueryBase
 
         $results = new FacetResultArray();
         foreach ($queryResult->getResults() as $result) {
-            $facetResult = JsonExtensions::getDefaultMapper()->deserialize($result, FacetResult::class, 'json');
+            $facetResult = JsonExtensions::getDefaultMapper()->denormalize($result, FacetResult::class);
             $results->offsetSet($facetResult->getName(), $facetResult);
         }
 

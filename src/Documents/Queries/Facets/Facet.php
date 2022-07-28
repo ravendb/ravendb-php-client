@@ -2,6 +2,8 @@
 
 namespace RavenDB\Documents\Queries\Facets;
 
+use Closure;
+use RavenDB\Documents\Session\Tokens\FacetToken;
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
 class Facet extends FacetBase
@@ -19,7 +21,7 @@ class Facet extends FacetBase
         $this->fieldName = $fieldName;
     }
 
-    public function toFacetToken(Function<Object, String> $addQueryParameter): FacetToken
+    public function toFacetToken(Closure $addQueryParameter): FacetToken
     {
         return FacetToken::create($this, $addQueryParameter);
     }

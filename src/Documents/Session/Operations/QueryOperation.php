@@ -186,19 +186,19 @@ class QueryOperation
             throw new RuntimeException("Unable to read json: " . $e->getMessage(), 0, $e);
         }
 
-//        if (!_noTracking) {
-//            _session.registerMissingIncludes(queryResult.getResults(), queryResult.getIncludes(), queryResult.getIncludedPaths());
-//
-//            if (queryResult.getCounterIncludes() != null) {
-//                _session.registerCounters(queryResult.getCounterIncludes(), queryResult.getIncludedCounterNames());
+        if (!$this->noTracking) {
+            $this->session->registerMissingIncludes($queryResult->getResults(), $queryResult->getIncludes(), $queryResult->getIncludedPaths());
+
+//            if ($queryResult->getCounterIncludes() != null) {
+//                $this->session->registerCounters($queryResult->getCounterIncludes(), $queryResult->getIncludedCounterNames());
 //            }
-//            if (queryResult.getTimeSeriesIncludes() != null) {
-//                _session.registerTimeSeries(queryResult.getTimeSeriesIncludes());
-//            }
-//            if (queryResult.getCompareExchangeValueIncludes() != null) {
-//                _session.getClusterSession().registerCompareExchangeValues(queryResult.getCompareExchangeValueIncludes());
-//            }
-//        }
+            if ($queryResult->getTimeSeriesIncludes() != null) {
+                $this->session->registerTimeSeries($queryResult->getTimeSeriesIncludes());
+            }
+            if ($queryResult->getCompareExchangeValueIncludes() != null) {
+                $this->session->getClusterSession()->registerCompareExchangeValues($queryResult->getCompareExchangeValueIncludes());
+            }
+        }
 
         return $resultItems;
     }

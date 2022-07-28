@@ -14,6 +14,7 @@ use RavenDB\Documents\Commands\Batches\CommandDataInterface;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Commands\Batches\PutCompareExchangeCommandData;
 use RavenDB\Documents\Operations\CompareExchange\CompareExchangeValue;
+use RavenDB\Documents\Commands\Batches\DeleteCompareExchangeCommandData;
 use RavenDB\Documents\Operations\CompareExchange\CompareExchangeValueInterface;
 use RavenDB\Documents\Operations\CompareExchange\CompareExchangeValueState;
 use RavenDB\Exceptions\IllegalArgumentException;
@@ -66,7 +67,7 @@ class CompareExchangeSessionValue
         }
     }
 
-    public function getValue(string $className, ?DocumentConventions $conventions): ?CompareExchangeValue
+    public function getValue(?string $className, ?DocumentConventions $conventions): ?CompareExchangeValue
     {
         switch ($this->state->getValue()) {
             case CompareExchangeValueState::NONE:
@@ -80,13 +81,20 @@ class CompareExchangeSessionValue
                 }
 
                 $entity = null;
-                if ($this->originalValue != null && $this->originalValue->getValue() != null) {
-                    // @todo: decide what should we do here, how to treat primitives (would primitives gets in here in the first case?)
-//                    if (ClassUtils.isPrimitiveOrWrapper(clazz) || String.class.equals(clazz)) {
-                    if (false) {
+                if ($this->originalValue != null && $this->originalValue->getValue() !== null) {
+                    if ($className == null) {
                         try {
-                            $entityJsonValue = $this->originalValue->getValue()[CompareExchange::OBJECT_FIELD_NAME];
-                            $entity = $conventions->getEntityMapper()->denormalize($entityJsonValue, $className);
+                            $originalValue = $this->originalValue->getValue();
+                            if (!is_array($originalValue)) {
+                                $entity = $originalValue;
+                            } else {
+                                $entityJsonValue = null;
+                                if (array_key_exists(CompareExchange::OBJECT_FIELD_NAME, $originalValue)) {
+                                    $entityJsonValue = $originalValue[CompareExchange::OBJECT_FIELD_NAME];
+                                }
+
+                                $entity = !empty($entityJsonValue) ? $conventions->getEntityMapper()->denormalize($entityJsonValue, $className) : null;
+                            }
                         } catch (\Throwable $ex) {
                             throw new RavenException("Unable to read compare exchange value: " . $this->originalValue->getValue(), $ex);
                         }
@@ -107,7 +115,7 @@ class CompareExchangeSessionValue
         }
     }
 
-    public function create($item): CompareExchangeValue
+    public function & create($item): CompareExchangeValue
     {
         $this->assertState();
 
@@ -155,7 +163,7 @@ class CompareExchangeSessionValue
 
                 $entityJson = is_array($entity) ? $entity : null;
                 $metadata = null;
-                if ($this->value->hasMetadata() && count($this->value->getMetadata()) != 0) {
+                if ($this->value->hasMetadata() && $this->value->getMetadata()->count() != 0) {
                     $metadata = $this->prepareMetadataForPut($this->key, $this->value->getMetadata(), $conventions);
                 }
                 $entityToInsert = null;
@@ -177,7 +185,7 @@ class CompareExchangeSessionValue
 
                 return new PutCompareExchangeCommandData($newValue->getKey(), $entityToInsert, $newValue->getIndex());
             case CompareExchangeValueState::DELETED:
-                return null; //new DeleteCompareExchangeCommandData($this->key, $this->index);
+                return new DeleteCompareExchangeCommandData($this->key, $this->index);
             case CompareExchangeValueState::MISSING:
                 return null;
             default:
@@ -260,7 +268,7 @@ class CompareExchangeSessionValue
             }
         }
 
-        return $conventions->getEntityMapper()->normalize($metadataDictionary);
+        return $conventions->getEntityMapper()->normalize($metadataDictionary->toSimpleArray());
     }
 
     private static function throwInvalidExpiresMetadata(?string $message): void

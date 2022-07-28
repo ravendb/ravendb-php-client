@@ -93,4 +93,9 @@ interface QueryBaseInterface
      * @param mixed $value Parameter value
      */
     function addParameter(string $name, $value);
+
+    /**
+     * @return array
+     */
+    function toList(): array;
 }
