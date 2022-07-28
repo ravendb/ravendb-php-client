@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Session;
 
 use RavenDB\Documents\Queries\GroupBy;
 use RavenDB\Documents\Queries\QueryResult;
-use RavenDB\Documents\Queries\SearchOperator;
 
 interface DocumentQueryInterface
     extends DocumentQueryBaseInterface, DocumentQueryBaseSingleInterface, EnumerableQueryInterface
@@ -15,12 +14,14 @@ interface DocumentQueryInterface
 
     /**
      * Whether we should apply distinct operation to the query on the server side
+     *
      * @return bool true if server should return distinct results
      */
     function isDistinct(): bool;
 
     /**
      * Returns the query result. Accessing this property for the first time will execute the query.
+     *
      * @return QueryResult query result
      */
     function getQueryResult(): QueryResult;
@@ -87,6 +88,7 @@ interface DocumentQueryInterface
     /**
      * Changes the return type of the query
      * @param string $resultClass class of result
+     *
      * @return DocumentQueryInterface Document query
      */
     function ofType(string $resultClass): DocumentQueryInterface;
@@ -94,6 +96,8 @@ interface DocumentQueryInterface
     /**
      * @param string|GroupBy $fieldName
      * @param string|GroupBy ...$fieldNames
+     *
+     * @return GroupByDocumentQueryInterface
      */
     public function groupBy($fieldName, ...$fieldNames): GroupByDocumentQueryInterface;
 

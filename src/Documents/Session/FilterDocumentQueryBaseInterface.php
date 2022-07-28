@@ -9,17 +9,23 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
 {
     /**
      * Negate the next operation
+     *
+     * @return static
      */
     function not();
 
     /**
      * Add an AND to the query
      * @param bool $wrapPreviousQueryClauses wrap previous query clauses
+     *
+     * @return static
      */
     public function andAlso(bool $wrapPreviousQueryClauses = false);
 
     /**
      * Simplified method for closing a clause within the query
+     *
+     * @return static
      */
     function closeSubclause();
 
@@ -27,6 +33,8 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * Performs a query matching ALL of the provided values against the given field (AND)
      * @param ?string $fieldName Field name
      * @param Collection $values values to match
+     *
+     * @return static
      */
     function containsAll(?string $fieldName, Collection $values);
 
@@ -36,6 +44,8 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * Performs a query matching ANY of the provided values against the given field (OR)
      * @param ?string $fieldName Field name
      * @param Collection $values values to match
+     *
+     * @return static
      */
     function containsAny(?string $fieldName, Collection $values);
 
@@ -43,16 +53,22 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
 
     /**
      * Negate the next operation
+     *
+     * @return static
      */
     function negateNext();
 
     /**
      *  Simplified method for opening a new clause within the query
+     *
+     * @return static
      */
     function openSubclause();
 
     /**
      * Add an OR to the query
+     *
+     * @return static
      */
     public function orElse();
 
@@ -77,6 +93,8 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param string $fieldName Field name
      * @param string $whereClause Where clause
      * @param bool $exact Use exact matcher
+     *
+     * @return static
      */
     function whereLucene(string $fieldName, string $whereClause, bool $exact = false);
 
@@ -86,6 +104,8 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param mixed $start Range start
      * @param mixed $end Range end
      * @param bool $exact Use exact matcher
+     *
+     * @return static
      */
     function whereBetween(string $fieldName, $start, $end, bool $exact = false);
 
@@ -96,6 +116,8 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param string $fieldName Field name
      * @param mixed $value Value to use
      * @param bool $exact Use exact matcher
+     *
+     * @return static
      */
     function whereEndsWith(string $fieldName, $value, bool $exact = false);
 
@@ -105,6 +127,8 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param string $fieldName
      * @param mixed|MethodCall $value
      * @param bool $exact
+     *
+     * @return static
      */
     function whereEquals(string $fieldName, $value, bool $exact = false);
 
@@ -113,6 +137,8 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
 
     /**
      * @param WhereParams $whereParams
+     *
+     * @return static
      */
     function whereEqualsWithParams(WhereParams $whereParams);
 
@@ -120,6 +146,8 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param string $fieldName
      * @param mixed|MethodCall $value
      * @param bool $exact
+     *
+     * @return static
      */
     function whereNotEquals(string $fieldName, $value, bool $exact = false);
 
@@ -128,6 +156,8 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
 
     /**
      * @param WhereParams $whereParams
+     *
+     * @return static
      */
     function whereNotEqualsWithParams(WhereParams $whereParams);
 
@@ -136,6 +166,8 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param string $fieldName Field name
      * @param mixed $value Value to use
      * @param bool $exact Use exact matcher
+     *
+     * @return static
      */
     function whereGreaterThan(string $fieldName, $value, bool $exact = false);
 
@@ -147,6 +179,8 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param string $fieldName Field name
      * @param mixed $value Value to use
      * @param bool $exact Use exact matcher
+     *
+     * @return static
      */
     function whereGreaterThanOrEqual(string $fieldName, $value, bool $exact = false);
 
@@ -157,6 +191,8 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param string $fieldName Field name
      * @param Collection $values Values to use
      * @param bool $exact Use exact matcher
+     *
+     * @return static
      */
     function whereIn(string $fieldName, Collection $values, bool $exact = false);
 
@@ -167,6 +203,8 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param string $fieldName Field name
      * @param mixed $value Value to use
      * @param bool $exact Use exact matcher
+     *
+     * @return static
      */
     function whereLessThan(string $fieldName, $value, bool $exact = false);
 
@@ -177,6 +215,8 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param string $fieldName Field name
      * @param mixed $value Value to use
      * @param bool $exact Use exact matcher
+     *
+     * @return static
      */
     function whereLessThanOrEqual(string $fieldName, $value, bool $exact = false);
 
@@ -187,6 +227,8 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param string $fieldName Field name
      * @param mixed $value Value to use
      * @param bool $exact Use exact matcher
+     *
+     * @return static
      */
     function whereStartsWith(string $fieldName, $value, bool $exact = false);
 
@@ -197,6 +239,8 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
     /**
      * Check if the given field exists
      * @param string $fieldName Field name
+     *
+     * @return static
      */
     function whereExists(string $fieldName);
 
