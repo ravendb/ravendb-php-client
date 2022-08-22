@@ -31,8 +31,14 @@ class GetIndexesStatisticsCommand extends RavenCommand
         if ($response == null) {
             self::throwInvalidResponse();
         }
+        $responseData = json_decode($response, true);
 
-        $this->result = $this->getMapper()->deserialize($response, $this->getResultClass(), 'json');
+        $resultsData = [];
+        if (array_key_exists('Results', $responseData)) {
+            $resultsData = $responseData['Results'];
+        }
+
+        $this->result = $this->getMapper()->denormalize($resultsData, $this->getResultClass());
     }
 
     public function isReadRequest(): bool
