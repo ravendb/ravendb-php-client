@@ -322,7 +322,7 @@ abstract class RavenTestDriver extends TestCase
                 }
 
                 if ($sw->elapsed() > $timeout->getSeconds()) {
-                    return $currentVal;
+                    throw new RuntimeException('Expected value: ' . $currentVal . ', never received.');
                 }
             } catch (\Throwable $exception) {
                 if ($sw->elapsed() > $timeout->getSeconds()) {
