@@ -661,9 +661,9 @@ class RequestExecutor implements CleanCloseable
                         $command,
                         $request,
                         $response,
-                        $url
-//                        sessionInfo,
-//                        shouldRetry
+                        $url,
+                        $sessionInfo,
+                        true // $shouldRetry
                     )) {
                         $dbMissingHeader = $response->getFirstHeader("Database-Missing");
                         if ($dbMissingHeader != null) {
@@ -1193,9 +1193,9 @@ class RequestExecutor implements CleanCloseable
             }
 
             $url = $request->getUrl();
-//            if (!$this->handleServerDown($url, $chosenNode, $nodeIndex, $command, $request, null, $exception, $sessionInfo,  $shouldRetry)) {
-//                throwFailedToContactAllNodes($command, $request);
-//            }
+            if (!$this->handleServerDown($url, $chosenNode, $nodeIndex, $command, $request, null, $exception, $sessionInfo,  $shouldRetry)) {
+                $this->throwFailedToContactAllNodes($command, $request);
+            }
 
             return null;
         }
@@ -1400,35 +1400,35 @@ class RequestExecutor implements CleanCloseable
         $message = 'Tried to send ' . $command->getResultClass() . " request via " . $request->getMethod()
                 . ' ' . $request->getUrl() . " to all configured nodes in the topology, none of the attempt succeeded." . PHP_EOL;
 
-//        if (_topologyTakenFromNode != null) {
-//            message += "I was able to fetch " + _topologyTakenFromNode.getDatabase()
-//                    + " topology from " + _topologyTakenFromNode.getUrl() + "." + System.lineSeparator();
+//        if ($this->topologyTakenFromNode != null) {
+//            $message .= "I was able to fetch " . $this->topologyTakenFromNode->getDatabase()
+//                    . " topology from " . $this->topologyTakenFromNode->getUrl() . "." . PHP_EOL;
 //        }
-//
-//        List<ServerNode> nodes = null;
-//        if (_nodeSelector != null && _nodeSelector.getTopology() != null) {
-//            nodes = _nodeSelector.getTopology().getNodes();
-//        }
-//
-//        if (nodes == null) {
-//            message += "Topology is empty.";
-//        } else {
-//            message += "Topology: ";
-//
-//            for (ServerNode node : nodes) {
-//                Exception exception = command.getFailedNodes().get(node);
-//                message += System.lineSeparator() +
-//                        "[Url: " + node.getUrl() + ", " +
-//                        "ClusterTag: " + node.getClusterTag() + ", " +
-//                        "ServerRole: " + node.getServerRole() + ", " +
-//                        "Exception: " + (exception != null ? exception.getMessage() : "No exception") + "]";
-//
-//            }
-//        }
-//
+
+        $nodes = null;
+        if ($this->nodeSelector != null && $this->nodeSelector->getTopology() != null) {
+            $nodes = $this->nodeSelector->getTopology()->getNodes();
+        }
+
+        if ($nodes == null) {
+            $message .= "Topology is empty.";
+        } else {
+            $message .= "Topology: ";
+
+            foreach ($nodes as $node) {
+                $exception = $command->getFailedNodes()->get($node);
+                $message .= PHP_EOL .
+                        "[Url: " . $node->getUrl() . ", " .
+                        "ClusterTag: " . $node->getClusterTag() . ", " .
+                        "ServerRole: " . $node->getServerRole() . ", " .
+                        "Exception: " . ($exception != null ? $exception->getMessage() : "No exception") . "]";
+
+            }
+        }
+
         throw new AllTopologyNodesDownException($message);
     }
-//
+
 //    public boolean inSpeedTestPhase() {
 //        return Optional.ofNullable(_nodeSelector).map(NodeSelector::inSpeedTestPhase).orElse(false);
 //    }
@@ -1560,9 +1560,9 @@ class RequestExecutor implements CleanCloseable
         RavenCommand $command,
         HttpRequestInterface $request,
         HttpResponseInterface $response,
-        string $url
-//        SessionInfo sessionInfo,
-//        boolean shouldRetry
+        string $url,
+        ?SessionInfo $sessionInfo,
+        bool $shouldRetry
     ): bool
     {
         try {
@@ -1653,15 +1653,15 @@ class RequestExecutor implements CleanCloseable
                 case HttpStatusCode::BAD_GATEWAY:
                 case HttpStatusCode::SERVICE_UNAVAILABLE:
                     return $this->handleServerDown(
-//                        url,
+                        $url,
                         $chosenNode,
                         $nodeIndex,
                         $command,
                         $request,
                         $response,
                         null,
-//                        sessionInfo,
-//                        shouldRetry
+                        $sessionInfo,
+                        $shouldRetry
                     );
 //                case HttpStatus.SC_CONFLICT:
 //                    handleConflict(response);
@@ -1724,15 +1724,15 @@ class RequestExecutor implements CleanCloseable
 //    }
 
     private function handleServerDown(
-//          String url,
+          string $url,
           ServerNode $chosenNode,
           ?int $nodeIndex,
           RavenCommand $command,
           HttpRequestInterface $request,
-          HttpResponseInterface $response,
-          ?Exception $e
-//          SessionInfo sessionInfo,
-//          boolean shouldRetry
+          ?HttpResponseInterface $response,
+          ?Exception $e,
+          ?SessionInfo $sessionInfo,
+          bool $shouldRetry
     ): bool {
         $failedNodes = $command->getFailedNodes();
         if ($failedNodes == null) {
@@ -1768,17 +1768,17 @@ class RequestExecutor implements CleanCloseable
         // @todo: uncomment this
 //        $this->spawnHealthChecks($chosenNode, $nodeIndex);
 
-//        $indexAndNodeAndEtag = $this->nodeSelector->getPreferredNodeWithTopology();
+        $indexAndNodeAndEtag = $this->nodeSelector->getPreferredNodeWithTopology();
 
         if ($command->failoverTopologyEtag != $this->topologyEtag) {
-//            command.getFailedNodes().clear();
-//            command.failoverTopologyEtag = topologyEtag;
+            $command->getFailedNodes()->clear();
+            $command->failoverTopologyEtag = $this->topologyEtag;
         }
 
-//        if (command.getFailedNodes().containsKey(indexAndNodeAndEtag.currentNode)) {
-//            return false;
-//        }
-//
+        if ($command->getFailedNodes()->hasKey($indexAndNodeAndEtag->currentNode)) {
+            return false;
+        }
+
 //        onFailedRequestInvoke(url, e);
 //
 //        execute(indexAndNodeAndEtag.currentNode, indexAndNodeAndEtag.currentIndex, command, shouldRetry, sessionInfo);
