@@ -4,7 +4,7 @@
     "description": "RavenDB PHP client",
     "keywords": [
         "ravendb",
-        "ravendb-php-client"
+        "php-client"
     ],
     "homepage": "https://github.com/ravendb/ravendb-php-client",
     "license": "MIT",
@@ -50,11 +50,6 @@
         "fix-style": "phpcbf src tests",
         "stan": "phpstan analyse src tests",
         "psalm": "psalm"
-    },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "1.0-dev"
-        }
     },
     "config": {
         "sort-packages": true
