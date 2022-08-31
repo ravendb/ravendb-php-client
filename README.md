@@ -18,13 +18,36 @@ $ composer require ravendb/ravendb-php-client
 
 ## What's new?
 
-#### 5.2.0beta
+#### 5.2.0beta1
 
-...
-
-### **Coming soon, work in progress**
-
-...
+- **session**
+    - ability to track objects
+    - crud
+    - include
+    - no tracking
+- **indexes**
+    - crud (static/auto)
+    - modify state: (setting index priority, enabling/disabling indexes, start/stop index, list/clean indexing errors, getting terms)
+- **query**
+    - static/dynamic indexes
+    - document query methos (where equals, starts with, etc)
+    - aggregation (group by )
+    - count, order, take/skip
+    - boost, proximity, fuzzy
+    - select fields (projection)
+    - delete/patch by query
+- **https support**
+    - certificates crud
+    - request executor
+- **compare exchange**
+    - crud
+    - session
+- **patch**
+    - by script
+    - by path
+- **databases**
+    - crud
+    
 
 > The client is still in the **beta** phase.
 
