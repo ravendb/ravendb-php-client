@@ -6,15 +6,73 @@ PHP client API (v5.2) for [RavenDB](https://ravendb.net/) , a NoSQL document dat
 
 **Package has been made to match Java and other RavenDB clients**
 
+> Please note that **RavenDB PHP client** is still under **DEVELOPMENT** and client API can be changed.
 
 ## Installation
 
-Add this library to your project via [Composer](https://getcomposer.org/)
+In order to add this library to your project, first you must add the following line to your project composer.json:  
+
+``` json
+{ 
+    ...
+    "minimum-stability": "dev",
+    ... 
+}
+```
+
+Then you can install library to your project via [Composer](https://getcomposer.org/)
 
 ``` bash
 $ composer require ravendb/ravendb-php-client
 ```
 
+
+## How to start with RavenDB in PHP?
+
+```injectablephp
+
+use RavenDB\Documents\DocumentStore;
+use YourClass\Company;
+
+$store = new DocumentStore(["http://localhost:8080" ], "Northwind")
+
+try {
+    $store->initialize();
+    
+    $companyId = null;
+    
+    //store new object
+    $session = $store->openSession();
+    try {
+        $entity = new Company();
+        $entity->setName("Company");
+        $session->store($entity);
+        $session->saveChanges();
+    
+        // after calling saveChanges(), an id field if exists
+        // is filled by the entity's id
+        $companyId = $entity->getId();
+    } finnaly {
+        $session->close();
+    }
+    
+    $session = $store->openSession();
+    try {
+        //load by id
+        $entity = $session->load(Company::class, $companyId);
+    
+        // do something with the loaded entity
+    } finnaly {
+        $session->close();
+    }
+
+} finally {
+    $store->close();
+}
+
+```
+
+Read more about **RavenDB** and how to use it in our [documentation](https://ravendb.net/docs/).
 
 ## What's new?
 
@@ -58,11 +116,12 @@ $ composer require ravendb/ravendb-php-client
 
 ----
 #### RavenDB Documentation
-https://ravendb.net/docs/article-page/5.3/php
+[https://ravendb.net/docs/](https://ravendb.net/docs/)
+
 
 -----
 ##### Bug Tracker
-http://issues.hibernatingrhinos.com/issues/RDBC
+[http://issues.hibernatingrhinos.com/issues/RDBC](http://issues.hibernatingrhinos.com/issues/RDBC)
 
 -----
 ##### License
