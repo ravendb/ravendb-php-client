@@ -43,6 +43,7 @@ class JsonExtensions
         $metadataAwareNameConverter = new MetadataAwareNameConverter($classMetadataFactory, $dotNetNamingConvertor);
 
         $normalizers = [
+            new RavenArrayNormalizer(),
             new TypedArrayNormalizer(),
             new StringArrayNormalizer(),
             new ValueObjectNormalizer(),

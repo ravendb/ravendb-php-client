@@ -31,7 +31,7 @@ abstract class AbstractIndexDefinitionBuilder
     private ?string $outputReduceToCollection = null;
     private ?string $patternForOutputReduceToCollectionReferences = null;
     private ?string $patternReferencesCollectionName = null;
-    private ?StringArray $additionalSources = null;
+    private ?AdditionalSourcesArray $additionalSources = null;
     private ?AdditionalAssemblySet $additionalAssemblies = null;
     private ?IndexConfiguration $configuration = null;
 

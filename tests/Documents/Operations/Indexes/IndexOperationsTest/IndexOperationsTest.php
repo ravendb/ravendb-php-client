@@ -32,6 +32,7 @@ use RavenDB\Type\StringSet;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
 
+// !status: DONE
 class IndexOperationsTest extends RemoteTestBase
 {
     public function testCanDeleteIndex(): void
@@ -85,7 +86,7 @@ class IndexOperationsTest extends RemoteTestBase
         }
     }
 
-    public function aTestGetCanIndexes(): void
+    public function testGetCanIndexes(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -141,8 +142,7 @@ class IndexOperationsTest extends RemoteTestBase
         }
     }
 
-    //@todo: implement this
-    public function atestHasIndexChanged(): void
+    public function testHasIndexChanged(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -151,9 +151,7 @@ class IndexOperationsTest extends RemoteTestBase
 
             $store->maintenance()->send(new PutIndexesOperation($indexDef));
 
-            // @todo: implement this
-            // this test failes for some reason and don't return true here
-//            $this->assertFalse($store->maintenance()->send(new IndexHasChangedOperation($indexDef)));
+            $this->assertFalse($store->maintenance()->send(new IndexHasChangedOperation($indexDef)));
 
             $indexDef->setMaps(StringSet::fromArray(["from users"]));
             $this->assertTrue($store->maintenance()->send(new IndexHasChangedOperation($indexDef)));

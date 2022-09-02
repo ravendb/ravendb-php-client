@@ -17,7 +17,7 @@ class MultiDatabaseHiLoIdGenerator
         $this->store = $store;
     }
 
-    public function generateDocumentId(string $database, object $entity): string
+    public function generateDocumentId(?string $database, object $entity): string
     {
         $database = $this->store->getEffectiveDatabase($database);
         if (!$this->generators->offsetExists($database)) {

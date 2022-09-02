@@ -931,27 +931,55 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         }
     }
 
-//    @Override
-//    public <T, TKey, TValue> void patchObject(T entity, String pathToObject, Consumer<JavaScriptMap<TKey, TValue>> mapAdder) {
-//        IMetadataDictionary metadata = getMetadataFor(entity);
-//        String id = (String) metadata.get(Constants.Documents.Metadata.ID);
-//        patchObject(id, pathToObject, mapAdder);
-//    }
-//
-//    @Override
-//    public <T, TKey, TValue> void patchObject(String id, String pathToObject, Consumer<JavaScriptMap<TKey, TValue>> mapAdder) {
-//        JavaScriptMap<TKey, TValue> scriptMap = new JavaScriptMap<>(_customCount++, pathToObject);
-//
-//        mapAdder.accept(scriptMap);
-//
-//        PatchRequest patchRequest = new PatchRequest();
-//        patchRequest.setScript(scriptMap.getScript());
-//        patchRequest.setValues(scriptMap.getParameters());
-//
-//        if (!tryMergePatches(id, patchRequest)) {
-//            defer(new PatchCommandData(id, null, patchRequest, null));
-//        }
-//    }
+    /**
+     * @param string|object|null $idOrEntity
+     * @param string|null $pathToObject
+     * @param Closure $dictionaryAdder
+     */
+    public function patchObject($idOrEntity, ?string $pathToObject, Closure $dictionaryAdder): void
+    {
+        if (is_object($idOrEntity)) {
+            $this->patchObjectByEntity($idOrEntity, $pathToObject, $dictionaryAdder);
+            return;
+        }
+        if (is_string($idOrEntity)) {
+            $this->patchObjectById($idOrEntity, $pathToObject, $dictionaryAdder);
+            return;
+        }
+        throw new IllegalArgumentException('Wrong argument type');
+    }
+
+    /**
+     * @param object|null $entity
+     * @param string|null $pathToObject
+     * @param Closure $dictionaryAdder
+     */
+    protected function patchObjectByEntity(?object $entity, ?string $pathToObject, Closure $dictionaryAdder): void
+    {
+        $metadata = $this->getMetadataFor($entity);
+        $id = $metadata->get(DocumentsMetadata::ID);
+        $this->patchObjectById($id, $pathToObject, $dictionaryAdder);
+    }
+
+    /**
+     * @param string|null $id
+     * @param string|null $pathToObject
+     * @param Closure $mapAdder
+     */
+    protected function patchObjectById(?string $id, ?string $pathToObject, Closure $mapAdder): void
+    {
+        $scriptMap = new JavaScriptMap($this->customCount++, $pathToObject);
+
+        $mapAdder($scriptMap);
+
+        $patchRequest = new PatchRequest();
+        $patchRequest->setScript($scriptMap->getScript());
+        $patchRequest->setValues($scriptMap->getParameters());
+
+        if (!$this->tryMergePatches($id, $patchRequest)) {
+            $this->defer(new PatchCommandData($id, null, $patchRequest, null));
+        }
+    }
 
     private function tryMergePatches(?string $id, ?PatchRequest $patchRequest): bool
     {

@@ -3,6 +3,8 @@
 namespace tests\RavenDB\Test\Client\_QueryTest;
 
 use RavenDB\Documents\DocumentStoreInterface;
+use RavenDB\Documents\Operations\CollectionStatistics;
+use RavenDB\Documents\Operations\GetCollectionStatisticsOperation;
 use RavenDB\Documents\Queries\Query;
 use RavenDB\Documents\Queries\SearchOperator;
 use RavenDB\Documents\Session\BeforeQueryEventArgs;
@@ -87,47 +89,47 @@ class QueryTest extends RemoteTestBase
         }
     }
 
-  public function testQuery_CreateClausesForQueryDynamicallyWhenTheQueryEmpty(): void
-  {
-      $store = $this->getDocumentStore();
-      try {
-          $id1 = "users/1";
-          $id2 = "users/2";
+    public function testQuery_CreateClausesForQueryDynamicallyWhenTheQueryEmpty(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $id1 = "users/1";
+            $id2 = "users/2";
 
-          $session = $store->openSession();
-          try {
-              $article1 = new Article();
-              $article1->setTitle("foo");
-              $article1->setDescription("bar");
-              $article1->setDeleted(false);
-              $session->store($article1, $id1);
+            $session = $store->openSession();
+            try {
+                $article1 = new Article();
+                $article1->setTitle("foo");
+                $article1->setDescription("bar");
+                $article1->setDeleted(false);
+                $session->store($article1, $id1);
 
-              $article2 = new Article();
-              $article2->setTitle("foo");
-              $article2->setDescription("bar");
-              $article2->setDeleted(true);
-              $session->store($article2, $id2);
+                $article2 = new Article();
+                $article2->setTitle("foo");
+                $article2->setDescription("bar");
+                $article2->setDeleted(true);
+                $session->store($article2, $id2);
 
-              $session->saveChanges();
+                $session->saveChanges();
             } finally {
-              $session->close();
+                $session->close();
             }
 
-          $session = $store->openSession();
-          try {
+            $session = $store->openSession();
+            try {
                 $query = $session->advanced()->documentQuery(Article::class)
-                        ->andAlso(true);
+                    ->andAlso(true);
 
-                $this->assertEquals("from 'Articles'",$query->toString());
+                $this->assertEquals("from 'Articles'", $query->toString());
 
                 $queryResult = $query->toList();
                 $this->assertCount(2, $queryResult);
             } finally {
-              $session->close();
-          }
+                $session->close();
+            }
         } finally {
-          $store->close();
-      }
+            $store->close();
+        }
     }
 
     public function testQuerySimple(): void
@@ -164,7 +166,7 @@ class QueryTest extends RemoteTestBase
             $store->close();
         }
     }
-//  public void queryLazily() throws Exception {
+//  public function queryLazily() throws Exception {
 //        try (IDocumentStore store = getDocumentStore()) {
 //            try (IDocumentSession session = store.openSession()) {
 //
@@ -177,12 +179,12 @@ class QueryTest extends RemoteTestBase
 //                User user3 = new User();
 //                user3.setName("Tarzan");
 //
-//                session.store(user1, "users/1");
-//                session.store(user2, "users/2");
-//                session.store(user3, "users/3");
-//                session.saveChanges();
+//                $session->store(user1, "users/1");
+//                $session->store(user2, "users/2");
+//                $session->store(user3, "users/3");
+//                $session->saveChanges();
 //
-//                Lazy<List<User>> lazyQuery = session.query(User.class)
+//                Lazy<List<User>> lazyQuery = $session->query(User.class)
 //                        .lazily();
 //
 //                List<User> queryResult = lazyQuery.getValue();
@@ -195,32 +197,37 @@ class QueryTest extends RemoteTestBase
 //            }
 //        }
 //    }
-//
-//    @Test
-//    public void collectionsStats() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            try (IDocumentSession session = store.openSession()) {
-//
-//                User user1 = new User();
-//                user1.setName("John");
-//
-//                User user2 = new User();
-//                user2.setName("Jane");
-//
-//                session.store(user1, "users/1");
-//                session.store(user2, "users/2");
-//                session.saveChanges();
-//            }
-//
-//            CollectionStatistics stats = store.maintenance().send(new GetCollectionStatisticsOperation());
-//
-//            assertThat(stats.getCountOfDocuments())
-//                    .isEqualTo(2);
-//
-//            assertThat(stats.getCollections().get("Users"))
-//                    .isEqualTo(2);
-//        }
-//    }
+
+    public function testCollectionsStats(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $session = $store->openSession();
+
+            try {
+                $user1 = new User();
+                $user1->setName("John");
+
+                $user2 = new User();
+                $user2->setName("Jane");
+
+                $session->store($user1, "users/1");
+                $session->store($user2, "users/2");
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            /** @var CollectionStatistics $stats */
+            $stats = $store->maintenance()->send(new GetCollectionStatisticsOperation());
+
+            $this->assertEquals(2, $stats->getCountOfDocuments());
+
+            $this->assertEquals(2, $stats->getCollections()["Users"]);
+        } finally {
+            $store->close();
+        }
+    }
 
     public function testQueryWithWhereClause(): void
     {
@@ -341,11 +348,11 @@ class QueryTest extends RemoteTestBase
             try {
 
                 $results = $session->query(ReduceResult::class, Query::index("UsersByName"))
-                        ->orderByDescending("count")
-                        ->toList();
+                    ->orderByDescending("count")
+                    ->toList();
 
                 $this->assertEquals(2, $results[0]->getCount());
-                $this->assertEquals("John",$results[0]->getName());
+                $this->assertEquals("John", $results[0]->getName());
 
                 $this->assertEquals(1, $results[1]->getCount());
                 $this->assertEquals("Tarzan", $results[1]->getName());
@@ -358,13 +365,13 @@ class QueryTest extends RemoteTestBase
     }
 
 //    @Test
-//    public void querySingleProperty() throws Exception {
+//    public function querySingleProperty() throws Exception {
 //        try (IDocumentStore store = getDocumentStore()) {
 //            addUsers(store);
 //
 //            try (IDocumentSession session = store.openSession()) {
 //
-//                List<Integer> ages = session.query(User.class)
+//                List<Integer> ages = $session->query(User.class)
 //                        .addOrder("age", true, OrderingType.LONG)
 //                        .selectFields(Integer.class, "age")
 //                        .toList();
@@ -377,13 +384,13 @@ class QueryTest extends RemoteTestBase
 //    }
 //
 //    @Test
-//    public void queryWithSelect() throws Exception {
+//    public function queryWithSelect() throws Exception {
 //        try (IDocumentStore store = getDocumentStore()) {
 //            addUsers(store);
 //
 //            try (IDocumentSession session = store.openSession()) {
 //
-//                List<User> usersAge = session.query(User.class)
+//                List<User> usersAge = $session->query(User.class)
 //                        .selectFields(User.class, "age", "id")
 //                        .toList();
 //
@@ -538,13 +545,13 @@ class QueryTest extends RemoteTestBase
     }
 
 //  @Test
-//    public void queryWithProjection() throws Exception {
+//    public function queryWithProjection() throws Exception {
 //        try (IDocumentStore store = getDocumentStore()) {
 //            addUsers(store);
 //
 //            try (IDocumentSession session = store.openSession()) {
 //
-//                List<UserProjection> projections = session.query(User.class)
+//                List<UserProjection> projections = $session->query(User.class)
 //                        .selectFields(UserProjection.class)
 //                        .toList();
 //
@@ -563,13 +570,13 @@ class QueryTest extends RemoteTestBase
 //    }
 //
 //    @Test
-//    public void queryWithProjection2() throws Exception {
+//    public function queryWithProjection2() throws Exception {
 //        try (IDocumentStore store = getDocumentStore()) {
 //            addUsers(store);
 //
 //            try (IDocumentSession session = store.openSession()) {
 //
-//                List<UserProjection> projections = session.query(User.class)
+//                List<UserProjection> projections = $session->query(User.class)
 //                        .selectFields(UserProjection.class, "lastName", "id")
 //                        .toList();
 //
@@ -599,8 +606,8 @@ class QueryTest extends RemoteTestBase
             try {
                 $uniqueNames = $session->query(User::class)
 //                        ->selectFields(String::class, "name")
-                        ->distinct()
-                        ->toList();
+                    ->distinct()
+                    ->toList();
 
                 $this->assertCount(2, $uniqueNames);
                 $this->assertContains("Tarzan", $uniqueNames);
@@ -646,8 +653,8 @@ class QueryTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $users = $session->query(User::class)
-                        ->noTracking()
-                        ->toList();
+                    ->noTracking()
+                    ->toList();
 
                 $this->assertCount(3, $users);
 
@@ -872,17 +879,17 @@ class QueryTest extends RemoteTestBase
                 $orders = $session->query(Order::class, 'OrderTime')
                     ->whereLessThan("delay", Duration::ofHours(3))
                     ->toList();
-                $delay = array_map(function(Order $o) {
+                $delay = array_map(function (Order $o) {
                     return $o->getCompany();
                 }, $orders);
 
                 $this->assertEquals(["hours", "minutes"], $delay);
 
                 $orders = $session->query(Order::class, 'OrderTime')
-                        ->whereGreaterThan("delay", Duration::ofHours(3))
-                        ->toList();
+                    ->whereGreaterThan("delay", Duration::ofHours(3))
+                    ->toList();
 
-                $delay = array_map(function(Order $o) {
+                $delay = array_map(function (Order $o) {
                     return $o->getCompany();
                 }, $orders);
 

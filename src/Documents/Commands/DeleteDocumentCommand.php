@@ -14,15 +14,15 @@ class DeleteDocumentCommand extends VoidRavenCommand
     private ?string $id = null;
     private ?string $changeVector = null;
 
-    public function __construct(?string $id, ?string $changeVector = null)
+    public function __construct(?string $idOrCopy, ?string $changeVector = null)
     {
         parent::__construct();
 
-        if ($id == null) {
+        if ($idOrCopy == null) {
             throw new IllegalArgumentException("Id cannot be null");
         }
 
-        $this->id = $id;
+        $this->id = $idOrCopy;
         $this->changeVector = $changeVector;
     }
 

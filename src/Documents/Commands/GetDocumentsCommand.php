@@ -41,26 +41,70 @@ class GetDocumentsCommand extends RavenCommand
     private ?string $exclude = null;
     private ?string $startAfter = null;
 
-    protected function __construct()
+    public function __construct()
     {
         parent::__construct(GetDocumentsResult::class);
     }
 
-    public static function forMultipleDocuments(StringArray $ids, ?StringArray $includes, bool $metadataOnly = false): GetDocumentsCommand
+    /**
+     * @param StringArray|array|null $ids
+     */
+    protected function setIds($ids): void
+    {
+        $this->ids = is_array($ids) ? StringArray::fromArray($ids) : $ids;
+    }
+
+    /**
+     * @param StringArray|array|null $includes
+     */
+    protected function setIncludes($includes): void
+    {
+        $this->includes = is_array($includes) ? StringArray::fromArray($includes) : $includes;
+    }
+
+    /**
+     * @param StringArray|array|null $counters
+     */
+    protected function setCounters($counters)
+    {
+        $this->counters = is_array($counters) ? StringArray::fromArray($counters) : $counters;
+    }
+
+    /**
+     * @param StringArray|array|null $compareExchangeValueIncludes
+     */
+    protected function setCompareExchangeValueIncludes($compareExchangeValueIncludes)
+    {
+        $this->compareExchangeValueIncludes = is_array($compareExchangeValueIncludes) ? StringArray::fromArray($compareExchangeValueIncludes) : $compareExchangeValueIncludes;
+    }
+
+    /**
+     * @param StringArray|array|null $ids
+     * @param StringArray|array|null $includes
+     * @param bool $metadataOnly
+     * @return GetDocumentsCommand
+     */
+    public static function forMultipleDocuments($ids, $includes, bool $metadataOnly = false): GetDocumentsCommand
     {
         if (empty($ids)) {
             throw new InvalidArgumentException("Please supply at least one id");
         }
         $command = new GetDocumentsCommand();
 
-        $command->ids = $ids;
-        $command->includes = $includes ?? new StringArray();
+        $command->setIds($ids);
+        $command->setIncludes($includes);
         $command->metadataOnly = $metadataOnly;
 
         return $command;
     }
 
-    public static function forSingleDocument(string $id, ?StringArray $includes = null, bool $metadataOnly = false): GetDocumentsCommand
+    /**
+     * @param string $id
+     * @param StringArray|array|null $includes
+     * @param bool $metadataOnly
+     * @return GetDocumentsCommand
+     */
+    public static function forSingleDocument(string $id, $includes = null, bool $metadataOnly = false): GetDocumentsCommand
     {
         if (empty($id)) {
             throw new IllegalArgumentException("id cannot be null");
@@ -68,7 +112,7 @@ class GetDocumentsCommand extends RavenCommand
 
         $command = new GetDocumentsCommand();
         $command->id = $id;
-        $command->includes = $includes ?? new StringArray();
+        $command->setIncludes($includes);
         $command->metadataOnly = $metadataOnly;
 
         return $command;
@@ -83,36 +127,55 @@ class GetDocumentsCommand extends RavenCommand
         return $command;
     }
 
+    /**
+     * @param StringArray|array|null $ids
+     * @param StringArray|array|null $includes
+     * @param StringArray|array|null $counterIncludes
+     * @param AbstractTimeSeriesRangeArray|null $timeSeriesIncludes
+     * @param StringArray|array|null $compareExchangeValueIncludes
+     * @param bool $metadata
+     *
+     * @return GetDocumentsCommand
+     */
     public static function withCounters(
-        ?StringArray $ids,
-        ?StringArray $includes,
-        ?StringArray $counterIncludes,
+        $ids,
+        $includes,
+        $counterIncludes,
         ?AbstractTimeSeriesRangeArray $timeSeriesIncludes,
-        ?StringArray $compareExchangeValueIncludes,
+        $compareExchangeValueIncludes,
         bool $metadata
     ): GetDocumentsCommand {
         $command = GetDocumentsCommand::forMultipleDocuments($ids, $includes, $metadata);
 
-        $command->counters = $counterIncludes;
+        $command->setCounters($counterIncludes);
         $command->timeSeriesIncludes = $timeSeriesIncludes;
-        $command->compareExchangeValueIncludes = $compareExchangeValueIncludes;
+        $command->setCompareExchangeValueIncludes($compareExchangeValueIncludes);
 
         return $command;
     }
 
+    /**
+     * @param StringArray|array|null $ids
+     * @param StringArray|array|null $includes
+     * @param bool $includeAllCounters
+     * @param AbstractTimeSeriesRangeArray $timeSeriesIncludes
+     * @param StringArray|array|null $compareExchangeValueIncludes
+     * @param bool $metadataOnly
+     * @return GetDocumentsCommand
+     */
     public static function withAllCounters(
-        StringArray $ids,
-        StringArray $includes,
+        $ids,
+        $includes,
         bool $includeAllCounters,
         AbstractTimeSeriesRangeArray $timeSeriesIncludes,
-        StringArray $compareExchangeValueIncludes,
+        $compareExchangeValueIncludes,
         bool $metadataOnly
     ): GetDocumentsCommand {
         $command = GetDocumentsCommand::forMultipleDocuments($ids, $includes, $metadataOnly);
 
         $command->includeAllCounters = $includeAllCounters;
         $command->timeSeriesIncludes = $timeSeriesIncludes;
-        $command->compareExchangeValueIncludes = $compareExchangeValueIncludes;
+        $command->setCompareExchangeValueIncludes($compareExchangeValueIncludes);
 
         return $command;
     }

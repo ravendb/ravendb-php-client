@@ -123,8 +123,7 @@ class RavenDB_15825Test extends RemoteTestBase
         $facetOptions->setStart($skip);
         $facetOptions->setPageSize($take);
 
-        /** @var FacetResultArray $result */
-        $result = $session->query(Result::class, ContactsIndex::class)
+        return $session->query(Result::class, ContactsIndex::class)
             ->statistics($statsRef)
             ->orderBy("companyId", OrderingType::alphaNumeric())
             ->whereEquals("active", true)
@@ -132,7 +131,5 @@ class RavenDB_15825Test extends RemoteTestBase
             ->aggregateBy(function($b) use ($facetOptions) { $b->byField("companyId")->withOptions($facetOptions); })
             ->execute()
         ;
-
-        return $result;
     }
 }

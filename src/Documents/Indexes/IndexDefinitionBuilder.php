@@ -8,7 +8,7 @@ use RavenDB\Exceptions\IllegalStateException;
 // !status: DONE
 class IndexDefinitionBuilder extends AbstractIndexDefinitionBuilder
 {
-    private ?string $map;
+    private ?string $map = null;
 
     public function __construct(?string $indexName = null)
     {

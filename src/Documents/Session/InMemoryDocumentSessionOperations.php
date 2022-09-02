@@ -1741,7 +1741,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
 
         // todo: implement this
-//        EventHelper.invoke(onSessionClosing, this, new SessionClosingEventArgs(this));
+        EventHelper::invoke($this->onSessionClosing, $this, new SessionClosingEventArgs($this));
 
         $this->isDisposed = true;
 

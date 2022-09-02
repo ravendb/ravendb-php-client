@@ -21,15 +21,15 @@ class HeadDocumentCommand extends RavenCommand
     private ?string $id = null;
     private ?string $changeVector = null;
 
-    public function __construct(?string $id, ?string $changeVector)
+    public function __construct(?string $idOrCopy, ?string $changeVector)
     {
         parent::__construct(StringResult::class);
 
-        if ($id == null) {
+        if ($idOrCopy == null) {
             throw new IllegalArgumentException("Id cannot be null");
         }
 
-        $this->id = $id;
+        $this->id = $idOrCopy;
         $this->changeVector = $changeVector;
     }
 

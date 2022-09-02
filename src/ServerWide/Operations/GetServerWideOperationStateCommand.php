@@ -13,11 +13,11 @@ class GetServerWideOperationStateCommand extends RavenCommand
 {
     private int $id;
 
-    public function __construct(int $id, ?string $nodeTag = null)
+    public function __construct(int $idOrCopy, ?string $nodeTag = null)
     {
         parent::__construct(null);
 
-        $this->id = $id;
+        $this->id = $idOrCopy;
         $this->selectedNodeTag = $nodeTag;
     }
 

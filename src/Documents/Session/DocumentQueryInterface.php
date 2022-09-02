@@ -2,6 +2,8 @@
 
 namespace RavenDB\Documents\Session;
 
+use RavenDB\Documents\Queries\Facets\AggregationDocumentQueryInterface;
+use RavenDB\Documents\Queries\Facets\FacetBase;
 use RavenDB\Documents\Queries\GroupBy;
 use RavenDB\Documents\Queries\QueryResult;
 
@@ -102,13 +104,14 @@ interface DocumentQueryInterface
     public function groupBy($fieldName, ...$fieldNames): GroupByDocumentQueryInterface;
 
 //    IDocumentQuery<T> moreLikeThis(Consumer<IMoreLikeThisBuilderForDocumentQuery<T>> builder);
-//
-//    IAggregationDocumentQuery<T> aggregateBy(Consumer<IFacetBuilder<T>> builder);
-//
-//    IAggregationDocumentQuery<T> aggregateBy(FacetBase facet);
-//
-//    IAggregationDocumentQuery<T> aggregateBy(FacetBase... facet);
-//
+
+    /**
+     * @param Callable|FacetBase $builderOrFacets
+     *
+     * @return AggregationDocumentQueryInterface
+     */
+    public function aggregateBy(...$builderOrFacets): AggregationDocumentQueryInterface;
+
 //    IAggregationDocumentQuery<T> aggregateUsing(String facetSetupDocumentId);
 //
 //    ISuggestionDocumentQuery<T> suggestUsing(SuggestionBase suggestion);
