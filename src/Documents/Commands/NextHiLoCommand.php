@@ -15,12 +15,12 @@ use RavenDB\Primitives\NetISO8601Utils;
 class NextHiLoCommand extends RavenCommand
 {
     private ?string $tag = null;
-    private ?int $lastBatchSize = null;
+    private int $lastBatchSize = 0;
     private ?DateTimeInterface $lastRangeAt = null;
     private ?string $identityPartsSeparator = null;
     private ?int $lastRangeMax = null;
 
-    public function __construct(?string $tag, ?int $lastBatchSize, ?DateTimeInterface $lastRangeAt, ?string $identityPartsSeparator, ?int $lastRangeMax)
+    public function __construct(?string $tag, int $lastBatchSize, ?DateTimeInterface $lastRangeAt, ?string $identityPartsSeparator, ?int $lastRangeMax)
     {
         parent::__construct(HiLoResult::class);
 
@@ -40,7 +40,7 @@ class NextHiLoCommand extends RavenCommand
         $date = $this->lastRangeAt != null ? NetISO8601Utils::format($this->lastRangeAt, true) : "";
         $path = "/hilo/next?tag=" . urlEncode($this->tag)
                 . "&lastBatchSize=" . $this->lastBatchSize
-                . "&lastRangeAt="  . $date
+                . "&lastRangeAt=" . $date
                 . "&identityPartsSeparator=" . urlEncode($this->identityPartsSeparator)
                 . "&lastMax=" . $this->lastRangeMax;
 

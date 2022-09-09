@@ -79,11 +79,8 @@ class HiLoTest extends RemoteTestBase
         }
     }
 
-    // @todo: investigate this test, priority low
     public function testCapacityShouldDouble(): void
     {
-        $this->markTestSkipped("test disabled because server doesn't respond with expected range");
-
         $store = $this->getDocumentStore();
         try {
 
