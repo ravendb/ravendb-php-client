@@ -14,7 +14,7 @@ class HiLoResult implements ResultInterface
     private ?string $prefix = null;
     private ?int $low = null;
     private ?int $high = null;
-    private ?int $lastSize = null;
+    private int $lastSize = 0;
     private ?string $serverTag = null;
     private ?DateTimeInterface $lastRangeAt = null;
 
@@ -48,12 +48,12 @@ class HiLoResult implements ResultInterface
         $this->high = $high;
     }
 
-    public function getLastSize(): ?int
+    public function getLastSize(): int
     {
         return $this->lastSize;
     }
 
-    public function setLastSize(?int $lastSize): void
+    public function setLastSize(int $lastSize): void
     {
         $this->lastSize = $lastSize;
     }

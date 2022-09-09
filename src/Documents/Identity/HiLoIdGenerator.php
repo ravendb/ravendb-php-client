@@ -13,7 +13,7 @@ class HiLoIdGenerator
     private ?DocumentStoreInterface $store = null;
     private ?string $tag = null;
     protected ?string $prefix = null;
-    private ?int $lastBatchSize = null;
+    private int $lastBatchSize = 0;
     private ?DateTimeInterface $lastRangeDate = null;
     private ?string $dbName = null;
     private ?string $identityPartsSeparator = null;
