@@ -23,8 +23,6 @@ use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\DocumentStoreBase;
 use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Documents\Identity\GenerateEntityIdOnTheClient;
-use RavenDB\Documents\IdTypeAndName;
-use RavenDB\Documents\Queries\IncludeInterface;
 use RavenDB\Exceptions\Documents\Session\NonUniqueObjectException;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
@@ -38,14 +36,12 @@ use RavenDB\Json\MetadataAsDictionary;
 use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Primitives\ClosureArray;
 use RavenDB\Primitives\EventHelper;
+use RavenDB\Type\DeferredCommandsMap;
 use RavenDB\Type\StringArray;
 use RavenDB\Utils\AtomicInteger;
 use RavenDB\Utils\StringUtils;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 
-use DS\Map as DSMap;
-
-// !status: copied complete code as in the original java file
 abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 {
     protected RequestExecutor $requestExecutor;
@@ -299,13 +295,13 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         return $this->documentStore->getIdentifier() . ";" . $this->databaseName;
     }
 
-//    /**
-//     * Gets the conventions used by this session
-//     * This instance is shared among all sessions, changes to the DocumentConventions should be done
-//     * via the IDocumentSTore instance, not on a single session.
-//     *
-//     * @return document conventions
-//     */
+    /**
+     * Gets the conventions used by this session
+     * This instance is shared among all sessions, changes to the DocumentConventions should be done
+     * via the DocumentStoreInterface instance, not on a single session.
+     *
+     * @return DocumentConventions document conventions
+     */
     public function getConventions(): DocumentConventions
     {
         return $this->requestExecutor->getConventions();
@@ -367,7 +363,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     // @todo: update type here
 //    final Map<IdTypeAndName, ICommandData> deferredCommandsMap = new HashMap<>();
-    public ?DSMap $deferredCommandsMap = null;
+    public ?DeferredCommandsMap $deferredCommandsMap = null;
 
     public bool $noTracking;
 
@@ -426,7 +422,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $this->includedDocumentsById = new DocumentInfoArray();
 
         $this->deferredCommands = [];
-        $this->deferredCommandsMap = new DSMap();
+        $this->deferredCommandsMap = new DeferredCommandsMap();
 
         $this->entityToJson = new EntityToJson($this);
 
@@ -980,8 +976,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             $this->generateEntityIdOnTheClient->trySetIdentity($entity, $id);
         }
 
-        $key = IdTypeAndName::create($id, CommandType::clientAnyCommand(), null);
-        if ($this->deferredCommandsMap->hasKey($key)) {
+
+        if ($this->deferredCommandsMap->hasKeyWith($id, CommandType::clientAnyCommand(), null)) {
             throw new IllegalStateException(
                 "Can't store document, there is a deferred command registered for this document in the session."
                 . " Document id: " . $id
@@ -1224,7 +1220,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
                     $docChanges[] = $change;
                     $changes[$documentInfo->getId()] = $docChanges;
                 } else {
-                    $commandIndex = $this->getDeferredCommandsMapIndex($documentInfo->getId(), CommandType::clientAnyCommand(), null);
+                    $commandIndex = $this->deferredCommandsMap->getIndexFor($documentInfo->getId(), CommandType::clientAnyCommand(), null);
                     if ($commandIndex != null) {
                         $this->throwInvalidDeletedDocumentWithDeferredCommand($this->deferredCommandsMap->get($commandIndex));
                     }
@@ -1297,7 +1293,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
                     continue;
                 }
 
-                $commandIndex = $this->getDeferredCommandsMapIndex($entity->getValue()->getId(), CommandType::clientModifyDocumentCommand(), null);
+                $commandIndex = $this->deferredCommandsMap->getIndexFor($entity->getValue()->getId(), CommandType::clientModifyDocumentCommand(), null);
                 if ($commandIndex !== null) {
                     $this->throwInvalidModifiedDocumentWithDeferredCommand($this->deferredCommandsMap->get($commandIndex));
                 }
@@ -1679,7 +1675,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     private function deferInternal(CommandDataInterface $command): void
     {
-        if ($command->getType()->isBatchPatch()) {
+        if (!empty($command->getType()) && $command->getType()->isBatchPatch()) {
             /** @var BatchPatchCommandData $batchPatchCommand */
             $batchPatchCommand = $command;
             /**
@@ -1696,8 +1692,15 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     private function addCommand(CommandDataInterface $command, string $id, CommandType $commandType, ?string $commandName): void
     {
-        $this->deferredCommandsMap->put($this->getDeferredCommandsMapIndexOrCreateNew($id, $commandType, $commandName), $command);
-        $this->deferredCommandsMap->put($this->getDeferredCommandsMapIndexOrCreateNew($id, CommandType::clientAnyCommand(), null), $command);
+        $this->deferredCommandsMap->put(
+            $this->deferredCommandsMap->getIndexOrCreateNewFor($id, $commandType, $commandName),
+            $command
+        );
+
+        $this->deferredCommandsMap->put(
+            $this->deferredCommandsMap->getIndexOrCreateNewFor($id, CommandType::clientAnyCommand(), null),
+            $command
+        );
 
         if (!$command->getType()->isAttachmentPut() &&
             !$command->getType()->isAttachmentDelete() &&
@@ -1707,31 +1710,11 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             !$command->getType()->isTimeSeries() &&
             !$command->getType()->isTimeSeriesCopy()
         ) {
-            $this->deferredCommandsMap->put($this->getDeferredCommandsMapIndexOrCreateNew($id, CommandType::clientModifyDocumentCommand(), null), $command);
+            $this->deferredCommandsMap->put(
+                $this->deferredCommandsMap->getIndexOrCreateNewFor($id, CommandType::clientModifyDocumentCommand(), null),
+                $command
+            );
         }
-    }
-
-    protected function getDeferredCommandsMapIndex(string $id, CommandType $type, ?string $name): ?IdTypeAndName
-    {
-        /**
-         * @var IdTypeAndName $commandMap
-         */
-        foreach ($this->deferredCommandsMap as $commandMap => $command) {
-            if ($commandMap->getId() == $id && $commandMap->getType()->equals($type) && $commandMap->getName() == $name) {
-                return $commandMap;
-            }
-        }
-        return null;
-    }
-
-    protected function getDeferredCommandsMapIndexOrCreateNew(string $id, CommandType $type, ?string $name): IdTypeAndName
-    {
-        $idTypeName = $this->getDeferredCommandsMapIndex($id, $type, $name);
-        if ($idTypeName != null) {
-            return $idTypeName;
-        }
-
-        return IdTypeAndName::create($id, $type, $name);
     }
 
     public function close(bool $isDisposing = true): void

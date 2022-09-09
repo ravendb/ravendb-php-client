@@ -13,6 +13,7 @@ use RavenDB\Http\ServerNode;
 use RavenDB\Json\BatchCommandResult;
 use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Utils\TimeUtils;
+use Symfony\Component\Mime\Part\Multipart\FormDataPart;
 
 // @todo: implement this
 class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
@@ -55,7 +56,7 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
                 /** @var PutAttachmentCommandData $putAttachmentCommandData */
                 $putAttachmentCommandData = $command;
 
-                if ($this->$this->attachmentStreams == null) {
+                if ($this->attachmentStreams == null) {
                     $this->attachmentStreams = [];
                 }
 
@@ -69,6 +70,7 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
         }
     }
 
+    // @todo: remove all the comments at the moment when we figure out what we are gonna do with atomic writes - should we ignore that or implement it
     public function createRequest(ServerNode $serverNode): HttpRequestInterface
     {
         $request = new HttpRequest($this->createUrl($serverNode), HttpRequest::POST);
@@ -91,8 +93,6 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
         if ($this->mode->isClusterWide()) {
             $options['json']['TransactionMode'] = 'ClusterWide';
         }
-
-        $request->setOptions($options);
 
 //        request.setEntity(new ContentProviderHttpEntity(outputStream -> {
 //            try (JsonGenerator generator = mapper.getFactory().createGenerator(outputStream)) {
@@ -133,7 +133,25 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
 //            }
 //        }, ContentType.APPLICATION_JSON));
 //
-//
+
+        if (!empty($this->attachmentStreams)) {
+            $formFields = [
+                'main' => $this->getMapper()->serialize($options['json'], 'json')
+            ];
+            unset($options['json']);
+
+            $nameCounter = 1;
+            foreach ($this->attachmentStreams as $stream) {
+                $partName = "attachment" . $nameCounter++;
+                $formFields[$partName] = $stream;
+                // I don't know where to add this: .addField("Command-Type", "AttachmentStream")
+            }
+
+            $formData = new FormDataPart($formFields);
+            $options['headers'] = $formData->getPreparedHeaders()->toArray();
+            $options['body'] = $formData->bodyToIterable();
+        }
+
 //        if (_attachmentStreams != null && _attachmentStreams.size() > 0) {
 //            MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create();
 //
@@ -159,6 +177,8 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
 //            }
 //            request.setEntity(entityBuilder.build());
 //        }
+
+        $request->setOptions($options);
 
         return $request;
     }

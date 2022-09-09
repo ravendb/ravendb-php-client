@@ -9,6 +9,7 @@ use RavenDB\Documents\Session\TransactionMode;
 use RavenDB\Documents\Operations\CompareExchange\CompareExchangeResult;
 use RavenDB\Documents\Operations\CompareExchange\PutCompareExchangeValueOperation;
 
+// !status: DONE
 class RavenDB_12132Test extends RemoteTestBase
 {
     public function testCanPutObjectWithId(): void

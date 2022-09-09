@@ -75,7 +75,6 @@ class FirstClassPatchTest extends RemoteTestBase
         }
     }
 
-    /** @todo: implement this test */
     public function testCanPatchAndModify(): void
     {
         $user = new User();

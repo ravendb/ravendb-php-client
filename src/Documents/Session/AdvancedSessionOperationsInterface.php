@@ -22,13 +22,12 @@ interface AdvancedSessionOperationsInterface extends
 //     * @return Lazy session operations
 //     */
 //    ILazySessionOperations lazily();
-//
-//    /**
-//     * @return Access the attachments operations
-//     */
-//    IAttachmentsSessionOperations attachments();
-//
-//
+
+    /**
+     * @return AttachmentsSessionOperationsInterface Access the attachments operations
+     */
+    function attachments(): AttachmentsSessionOperationsInterface;
+
 //    /**
 //     * @return Access the revisions operations
 //     */

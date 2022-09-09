@@ -3,7 +3,7 @@ on:
     schedule:
         -   cron: "0 10 * * 6"
     push:
-        branches: [ v5.2 ]
+        branches: [ v5.2, rdbc-597 ]
     pull_request:
         branches: [ v5.2 ]
 
@@ -25,7 +25,7 @@ jobs:
         strategy:
             matrix:
                 php-versions: [ "7.4", "8.0", "8.1" ]
-                serverVersion: [ "5.2" ]
+                serverVersion: [ "5.2", "5.3", "5.4" ]
             fail-fast: false
 
         steps:

@@ -159,16 +159,16 @@ class BatchOperation
                     $this->handlePatch($batchResult);
                     break;
                 case CommandType::ATTACHMENT_PUT:
-//                    handleAttachmentPut(batchResult);
+                    $this->handleAttachmentPut($batchResult);
                     break;
                 case CommandType::ATTACHMENT_DELETE:
-//                    handleAttachmentDelete(batchResult);
+                    $this->handleAttachmentDelete($batchResult);
                     break;
                 case CommandType::ATTACHMENT_MOVE:
-//                    handleAttachmentMove(batchResult);
+                    $this->handleAttachmentMove($batchResult);
                     break;
                 case CommandType::ATTACHMENT_COPY:
-//                    handleAttachmentCopy(batchResult);
+                    $this->handleAttachmentCopy($batchResult);
                     break;
                 case CommandType::COMPARE_EXCHANGE_PUT:
                 case CommandType::COMPARE_EXCHANGE_DELETE:
@@ -206,17 +206,17 @@ class BatchOperation
         }
     }
 
-    private function applyMetadataModifications(string $id, DocumentInfo $documentInfo): void
+    private function applyMetadataModifications(string $id, DocumentInfo &$documentInfo): void
     {
         $documentInfo->setMetadataInstance(null);
         $metadata = $documentInfo->getMetadata();
-        $cloned = $metadata; // cloned @todo: check is this realy cloned object and we don't have to do nothing here?
+        $cloned =  $metadata;
 
-        $cloned[DocumentsMetadata::CHANGE_VECTOR] = $metadata[DocumentsMetadata::CHANGE_VECTOR] ?? $documentInfo->getChangeVector();
+        $cloned[DocumentsMetadata::CHANGE_VECTOR] = $documentInfo->getChangeVector() ?? $metadata[DocumentsMetadata::CHANGE_VECTOR];
         $documentInfo->setMetadata($cloned);
 
         $document = $documentInfo->getDocument();
-        $documentCopy = $document; // cloned @todo: check is this realy cloned object and we don't have to do nothing here?
+        $documentCopy = $document;
         $documentCopy[DocumentsMetadata::KEY] = $documentInfo->getMetadata();
 
         $documentInfo->setDocument($documentCopy);
@@ -270,89 +270,96 @@ class BatchOperation
         $clusterSession->updateState($key, $index);
     }
 
-//    private void handleAttachmentCopy(ObjectNode batchResult) {
-//        handleAttachmentPutInternal(batchResult, CommandType.ATTACHMENT_COPY, "Id", "Name", "DocumentChangeVector");
-//    }
-//
-//    private void handleAttachmentMove(ObjectNode batchResult) {
-//        handleAttachmentDeleteInternal(batchResult, CommandType.ATTACHMENT_MOVE, "Id", "Name", "DocumentChangeVector");
-//        handleAttachmentPutInternal(batchResult, CommandType.ATTACHMENT_MOVE, "DestinationId", "DestinationName", "DocumentChangeVector");
-//    }
-//
-//    private void handleAttachmentDelete(ObjectNode batchResult) {
-//        handleAttachmentDeleteInternal(batchResult, CommandType.ATTACHMENT_DELETE, Constants.Documents.Metadata.ID, "Name", "DocumentChangeVector");
-//    }
-//
-//    private void handleAttachmentDeleteInternal(ObjectNode batchResult, CommandType type, String idFieldName, String attachmentNameFieldName, String documentChangeVectorFieldName) {
-//        String id = getStringField(batchResult, type, idFieldName);
-//
-//        DocumentInfo sessionDocumentInfo = _session.documentsById.getValue(id);
-//        if (sessionDocumentInfo == null) {
-//            return;
-//        }
-//
-//        DocumentInfo documentInfo = getOrAddModifications(id, sessionDocumentInfo, true);
-//
-//        String documentChangeVector = getStringField(batchResult, type, documentChangeVectorFieldName, false);
-//        if (documentChangeVector != null) {
-//            documentInfo.setChangeVector(documentChangeVector);
-//        }
-//
-//        JsonNode attachmentsJson = documentInfo.getMetadata().get(Constants.Documents.Metadata.ATTACHMENTS);
-//        if (attachmentsJson == null || attachmentsJson.isNull() || attachmentsJson.size() == 0) {
-//            return;
-//        }
-//
-//        String name = getStringField(batchResult, type, attachmentNameFieldName);
-//
-//        ArrayNode attachments = JsonExtensions.getDefaultMapper().createArrayNode();
-//        documentInfo.getMetadata().set(Constants.Documents.Metadata.ATTACHMENTS, attachments);
-//
-//        for (int i = 0; i < attachmentsJson.size(); i++) {
-//            ObjectNode attachment = (ObjectNode) attachmentsJson.get(i);
-//            String attachmentName = getStringField(attachment, type, "Name");
-//            if (attachmentName.equals(name)) {
-//                continue;
-//            }
-//
-//            attachments.add(attachment);
-//        }
-//    }
-//
-//    private void handleAttachmentPut(ObjectNode batchResult) {
-//        handleAttachmentPutInternal(batchResult, CommandType.ATTACHMENT_PUT, "Id", "Name", "DocumentChangeVector");
-//    }
-//
-//    private void handleAttachmentPutInternal(ObjectNode batchResult, CommandType type, String idFieldName, String attachmentNameFieldName, String documentChangeVectorFieldName) {
-//        String id = getStringField(batchResult, type, idFieldName);
-//
-//        DocumentInfo sessionDocumentInfo = _session.documentsById.getValue(id);
-//        if (sessionDocumentInfo == null) {
-//            return;
-//        }
-//
-//        DocumentInfo documentInfo = getOrAddModifications(id, sessionDocumentInfo, false);
-//
-//        String documentChangeVector = getStringField(batchResult, type, documentChangeVectorFieldName, false);
-//        if (documentChangeVector != null) {
-//            documentInfo.setChangeVector(documentChangeVector);
-//        }
-//
-//        ObjectMapper mapper = JsonExtensions.getDefaultMapper();
-//        ArrayNode attachments = (ArrayNode) documentInfo.getMetadata().get(Constants.Documents.Metadata.ATTACHMENTS);
-//        if (attachments == null) {
-//            attachments = mapper.createArrayNode();
-//            documentInfo.getMetadata().set(Constants.Documents.Metadata.ATTACHMENTS, attachments);
-//        }
-//
-//        ObjectNode dynamicNode = mapper.createObjectNode();
-//        attachments.add(dynamicNode);
-//        dynamicNode.put("ChangeVector", getStringField(batchResult, type, "ChangeVector"));
-//        dynamicNode.put("ContentType", getStringField(batchResult, type, "ContentType"));
-//        dynamicNode.put("Hash", getStringField(batchResult, type, "Hash"));
-//        dynamicNode.put("Name", getStringField(batchResult, type, "Name"));
-//        dynamicNode.put("Size", getLongField(batchResult, type, "Size"));
-//    }
+    private function handleAttachmentCopy(array $batchResult): void
+    {
+        $this->handleAttachmentPutInternal($batchResult, CommandType::attachmentCopy(), "Id", "Name", "DocumentChangeVector");
+    }
+
+    private function handleAttachmentMove(array $batchResult): void
+    {
+        $this->handleAttachmentDeleteInternal($batchResult, CommandType::attachmentMove(), "Id", "Name", "DocumentChangeVector");
+        $this->handleAttachmentPutInternal($batchResult, CommandType::attachmentMove(), "DestinationId", "DestinationName", "DocumentChangeVector");
+    }
+
+    private function handleAttachmentDelete(array $batchResult): void
+    {
+        $this->handleAttachmentDeleteInternal($batchResult, CommandType::attachmentDelete(), DocumentsMetadata::ID, "Name", "DocumentChangeVector");
+    }
+
+    private function handleAttachmentDeleteInternal(array $batchResult, CommandType $type, ?string $idFieldName, ?string $attachmentNameFieldName, ?string $documentChangeVectorFieldName): void
+    {
+        $id = $this->getStringField($batchResult, $type, $idFieldName);
+
+        $sessionDocumentInfo = $this->session->documentsById->getValue($id);
+        if ($sessionDocumentInfo == null) {
+            return;
+        }
+
+        $documentInfo = $this->getOrAddModifications($id, $sessionDocumentInfo, true);
+
+        $documentChangeVector = $this->getStringField($batchResult, $type, $documentChangeVectorFieldName, false);
+        if ($documentChangeVector != null) {
+            $documentInfo->setChangeVector($documentChangeVector);
+        }
+
+        if (!array_key_exists(DocumentsMetadata::ATTACHMENTS, $documentInfo->getMetadata())) {
+            return;
+        }
+        $attachmentsJson = $documentInfo->getMetadata()[DocumentsMetadata::ATTACHMENTS];
+
+        if (count($attachmentsJson) == 0) {
+            return;
+        }
+
+        $name = $this->getStringField($batchResult, $type, $attachmentNameFieldName);
+
+        $documentInfo->getMetadata()[DocumentsMetadata::ATTACHMENTS] = [];
+
+        foreach ($attachmentsJson as $attachment) {
+            $attachmentName = $this->getStringField($attachment, $type, 'Name');
+            if ($attachmentName == $name) {
+                continue;
+            }
+
+            $documentInfo->getMetadata()[DocumentsMetadata::ATTACHMENTS][] = $attachment;
+        }
+    }
+
+    private function handleAttachmentPut(array $batchResult): void
+    {
+        $this->handleAttachmentPutInternal($batchResult, CommandType::attachmentPut(), "Id", "Name", "DocumentChangeVector");
+    }
+
+    private function handleAttachmentPutInternal(array $batchResult, CommandType $type, ?string $idFieldName, ?string $attachmentNameFieldName, ?string $documentChangeVectorFieldName): void
+    {
+        $id = $this->getStringField($batchResult, $type, $idFieldName);
+
+        $sessionDocumentInfo = $this->session->documentsById->getValue($id);
+        if ($sessionDocumentInfo == null) {
+            return;
+        }
+
+        $documentInfo = $this->getOrAddModifications($id, $sessionDocumentInfo, false);
+
+        $documentChangeVector = $this->getStringField($batchResult, $type, $documentChangeVectorFieldName, false);
+        if ($documentChangeVector != null) {
+            $documentInfo->setChangeVector($documentChangeVector);
+        }
+
+        if (!array_key_exists(DocumentsMetadata::ATTACHMENTS, $documentInfo->getMetadata())) {
+            $attachments = [];
+            $documentInfo->getMetadata()[DocumentsMetadata::ATTACHMENTS] = $attachments;
+        }
+
+        $dynamicNode = [];
+        $dynamicNode["ChangeVector"] = $this->getStringField($batchResult, $type, "ChangeVector");
+        $dynamicNode["ContentType"] = $this->getStringField($batchResult, $type, "ContentType");
+        $dynamicNode["Hash"] =  $this->getStringField($batchResult, $type, "Hash");
+        $dynamicNode["Name"] = $this->getStringField($batchResult, $type, "Name");
+        $dynamicNode["Size"] = $this->getIntField($batchResult, $type, "Size");
+
+        $documentInfo->getMetadata()[DocumentsMetadata::ATTACHMENTS][] = $dynamicNode;
+    }
 
     private function handlePatch(array $batchResult): void
     {
@@ -566,22 +573,23 @@ class BatchOperation
             $jsonNode = $json[$fieldName];
         }
 
-        if (($jsonNode == null) && $throwOnMissing) {
+        if (($jsonNode === null) && $throwOnMissing) {
             self::throwMissingField($type, $fieldName);
         }
 
         return (string)$jsonNode;
     }
 
-//    private static Long getLongField(ObjectNode json, CommandType type, String fieldName) {
-//        JsonNode jsonNode = json.get(fieldName);
-//        if (jsonNode == null || !jsonNode.isNumber()) {
-//            throwMissingField(type, fieldName);
-//        }
-//
-//        return jsonNode.asLong();
-//    }
-//
+    private static function getIntField(array $json, CommandType $type, ?string $fieldName): int
+    {
+        $jsonNode = array_key_exists($fieldName, $json) ? $json[$fieldName] : null;
+        if ($jsonNode == null || !is_int($jsonNode)) {
+            self::throwMissingField($type, $fieldName);
+        }
+
+        return intval($jsonNode);
+    }
+
 //    private static boolean getBooleanField(ObjectNode json, CommandType type, String fieldName) {
 //        JsonNode jsonNode = json.get(fieldName);
 //        if (jsonNode == null || !jsonNode.isBoolean()) {

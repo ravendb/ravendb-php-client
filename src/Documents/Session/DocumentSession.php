@@ -62,17 +62,17 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //    public IEagerSessionOperations eagerly() {
 //        return this;
 //    }
-//
-//    private IAttachmentsSessionOperations _attachments;
-//
-//    @Override
-//    public IAttachmentsSessionOperations attachments() {
-//        if (_attachments == null) {
-//            _attachments = new DocumentSessionAttachments(this);
-//        }
-//        return _attachments;
-//    }
-//
+
+    private ?AttachmentsSessionOperationsInterface $attachments = null;
+
+    public function attachments(): AttachmentsSessionOperationsInterface
+    {
+        if ($this->attachments == null) {
+            $this->attachments = new DocumentSessionAttachments($this);
+        }
+        return $this->attachments;
+    }
+
 //    private IRevisionsSessionOperations _revisions;
 //
 //    @Override
@@ -992,7 +992,8 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //            }
 //        }
 
-        $commandMap = $this->getDeferredCommandsMapIndex($id, CommandType::patch(), null);
+        $commandMap = $this->deferredCommandsMap->getIndexFor($id, CommandType::patch(), null);
+
         if ($commandMap == null) {
             return false;
         }
