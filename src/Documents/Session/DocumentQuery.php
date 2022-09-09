@@ -701,6 +701,7 @@ class DocumentQuery extends AbstractDocumentQuery
 
     /**
      * @param Callable|FacetBase $builderOrFacets
+     *
      * @return AggregationDocumentQueryInterface
      */
     public function aggregateBy(...$builderOrFacets): AggregationDocumentQueryInterface

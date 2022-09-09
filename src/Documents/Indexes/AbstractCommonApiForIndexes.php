@@ -8,7 +8,7 @@ use RavenDB\Utils\ClassUtils;
 // !status: DONE
 abstract class AbstractCommonApiForIndexes
 {
-    private ?StringArray $additionalSources = null;
+    private ?AdditionalSourcesArray $additionalSources = null;
     private ?AdditionalAssemblySet $additionalAssemblies = null;
     private IndexConfiguration $configuration;
 
@@ -38,12 +38,12 @@ abstract class AbstractCommonApiForIndexes
         return str_replace('_', '/', $simpleClassName);
     }
 
-    public function getAdditionalSources(): ?StringArray
+    public function getAdditionalSources(): ?AdditionalSourcesArray
     {
         return $this->additionalSources;
     }
 
-    public function setAdditionalSources(?StringArray $additionalSources): void
+    public function setAdditionalSources(?AdditionalSourcesArray $additionalSources): void
     {
         $this->additionalSources = $additionalSources;
     }

@@ -35,32 +35,15 @@ interface DocumentSessionInterface
      */
     public function saveChanges(): void;
 
-//    /**
-//     * Stores entity in session with given id and forces concurrency check with given change-vector.
-//     * @param entity Entity to store
-//     * @param changeVector Change vector
-//     * @param id Document id
-//     */
-//    void store(Object entity, String changeVector, String id);
-//
-//    /**
-//     * Stores entity in session, extracts Id from entity using Conventions or generates new one if it is not available.
-//     * Forces concurrency check if the Id is not available during extraction.
-//     * @param entity Entity to store
-//     */
-//    void store(Object entity);
-//
-//    /**
-//     * Stores the specified dynamic entity, under the specified id.
-//     * @param entity entity to store
-//     * @param id Id to store this entity under. If other entity exists with the same id it will be overwritten.
-//     */
-//    void store(Object entity, String id);
-
-    public function store(object $entity, ?string $id = null): void;
+    /**
+     * @param object|null $entity
+     * @param string|null $id
+     * @param string|null $changeVector
+     */
+    public function store(?object $entity, ?string $id = null, ?string $changeVector = null): void;
 
     /**
-     * Begin a load while including the specified path
+     * Begin a load while including the specified path.
      * Path in documents in which server should look for a 'referenced' documents.
      *
      * @param ?string $path Path to include

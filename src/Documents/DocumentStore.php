@@ -90,8 +90,7 @@ class DocumentStore extends DocumentStoreBase
     public function close(): void
     {
         EventHelper::invoke($this->beforeClose, $this, EventArgs::$EMPTY);
-//        EventHelper.invoke(beforeClose, this, EventArgs.EMPTY);
-//
+
 //        for (Lazy<EvictItemsFromCacheBasedOnChanges> value : _aggressiveCacheChanges.values()) {
 //            if (!value.isValueCreated()) {
 //                continue;
@@ -99,21 +98,21 @@ class DocumentStore extends DocumentStoreBase
 //
 //            value.getValue().close();
 //        }
-//
-//        if (_multiDbHiLo != null) {
-//            try {
-//                _multiDbHiLo.returnUnusedRange();
-//            } catch (Exception e) {
-//                // ignore
-//            }
-//        }
-//
+
+        if ($this->multiDbHiLo != null) {
+            try {
+                $this->multiDbHiLo->returnUnusedRange();
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
+
 //        if (subscriptions() != null) {
 //            subscriptions().close();
 //        }
-//
-//        disposed = true;
-//
+
+        $this->disposed = true;
+
         EventHelper::invoke($this->afterClose, $this, EventArgs::$EMPTY);
 
 //        for (Map.Entry<String, Lazy<RequestExecutor>> kvp : requestExecutors.entrySet()) {

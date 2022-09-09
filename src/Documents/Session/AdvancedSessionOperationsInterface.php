@@ -190,12 +190,12 @@ interface AdvancedSessionOperationsInterface extends
      */
     public function patchArray($idOrEntity, ?string $pathToArray, Closure $arrayAdder): void;
 
-//    <T, U> void patchArray(T entity, String pathToArray, Consumer<JavaScriptArray<U>> arrayAdder);
-//    <T, U> void patchArray(String id, String pathToArray, Consumer<JavaScriptArray<U>> arrayAdder);
-
-//    <T, TKey, TValue> void patchObject(T entity, String pathToObject, Consumer<JavaScriptMap<TKey, TValue>> dictionaryAdder);
-//
-//    <T, TKey, TValue> void patchObject(String id, String pathToObject, Consumer<JavaScriptMap<TKey, TValue>> dictionaryAdder);
+    /**
+     * @param string|object|null $idOrEntity
+     * @param string|null $pathToObject
+     * @param Closure $dictionaryAdder
+     */
+    public function patchObject($idOrEntity, ?string $pathToObject, Closure $dictionaryAdder): void;
 
     /**
      * @param string|null $id

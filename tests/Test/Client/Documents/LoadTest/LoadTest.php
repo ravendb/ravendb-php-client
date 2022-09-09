@@ -1,11 +1,9 @@
 <?php
 
-namespace tests\RavenDB\Test\Client\Documents;
+namespace tests\RavenDB\Test\Client\Documents\LoadTest;
 
 use RavenDB\Type\StringArray;
 use tests\RavenDB\RemoteTestBase;
-use tests\RavenDB\Test\Client\Documents\Entity\Bar;
-use tests\RavenDB\Test\Client\Documents\Entity\Foo;
 
 class LoadTest extends RemoteTestBase
 {

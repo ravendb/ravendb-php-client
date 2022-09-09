@@ -55,7 +55,6 @@ class StringArrayNormalizer implements
 
     public function supportsNormalization($data, string $format = null)
     {
-//        return is_a($data, StringArray::class, true);
         return $data instanceof StringArray;
     }
 }

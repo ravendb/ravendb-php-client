@@ -20,11 +20,11 @@ class PutDocumentCommand extends RavenCommand
     /**
      * @throws InvalidArgumentException
      */
-    public function __construct(string $id, ?string $changeVector, array $document)
+    public function __construct(string $idOrCopy, ?string $changeVector, array $document)
     {
         parent::__construct(PutResult::class);
 
-        if ($id == null) {
+        if ($idOrCopy == null) {
             throw new InvalidArgumentException("Id cannot be null");
         }
 
@@ -32,7 +32,7 @@ class PutDocumentCommand extends RavenCommand
             throw new InvalidArgumentException("Document cannot be null");
         }
 
-        $this->id = $id;
+        $this->id = $idOrCopy;
         $this->changeVector = $changeVector;
         $this->document = $document;
     }

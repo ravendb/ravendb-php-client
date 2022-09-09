@@ -31,7 +31,7 @@ class IndexDefinition implements ResultInterface
     private ?IndexLockMode $lockMode = null;
 
     /** @SerializedName ("AdditionalSources") */
-    private ?StringArray $additionalSources = null;
+    private ?AdditionalSourcesArray $additionalSources = null;
 
     /** @SerializedName ("AdditionalAssemblies") */
     private ?AdditionalAssemblySet $additionalAssemblies = null;
@@ -150,22 +150,22 @@ class IndexDefinition implements ResultInterface
 
     /**
      * Additional code files to be compiled with this index.
-     * @return StringArray additional sources
+     * @return AdditionalSourcesArray additional sources
      */
 
-    public function getAdditionalSources(): ?StringArray
+    public function getAdditionalSources(): ?AdditionalSourcesArray
     {
         if ($this->additionalSources == null) {
-            $this->additionalSources = new StringArray();
+            $this->additionalSources = new AdditionalSourcesArray();
         }
         return $this->additionalSources;
     }
 
     /**
      * Additional code files to be compiled with this index.
-     * @param StringArray|null $additionalSources
+     * @param AdditionalSourcesArray|null $additionalSources
      */
-    public function setAdditionalSources(?StringArray $additionalSources): void
+    public function setAdditionalSources(?AdditionalSourcesArray $additionalSources): void
     {
         $this->additionalSources = $additionalSources;
     }

@@ -1,6 +1,6 @@
 <?php
 
-namespace tests\RavenDB\Test\Client\Indexing\Index;
+namespace tests\RavenDB\Test\Client\Indexing\_IndexesFromClientTest;
 
 use RavenDB\Documents\Indexes\AbstractIndexCreationTask;
 use RavenDB\Documents\Indexes\FieldIndexing;

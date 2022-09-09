@@ -1,6 +1,6 @@
 <?php
 
-namespace tests\RavenDB\Test\Client\Documents\Entity;
+namespace tests\RavenDB\Test\Client\Documents\LoadTest;
 
 class Bar
 {

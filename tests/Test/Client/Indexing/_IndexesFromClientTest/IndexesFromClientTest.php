@@ -1,6 +1,6 @@
 <?php
 
-namespace tests\RavenDB\Test\Client\Indexing;
+namespace tests\RavenDB\Test\Client\Indexing\_IndexesFromClientTest;
 
 use RavenDB\Documents\Commands\ExplainQueryCommand;
 use RavenDB\Documents\Commands\ExplainQueryResultArray;
@@ -31,8 +31,6 @@ use RavenDB\Documents\Session\QueryStatistics;
 use RavenDB\Type\StringArray;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
-use tests\RavenDB\Test\Client\Indexing\Index\Users_ByName;
-use tests\RavenDB\Test\Client\Indexing\Index\UsersIndex;
 
 class IndexesFromClientTest extends RemoteTestBase
 {

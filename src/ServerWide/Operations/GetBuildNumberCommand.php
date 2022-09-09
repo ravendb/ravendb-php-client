@@ -36,6 +36,6 @@ class GetBuildNumberCommand extends RavenCommand
             self::throwInvalidResponse();
         }
 
-        $this->result = $this->getMapper()->denormalize($response, $this->getResultClass());
+        $this->result = $this->getMapper()->deserialize($response, $this->getResultClass(), 'json');
     }
 }

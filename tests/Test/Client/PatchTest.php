@@ -8,7 +8,7 @@ use RavenDB\Documents\Operations\PatchStatus;
 use RavenDB\Documents\Operations\PatchRequest;
 use RavenDB\Documents\Operations\PatchOperation;
 use RavenDB\Documents\Session\IndexesWaitOptsBuilder;
-use tests\RavenDB\Test\Client\Indexing\Index\Users_ByName;
+use tests\RavenDB\Test\Client\Indexing\_IndexesFromClientTest\Users_ByName;
 
 class PatchTest extends RemoteTestBase
 {
@@ -132,16 +132,16 @@ class PatchTest extends RemoteTestBase
 
             $session = $store->openSession();
             try {
-//                User user = new User();
-//                user.setName("RavenDB");
-//
-//                session.store(user, "users/1");
-//                session.saveChanges();
+                $user = new User();
+                $user->setName("RavenDB");
+
+                $session->store($user, "users/1");
+                $session->saveChanges();
             } finally {
                 $session->close();
             }
 
-//            PatchByQueryOperation operation = new PatchByQueryOperation("from Users update {  throw 5 }");
+//            $operation = new PatchByQueryOperation("from Users update {  throw 5 }");
 //
 //            Operation op = store.operations().sendAsync(operation);
 //

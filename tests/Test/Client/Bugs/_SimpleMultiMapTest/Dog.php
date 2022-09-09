@@ -1,8 +1,8 @@
 <?php
 
-namespace tests\RavenDB\Test\Client\Documents\Entity;
+namespace tests\RavenDB\Test\Client\Bugs\_SimpleMultiMapTest;
 
-class Foo
+class Dog implements IHaveName
 {
     private ?string $name = null;
 

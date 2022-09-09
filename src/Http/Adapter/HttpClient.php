@@ -3,6 +3,7 @@
 namespace RavenDB\Http\Adapter;
 
 use Exception;
+use InvalidArgumentException;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Http\HttpClientInterface;
 use RavenDB\Http\HttpRequestInterface;
@@ -38,28 +39,46 @@ class HttpClient implements HttpClientInterface
             $options['proxy'] = self::$proxy;
         }
 
-        $needle = '';
-//        $needle = 'http://127.0.0.1:8080/databases/test_db_1/indexes/has-changed';
-//        $needle = 'http://127.0.0.1:8080/databases/test_db_1/docs?&pageSize=25&startsWith=A';
-//        $needle = 'http://127.0.0.1:8080/databases/test_db_1/cmpxchg?&startsWith=test';
-//        $needle = 'http://127.0.0.1:8080/databases/test_db_1/bulk_docs?&disableAtomicDocumentWrites=false&raft-request-id=';
-//        $needle = 'http://127.0.0.1:8080/databases/test_db_1/queries?queryHash=';
-//        echo $request->getUrl() . PHP_EOL;
-//        if (str_starts_with($request->getUrl(), $needle)) {
-//            echo PHP_EOL . PHP_EOL;
-//            echo 'URL: ' . $request->getUrl() . PHP_EOL;
-//            echo 'Method: ' . $request->getMethod() . PHP_EOL;
-//            print_r($options);
-//            echo JsonExtensions::getDefaultEntityMapper()->serialize($options, 'json') . PHP_EOL;
-//        }
-        $serverResponse =  $this->client->request($request->getMethod(), $request->getUrl(), $options);
+        $this->updateRequestBody($options);
 
-//        if (str_starts_with($request->getUrl(), $needle)) {
-//            print_r($serverResponse->getContent(false));
-//            echo PHP_EOL;
-//        }
+        $log = false;
+        if ($log) {
+            echo PHP_EOL . '  --- ' . PHP_EOL . PHP_EOL;
+            print_r($request->getUrl());
+            echo PHP_EOL;
+            print_r($options);
+            echo PHP_EOL;
+        }
+
+        $serverResponse = $this->client->request($request->getMethod(), $request->getUrl(), $options);
+
+        if ($log) {
+            print_r($serverResponse->getContent()) . PHP_EOL;
+        }
 
         return HttpResponseTransformer::fromHttpClientResponse($serverResponse);
+    }
+
+    // Symfony client use json_encode to serialize request data,
+    // we need to have more control over serialization,
+    // so we are going to serialize it throughout our serializer.
+    private function updateRequestBody(array &$options): void
+    {
+        if (array_key_exists('json', $options)) {
+            if (array_key_exists('body', $options)) {
+                throw new InvalidArgumentException('Define either the "json" or the "body" option, setting both is not supported.');
+            }
+
+            $json = JsonExtensions::getDefaultEntityMapper()->serialize($options['json'], 'json', [
+                "empty_array_as_object" => true,
+                "json_encode_options" => JSON_UNESCAPED_UNICODE
+            ]);
+
+            unset($options['json']);
+
+            $options['body'] = $json;
+            $options['headers']['Content-type'] = 'application/json; charset=utf8';
+        }
     }
 
     public static function useProxy(string $proxy): void
