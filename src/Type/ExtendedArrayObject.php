@@ -4,8 +4,43 @@ namespace RavenDB\Type;
 
 class ExtendedArrayObject extends \ArrayObject implements \JsonSerializable
 {
+    protected bool $nullAllowed = false;
+
+    public function setNullAllowed(bool $nullAllowed): void
+    {
+        $this->nullAllowed = $nullAllowed;
+    }
+
+    public function allowNull(): void
+    {
+        $this->nullAllowed = true;
+    }
+
+    public function disallowNull(): void
+    {
+        $this->nullAllowed = false;
+    }
+
+    public function isNullAllowed(): bool
+    {
+        return $this->nullAllowed;
+    }
+
     protected function validateValue($value): void
     {
+        if (!$this->isValueValid($value)) {
+            throw new \TypeError($this->getInvalidValueMessage($value));
+        }
+    }
+
+    protected function isValueValid($value): bool
+    {
+        return true;
+    }
+
+    protected function getInvalidValueMessage($value): string
+    {
+        return 'This value is not allowed.';
     }
 
     public function offsetSet($key, $value)
