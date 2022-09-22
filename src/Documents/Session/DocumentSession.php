@@ -3,6 +3,8 @@
 namespace RavenDB\Documents\Session;
 
 use Closure;
+use RavenDB\Constants\HttpStatusCode;
+use RavenDB\Documents\Commands\ConditionalGetDocumentsCommand;
 use ReflectionException;
 use InvalidArgumentException;
 use Ramsey\Uuid\UuidInterface;
@@ -62,17 +64,17 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //    public IEagerSessionOperations eagerly() {
 //        return this;
 //    }
-//
-//    private IAttachmentsSessionOperations _attachments;
-//
-//    @Override
-//    public IAttachmentsSessionOperations attachments() {
-//        if (_attachments == null) {
-//            _attachments = new DocumentSessionAttachments(this);
-//        }
-//        return _attachments;
-//    }
-//
+
+    private ?AttachmentsSessionOperationsInterface $attachments = null;
+
+    public function attachments(): AttachmentsSessionOperationsInterface
+    {
+        if ($this->attachments == null) {
+            $this->attachments = new DocumentSessionAttachments($this);
+        }
+        return $this->attachments;
+    }
+
 //    private IRevisionsSessionOperations _revisions;
 //
 //    @Override
@@ -992,7 +994,8 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //            }
 //        }
 
-        $commandMap = $this->getDeferredCommandsMapIndex($id, CommandType::patch(), null);
+        $commandMap = $this->deferredCommandsMap->getIndexFor($id, CommandType::patch(), null);
+
         if ($commandMap == null) {
             return false;
         }
@@ -1339,43 +1342,41 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //        return new SessionDocumentRollupTypedTimeSeries<T>(clazz, this, documentId, tsName + TimeSeriesConfiguration.TIME_SERIES_ROLLUP_SEPARATOR + policy);
 //    }
 //
-//    @Override
-//    public <T> ConditionalLoadResult<T> conditionalLoad(Class<T> clazz, String id, String changeVector) {
-//        if (StringUtils.isEmpty(id)) {
-//            throw new IllegalArgumentException("Id cannot be null");
-//        }
-//
-//        if (advanced().isLoaded(id)) {
-//            T entity = load(clazz, id);
-//            if (entity == null) {
-//                return ConditionalLoadResult.create(null, null);
-//            }
-//
-//            String cv = advanced().getChangeVectorFor(entity);
-//            return ConditionalLoadResult.create(entity, cv);
-//        }
-//
-//        if (StringUtils.isEmpty(changeVector)) {
-//            throw new IllegalArgumentException("The requested document with id '" + id + "' is not loaded into the session and could not conditional load when changeVector is null or empty.");
-//        }
-//
-//        incrementRequestCount();
-//
-//        ConditionalGetDocumentsCommand cmd = new ConditionalGetDocumentsCommand(id, changeVector);
-//        advanced().getRequestExecutor().execute(cmd);
-//
-//        switch (cmd.getStatusCode()) {
-//            case HttpStatus.SC_NOT_MODIFIED:
-//                return ConditionalLoadResult.create(null, changeVector); // value not changed
-//            case HttpStatus.SC_NOT_FOUND:
-//                registerMissing(id);;
-//                return ConditionalLoadResult.create(null, null); // value is missing
-//        }
-//
-//        DocumentInfo documentInfo = DocumentInfo.getNewDocumentInfo((ObjectNode) cmd.getResult().getResults().get(0));
-//        T r = trackEntity(clazz, documentInfo);
-//        return ConditionalLoadResult.create(r, cmd.getResult().getChangeVector());
-//    }
+    function conditionalLoad(?string $className, ?string $id, ?string $changeVector): ConditionalLoadResult
+    {
+        if (StringUtils::isEmpty($id)) {
+            throw new IllegalArgumentException("Id cannot be null");
+        }
 
+        if ($this->advanced()->isLoaded($id)) {
+            $entity = $this->load($className, $id);
+            if ($entity == null) {
+                return ConditionalLoadResult::create(null, null);
+            }
 
+            $cv = $this->advanced()->getChangeVectorFor($entity);
+            return ConditionalLoadResult::create($entity, $cv);
+        }
+
+        if (StringUtils::isEmpty($changeVector)) {
+            throw new IllegalArgumentException("The requested document with id '" . $id . "' is not loaded into the session and could not conditional load when changeVector is null or empty.");
+        }
+
+        $this->incrementRequestCount();
+
+        $cmd = new ConditionalGetDocumentsCommand($id, $changeVector);
+        $this->advanced()->getRequestExecutor()->execute($cmd);
+
+        switch ($cmd->getStatusCode()) {
+            case HttpStatusCode::NOT_MODIFIED:
+                return ConditionalLoadResult::create(null, $changeVector); // value not changed
+            case HttpStatusCode::NOT_FOUND:
+                $this->registerMissing($id);
+                return ConditionalLoadResult::create(null, null); // value is missing
+        }
+
+        $documentInfo = DocumentInfo::getNewDocumentInfo($cmd->getResult()->getResults()[0]);
+        $r = $this->trackEntity($className, $documentInfo);
+        return ConditionalLoadResult::create($r, $cmd->getResult()->getChangeVector());
+    }
 }

@@ -15,7 +15,7 @@ class StringSet extends StringArray
         }
     }
 
-    public static function fromArray(array $data): StringSet
+    public static function fromArray(array $data, $nullAllowed = false): StringSet
     {
         $sa = new StringSet();
 

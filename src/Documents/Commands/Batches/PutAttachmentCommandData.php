@@ -8,15 +8,17 @@ use RavenDB\Exceptions\IllegalArgumentException;
 
 class PutAttachmentCommandData implements CommandDataInterface
 {
-    private string $id;
-    private string $name;
-    private string $stream;
-    private string $changeVector;
-    private string $contentType;
-    private CommandType $type;
+    private ?string $id = null;
+    private ?string $name = null;
+    private $stream = null;
+    private ?string $changeVector = null;
+    private ?string $contentType = null;
+    private ?CommandType $type = null;
 
-    public function __construct(string $documentId, string $name, $stream, string $contentType, string $changeVector)
+    public function __construct(?string $documentId, ?string $name, $stream, ?string $contentType, ?string $changeVector)
     {
+        $this->type = CommandType::attachmentPut();
+
         if (empty($documentId)) {
             throw new IllegalArgumentException('DocumentId cannot be null');
         }
@@ -31,43 +33,52 @@ class PutAttachmentCommandData implements CommandDataInterface
         $this->changeVector = $changeVector;
     }
 
-    public function getId(): string
+    public function getId(): ?string
     {
         return $this->id;
     }
 
-    public function getName(): string
+    public function getName(): ?string
     {
         return $this->name;
     }
 
-    public function getStream(): string
+    /**
+     * @return mixed
+     */
+    public function getStream()
     {
         return $this->stream;
     }
 
-    public function getChangeVector(): string
+    public function getChangeVector(): ?string
     {
         return $this->changeVector;
     }
 
-    public function getContentType(): string
+    public function getContentType(): ?string
     {
         return $this->contentType;
     }
 
-    public function getType(): CommandType
+    public function getType(): ?CommandType
     {
         return $this->type;
     }
 
-    public function serialize(?DocumentConventions $conventions): void
+    public function serialize(?DocumentConventions $conventions): array
     {
-        // TODO: Implement serialize() method.
+        $data = [];
+        $data["Id"] = $this->id;
+        $data["Name"] = $this->name;
+        $data["ContentType"] = $this->contentType;
+        $data["ChangeVector"] = $this->changeVector;
+        $data["Type"] = $this->type->__toString();
+        return $data;
     }
 
     public function onBeforeSaveChanges(?InMemoryDocumentSessionOperations $session): void
     {
-        // TODO: Implement onBeforeSaveChanges() method.
+        // left empty on purpose
     }
 }

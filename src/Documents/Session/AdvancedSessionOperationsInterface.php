@@ -22,13 +22,12 @@ interface AdvancedSessionOperationsInterface extends
 //     * @return Lazy session operations
 //     */
 //    ILazySessionOperations lazily();
-//
-//    /**
-//     * @return Access the attachments operations
-//     */
-//    IAttachmentsSessionOperations attachments();
-//
-//
+
+    /**
+     * @return AttachmentsSessionOperationsInterface Access the attachments operations
+     */
+    function attachments(): AttachmentsSessionOperationsInterface;
+
 //    /**
 //     * @return Access the revisions operations
 //     */
@@ -337,15 +336,19 @@ interface AdvancedSessionOperationsInterface extends
 //     * @param <T> Result class
 //     */
 //    <T> void streamInto(IRawDocumentQuery<T> query, OutputStream output);
-//
-//    /**
-//     * Loads the specified entity with the specified id and changeVector.
-//     * If the entity is loaded into the session, the tracked entity will be returned otherwise the entity will be loaded only if it is fresher then the provided changeVector.
-//     * @param clazz Result class
-//     * @param id Identifier of a entity that will be conditional loaded.
-//     * @param changeVector Change vector of a entity that will be conditional loaded.
-//     * @param <T> Result class
-//     * @return Entity and change vector
-//     */
-//    <T> ConditionalLoadResult<T> conditionalLoad(Class<T> clazz, String id, String changeVector);
+
+    /**
+     * Loads the specified entity with the specified id and changeVector.
+     *
+     * If the entity is loaded into the session, the tracked entity will be returned otherwise the entity will be loaded only if it is fresher then the provided changeVector.
+     *
+     * @template T
+     *
+     * @param ?string $className Result class
+     * @param ?string $id Identifier of a entity that will be conditional loaded.
+     * @param ?string $changeVector Change vector of an entity that will be conditional loaded.
+     *
+     * @return ConditionalLoadResult<T> Entity and change vector
+     */
+    function conditionalLoad(?string $className, ?string $id, ?string $changeVector): ConditionalLoadResult;
 }

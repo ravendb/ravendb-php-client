@@ -2,6 +2,7 @@
 
 namespace tests\RavenDB\Test\Cluster;
 
+use RavenDB\Exceptions\RavenException;
 use Throwable;
 use Exception;
 use tests\RavenDB\RemoteTestBase;
@@ -10,6 +11,7 @@ use RavenDB\Documents\Session\SessionOptions;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Documents\Session\TransactionMode;
 
+// !status: DONE
 class ClusterTransactionTest extends RemoteTestBase
 {
     public function testCanCreateClusterTransactionRequest(): void
@@ -136,8 +138,7 @@ class ClusterTransactionTest extends RemoteTestBase
         }
     }
 
-    /** @todo: implement this test (it was not in the task list) */
-    public function throwOnUnsupportedOperations(): void
+    public function testThrowOnUnsupportedOperations(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -147,11 +148,11 @@ class ClusterTransactionTest extends RemoteTestBase
 
             $session = $store->openSession($sessionOptions);
             try {
-//                ByteArrayInputStream attachmentStream = new ByteArrayInputStream(new byte[]{1, 2, 3});
-//                $session->advanced()->attachments().store("asd", "test", attachmentStream);
-//                assertThatThrownBy(() -> {
-//                    $session->saveChanges();
-//                }).isExactlyInstanceOf(RavenException.class);
+                $attachmentStream = implode(array_map("chr", [1, 2, 3]));
+                $session->advanced()->attachments()->store("asd", "test", $attachmentStream);
+
+                $this->expectException(RavenException::class);
+                $session->saveChanges();
             } finally {
                 $session->close();
             }

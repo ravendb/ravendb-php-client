@@ -6,7 +6,7 @@ use RavenDB\Http\ResultInterface;
 
 class StringArrayResult extends StringArray implements ResultInterface
 {
-    public static function fromArray(array $data): StringArrayResult
+    public static function fromArray(array $data, $nullAllowed = false): StringArrayResult
     {
         $array = new StringArrayResult();
 

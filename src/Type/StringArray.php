@@ -16,9 +16,10 @@ class StringArray extends ExtendedArrayObject implements \JsonSerializable
         return $a;
     }
 
-    public static function fromArray(array $data): StringArray
+    public static function fromArray(array $data, $nullAllowed = false): StringArray
     {
         $sa = new StringArray();
+        $sa->setNullAllowed($nullAllowed);
 
         foreach ($data as $key => $value) {
             $sa->offsetSet($key, $value);
@@ -27,15 +28,18 @@ class StringArray extends ExtendedArrayObject implements \JsonSerializable
         return $sa;
     }
 
-    public function offsetSet($key, $value)
+    protected function isValueValid($value): bool
     {
-        if (!is_string($value)) {
-            throw new \TypeError(
-                sprintf("Only values of type string are supported")
-            );
+        if ($this->isNullAllowed() && $value == null) {
+            return true;
         }
 
-        parent::offsetSet($key, $value);
+        return is_string($value);
+    }
+
+    protected function getInvalidValueMessage($value): string
+    {
+        return 'Only values of type string are supported.';
     }
 
     public function isEmpty(): bool

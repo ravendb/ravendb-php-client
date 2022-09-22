@@ -6,7 +6,6 @@ namespace RavenDB\Documents\Session;
 use RavenDB\Documents\Queries\Query;
 use RavenDB\Documents\Session\Loaders\LoaderWithIncludeInterface;
 use RavenDB\Type\ObjectArray;
-use RavenDB\Type\StringArray;
 
 interface DocumentSessionInterface
 {

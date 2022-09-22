@@ -52,6 +52,7 @@ class CrudTest extends RemoteTestBase
             }
         } finally {
             $store->close();
+            $store = null;
         }
     }
 

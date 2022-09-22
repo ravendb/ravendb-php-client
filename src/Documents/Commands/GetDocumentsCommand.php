@@ -18,8 +18,7 @@ use RavenDB\Primitives\NetISO8601Utils;
 use RavenDB\Type\StringArray;
 use RavenDB\Utils\UrlUtils;
 
-// !status: IN PROGRESS
-// only prepareRequestWithMultipleIds is left to be implemented in this class
+// !status: DONE
 class GetDocumentsCommand extends RavenCommand
 {
     private string $id = '';
@@ -51,7 +50,7 @@ class GetDocumentsCommand extends RavenCommand
      */
     protected function setIds($ids): void
     {
-        $this->ids = is_array($ids) ? StringArray::fromArray($ids) : $ids;
+        $this->ids = is_array($ids) ? StringArray::fromArray($ids, true) : $ids;
     }
 
     /**
@@ -290,10 +289,17 @@ class GetDocumentsCommand extends RavenCommand
         if (!empty($this->id)) {
             $path .= '&id=' . UrlUtils::escapeDataString($this->id);
         } else if (!empty($this->ids)) {
-            foreach ($this->ids as $id) {
-                $path .= '&id=' . UrlUtils::escapeDataString($id);
+            if ($this->isGetMethod()) {
+                $uniqueIds = array_unique($this->ids->getArrayCopy());
+                foreach ($uniqueIds as $id) {
+                    $escapedId = $id ? UrlUtils::escapeDataString($id) : '';
+                    $path .= '&id=' . $escapedId;
+                }
+            } else {
+                $calculateHash = $this->calculateHash(array_unique($this->ids->getArrayCopy()));
+                $path .= "&loadHash=";
+                $path .= $calculateHash;
             }
-
         }
 
         return $path;
@@ -301,66 +307,65 @@ class GetDocumentsCommand extends RavenCommand
 
     public function createRequest(ServerNode $serverNode): HttpRequestInterface
     {
-        return new HttpRequest($this->createUrl($serverNode));
+        $isGet = $this->isGetMethod();
+        $requestType = $isGet? HttpRequest::GET : HttpRequest::POST;
+
+        $options = [];
+
+        if (!$isGet) {
+            if (empty($this->id)) {
+                $jsonContent = [
+                    'Ids' => []
+                ];
+
+                $uniqueIds = array_unique($this->ids->getArrayCopy());
+                foreach ($uniqueIds as $id) {
+                    $jsonContent['Ids'][] = $id;
+                }
+
+                $options = [
+                    'json' => $jsonContent,
+                    'headers' => [
+                        'Content-Type' => 'application/json'
+                    ]
+                ];
+            }
+        }
+
+        return new HttpRequest($this->createUrl($serverNode), $requestType, $options);
     }
 
-//    public static HttpRequestBase prepareRequestWithMultipleIds(StringBuilder pathBuilder, HttpRequestBase request, String[] ids) {
-//        Set<String> uniqueIds = new LinkedHashSet<>();
-//        Collections.addAll(uniqueIds, ids);
-//
-//        // if it is too big, we drop to POST (note that means that we can't use the HTTP cache any longer)
-//        // we are fine with that, requests to load > 1024 items are going to be rare
-//        boolean isGet = uniqueIds.stream()
-//                .filter(Objects::nonNull)
-//                .map(String::length)
-//                .reduce(Integer::sum)
-//                .orElse(0) < 1024;
-//
-//        if (isGet) {
-//            uniqueIds.forEach(x -> {
-//                pathBuilder.append("&id=");
-//                pathBuilder.append(
-//                        UrlUtils.escapeDataString(
-//                                ObjectUtils.firstNonNull(x, "")));
-//            });
-//
-//            return new HttpGet();
-//        } else {
-//            HttpPost httpPost = new HttpPost();
-//
-//            try {
-//                String calculateHash = calculateHash(uniqueIds);
-//                pathBuilder.append("&loadHash=");
-//                pathBuilder.append(calculateHash);
-//            } catch (IOException e) {
-//                throw new RuntimeException("Unable to compute query hash:" + e.getMessage(), e);
-//            }
-//
-//            ObjectMapper mapper = JsonExtensions.getDefaultMapper();
-//
-//            httpPost.setEntity(new ContentProviderHttpEntity(outputStream -> {
-//                try (JsonGenerator generator = mapper.getFactory().createGenerator(outputStream)) {
-//                    generator.writeStartObject();
-//                    generator.writeFieldName("Ids");
-//                    generator.writeStartArray();
-//
-//                    for (String id : uniqueIds) {
-//                        generator.writeString(id);
-//                    }
-//
-//                    generator.writeEndArray();
-//                    generator.writeEndObject();
-//
-//                } catch (IOException e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }, ContentType.APPLICATION_JSON));
-//
-//            return httpPost;
-//        }
-//    }
+    // if it is too big, we drop to POST (note that means that we can't use the HTTP cache any longer)
+    // we are fine with that, requests to load documents where sum(ids.length) > 1024 are going to be rare
+    protected function isGetMethod(): bool
+    {
+        if (!empty($this->id)) {
+            return true;
+        }
 
-    private static function calculateHash(StringArray $uniqueIds): string
+        if ($this->ids == null || count($this->ids) == 0) {
+            return true;
+        }
+
+        $uniqueIds = array_unique($this->ids->getArrayCopy());
+
+        $totalLength = intval(array_reduce(
+            array_map(
+                function($id) {
+                    return strlen($id);
+                },
+                $uniqueIds
+            ),
+            function($totalLength, $idLength) {
+                return $totalLength + $idLength;
+            },
+            0
+        ));
+
+        return $totalLength < 1024;
+    }
+
+    private static function calculateHash(array $uniqueIds): string
     {
         $hasher = new HashCalculator();
 

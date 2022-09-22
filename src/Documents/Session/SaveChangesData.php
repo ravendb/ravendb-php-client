@@ -6,12 +6,13 @@ use RavenDB\Documents\Commands\Batches\BatchOptions;
 use RavenDB\Documents\Commands\Batches\CommandDataInterface;
 
 use Ds\Map as DSMap;
+use RavenDB\Type\DeferredCommandsMap;
 
 class SaveChangesData
 {
     /** @var array<CommandDataInterface> $deferredCommands */
     private array $deferredCommands = [];
-    private DSMap $deferredCommandsMap;
+    private DeferredCommandsMap $deferredCommandsMap;
     private array $sessionCommands = [];
     private array $entities = [];
     private ?BatchOptions $options;
@@ -20,7 +21,7 @@ class SaveChangesData
     public function __construct(InMemoryDocumentSessionOperations $session)
     {
         $this->deferredCommands = $session->deferredCommands;
-        $this->deferredCommandsMap = new DSMap($session->deferredCommandsMap);
+        $this->deferredCommandsMap = new DeferredCommandsMap($session->deferredCommandsMap);
 
         $this->options = $session->saveChangesOptions;
         $this->onSuccess = new ActionsToRunOnSuccess($session);
@@ -41,7 +42,7 @@ class SaveChangesData
         $this->deferredCommands[] = $command;
     }
 
-    public function & getDeferredCommandsMap(): DSMap
+    public function & getDeferredCommandsMap(): DeferredCommandsMap
     {
         return $this->deferredCommandsMap;
     }

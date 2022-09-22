@@ -2,12 +2,9 @@
 
 namespace RavenDB\Type;
 
-use tests\RavenDB\Test\Issues\RavenDB_14084Test\Companies_ByUnknown_WithIndexMissingFieldsAsNull;
-
 class TypedArray extends ExtendedArrayObject implements TypedArrayInterface
 {
     protected string $type;
-    protected bool $nullAllowed = false;
 
     protected function __construct(string $type)
     {
@@ -32,33 +29,17 @@ class TypedArray extends ExtendedArrayObject implements TypedArrayInterface
         return $this->type;
     }
 
-    public function allowNull(): void
+    protected function isValueValid($value): bool
     {
-        $this->nullAllowed = true;
-    }
-
-    public function disallowNull(): void
-    {
-        $this->nullAllowed = false;
-    }
-
-    public function isNullAllowed(): bool
-    {
-        return $this->nullAllowed;
-    }
-
-    protected function validateValue($value): void
-    {
-        if ($value == null) {
-            if (!$this->isNullAllowed()) {
-                throw new \TypeError('Null is not allowed to be added as value');
-            }
+        if ($this->isNullAllowed() && $value == null) {
+            return true;
         }
 
-        if (!($value instanceof $this->type) && ($value != null)) {
-            throw new \TypeError(
-                sprintf("Only values of type %s are supported", $this->type)
-            );
-        }
+        return $value instanceof $this->type;
+    }
+
+    protected function getInvalidValueMessage($value): string
+    {
+        return sprintf("Only values of type %s are supported", $this->type);
     }
 }
