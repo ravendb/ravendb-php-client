@@ -19,42 +19,41 @@ class CrudTest extends RemoteTestBase
 {
     public function testEntitiesAreSavedUsingLowerCase(): void
     {
-//        for ($i=0;$i< 1000; $i++) {
-            $store = $this->getDocumentStore();
+        $store = $this->getDocumentStore();
 
+        try {
+            $newSession = $store->openSession();
             try {
-                $newSession = $store->openSession();
-                try {
-                    $user1 = new User();
-                    $user1->setLastName("user1");
-                    $newSession->store($user1, "users/1");
-                    $newSession->saveChanges();
+                $user1 = new User();
+                $user1->setLastName("user1");
+                $newSession->store($user1, "users/1");
+                $newSession->saveChanges();
 
-                } finally {
-                    $newSession->close();
-                }
-
-                $documentsCommand = GetDocumentsCommand::forSingleDocument("users/1");
-                $store->getRequestExecutor()->execute($documentsCommand);
-
-                /** @var GetDocumentsResult $result */
-                $result = $documentsCommand->getResult();
-
-                $userJson = $result->getResults()[0];
-                $this->assertArrayHasKey("lastName", $userJson);
-
-                $newSession = $store->openSession();
-                try {
-                    $rawDocumentQuery = $newSession->advanced()->rawQuery(User::class, "from Users where lastName = 'user1'");
-                    $users = $rawDocumentQuery->toList();
-                    $this->assertCount(1, $users);
-                } finally {
-                    $newSession->close();
-                }
             } finally {
-                $store->close();
+                $newSession->close();
             }
-//        }
+
+            $documentsCommand = GetDocumentsCommand::forSingleDocument("users/1");
+            $store->getRequestExecutor()->execute($documentsCommand);
+
+            /** @var GetDocumentsResult $result */
+            $result = $documentsCommand->getResult();
+
+            $userJson = $result->getResults()[0];
+            $this->assertArrayHasKey("lastName", $userJson);
+
+            $newSession = $store->openSession();
+            try {
+                $rawDocumentQuery = $newSession->advanced()->rawQuery(User::class, "from Users where lastName = 'user1'");
+                $users = $rawDocumentQuery->toList();
+                $this->assertCount(1, $users);
+            } finally {
+                $newSession->close();
+            }
+        } finally {
+            $store->close();
+            $store = null;
+        }
     }
 
     public function testCanCustomizePropertyNamingStrategy(): void

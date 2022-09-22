@@ -221,16 +221,18 @@ class RemoteTestBase extends RavenTestDriver implements CleanCloseable
         $documentStores = $this->documentStores;
 
         $store->addAfterCloseListener(function($sender, $event) use (&$documentStores) {
+            $storeRemoved = true;
             /** @var DocumentStore $store */
             $store = $sender;
-            $dbStores = $documentStores->getArrayCopy();
-            if (!in_array($store, $dbStores)) {
+            foreach ($documentStores->getArrayCopy() as $storeInList) {
+                $storeRemoved = $store === $storeInList ? false : $storeRemoved;
+            }
+            if ($storeRemoved) {
                 return;
             }
 
             try {
                 $store->maintenance()->server()->send(new DeleteDatabasesOperation($store->getDatabase(), true));
-
             } catch (DatabaseDoesNotExistException | NoLeaderException $exception) {
                 // ignore
             }

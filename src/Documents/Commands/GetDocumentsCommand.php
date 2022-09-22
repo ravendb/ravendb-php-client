@@ -343,6 +343,10 @@ class GetDocumentsCommand extends RavenCommand
             return true;
         }
 
+        if ($this->ids == null || count($this->ids) == 0) {
+            return true;
+        }
+
         $uniqueIds = array_unique($this->ids->getArrayCopy());
 
         $totalLength = intval(array_reduce(

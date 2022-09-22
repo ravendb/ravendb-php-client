@@ -4,7 +4,7 @@ namespace RavenDB\Type;
 
 class StringList extends StringArray
 {
-    public static function fromArray(array $data): StringList
+    public static function fromArray(array $data, $nullAllowed = false): StringList
     {
         $sa = new StringList();
 

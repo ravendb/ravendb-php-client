@@ -15,7 +15,7 @@ use Symfony\Component\HttpClient\HttpClient as SymfonyHttpClient;
 
 class HttpClient implements HttpClientInterface
 {
-    private SymfonyHttpClientInterface $client;
+    private static ?SymfonyHttpClientInterface $client = null;
 
     private static string $proxy;
 
@@ -24,7 +24,14 @@ class HttpClient implements HttpClientInterface
     public function __construct(array $options = [])
     {
         $this->clientOptions = $options;
-        $this->client = SymfonyHttpClient::create();
+    }
+
+    protected function getClient(): SymfonyHttpClientInterface
+    {
+        if (self::$client == null) {
+            self::$client = SymfonyHttpClient::create();
+        }
+        return self::$client;
     }
 
     /**
@@ -41,20 +48,7 @@ class HttpClient implements HttpClientInterface
 
         $this->updateRequestBody($options);
 
-        $log = false;
-        if ($log) {
-            echo PHP_EOL . '  --- ' . PHP_EOL . PHP_EOL;
-            print_r($request->getUrl());
-            echo PHP_EOL;
-            print_r($options);
-            echo PHP_EOL;
-        }
-
-        $serverResponse = $this->client->request($request->getMethod(), $request->getUrl(), $options);
-
-        if ($log) {
-            print_r($serverResponse->getContent()) . PHP_EOL;
-        }
+        $serverResponse = $this->getClient()->request($request->getMethod(), $request->getUrl(), $options);
 
         return HttpResponseTransformer::fromHttpClientResponse($serverResponse);
     }
