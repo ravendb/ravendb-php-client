@@ -14,6 +14,7 @@ use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Utils\StringUtils;
+use Symfony\Component\Mime\Part\DataPart;
 
 // !status: DONE
 class DocumentSessionAttachmentsBase extends AdvancedSessionExtensionBase
@@ -50,6 +51,15 @@ class DocumentSessionAttachmentsBase extends AdvancedSessionExtensionBase
         return $results;
     }
 
+    /**
+     * @param object|string|null $idOrEntity
+     * @param string|null $name
+     * @param string $filePath
+     */
+    public function storeFile($idOrEntity, ?string $name, string $filePath): void
+    {
+        $this->store($idOrEntity, $name, DataPart::fromPath($filePath), mime_content_type($filePath));
+    }
 
     /**
      * @param object|string|null $idOrEntity

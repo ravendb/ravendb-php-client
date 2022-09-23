@@ -36,7 +36,7 @@ jobs:
               uses: shivammathur/setup-php@v2
               with:
                   php-version: ${{ matrix.php-versions }}
-                  extensions: ds, json
+                  extensions: ds, json, fileinfo, zip
 #                  ini-values: "post_max_size=256M"
                   tools: composer:v2, phpunit
                   coverage: none

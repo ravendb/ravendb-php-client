@@ -144,7 +144,6 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
             foreach ($this->attachmentStreams as $stream) {
                 $partName = "attachment" . $nameCounter++;
                 $formFields[$partName] = $stream;
-                // I don't know where to add this: .addField("Command-Type", "AttachmentStream")
             }
 
             $formData = new FormDataPart($formFields);

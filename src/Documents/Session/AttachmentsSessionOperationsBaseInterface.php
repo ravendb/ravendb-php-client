@@ -23,6 +23,14 @@ interface AttachmentsSessionOperationsBaseInterface
     public function store($idOrEntity, ?string $name, $stream, ?string $contentType = null): void;
 
     /**
+     * Stores attachment to be sent in the session.
+     * @param object|string|null $idOrEntity
+     * @param string|null $name
+     * @param string $filePath
+     */
+    public function storeFile($idOrEntity, ?string $name, string $filePath): void;
+
+    /**
      * Marks the specified document's attachment for deletion. The attachment will be deleted when
      * saveChanges is called.
      * @param object|string|null $idOrEntity
