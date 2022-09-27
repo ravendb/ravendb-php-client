@@ -5,12 +5,19 @@ namespace RavenDB\Documents\Queries\Facets;
 use RavenDB\Exceptions\IllegalStateException;
 
 // !status: DONE
+
+/**
+ * @template T
+ */
 class RangeBuilder
 {
     private string $path;
 
-    private ?object $lessBound = null;
-    private ?object $greaterBound = null;
+    /** @var T|null  */
+    private $lessBound = null;
+
+    /** @var T|null  */
+    private $greaterBound = null;
     private bool $lessInclusive = false;
     private bool $greaterInclusive = false;
 
@@ -39,6 +46,10 @@ class RangeBuilder
         return $builder;
     }
 
+    /**
+     * @param T $value
+     * @return RangeBuilder
+     */
     public function isLessThan($value): RangeBuilder {
         if ($this->lessSet) {
             throw new IllegalStateException("Less bound was already set");
@@ -51,6 +62,10 @@ class RangeBuilder
         return $clone;
     }
 
+    /**
+     * @param T $value
+     * @return RangeBuilder
+     */
     public function isLessThanOrEqualTo($value): RangeBuilder
     {
         if ($this->lessSet) {
@@ -64,6 +79,10 @@ class RangeBuilder
         return $clone;
     }
 
+    /**
+     * @param T $value
+     * @return RangeBuilder
+     */
     public function isGreaterThan($value): RangeBuilder
     {
         if ($this->greaterSet) {
@@ -77,7 +96,12 @@ class RangeBuilder
         return $clone;
     }
 
-    public function isGreaterThanOrEqualTo($value): RangeBuilder {
+    /**
+     * @param T $value
+     * @return RangeBuilder
+     */
+    public function isGreaterThanOrEqualTo($value): RangeBuilder
+    {
         if ($this->greaterSet) {
             throw new IllegalStateException("Greater bound was already set");
         }

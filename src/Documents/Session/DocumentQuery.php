@@ -2,6 +2,8 @@
 
 namespace RavenDB\Documents\Session;
 
+use Closure;
+use InvalidArgumentException;
 use RavenDB\Constants\DocumentsIndexingFields;
 use RavenDB\Documents\Queries\Facets\AggregationDocumentQuery;
 use RavenDB\Documents\Queries\Facets\AggregationDocumentQueryInterface;
@@ -9,9 +11,13 @@ use RavenDB\Documents\Queries\Facets\FacetBase;
 use RavenDB\Documents\Queries\Facets\FacetBaseArray;
 use RavenDB\Documents\Queries\Facets\FacetBuilder;
 use RavenDB\Documents\Queries\GroupBy;
+use RavenDB\Documents\Queries\Highlighting\HighlightingOptions;
+use RavenDB\Documents\Queries\Highlighting\Highlightings;
+use RavenDB\Documents\Queries\IndexQuery;
 use RavenDB\Documents\Queries\ProjectionBehavior;
 use RavenDB\Documents\Queries\QueryData;
 use RavenDB\Documents\Queries\SearchOperator;
+use RavenDB\Documents\Queries\Timings\QueryTimings;
 use RavenDB\Documents\Session\Loaders\QueryIncludeBuilder;
 use RavenDB\Documents\Session\Tokens\DeclareTokenArray;
 use RavenDB\Documents\Session\Tokens\FieldsToFetchToken;
@@ -30,22 +36,24 @@ class DocumentQuery extends AbstractDocumentQuery
     implements DocumentQueryInterface, AbstractDocumentQueryImplInterface
 {
     public function __construct(
-        ?string $className,
+        ?string                           $className,
         InMemoryDocumentSessionOperations $session,
-        ?string $indexName,
-        ?string $collectionName,
-        bool $isGroupBy,
-        ?DeclareTokenArray $declareTokens = null,
-        ?LoadTokenList $loadTokens = null,
-        ?string $fromAlias = null,
-        bool $isProjectInto = false
-    ) {
+        ?string                           $indexName,
+        ?string                           $collectionName,
+        bool                              $isGroupBy,
+        ?DeclareTokenArray                $declareTokens = null,
+        ?LoadTokenList                    $loadTokens = null,
+        ?string                           $fromAlias = null,
+        bool                              $isProjectInto = false
+    )
+    {
         parent::__construct($className, $session, $indexName, $collectionName, $isGroupBy, $declareTokens, $loadTokens, $fromAlias, $isProjectInto);
     }
 
     /**
      * selectFields(string $projectionClass, ?ProjectionBehavior $projectionBehavior = null): DocumentQueryInterface
      *
+     * selectFields(string $field, string $projectionClass = null, ProjectionBehavior $projectionBehavior = null): DocumentQueryInterface
      * selectFields(string $field, ProjectionBehavior $projectionBehavior = null): DocumentQueryInterface
      *
      * selectFields(array $fields, ?string $projectionClass = null, ProjectionBehavior $projectionBehavior = null): DocumentQueryInterface
@@ -78,20 +86,22 @@ class DocumentQuery extends AbstractDocumentQuery
                 return $this->_selectFieldsByClass($projectionClass, $projectionBehavior ?? ProjectionBehavior::default());
             }
 
+            if (count($params) > 1 && !($params[1] instanceof ProjectionBehavior) && class_exists($params[1])) {
+                $projectionClass = $params[1];
+
+                if (count($params) > 2 && ($params[2] instanceof ProjectionBehavior)) {
+                    $projectionBehavior = $params[2];
+                }
+            }
             $fields = [$firstParam];
         }
 
+        if (is_array($firstParam)) {
+            $firstParam = StringArray::fromArray($firstParam);
+        }
         if ($firstParam instanceof StringArray) {
             $fields = $firstParam->getArrayCopy();
-            $projectionClass = count($params) > 1 && is_string($params[2]) ? $params[2] : null;
-            if (count($params) > 2 && ($params[2] instanceof ProjectionBehavior)) {
-                $projectionBehavior = $params[2];
-            }
-        }
-
-        if (is_array($firstParam)) {
-            $fields = $firstParam;
-            $projectionClass = count($params) > 1 && is_string($params[2]) ? $params[2] : null;
+            $projectionClass = count($params) > 1 && is_string($params[1]) ? $params[1] : null;
             if (count($params) > 2 && ($params[2] instanceof ProjectionBehavior)) {
                 $projectionBehavior = $params[2];
             }
@@ -123,28 +133,27 @@ class DocumentQuery extends AbstractDocumentQuery
 
     private function _selectFieldsByClass(string $projectionClass, ProjectionBehavior $projectionBehavior): DocumentQueryInterface
     {
-        throw new \LogicException('Method not implemented yet.');
-
         $ref = new ReflectionClass(new $projectionClass());
         $allProperties = $ref->getProperties(ReflectionProperty::IS_PUBLIC | ReflectionProperty::IS_PRIVATE | ReflectionProperty::IS_PROTECTED);
 
-        // @todo: !!! extract only getter and setter properties that use default conventions getProperty - setProperty
+        // !!! extract only getter and setter properties that use default conventions getProperty - setProperty
+        $projections = array_filter(
+            array_map(function ($item) {
+                return $item->name;
+            }, $allProperties),
+            function ($item) use ($projectionClass) {
+                return method_exists($projectionClass, 'set' . ucfirst($item));
+            });
 
-//                  PropertyDescriptor[] propertyDescriptors = Introspector.getBeanInfo(projectionClass).getPropertyDescriptors();
-//
-//            String[] projections = Arrays.stream(propertyDescriptors)
-//                    .filter(x -> !Object.class.equals(x.getReadMethod().getDeclaringClass())) // ignore class field etc,
-//                    .map(x -> x.getName())
-//                    .toArray(String[]::new);
-//
-//            String[] fields = Arrays.stream(propertyDescriptors)
-//                    .filter(x -> !Object.class.equals(x.getReadMethod().getDeclaringClass())) // ignore class field etc,
-//                    .map(x -> x.getName())
-//                    .toArray(String[]::new);
+        $fields = array_filter(
+            array_map(function ($item) {
+                return $item->name;
+            }, $allProperties),
+            function ($item) use ($projectionClass) {
+                return method_exists($projectionClass, 'set' . ucfirst($item));
+            });
 
-
-        $stringArray = StringArray::fromArray($fields);
-        $queryData = new QueryData($stringArray, $stringArray);
+        $queryData = new QueryData($fields, $projections);
         $queryData->setProjectInto(true);
         $queryData->setProjectionBehavior($projectionBehavior);
 
@@ -202,14 +211,12 @@ class DocumentQuery extends AbstractDocumentQuery
 //        _includeExplanations(options, explanations);
 //        return this;
 //    }
-//
-//    @Override
-//    public IDocumentQuery<T> timings(Reference<QueryTimings> timings) {
-//        _includeTimings(timings);
-//        return this;
-//    }
-//
 
+    public function timings(QueryTimings &$timings): DocumentQueryInterface
+    {
+        $this->_includeTimings($timings);
+        return $this;
+    }
 
     public function waitForNonStaleResults(?Duration $waitTimeout = null): DocumentQueryInterface
     {
@@ -223,47 +230,45 @@ class DocumentQuery extends AbstractDocumentQuery
         return $this;
     }
 
-//    @Override
-//    public IDocumentQuery<T> addOrder(String fieldName, boolean descending) {
-//        return addOrder(fieldName, descending, OrderingType.STRING);
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> addOrder(String fieldName, boolean descending, OrderingType ordering) {
-//        if (descending) {
-//            orderByDescending(fieldName, ordering);
-//        } else {
-//            orderBy(fieldName, ordering);
-//        }
-//        return this;
-//    }
-//
+    public function addOrder(?string $fieldName, bool $descending, ?OrderingType $ordering = null): DocumentQueryInterface
+    {
+        if ($ordering == null) {
+            $ordering = OrderingType::string();
+        }
+
+        if ($descending) {
+            $this->orderByDescending($fieldName, $ordering);
+        } else {
+            $this->orderBy($fieldName, $ordering);
+        }
+        return $this;
+    }
+
 //    //TBD expr public IDocumentQuery<T> AddOrder<TValue>(Expression<Func<T, TValue>> propertySelector, bool descending, OrderingType ordering)
-//
-//
-//    @Override
-//    public IDocumentQuery<T> addAfterQueryExecutedListener(Consumer<QueryResult> action) {
-//        _addAfterQueryExecutedListener(action);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> removeAfterQueryExecutedListener(Consumer<QueryResult> action) {
-//        _removeAfterQueryExecutedListener(action);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> addAfterStreamExecutedListener(Consumer<ObjectNode> action) {
-//        _addAfterStreamExecutedListener(action);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> removeAfterStreamExecutedListener(Consumer<ObjectNode> action) {
-//        _removeAfterStreamExecutedListener(action);
-//        return this;
-//    }
+
+    public function addAfterQueryExecutedListener(Closure $action): DocumentQueryInterface
+    {
+        $this->_addAfterQueryExecutedListener($action);
+        return $this;
+    }
+
+    public function removeAfterQueryExecutedListener(Closure $action): DocumentQueryInterface
+    {
+        $this->_removeAfterQueryExecutedListener($action);
+        return $this;
+    }
+
+    public function addAfterStreamExecutedListener(Closure $action): DocumentQueryInterface
+    {
+        $this->_addAfterStreamExecutedListener($action);
+        return $this;
+    }
+
+    public function removeAfterStreamExecutedListener(Closure $action): DocumentQueryInterface
+    {
+        $this->_removeAfterStreamExecutedListener($action);
+        return $this;
+    }
 
     public function openSubclause(): DocumentQueryInterface
     {
@@ -361,7 +366,7 @@ class DocumentQuery extends AbstractDocumentQuery
         return $this;
     }
 
-    protected function includeWithCallable(Callable $includes): DocumentQueryInterface
+    protected function includeWithCallable(callable $includes): DocumentQueryInterface
     {
         $includeBuilder = new QueryIncludeBuilder($this->getConventions());
         $includes($includeBuilder);
@@ -445,7 +450,7 @@ class DocumentQuery extends AbstractDocumentQuery
     //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.WhereNotEquals<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact)
     //TBD expr IDocumentQuery<T> IFilterDocumentQueryBase<T, IDocumentQuery<T>>.WhereNotEquals<TValue>(Expression<Func<T, TValue>> propertySelector, MethodCall value, bool exact)
 
-    public function whereIn(string $fieldName, Collection $values, bool $exact = false)
+    public function whereIn(string $fieldName, Collection $values, bool $exact = false): DocumentQueryInterface
     {
         $this->_whereIn($fieldName, $values, $exact);
         return $this;
@@ -516,7 +521,7 @@ class DocumentQuery extends AbstractDocumentQuery
 
 //    //TBD expr IDocumentQuery<T> IFilterDocumentQueryBase<T, IDocumentQuery<T>>.WhereRegex<TValue>(Expression<Func<T, TValue>> propertySelector, string pattern)
 
-    public function whereRegex(string $fieldName, string $pattern): DocumentQueryInterface
+    public function whereRegex(?string $fieldName, ?string $pattern): DocumentQueryInterface
     {
         $this->_whereRegex($fieldName, $pattern);
         return $this;
@@ -608,17 +613,25 @@ class DocumentQuery extends AbstractDocumentQuery
 
     //TBD expr public IDocumentQuery<T> OrderByDescending<TValue>(params Expression<Func<T, TValue>>[] propertySelectors)
 
-//    @Override
-//    public IDocumentQuery<T> addBeforeQueryExecutedListener(Consumer<IndexQuery> action) {
-//        _addBeforeQueryExecutedListener(action);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> removeBeforeQueryExecutedListener(Consumer<IndexQuery> action) {
-//        _removeBeforeQueryExecutedListener(action);
-//        return this;
-//    }
+    /**
+     * @param Closure $action
+     * @return DocumentQueryInterface
+     */
+    public function addBeforeQueryExecutedListener(Closure $action): DocumentQueryInterface
+    {
+        $this->_addBeforeQueryExecutedListener($action);
+        return $this;
+    }
+
+    /**
+     * @param Closure $action
+     * @return mixed
+     */
+    public function removeBeforeQueryExecutedListener(Closure $action): DocumentQueryInterface
+    {
+        $this->_removeBeforeQueryExecutedListener($action);
+        return $this;
+    }
 
     //@todo: check this method - I reversed the properties
     public function createDocumentQueryInternal(?QueryData $queryData = null, ?string $resultClass = null): DocumentQuery
@@ -651,13 +664,13 @@ class DocumentQuery extends AbstractDocumentQuery
         }
 
         $query = new DocumentQuery($resultClass,
-                $this->theSession,
-                $this->getIndexName(),
-                $this->getCollectionName(),
-                $this->isGroupBy,
-                $queryData != null ? $queryData->getDeclareTokens() : null,
-                $queryData != null ? $queryData->getLoadTokens() : null,
-                $queryData != null ? $queryData->getFromAlias() : null,
+            $this->theSession,
+            $this->getIndexName(),
+            $this->getCollectionName(),
+            $this->isGroupBy,
+            $queryData != null ? $queryData->getDeclareTokens() : null,
+            $queryData != null ? $queryData->getLoadTokens() : null,
+            $queryData != null ? $queryData->getFromAlias() : null,
             $queryData != null && $queryData->isProjectInto()
         );
 
@@ -717,7 +730,7 @@ class DocumentQuery extends AbstractDocumentQuery
         return $this->aggregateByFacets(FacetBaseArray::fromArray($builderOrFacets));
     }
 
-    protected function aggregateByBuilder(Callable $builder): AggregationDocumentQueryInterface
+    protected function aggregateByBuilder(callable $builder): AggregationDocumentQueryInterface
     {
         $ff = new FacetBuilder();
         $builder($ff);
@@ -734,29 +747,23 @@ class DocumentQuery extends AbstractDocumentQuery
         return new AggregationDocumentQuery($this);
     }
 
-//    @Override
-//    public IAggregationDocumentQuery<T> aggregateUsing(String facetSetupDocumentId) {
-//        _aggregateUsing(facetSetupDocumentId);
-//
-//        return new AggregationDocumentQuery<>(this);
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> highlight(String fieldName, int fragmentLength, int fragmentCount, Reference<Highlightings> highlightings) {
-//        _highlight(fieldName, fragmentLength, fragmentCount, null, highlightings);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> highlight(String fieldName, int fragmentLength, int fragmentCount, HighlightingOptions options, Reference<Highlightings> highlightings) {
-//        _highlight(fieldName, fragmentLength, fragmentCount, options, highlightings);
-//        return this;
-//    }
-//
-//    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.Highlight(Expression<Func<T, object>> path, int fragmentLength, int fragmentCount, out Highlightings highlightings)
-//    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.Highlight(Expression<Func<T, object>> path, int fragmentLength, int fragmentCount, HighlightingOptions options, out Highlightings highlightings)
-//    //TBD expr public IDocumentQuery<T> Spatial(Expression<Func<T, object>> path, Func<SpatialCriteriaFactory, SpatialCriteria> clause)
-//
+    public function aggregateUsing(?string $facetSetupDocumentId): AggregationDocumentQueryInterface
+    {
+        $this->_aggregateUsing($facetSetupDocumentId);
+
+        return new AggregationDocumentQuery($this);
+    }
+
+    public function highlight(?string $fieldName, int $fragmentLength, int $fragmentCount, ?HighlightingOptions $options , Highlightings &$highlightings): DocumentQueryInterface
+    {
+        $this->_highlight($fieldName, $fragmentLength, $fragmentCount, $options, $highlightings);
+        return $this;
+    }
+
+    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.Highlight(Expression<Func<T, object>> path, int fragmentLength, int fragmentCount, out Highlightings highlightings)
+    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.Highlight(Expression<Func<T, object>> path, int fragmentLength, int fragmentCount, HighlightingOptions options, out Highlightings highlightings)
+    //TBD expr public IDocumentQuery<T> Spatial(Expression<Func<T, object>> path, Func<SpatialCriteriaFactory, SpatialCriteria> clause)
+
 //    @Override
 //    public IDocumentQuery<T> spatial(String fieldName, Function<SpatialCriteriaFactory, SpatialCriteria> clause) {
 //        SpatialCriteria criteria = clause.apply(SpatialCriteriaFactory.INSTANCE);

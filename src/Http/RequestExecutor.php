@@ -31,6 +31,7 @@ use RavenDB\Primitives\ExceptionsUtils;
 use RavenDB\Type\Duration;
 use RavenDB\Type\UrlArray;
 use RavenDB\Utils\AtomicInteger;
+use RavenDB\Utils\DateUtils;
 use RavenDB\Utils\UrlUtils;
 use RavenDB\Documents\Operations\Configuration\GetClientConfigurationResult;
 use RavenDB\Documents\Operations\Configuration\GetClientConfigurationCommand;
@@ -352,7 +353,7 @@ class RequestExecutor implements CleanCloseable
         $this->databaseName = $databaseName ?? '';
         $this->authOptions = $authOptions;
 
-        $this->lastReturnedResponse = new DateTime();
+        $this->lastReturnedResponse = DateUtils::now();
         $this->conventions = $conventions;
 //        this.conventions = conventions.clone();
         $this->defaultTimeout = $conventions->getRequestTimeout();
@@ -678,7 +679,7 @@ class RequestExecutor implements CleanCloseable
 //                EventHelper.invoke(_onSucceedRequest, this, new SucceedRequestEventArgs(_databaseName, urlRef.value, response, request, attemptNum));
 
                 $responseDispose = $command->processResponse($this->cache, $response, $request->getUrl());
-                $this->lastReturnedResponse = new DateTime();
+                $this->lastReturnedResponse = DateUtils::now();
             } finally {
                 if ($responseDispose->isAutomatic()) {
                     // @todo: check what to do with this - initial idea is to do nothing 'cause this is Java

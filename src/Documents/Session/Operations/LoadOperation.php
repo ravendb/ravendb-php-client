@@ -157,7 +157,7 @@ class LoadOperation
      * @throws ExceptionInterface
      * @throws IllegalStateException
      */
-    public function getDocument(string $className): ?object
+    public function getDocument(?string $className): ?object
     {
         if ($this->session->noTracking) {
             if (!$this->resultsSet && count($this->ids)) {
@@ -188,7 +188,7 @@ class LoadOperation
      * @throws IllegalStateException
      * @throws ExceptionInterface
      */
-    private function getDocumentWithId(string $className, ?string $id = null): ?object
+    private function getDocumentWithId(?string $className, ?string $id = null): ?object
     {
         if (empty($id)) {
             return null; // new $className(); @todo: replace this with default value

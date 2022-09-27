@@ -2,9 +2,9 @@
 
 namespace RavenDB\Http;
 
-use DateTime;
 use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Type\Duration;
+use RavenDB\Utils\DateUtils;
 
 // !status: DONE
 class ReleaseCacheItem implements CleanCloseable
@@ -26,7 +26,7 @@ class ReleaseCacheItem implements CleanCloseable
     public function notModified(): void
     {
         if ($this->item != null) {
-            $this->item->lastServerUpdate = new DateTime();
+            $this->item->lastServerUpdate = DateUtils::now();
             $this->item->generation = $this->cacheGeneration;
         }
     }
@@ -36,7 +36,7 @@ class ReleaseCacheItem implements CleanCloseable
         if ($this->item == null) {
             return Duration::ofMillis(PHP_INT_MAX);
         }
-        return Duration::between($this->item->lastServerUpdate, new DateTime());
+        return Duration::between($this->item->lastServerUpdate, DateUtils::now());
     }
 
     public function getMightHaveBeenModified(): bool

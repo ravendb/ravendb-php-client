@@ -25,7 +25,7 @@ class FacetAggregationField
         return $this->displayName;
     }
 
-    public function setDisplayName(string $displayName): void
+    public function setDisplayName(?string $displayName): void
     {
         $this->displayName = $displayName;
     }

@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Session;
 
+use Closure;
 use RavenDB\Documents\Queries\Facets\AggregationRawDocumentQuery;
 use RavenDB\Documents\Queries\Facets\FacetResultArray;
 use RavenDB\Documents\Queries\ProjectionBehavior;
@@ -9,7 +10,7 @@ use RavenDB\Documents\Queries\QueryOperator;
 use RavenDB\Documents\Queries\Timings\QueryTimings;
 use RavenDB\Type\Duration;
 
-// !status: IN PROGRESS
+// !status: DONE
 class RawDocumentQuery extends AbstractDocumentQuery implements RawDocumentQueryInterface
 {
     public function __construct(string $className, InMemoryDocumentSessionOperations $session, string $rawQuery)
@@ -67,41 +68,53 @@ class RawDocumentQuery extends AbstractDocumentQuery implements RawDocumentQuery
         return $this;
     }
 
-//    public function removeAfterQueryExecutedListener(Consumer<QueryResult> action): RawDocumentQueryInterface
-//    {
-//        $this->_removeAfterQueryExecutedListener($action);
-//        return $this;
-//    }
-//
-//    public function addAfterQueryExecutedListener(Consumer<QueryResult> action): RawDocumentQueryInterface
-//    {
-//        $this->_addAfterQueryExecutedListener($action);
-//        return $this;
-//    }
+    public function addAfterQueryExecutedListener(Closure $action): RawDocumentQueryInterface
+    {
+        $this->_addAfterQueryExecutedListener($action);
+        return $this;
+    }
 
-//    @Override
-//    public IRawDocumentQuery<T> addBeforeQueryExecutedListener(Consumer<IndexQuery> action) {
-//        _addBeforeQueryExecutedListener(action);
-//        return this;
-//    }
-//
-//    @Override
-//    public IRawDocumentQuery<T> removeBeforeQueryExecutedListener(Consumer<IndexQuery> action) {
-//        _removeBeforeQueryExecutedListener(action);
-//        return this;
-//    }
-//
-//    @Override
-//    public IRawDocumentQuery<T> addAfterStreamExecutedListener(Consumer<ObjectNode> action) {
-//        _addAfterStreamExecutedListener(action);
-//        return this;
-//    }
-//
-//    @Override
-//    public IRawDocumentQuery<T> removeAfterStreamExecutedListener(Consumer<ObjectNode> action) {
-//        _removeAfterStreamExecutedListener(action);
-//        return this;
-//    }
+    /**
+     * @param Closure $action
+     * @return RawDocumentQueryInterface
+     */
+    public function removeAfterQueryExecutedListener(Closure $action): RawDocumentQueryInterface
+    {
+        $this->_removeAfterQueryExecutedListener($action);
+        return $this;
+    }
+
+    /**
+     * @param Closure $action
+     * @return RawDocumentQueryInterface
+     */
+    public function addBeforeQueryExecutedListener(Closure $action): RawDocumentQueryInterface
+    {
+        $this->_addBeforeQueryExecutedListener($action);
+        return $this;
+    }
+
+    /**
+     * @param Closure $action
+     * @return $this|RawDocumentQueryInterface
+     */
+    public function removeBeforeQueryExecutedListener(Closure $action): RawDocumentQueryInterface
+    {
+        $this->_removeBeforeQueryExecutedListener($action);
+        return $this;
+    }
+
+    public function addAfterStreamExecutedListener(Closure $action): RawDocumentQueryInterface
+    {
+        $this->_addAfterStreamExecutedListener($action);
+        return $this;
+    }
+
+    public function removeAfterStreamExecutedListener(Closure $action): RawDocumentQueryInterface
+    {
+        $this->_removeAfterStreamExecutedListener($action);
+        return $this;
+    }
 
     public function addParameter(string $name, $value): RawDocumentQueryInterface
     {

@@ -22,7 +22,8 @@ class GenericQueryResult extends QueryResultBase
     /** @SerializedName("SkippedResults"); */
     private int $skippedResults = 0;
 
-//    private Map<String, Map<String, String[]>> highlightings;
+    /** @var array<array<array<string>>>|null  */
+    private ?array $highlightings = null;
 
 //    private Map<String, String[]> explanations;
 
@@ -88,7 +89,7 @@ class GenericQueryResult extends QueryResultBase
 
     /**
      * Gets the skipped results
-     * @return ?int Amount of skipped results
+     * @return int Amount of skipped results
      */
     public function getSkippedResults(): int
     {
@@ -97,27 +98,29 @@ class GenericQueryResult extends QueryResultBase
 
     /**
      * Sets the skipped results
-     * @param ?int $skippedResults Sets the skipped results
+     * @param int $skippedResults Sets the skipped results
      */
     public function setSkippedResults(int $skippedResults): void
     {
         $this->skippedResults = $skippedResults;
     }
 
-//    /**
-//     * @return Highlighter results (if requested).
-//     */
-//    public Map<String, Map<String, String[]>> getHighlightings() {
-//        return highlightings;
-//    }
-//
-//    /**
-//     * @param highlightings Highlighter results (if requested).
-//     */
-//    public void setHighlightings(Map<String, Map<String, String[]>> highlightings) {
-//        this.highlightings = highlightings;
-//    }
-//
+    /**
+     * @return array<array<array<string>>>|null  Highlighter results (if requested).
+     */
+    public function getHighlightings(): ?array
+    {
+        return $this->highlightings;
+    }
+
+    /**
+     * @param array<array<array<string>>>|null $highlightings Highlighter results (if requested).
+     */
+    public function setHighlightings(?array $highlightings): void
+    {
+        $this->highlightings = $highlightings;
+    }
+
 //    /**
 //     * @return Explanations (if requested).
 //     */

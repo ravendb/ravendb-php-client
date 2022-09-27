@@ -136,42 +136,42 @@ class EntityToJson
 
     /**
      * Converts a json object to an entity.
-     * @param string $entityType Class of entity
-     * @param string $id ID of entity
+     * @param ?string $entityType Class of entity
+     * @param ?string $id ID of entity
      * @param array $document Raw entity
      * @param bool $trackEntity Track entity
      * @return object Entity instance
      *
      * @throws ExceptionInterface
      */
-    public function convertToEntity(string $entityType, ?string $id, array $document, bool $trackEntity): object
+    public function convertToEntity(?string $entityType, ?string $id, array $document, bool $trackEntity): object
     {
         try {
-//            if (ObjectNode.class.equals(entityType)) {
-//                return document;
-//            }
+            if ($entityType == null) {
+                return (object)$document;
+            }
 
             $this->session->onBeforeConversionToEntityInvoke($id, $entityType, $document);
 
             $defaultValue = InMemoryDocumentSessionOperations::getDefaultValue($entityType);
             $entity = $defaultValue;
 
-//            //TODO: if track! -> RegisterMissingProperties
-//
-//            String documentType =_session.getConventions().getJavaClass(id, document);
-//            if (documentType != null) {
-//                Class type = _session.getConventions().getJavaClassByName(documentType);
-//                if (entityType.isAssignableFrom(type)) {
-//                    entity = _session.getConventions().getEntityMapper().treeToValue(document, type);
-//                }
-//            }
+            //TODO: if track! -> RegisterMissingProperties
+
+            $documentType = $this->session->getConventions()->getPhpClass($id, $document);
+            if ($documentType != null) {
+                $type = $this->session->getConventions()->getPhpClassByName($documentType);
+                if (is_subclass_of($type, $entityType)) {
+                    $entity = $this->session->getConventions()->getEntityMapper()->denormalize($document, $type);
+                }
+            }
 
             if ($entity == $defaultValue) {
                 $entity = $this->session->getConventions()->getEntityMapper()->denormalize($document, $entityType, 'json');
             }
 
             $projectionNode = array_key_exists(DocumentsMetadata::PROJECTION, $document) ? $document[DocumentsMetadata::PROJECTION] : null;
-            $isProjection = ($projectionNode != null) && is_bool($projectionNode) && boolval($projectionNode);
+            $isProjection = ($projectionNode != null) && is_bool($projectionNode) && !empty($projectionNode);
 
             if ($id != null) {
                 $this->session->getGenerateEntityIdOnTheClient()->trySetIdentity($entity, $id, $isProjection);
@@ -181,12 +181,6 @@ class EntityToJson
 
             return $entity;
         } catch (Throwable $e) {
-//            print_r($e->getMessage());
-//            echo PHP_EOL;
-//            print_r($e->getFile());
-//            echo ' ';
-//            print_r($e->getLine());
-//            print_r($e->getTrace());
             throw new IllegalStateException("Could not convert document " . $id . " to entity of type " . $entityType, $e);
         }
     }

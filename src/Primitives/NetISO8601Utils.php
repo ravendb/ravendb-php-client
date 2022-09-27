@@ -30,7 +30,7 @@ class NetISO8601Utils
      */
     public static function format(DateTimeInterface $date, bool $millis = false, ?DateTimeZone $tz = null): string
     {
-        return $date->format("Y-m-d\TH:i:s.v") . '0000Z';
+        return $date->format("Y-m-d\TH:i:s.v0000\Z") ;
     }
 
 //

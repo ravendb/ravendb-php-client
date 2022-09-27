@@ -7,13 +7,14 @@ use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Documents\Indexes\IndexErrorsArray;
 use RavenDB\Documents\Operations\Indexes\GetIndexErrorsOperation;
+use RavenDB\Utils\DateUtils;
 
 // !status: DONE
 class RavenTestHelper
 {
     public static function utcToday(): DateTime
     {
-        $today = new DateTime();
+        $today = DateUtils::now();
         $today->setTime(0,0);
         return $today;
     }

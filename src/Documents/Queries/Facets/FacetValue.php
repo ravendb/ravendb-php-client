@@ -7,10 +7,14 @@ class FacetValue
     private ?string $name = null;
     private ?string $range = null;
     private ?int $count = null;
-    private ?float $sum = null;
-    private ?float $max = null;
-    private ?float $min = null;
-    private ?float $average = null;
+    /** @var int|float|null */
+    private $sum = null;
+    /** @var int|float|null */
+    private $max = null;
+    /** @var int|float|null */
+    private $min = null;
+    /** @var int|float|null */
+    private $average = null;
 
     public function getName(): ?string
     {
@@ -42,43 +46,67 @@ class FacetValue
         $this->count = $count;
     }
 
-    public function getSum(): ?float
+    /**
+     * @return float|int|null
+     */
+    public function getSum()
     {
         return $this->sum;
     }
 
-    public function setSum(?float $sum): void
+    /**
+     * @param null|float|int $sum
+     */
+    public function setSum($sum): void
     {
-        $this->sum = $sum;
+        $this->sum = $sum != null ? floatval($sum) : null;
     }
 
-    public function getMax(): ?float
+    /**
+     * @return float|int|null
+     */
+    public function getMax()
     {
         return $this->max;
     }
 
-    public function setMax(?float $max): void
+    /**
+     * @param null|float|int $max
+     */
+    public function setMax($max): void
     {
-        $this->max = $max;
+        $this->max = $max != null ? floatval($max) : null;
     }
 
-    public function getMin(): ?float
+    /**
+     * @return float|int|null
+     */
+    public function getMin()
     {
         return $this->min;
     }
 
-    public function setMin(?float $min): void
+    /**
+     * @param null|float|int $min
+     */
+    public function setMin($min): void
     {
-        $this->min = $min;
+        $this->min = $min != null ? floatval($min) : null;
     }
 
-    public function getAverage(): ?float
+    /**
+     * @return float|int|null
+     */
+    public function getAverage()
     {
         return $this->average;
     }
 
-    public function setAverage(?float $average): void
+    /**
+     * @param null|float|int $average
+     */
+    public function setAverage($average): void
     {
-        $this->average = $average;
+        $this->average = $average != null ? floatval($average) : null;
     }
 }

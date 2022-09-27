@@ -9,6 +9,7 @@ use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Documents\Session\JavaScriptArray;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Type\ObjectMap;
+use RavenDB\Utils\DateUtils;
 use tests\RavenDB\RemoteTestBase;
 
 class FirstClassPatchTest extends RemoteTestBase
@@ -37,7 +38,7 @@ class FirstClassPatchTest extends RemoteTestBase
                 $session->close();
             }
 
-            $now = new DateTime();
+            $now = DateUtils::now();
 
             $session = $store->openSession();
             try {
@@ -449,7 +450,7 @@ class FirstClassPatchTest extends RemoteTestBase
                 $session->close();
             }
 
-            $now = new DateTime();
+            $now = DateUtils::now();
 
             /** @var InMemoryDocumentSessionOperations|DocumentSessionInterface $session */
             $session = $store->openSession();

@@ -39,7 +39,7 @@ class FacetAggregationToken extends QueryToken
                 throw new IllegalArgumentException("Invalid aggregation mode: " . $this->aggregation);
         }
 
-        if (!empty($this->fieldDisplayName)) {
+        if (empty($this->fieldDisplayName)) {
             return;
         }
 

@@ -37,7 +37,7 @@ class RavenDB_13735Test extends RemoteTestBase
                 $user->setName("Oren");
                 $session->store($user, "users/1-A");
 
-                $hourAgo = DateUtils::addHours(new DateTime(), -1);
+                $hourAgo = DateUtils::addHours(DateUtils::now(), -1);
                 $metadataDictionary = $session->advanced()->getMetadataFor($user);
                 $metadataDictionary->put("@refresh", NetISO8601Utils::format($hourAgo, true));
 

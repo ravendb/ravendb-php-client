@@ -8,6 +8,8 @@ use RavenDB\Documents\Operations\OperationExecutor;
 use RavenDB\Documents\Indexes\AbstractIndexCreationTaskArray;
 use RavenDB\Documents\Indexes\AbstractIndexCreationTaskInterface;
 use RavenDB\Documents\Operations\MaintenanceOperationExecutor;
+use RavenDB\Documents\Session\AfterConversionToEntityEventArgs;
+use RavenDB\Documents\Session\BeforeConversionToEntityEventArgs;
 use RavenDB\Documents\Session\DocumentSessionInterface;
 use RavenDB\Documents\Session\SessionOptions;
 use RavenDB\Type\UrlArray;
@@ -35,18 +37,32 @@ interface DocumentStoreInterface
 //    void addBeforeQueryListener(EventHandler<BeforeQueryEventArgs> handler);
 //    void removeBeforeQueryListener(EventHandler<BeforeQueryEventArgs> handler);
 //
-//    void addBeforeConversionToDocumentListener(EventHandler<BeforeConversionToDocumentEventArgs> handler);
-//    void removeBeforeConversionToDocumentListener(EventHandler<BeforeConversionToDocumentEventArgs> handler);
-//
-//    void addAfterConversionToDocumentListener(EventHandler<AfterConversionToDocumentEventArgs> handler);
-//    void removeAfterConversionToDocumentListener(EventHandler<AfterConversionToDocumentEventArgs> handler);
-//
-//    void addBeforeConversionToEntityListener(EventHandler<BeforeConversionToEntityEventArgs> handler);
-//    void removeBeforeConversionToEntityListener(EventHandler<BeforeConversionToEntityEventArgs> handler);
-//
-//    void addAfterConversionToEntityListener(EventHandler<AfterConversionToEntityEventArgs> handler);
-//    void removeAfterConversionToEntityListener(EventHandler<AfterConversionToEntityEventArgs> handler);
-//
+    function addBeforeConversionToDocumentListener(Closure $handler): void;
+    function removeBeforeConversionToDocumentListener(Closure $handler): void;
+
+    function addAfterConversionToDocumentListener(Closure $handler): void;
+    function removeAfterConversionToDocumentListener(Closure $handler): void;
+
+    /**
+     * @param Closure $handler with args: BeforeConversionToEntityEventArgs
+     */
+    function addBeforeConversionToEntityListener(Closure $handler): void;
+
+    /**
+     * @param Closure $handler with args: BeforeConversionToEntityEventArgs
+     */
+    function removeBeforeConversionToEntityListener(Closure $handler): void;
+
+    /**
+     * @param Closure $handler with args: AfterConversionToEntityEventArgs
+     */
+    function addAfterConversionToEntityListener(Closure $handler): void;
+
+    /**
+     * @param Closure $handler with args: AfterConversionToEntityEventArgs
+     */
+    function removeAfterConversionToEntityListener(Closure $handler): void;
+
 //    void addOnFailedRequestListener(EventHandler<FailedRequestEventArgs> handler);
 //    void removeOnFailedRequestListener(EventHandler<FailedRequestEventArgs> handler);
 //

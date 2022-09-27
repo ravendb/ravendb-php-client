@@ -678,7 +678,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
      * @throws ExceptionInterface
      */
     public function trackEntity(
-        string  $className,
+        ?string  $className,
                 $idOrDocumentInfo,
         ?array  $document = null,
         ? array $metadata = null,
@@ -732,7 +732,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
      * @throws IllegalStateException
      */
     public function trackEntityInternal(
-        string $entityType,
+        ?string $entityType,
         ?string $id,
         array $document,
         array $metadata,
@@ -1005,11 +1005,10 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             $metadata[DocumentsMetadata::COLLECTION] = $mapper->normalize($collectionName, 'json');
         }
 
-        // @todo: Check why do we need this for
-//        String javaType = _requestExecutor.getConventions().getJavaClassName(entity.getClass());
-//        if (javaType != null) {
-//            metadata.set(Constants.Documents.Metadata.RAVEN_JAVA_TYPE, mapper.convertValue(javaType, TextNode.class));
-//        }
+        $phpType = $this->requestExecutor->getConventions()->getPhpClassName($entity);
+        if ($phpType != null) {
+            $metadata[DocumentsMetadata::RAVEN_PHP_TYPE] = strval($phpType);
+        }
 
         if ($id != null) {
             $this->removeIdFromKnownMissingIds($id);
@@ -2356,7 +2355,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     /**
      * @throws ExceptionInterface
      */
-    private function deserializeFromTransformer(string $entityType, ?string $id, array $document, bool $trackEntity)
+    private function deserializeFromTransformer(?string $entityType, ?string $id, array $document, bool $trackEntity)
     {
         return $this->entityToJson->convertToEntity($entityType, $id, $document, $trackEntity);
     }
@@ -2570,7 +2569,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         EventHelper::invoke($this->onAfterConversionToEntity, $this, $eventArgs);
     }
 
-    protected function processQueryParameters(string $className, ?string $indexName, ?string $collectionName, DocumentConventions $conventions): array
+    protected function processQueryParameters(?string $className, ?string $indexName, ?string $collectionName, DocumentConventions $conventions): array
     {
         $isIndex = StringUtils::isNotBlank($indexName);
         $isCollection = StringUtils::isNotEmpty($collectionName);

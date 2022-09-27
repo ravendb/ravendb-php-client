@@ -66,12 +66,12 @@ interface DocumentSessionInterface
      *
      * load(string $className, string $id1, string $id2, string $id3 ... ): ObjectArray
      *
-     * @param string $className Object class
+     * @param ?string $className Object class
      * @param mixed $params Identifier of a entity that will be loaded.
      *
      * @return null|object|ObjectArray Loaded entity or entities
      */
-    public function load(string $className, ...$params);
+    public function load(?string $className, ...$params);
 
     /**
      * @param string $className

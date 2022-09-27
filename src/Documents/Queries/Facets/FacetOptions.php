@@ -21,8 +21,10 @@ class FacetOptions
     /** @SerializedName("PageSize") */
     private int $pageSize = 0;
 
+    private const INT_32_MAX = 2147483647;
+
     public function __construct() {
-        $this->pageSize = PHP_INT_MAX;
+        $this->pageSize = self::INT_32_MAX;
         $this->termSortMode = FacetTermSortMode::valueAsc();
     }
 

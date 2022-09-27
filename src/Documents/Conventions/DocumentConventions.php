@@ -3,6 +3,7 @@
 namespace RavenDB\Documents\Conventions;
 
 use Closure;
+use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Type\TypedList;
 use RavenDB\Type\StringList;
 use InvalidArgumentException;
@@ -86,8 +87,8 @@ class DocumentConventions
 
     private ?Closure $findPhpClassName = null;
 
-//    private ?Closure $findPhpClass = null;
-//    private ?Closure $findPhpClassByName = null;
+    private ?Closure $findPhpClass = null;
+    private ?Closure $findPhpClassByName = null;
 
     private bool $useOptimisticConcurrency = false;
     private bool $throwIfQueryPageSizeIsNotSet = false;
@@ -185,30 +186,33 @@ class DocumentConventions
         };
         $this->identityPartsSeparator = '/';
 //        _findIdentityPropertyNameFromCollectionName = entityName -> "Id";
-//      _findJavaClass = (String id, ObjectNode doc) -> {
-//            JsonNode metadata = doc.get(Constants.Documents.Metadata.KEY);
-//            if (metadata != null) {
-//                TextNode javaType = (TextNode) metadata.get(Constants.Documents.Metadata.RAVEN_JAVA_TYPE);
-//                if (javaType != null) {
-//                    return javaType.asText();
-//                }
-//            }
-//
-//            return null;
-//        };
+        $this->findPhpClass = function(?string $id, array $doc): ?string {
+            $metadata = array_key_exists(DocumentsMetadata::KEY, $doc) ? $doc[DocumentsMetadata::KEY] : null;
+            if ($metadata != null) {
+                $phpType = array_key_exists(DocumentsMetadata::RAVEN_PHP_TYPE, $metadata) ? $metadata[DocumentsMetadata::RAVEN_PHP_TYPE] : null;
+                if ($phpType != null) {
+                    return strval($phpType);
+                }
+            }
+            return null;
+        };
 
         $this->findPhpClassName = function ($entity) {
             // ReflectionUtil.getFullNameWithoutVersionInformation(type);
             return get_class($entity);
         };
 
-//        _findJavaClassByName = name -> {
-//            try {
-//                return Class.forName(name);
-//            } catch (ClassNotFoundException e) {
-//                throw new RavenException("Unable to find class by name = " + name, e);
-//            }
-//        };
+        $this->findPhpClassByName = function($name) {
+            try {
+                if (!class_exists($name)) {
+                    throw new RuntimeException('Class: ' . $name .  ' does not exists.');
+                }
+
+                return $name;
+            } catch (Throwable $e) {
+                throw new RavenException("Unable to find class by name = " . $name, $e);
+            }
+        };
 
 
         $this->transformClassCollectionNameToDocumentIdPrefix = Closure::fromCallable([$this, 'defaultTransformCollectionNameToDocumentIdPrefix']);
@@ -849,33 +853,29 @@ class DocumentConventions
     }
 
 
-//    /**
-//     * Get the java class (if exists) from the document
-//     * @param id document id
-//     * @param document document to get java class from
-//     * @return java class
-//     */
-//    public String getJavaClass(String id, ObjectNode document) {
-//        return _findJavaClass.apply(id, document);
-//    }
-//
-//    /**
-//     * Get the class instance by it's name
-//     * @param name class name
-//     * @return java class
-//     */
-//    public Class getJavaClassByName(String name) {
-//        return _findJavaClassByName.apply(name);
-//    }
-//
-//    /**
-//     * Get the Java class name to be stored in the entity metadata
-//     * @param entityType Entity type
-//     * @return java class name
-//     */
-//    public String getJavaClassName(Class entityType) {
-//        return _findJavaClassName.apply(entityType);
-//    }
+    /**
+     * Get the php class (if exists) from the document
+     * @param ?string $id document id
+     * @param array $document document to get java class from
+     * @return ?string php class
+     */
+    public function getPhpClass(?string $id, array $document): ?string
+    {
+        $f = $this->findPhpClass;
+        return $f($id, $document);
+    }
+
+    /**
+     * Get the class instance by its name
+     * @param string|null $name class name
+     * @return ?string php class
+     */
+    public function getPhpClassByName(?string $name): ?string
+    {
+        $f = $this->findPhpClassByName;
+        return $f($name);
+    }
+
     /**
      * Get the PHP class name to be stored in the entity metadata
      *

@@ -24,6 +24,7 @@ use tests\RavenDB\RemoteTestBase;
 use tests\RavenDB\Test\Client\_QueryTest\Entity\Article;
 use tests\RavenDB\Test\Client\_QueryTest\Entity\Dog;
 use tests\RavenDB\Test\Client\_QueryTest\Entity\ReduceResult;
+use tests\RavenDB\Test\Client\_QueryTest\Entity\UserProjection;
 use tests\RavenDB\Test\Client\_QueryTest\Index\DogsIndex;
 use tests\RavenDB\Test\Client\_QueryTest\Index\DogsIndexResult;
 use tests\RavenDB\Test\Client\_QueryTest\Index\OrderTime;
@@ -166,7 +167,7 @@ class QueryTest extends RemoteTestBase
             $store->close();
         }
     }
-//  public function queryLazily() throws Exception {
+//  public function queryLazily(): void {
 //        try (IDocumentStore store = getDocumentStore()) {
 //            try (IDocumentSession session = store.openSession()) {
 //
@@ -364,46 +365,53 @@ class QueryTest extends RemoteTestBase
         }
     }
 
-//    @Test
-//    public function querySingleProperty() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            addUsers(store);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//
-//                List<Integer> ages = $session->query(User.class)
-//                        .addOrder("age", true, OrderingType.LONG)
-//                        .selectFields(Integer.class, "age")
-//                        .toList();
-//
-//                assertThat(ages)
-//                        .hasSize(3)
-//                        .containsSequence(5, 3, 2);
-//            }
-//        }
-//    }
-//
-//    @Test
-//    public function queryWithSelect() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            addUsers(store);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//
-//                List<User> usersAge = $session->query(User.class)
-//                        .selectFields(User.class, "age", "id")
-//                        .toList();
-//
-//                for (User user : usersAge) {
-//                    assertThat(user.getAge())
-//                            .isPositive();
-//
-//                    assertThat(user.getId())
-//                            .isNotNull();
-//                }
-//            }
-//        }
-//    }
+    public function testQuerySingleProperty(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $this->addUsers($store);
+
+            $session = $store->openSession();
+            try {
+                $ages = $session->query(User::class)
+                    ->addOrder("age", true, OrderingType::long())
+                    ->selectFields("age")
+                    ->toList();
+
+                $this->assertCount(3, $ages);
+                $this->assertEquals([5, 3, 2], $ages);
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testQueryWithSelect(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $this->addUsers($store);
+
+            $session = $store->openSession();
+            try {
+                $usersAge = $session->query(User::class)
+                    ->selectFields(["age", "id"], User::class)
+                    ->toList();
+
+                /** @var User $user */
+                foreach ($usersAge as $user) {
+                    $this->assertGreaterThan(0, $user->getAge());
+                    $this->assertNotNull($user->getId());
+                }
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
 
     public function testQueryWithWhereIn(): void
     {
@@ -544,59 +552,63 @@ class QueryTest extends RemoteTestBase
         }
     }
 
-//  @Test
-//    public function queryWithProjection() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            addUsers(store);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//
-//                List<UserProjection> projections = $session->query(User.class)
-//                        .selectFields(UserProjection.class)
-//                        .toList();
-//
-//                assertThat(projections)
-//                        .hasSize(3);
-//
-//                for (UserProjection projection : projections) {
-//                    assertThat(projection.getId())
-//                            .isNotNull();
-//
-//                    assertThat(projection.getName())
-//                            .isNotNull();
-//                }
-//            }
-//        }
-//    }
-//
-//    @Test
-//    public function queryWithProjection2() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            addUsers(store);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//
-//                List<UserProjection> projections = $session->query(User.class)
-//                        .selectFields(UserProjection.class, "lastName", "id")
-//                        .toList();
-//
-//                assertThat(projections)
-//                        .hasSize(3);
-//
-//                for (UserProjection projection : projections) {
-//                    assertThat(projection.getId())
-//                            .isNotNull();
-//
-//                    assertThat(projection.getName())
-//                            .isNull(); // we didn't specify this field in mapping
-//                }
-//            }
-//        }
-//    }
-//
+    public function testQueryWithProjection(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $this->addUsers($store);
 
-    // @todo: implement this when select fileds option is added
-    public function queryDistinct(): void
+            $session = $store->openSession();
+            try {
+
+                $projections = $session->query(User::class)
+                    ->selectFields(UserProjection::class)
+                    ->toList();
+
+                $this->assertCount(3, $projections);
+
+                /** @var UserProjection $projection */
+                foreach ($projections as $projection) {
+                    $this->assertNotNull($projection->getId());
+                    $this->assertNotNull($projection->getName());
+
+                }
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testQueryWithProjection2(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $this->addUsers($store);
+
+            $session = $store->openSession();
+            try {
+                $projections = $session->query(User::class)
+                    ->selectFields(["lastName", "id"], UserProjection::class)
+                    ->toList();
+
+                $this->assertCount(3, $projections);
+
+                /** @var UserProjection $projection */
+                foreach ($projections as $projection) {
+                    $this->assertNotNull($projection->getId());
+                    $this->assertNull($projection->getName());
+                }
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testQueryDistinct(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -605,7 +617,7 @@ class QueryTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $uniqueNames = $session->query(User::class)
-//                        ->selectFields(String::class, "name")
+                    ->selectFields("name")
                     ->distinct()
                     ->toList();
 
@@ -843,7 +855,7 @@ class QueryTest extends RemoteTestBase
     {
         $store = $this->getDocumentStore();
         try {
-            $now = new \DateTime();
+            $now = DateUtils::now();
 
             $store->executeIndex(new OrderTime());
 
@@ -894,7 +906,6 @@ class QueryTest extends RemoteTestBase
                 }, $orders);
 
                 $this->assertEquals(["days"], $delay);
-                $this->assertTrue(true);
             } finally {
                 $session->close();
             }

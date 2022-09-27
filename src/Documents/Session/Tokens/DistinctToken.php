@@ -11,14 +11,14 @@ class DistinctToken extends QueryToken
     {
     }
 
-    public static ?DistinctToken $INSTANCE = null;
+    private static ?DistinctToken $INSTANCE = null;
 
     public function writeTo(StringBuilder &$writer): void
     {
         $writer->append("distinct");
     }
 
-    public function getInstance(): DistinctToken
+    public static function getInstance(): DistinctToken
     {
         if (DistinctToken::$INSTANCE == null) {
             DistinctToken::$INSTANCE = new DistinctToken();

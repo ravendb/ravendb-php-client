@@ -22,10 +22,10 @@ class JsonExtensions
     private static ?EntityMapper $entityMapper = null;
     private static ?EntityMapper $defaultMapper = null;
 
-    public static function getDefaultEntityMapper(): EntityMapper
+    public static function getDefaultEntityMapper(array $normalizers = [], array $encoders = []): EntityMapper
     {
         if (self::$entityMapper == null) {
-            self::$entityMapper = self::createDefaultEntityMapper();
+            self::$entityMapper = self::createDefaultEntityMapper($normalizers, $encoders);
         }
 
         self::$entityMapper->setPropertyNamingStrategy(PropertyNamingStrategy::none());
@@ -33,22 +33,34 @@ class JsonExtensions
         return self::$entityMapper;
     }
 
-    public static function createDefaultEntityMapper(): EntityMapper
+    public static function createDefaultEntityMapper(array $normalizers = [], array $encoders = []): EntityMapper
     {
-        $dotNetNamingConvertor = new DotNetNamingConverter();
-        $dotNetNamingConvertor->setEnabled(false);
+        $dotNetNamingConverter = new DotNetNamingConverter();
+        $dotNetNamingConverter->setEnabled(false);
 
+        $allNormalizers = array_merge($normalizers, self::getDefaultNormalizers($dotNetNamingConverter));
+        $allEncoders = array_merge($encoders, self::getDefaultEncoders());
+
+        $entityMapper = new EntityMapper($allNormalizers, $allEncoders);
+        $entityMapper->setDotNetNamingConvertor($dotNetNamingConverter);
+
+        return $entityMapper;
+    }
+
+    private static function getDefaultNormalizers(DotNetNamingConverter $dotNetNamingConverter): array
+    {
         $classMetadataFactory = new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()));
 
-        $metadataAwareNameConverter = new MetadataAwareNameConverter($classMetadataFactory, $dotNetNamingConvertor);
+        $metadataAwareNameConverter = new MetadataAwareNameConverter($classMetadataFactory, $dotNetNamingConverter);
 
-        $normalizers = [
+        return [
             new RavenArrayNormalizer(),
             new TypedArrayNormalizer(),
             new StringArrayNormalizer(),
             new ValueObjectNormalizer(),
             new DateTimeNormalizer([
-                DateTimeNormalizer::FORMAT_KEY => 'Y-m-d\TH:i:s.v'
+                DateTimeNormalizer::FORMAT_KEY => 'Y-m-d\TH:i:s.v0000\Z',
+                DateTimeNormalizer::TIMEZONE_KEY => null
             ]),
             new ObjectNormalizer(
                 $classMetadataFactory,
@@ -58,20 +70,19 @@ class JsonExtensions
             ),
             new ArrayDenormalizer()
         ];
-
-        $encoders = [
-            'json' => new JsonEncoder()
-        ];
-
-        $entityMapper = new EntityMapper($normalizers, $encoders);
-        $entityMapper->setDotNetNamingConvertor($dotNetNamingConvertor);
-        return $entityMapper;
     }
 
-    public static function getDefaultMapper(): EntityMapper
+    private static function getDefaultEncoders(): array
+    {
+        return [
+            'json' => new JsonEncoder()
+        ];
+    }
+
+    public static function getDefaultMapper(array $normalizers = [], array $encoders = []): EntityMapper
     {
         if (self::$defaultMapper == null) {
-            self::$defaultMapper = self::createDefaultJsonSerializer();
+            self::$defaultMapper = self::createDefaultJsonSerializer($normalizers, $encoders);
         }
 
         self::$defaultMapper->setPropertyNamingStrategy(PropertyNamingStrategy::none());
@@ -79,9 +90,9 @@ class JsonExtensions
         return self::$defaultMapper;
     }
 
-    public static function createDefaultJsonSerializer(): EntityMapper
+    public static function createDefaultJsonSerializer(array $normalizers = [], array $encoders = []): EntityMapper
     {
-        return self::createDefaultEntityMapper();
+        return self::createDefaultEntityMapper($normalizers, $encoders);
     }
 
 

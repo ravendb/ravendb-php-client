@@ -1,9 +1,7 @@
 <?php
 
-namespace tests\RavenDB\Bugs\Caching;
+namespace tests\RavenDB\Bugs\Caching\_CachingOfDocumentIncludeTest;
 
-use tests\RavenDB\Bugs\Caching\Entity\Product;
-use tests\RavenDB\Bugs\Caching\Entity\User;
 use tests\RavenDB\Infrastructure\Entity\Order;
 use tests\RavenDB\Infrastructure\Entity\OrderLine;
 use tests\RavenDB\Infrastructure\Entity\OrderLineList;

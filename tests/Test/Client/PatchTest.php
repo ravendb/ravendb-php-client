@@ -47,6 +47,7 @@ class PatchTest extends RemoteTestBase
         }
     }
 
+    /** @doesNotPerformAssertions */
     public function testCanWaitForIndexAfterPatch(): void
     {
         $store = $this->getDocumentStore();
@@ -74,9 +75,6 @@ class PatchTest extends RemoteTestBase
                 $user = $session->load(User::class, "users/1");
                 $session->advanced()->patch($user, "name", "New Name");
                 $session->saveChanges();
-
-                // original test in Java didn't perform any assertion in this test it just check it can execute
-                $this->assertTrue(true);
             } finally {
                 $session->close();
             }

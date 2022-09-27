@@ -22,8 +22,22 @@ class FieldsToFetchToken extends QueryToken
         $this->sourceAlias = $sourceAlias;
     }
 
-    public static function create(?StringArray $fieldsToFetch, ?StringArray $projections, bool $customFunction, ?string $sourceAlias): FieldsToFetchToken
+    /**
+     * @param StringArray|array|null $fieldsToFetch
+     * @param StringArray|array|null $projections
+     * @param bool $customFunction
+     * @param string|null $sourceAlias
+     * @return FieldsToFetchToken
+     */
+    public static function create($fieldsToFetch, $projections, bool $customFunction, ?string $sourceAlias): FieldsToFetchToken
     {
+        if (is_array($fieldsToFetch)) {
+            $fieldsToFetch = StringArray::fromArray($fieldsToFetch);
+        }
+        if (is_array($projections)) {
+            $projections = StringArray::fromArray($projections);
+        }
+
         if ($fieldsToFetch == null || $fieldsToFetch->isEmpty()) {
             throw new IllegalArgumentException("fieldToFetch cannot be null");
         }
