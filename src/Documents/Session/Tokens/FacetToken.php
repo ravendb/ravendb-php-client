@@ -15,7 +15,7 @@ use RavenDB\Exceptions\NotImplementedException;
 use RavenDB\Type\StringArray;
 use RavenDB\Utils\StringBuilder;
 
-// !stataus: DONE - TEST REQUIRED
+// !status: DONE
 class FacetToken extends QueryToken
 {
     private ?string $facetSetupDocumentId = null;
@@ -35,7 +35,40 @@ class FacetToken extends QueryToken
     {
     }
 
-    public static function createForFacetSetupDocumentId(string $facetSetupDocumentId): FacetToken
+    public static function create(...$parameters): FacetToken
+    {
+        if (empty($parameters)) {
+            throw new IllegalArgumentException('You must define parameters.');
+        }
+
+        if (is_string($parameters[0])) {
+            return self::createForFacetSetupDocumentId($parameters[0]);
+        }
+
+        if (count($parameters) < 2) {
+            throw new IllegalArgumentException('You must define all parameters.');
+        }
+
+        if ($parameters[0] instanceof Facet) {
+            return self::createForFacet($parameters[0], $parameters[1]);
+        }
+
+        if ($parameters[0] instanceof RangeFacet) {
+            return self::createForRangeFacet($parameters[0], $parameters[1]);
+        }
+
+        if ($parameters[0] instanceof GenericRangeFacet) {
+            return self::createForGenericRangeFacet($parameters[0], $parameters[1]);
+        }
+
+        if ($parameters[0] instanceof FacetBase) {
+            return self::createForFacetBase($parameters[0], $parameters[1]);
+        }
+
+        throw new IllegalArgumentException('Method called with illegal parameters.');
+    }
+
+    private static function createForFacetSetupDocumentId(string $facetSetupDocumentId): FacetToken
     {
         if (empty($facetSetupDocumentId)) {
             throw new IllegalArgumentException("facetSetupDocumentId cannot be null");
@@ -47,7 +80,7 @@ class FacetToken extends QueryToken
         return $token;
     }
 
-    public static function create(Facet $facet, Closure $addQueryParameter): FacetToken
+    private static function createForFacet(Facet $facet, Closure $addQueryParameter): FacetToken
     {
         $token = new FacetToken();
 
@@ -62,7 +95,7 @@ class FacetToken extends QueryToken
         return $token;
     }
 
-    public static function createForRangeFacet(RangeFacet $facet, $addQueryParameter): FacetToken
+    private static function createForRangeFacet(RangeFacet $facet, $addQueryParameter): FacetToken
     {
         $token = new FacetToken();
 
@@ -77,7 +110,7 @@ class FacetToken extends QueryToken
         return $token;
     }
 
-    public static function createForGenericRangeFacet(GenericRangeFacet $facet, $addQueryParameter): FacetToken
+    private static function createForGenericRangeFacet(GenericRangeFacet $facet, $addQueryParameter): FacetToken
     {
         $ranges = new StringArray();
         foreach ($facet->getRanges() as $rangeBuilder) {
@@ -97,7 +130,7 @@ class FacetToken extends QueryToken
         return $token;
     }
 
-    public static function createForFacetBase(FacetBase $facet, $addQueryParameter): FacetToken
+    private static function createForFacetBase(FacetBase $facet, $addQueryParameter): FacetToken
     {
         // this is just a dispatcher
         return $facet->toFacetToken($addQueryParameter);
@@ -193,7 +226,6 @@ class FacetToken extends QueryToken
         }
     }
 
-    // @todo: check validity of this method with tests in the future when we implement/check Facets
     private static function getOptionsParameterName(FacetBase $facet, Closure $addQueryParameter): ?string
     {
         return ($facet->getOptions() != null) && $facet->getOptions() != FacetOptions::getDefaultOptions() ? $addQueryParameter($facet->getOptions()) : null;

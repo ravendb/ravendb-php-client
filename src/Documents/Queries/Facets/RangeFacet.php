@@ -28,8 +28,14 @@ class RangeFacet extends FacetBase
         return $this->ranges;
     }
 
-    public function setRanges(StringArray $ranges): void
+    /**
+     * @param StringArray|array $ranges
+     */
+    public function setRanges($ranges): void
     {
+        if (is_array($ranges)) {
+            $ranges = StringArray::fromArray($ranges);
+        }
         $this->ranges = $ranges;
     }
 
@@ -39,6 +45,6 @@ class RangeFacet extends FacetBase
             return $this->parent->toFacetToken($addQueryParameter);
         }
 
-        return FacetToken::createForRangeFacet($this, $addQueryParameter);
+        return FacetToken::create($this, $addQueryParameter);
     }
 }

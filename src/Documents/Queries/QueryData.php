@@ -89,17 +89,25 @@ class QueryData
         $this->isCustomFunction = $customFunction;
     }
 
+    /**
+     * @param StringArray|array $fields
+     * @param StringArray|array $projections
+     * @param string|null $fromAlias
+     * @param DeclareTokenArray|null $declareTokens
+     * @param LoadTokenList|null $loadTokens
+     * @param bool $isCustomFunction
+     */
     public function __construct(
-        StringArray        $fields,
-        StringArray        $projections,
+        $fields,
+        $projections,
         ?string            $fromAlias = null,
         ?DeclareTokenArray $declareTokens = null,
         ?LoadTokenList     $loadTokens = null,
         bool               $isCustomFunction = false
     )
     {
-        $this->fields = $fields;
-        $this->projections = $projections;
+        $this->fields = is_array($fields) ? StringArray::fromArray($fields) : $fields;
+        $this->projections = is_array($projections) ? StringArray::fromArray($projections) : $projections;
         $this->fromAlias = $fromAlias;
         $this->declareTokens = $declareTokens;
         $this->loadTokens = $loadTokens;

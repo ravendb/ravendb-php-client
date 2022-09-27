@@ -10,7 +10,7 @@ class FieldIndexing implements ValueObjectInterface
     private const NO = 'No';
     private const SEARCH = 'Search';
     private const EXACT = 'Exact';
-    private const HIGHLIGHTING = 'Highlighting';
+    private const HIGHLIGHTING = 'Highlightings';
     private const DEFAULT = 'Default';
 
     private string $value;

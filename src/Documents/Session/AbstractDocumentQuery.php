@@ -7,6 +7,9 @@ use RavenDB\Constants\DocumentsIndexingFields;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Queries\Facets\FacetBase;
 use RavenDB\Documents\Queries\GroupBy;
+use RavenDB\Documents\Queries\Highlighting\HighlightingOptions;
+use RavenDB\Documents\Queries\Highlighting\Highlightings;
+use RavenDB\Documents\Queries\Highlighting\QueryHighlightings;
 use RavenDB\Documents\Queries\IndexQuery;
 use RavenDB\Documents\Queries\ProjectionBehavior;
 use RavenDB\Documents\Queries\QueryData;
@@ -32,6 +35,7 @@ use RavenDB\Documents\Session\Tokens\GroupByCountToken;
 use RavenDB\Documents\Session\Tokens\GroupByKeyToken;
 use RavenDB\Documents\Session\Tokens\GroupBySumToken;
 use RavenDB\Documents\Session\Tokens\GroupByToken;
+use RavenDB\Documents\Session\Tokens\HighlightingToken;
 use RavenDB\Documents\Session\Tokens\HighlightingTokenArray;
 use RavenDB\Documents\Session\Tokens\IntersectMarkerToken;
 use RavenDB\Documents\Session\Tokens\LoadToken;
@@ -52,6 +56,7 @@ use RavenDB\Documents\Session\Tokens\WhereOptions;
 use RavenDB\Documents\Session\Tokens\WhereToken;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Parameters;
 use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Primitives\ClosureArray;
@@ -238,6 +243,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
         $this->queryStats = new QueryStatistics();
 
+        $this->queryHighlightings = new QueryHighlightings();
         //
         //--
 
@@ -257,7 +263,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->isProjectInto = $isProjectInto;
     }
 
-    public function getQueryClass(): string
+    public function getQueryClass(): ?string
     {
         return $this->className;
     }
@@ -406,12 +412,9 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $field = is_string($fieldName) ? GroupBy::field($fieldName) : $fieldName;
 
         $mapping = [];
-        if (is_string($fieldName)) {
-            foreach ($fieldNames as $fn) {
-                $mapping[] = GroupBy::field($fn);
-            }
-        } else {
-            $mapping = $fieldNames;
+
+        foreach ($fieldNames as $fn) {
+            $mapping[] = is_string($fn) ? GroupBy::field($fn) : $fn;
         }
 
         $this->_groupByField($field, ...$mapping);
@@ -445,7 +448,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->assertNoRawQuery();
         $this->isGroupBy = true;
 
-        if ($projectedName != null && array_key_exists($projectedName, $this->aliasToGroupByFieldName)) {
+        if ($projectedName != null && $this->aliasToGroupByFieldName->offsetExists($projectedName)) {
             $aliasedFieldName = $this->aliasToGroupByFieldName->offsetGet($projectedName);
             if ($fieldName == null || strcasecmp($fieldName, $projectedName) == 0) {
                 $fieldName = $aliasedFieldName;
@@ -874,11 +877,11 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     /**
      * Matches fields where Regex.IsMatch(filedName, pattern)
-     * @param string $fieldName Field name to use
-     * @param string $pattern Regexp pattern
+     * @param ?string $fieldName Field name to use
+     * @param ?string $pattern Regexp pattern
      */
 
-    public function _whereRegex(string $fieldName, string $pattern): void
+    public function _whereRegex(?string $fieldName, ?string $pattern): void
     {
         $fieldName = $this->ensureValidFieldName($fieldName, false);
 
@@ -1117,9 +1120,10 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         EventHelper::invoke($this->beforeQueryExecutedCallback, $query);
     }
 
-//    public function invokeAfterStreamExecuted(ObjectNode $result): void {
-//        EventHelper::invoke($this->afterStreamExecutedCallback, $result);
-//    }
+    public function invokeAfterStreamExecuted($result): void
+    {
+        EventHelper::invoke($this->afterStreamExecutedCallback, $result);
+    }
 
     /**
      * Generates the index query.
@@ -1369,22 +1373,22 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         }
 
         if ($this->selectTokens->isEmpty()) {
-            $this->selectTokens->append(DistinctToken::$INSTANCE);
+            $this->selectTokens->append(DistinctToken::getInstance());
         } else {
-            $this->selectTokens->prepend(DistinctToken::$INSTANCE);
+            $this->selectTokens->prepend(DistinctToken::getInstance());
         }
     }
 
     private function updateStatsHighlightingsAndExplanations(QueryResult $queryResult): void
     {
         $this->queryStats->updateQueryStats($queryResult);
-//        $this->queryHighlightings->update($queryResult);
+        $this->queryHighlightings->update($queryResult);
 //        if ($this->explanations != null) {
 //            $this->explanations->update($queryResult);
 //        }
-//        if ($this->queryTimings != null) {
-//            $this->queryTimings->update($queryResult);
-//        }
+        if ($this->queryTimings != null) {
+            $this->queryTimings->update($queryResult);
+        }
     }
 
     private function buildSelect(StringBuilder $writer): void
@@ -1776,8 +1780,18 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //        return fromAlias;
 //    }
 
-    protected static function getSourceAliasIfExists(?string $className, QueryData $queryData, StringArray $fields, ?string &$sourceAlias): void
+    /**
+     * @param string|null $className
+     * @param QueryData $queryData
+     * @param StringArray|array $fields
+     * @param string|null $sourceAlias
+     */
+    protected static function getSourceAliasIfExists(?string $className, QueryData $queryData, $fields, ?string &$sourceAlias): void
     {
+        if (is_array($fields)) {
+            $fields = StringArray::fromArray($fields);
+        }
+
         $sourceAlias = null;
 
         if ($fields->count() != 1 || $fields[0] == null) {
@@ -1835,14 +1849,24 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         return $this->queryOperation;
     }
 
-//    public void _addBeforeQueryExecutedListener(Consumer<IndexQuery> action) {
-//        beforeQueryExecutedCallback.add(action);
-//    }
-//
-//    public void _removeBeforeQueryExecutedListener(Consumer<IndexQuery> action) {
-//        beforeQueryExecutedCallback.remove(action);
-//    }
+    /**
+     * @param Closure<IndexQuery> $action
+     */
+    public function _addBeforeQueryExecutedListener(Closure $action): void
+    {
+        $this->beforeQueryExecutedCallback->append($action);
+    }
 
+    /**
+     * @param Closure<IndexQuery> $action
+     */
+    public function _removeBeforeQueryExecutedListener(Closure $action): void {
+        $this->beforeQueryExecutedCallback->removeValue($action);
+    }
+
+    /**
+     * @param Closure<IndexQuery> $action
+     */
     public function _addAfterQueryExecutedListener(Closure $action): void
     {
         $this->afterQueryExecutedCallback->append($action);
@@ -1853,13 +1877,21 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->afterQueryExecutedCallback->removeValue($action);
     }
 
-//    public void _addAfterStreamExecutedListener(Consumer<ObjectNode> action) {
-//        afterStreamExecutedCallback.add(action);
-//    }
-//
-//    public void _removeAfterStreamExecutedListener(Consumer<ObjectNode> action) {
-//        afterStreamExecutedCallback.remove(action);
-//    }
+    /**
+     * @param Closure<mixed> $action
+     */
+    public function _addAfterStreamExecutedListener(Closure $action)
+    {
+        $this->afterStreamExecutedCallback->append($action);
+    }
+
+    /**
+     * @param Closure<mixed> $action
+     */
+    public function _removeAfterStreamExecutedListener(Closure $action)
+    {
+        $this->afterStreamExecutedCallback->removeValue($action);
+    }
 
     public function _noTracking(): void
     {
@@ -1875,24 +1907,25 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     public function _includeTimings(QueryTimings &$timingsReference): void {
         if ($this->queryTimings != null) {
-            $this->timingsReference = $queryTimings;
+            $timingsReference = $this->queryTimings;
             return;
         }
 
-        $queryTimings = $timingsReference = new QueryTimings();
+        $this->queryTimings = $timingsReference;
     }
 
     protected HighlightingTokenArray $highlightingTokens;
-//
-//    protected QueryHighlightings queryHighlightings = new QueryHighlightings();
-//
-//    public void _highlight(String fieldName, int fragmentLength, int fragmentCount, HighlightingOptions options, Reference<Highlightings> highlightingsReference) {
-//        highlightingsReference.value = queryHighlightings.add(fieldName);
-//
-//        String optionsParameterName = options != null ? addQueryParameter(JsonExtensions.getDefaultMapper().valueToTree(options)) : null;
-//        highlightingTokens.add(HighlightingToken.create(fieldName, fragmentLength, fragmentCount, optionsParameterName));
-//    }
-//
+
+    protected ?QueryHighlightings $queryHighlightings = null;
+
+    public function _highlight(?string $fieldName, int $fragmentLength, int $fragmentCount, ?HighlightingOptions $options, Highlightings &$highlightingsReference): void
+    {
+        $highlightingsReference = $this->queryHighlightings->add($fieldName);
+
+        $optionsParameterName = $options != null ? $this->addQueryParameter(JsonExtensions::getDefaultMapper()->normalize($options)) : null;
+        $this->highlightingTokens->append(HighlightingToken::create($fieldName, $fragmentLength, $fragmentCount, $optionsParameterName));
+    }
+
 //    protected void _withinRadiusOf(String fieldName, double radius, double latitude, double longitude, SpatialUnits radiusUnits, double distErrorPercent) {
 //        fieldName = ensureValidFieldName(fieldName, false);
 //
@@ -2190,7 +2223,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     {
         $this->executeQueryOperationInternal($take);
 
-        return [];//$this->queryOperation->completeAsArray($this->className);
+        return $this->queryOperation->completeAsArray($this->className);
     }
 
     private function executeQueryOperationInternal(?int $take): void {
@@ -2212,13 +2245,14 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
             throw new IllegalStateException("Aggregation query can select only facets while it got " . $reflection->getShortName() . " token");
         }
 
-        $this->selectTokens->append(FacetToken::createForFacetBase($facet, Closure::fromCallable([$this, 'addQueryParameter'])));
+        $this->selectTokens->append(FacetToken::create($facet, Closure::fromCallable([$this, 'addQueryParameter'])));
     }
 
-//    public void _aggregateUsing(String facetSetupDocumentId) {
-//        selectTokens.add(FacetToken.create(facetSetupDocumentId));
-//    }
-//
+    public function _aggregateUsing(?string $facetSetupDocumentId): void
+    {
+        $this->selectTokens->append(FacetToken::create($facetSetupDocumentId));
+    }
+
 //    public Lazy<List<T>> lazily() {
 //        return lazily(null);
 //    }

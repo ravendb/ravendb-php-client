@@ -23,7 +23,7 @@ class AddOrPatchTest extends RemoteTestBase
                 $user = new User();
                 $user->setFirstName("Hibernating");
                 $user->setLastName("Rhinos");
-                $user->setLastLogin(new DateTime());
+                $user->setLastLogin(DateUtils::now());
                 $session->store($user, $id);
                 $session->saveChanges();
 
@@ -37,7 +37,7 @@ class AddOrPatchTest extends RemoteTestBase
                 $newUser = new User();
                 $newUser->setFirstName("Hibernating");
                 $newUser->setLastName("Rhinos");
-                $newUser->setLastLogin(new DateTime());
+                $newUser->setLastLogin(DateUtils::now());
 
                 $newDate = DateUtils::setYears(RavenTestHelper::utcToday(), 1993);
 
@@ -108,7 +108,7 @@ class AddOrPatchTest extends RemoteTestBase
                 $newUser = new User();
                 $newUser->setFirstName("Hibernating");
                 $newUser->setLastName("Rhinos");
-                $newUser->setLoginTimes(DateTimeArray::fromArray([new DateTime()]));
+                $newUser->setLoginTimes(DateTimeArray::fromArray([DateUtils::now()]));
 
                 $d1993 = DateUtils::setYears(RavenTestHelper::utcToday(), 1993);
                 $d2000 = DateUtils::setYears(RavenTestHelper::utcToday(), 2000);
@@ -133,7 +133,7 @@ class AddOrPatchTest extends RemoteTestBase
 
             $session = $store->openSession();
             try {
-                $now = new DateTime();
+                $now = DateUtils::now();
 
                 $newUser = new User();
                 $newUser->setLastName("Hibernating");

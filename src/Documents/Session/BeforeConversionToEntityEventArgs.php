@@ -30,7 +30,7 @@ class BeforeConversionToEntityEventArgs extends EventArgs
         return $this->type;
     }
 
-    public function getDocument(): array
+    public function & getDocument(): array
     {
         return $this->document;
     }

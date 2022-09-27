@@ -12,7 +12,7 @@ class OrderLineList extends TypedList
         parent::__construct(OrderLine::class);
     }
 
-    public static function fromArray(array $array)
+    public static function fromArray(array $array): OrderLineList
     {
         $orderLineList = new OrderLineList();
         foreach ($array as $item) {

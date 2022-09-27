@@ -1,20 +1,20 @@
 <?php
 
-namespace tests\RavenDB\Bugs\Caching\Entity;
+namespace tests\RavenDB\Infrastructure\Orders;
 
-class Product
+class Territory
 {
-    private ?string $id = null;
+    private ?string $code = null;
     private ?string $name = null;
 
-    public function getId(): ?string
+    public function getCode(): ?string
     {
-        return $this->id;
+        return $this->code;
     }
 
-    public function setId(?string $id): void
+    public function setCode(?string $code): void
     {
-        $this->id = $id;
+        $this->code = $code;
     }
 
     public function getName(): ?string

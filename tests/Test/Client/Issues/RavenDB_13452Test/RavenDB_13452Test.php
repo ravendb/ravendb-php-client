@@ -26,6 +26,14 @@ class RavenDB_13452Test extends RemoteTestBase
 
             $session = $store->openSession();
             try {
+
+                $item = $session->load(null, "items/1");
+
+                print_r($item);
+
+
+
+
                 $item = $session->load(Item::class, "items/1");
                 $session->advanced()->patchObject($item, "values", function ($dict) {
                     $dict->put("Key3", "Value3");

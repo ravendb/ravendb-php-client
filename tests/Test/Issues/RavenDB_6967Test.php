@@ -123,8 +123,6 @@ class RavenDB_6967Test extends RemoteTestBase
             $this->assertEquals(0, self::countAllErrors($indexErrors3));
 
             RavenTestHelper::assertNoIndexErrors($store);
-
-            $this->assertTrue(true);
         } finally {
             $store->close();
         }

@@ -53,8 +53,6 @@ class LoadTest extends RemoteTestBase
                 $this->assertEquals("Beginning", $foo->getName());
 
                 $this->assertEquals($numOfRequests, $newSession->advanced()->getNumberOfRequests());
-
-                $this->assertTrue(true);
             } finally {
                 $newSession->close();
             }
