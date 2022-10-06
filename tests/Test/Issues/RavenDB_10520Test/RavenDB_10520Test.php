@@ -6,6 +6,7 @@ use tests\RavenDB\Infrastructure\Entity\Company;
 use tests\RavenDB\RemoteTestBase;
 use tests\RavenDB\Test\Issues\RavenDB_9745Test\Companies_ByName;
 
+// !status: DONE
 class RavenDB_10520Test extends RemoteTestBase
 {
     public function testQueryCanReturnResultAsArray(): void
