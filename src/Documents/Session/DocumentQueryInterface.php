@@ -3,6 +3,8 @@
 namespace RavenDB\Documents\Session;
 
 use Closure;
+use RavenDB\Documents\Queries\Explanation\ExplanationOptions;
+use RavenDB\Documents\Queries\Explanation\Explanations;
 use RavenDB\Documents\Queries\Facets\AggregationDocumentQueryInterface;
 use RavenDB\Documents\Queries\Facets\FacetBase;
 use RavenDB\Documents\Queries\GroupBy;
@@ -143,6 +145,7 @@ interface DocumentQueryInterface
     function addOrder(?string $fieldName, bool $descending, ?OrderingType $ordering = null): DocumentQueryInterface;
     function boost(float $boost): DocumentQueryInterface;
     function distinct(): DocumentQueryInterface;
+    public function includeExplanations(?ExplanationOptions $options, Explanations &$explanations): DocumentQueryInterface;
     function fuzzy(float $fuzzy): DocumentQueryInterface;
     function highlight(?string $fieldName, int $fragmentLength, int $fragmentCount, ?HighlightingOptions $options , Highlightings &$highlightings): DocumentQueryInterface;
     function include($includes): DocumentQueryInterface;

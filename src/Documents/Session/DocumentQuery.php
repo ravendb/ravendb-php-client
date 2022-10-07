@@ -5,6 +5,8 @@ namespace RavenDB\Documents\Session;
 use Closure;
 use InvalidArgumentException;
 use RavenDB\Constants\DocumentsIndexingFields;
+use RavenDB\Documents\Queries\Explanation\ExplanationOptions;
+use RavenDB\Documents\Queries\Explanation\Explanations;
 use RavenDB\Documents\Queries\Facets\AggregationDocumentQuery;
 use RavenDB\Documents\Queries\Facets\AggregationDocumentQueryInterface;
 use RavenDB\Documents\Queries\Facets\FacetBase;
@@ -13,7 +15,6 @@ use RavenDB\Documents\Queries\Facets\FacetBuilder;
 use RavenDB\Documents\Queries\GroupBy;
 use RavenDB\Documents\Queries\Highlighting\HighlightingOptions;
 use RavenDB\Documents\Queries\Highlighting\Highlightings;
-use RavenDB\Documents\Queries\IndexQuery;
 use RavenDB\Documents\Queries\ProjectionBehavior;
 use RavenDB\Documents\Queries\QueryData;
 use RavenDB\Documents\Queries\SearchOperator;
@@ -199,18 +200,12 @@ class DocumentQuery extends AbstractDocumentQuery
 //        _orderByScoreDescending();
 //        return this;
 //    }
-//
-//    @Override
-//    public IDocumentQuery<T> includeExplanations(Reference<Explanations> explanations) {
-//        _includeExplanations(null, explanations);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> includeExplanations(ExplanationOptions options, Reference<Explanations> explanations) {
-//        _includeExplanations(options, explanations);
-//        return this;
-//    }
+
+    public function includeExplanations(?ExplanationOptions $options, Explanations &$explanations): DocumentQueryInterface
+    {
+        $this->_includeExplanations($options, $explanations);
+        return $this;
+    }
 
     public function timings(QueryTimings &$timings): DocumentQueryInterface
     {

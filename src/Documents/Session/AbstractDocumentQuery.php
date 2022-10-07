@@ -5,6 +5,8 @@ namespace RavenDB\Documents\Session;
 use Closure;
 use RavenDB\Constants\DocumentsIndexingFields;
 use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Documents\Queries\Explanation\ExplanationOptions;
+use RavenDB\Documents\Queries\Explanation\Explanations;
 use RavenDB\Documents\Queries\Facets\FacetBase;
 use RavenDB\Documents\Queries\GroupBy;
 use RavenDB\Documents\Queries\Highlighting\HighlightingOptions;
@@ -172,7 +174,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         return $this->isProjectInto;
     }
 
-    public function setProjectInto(bool $projectInto): void {
+    public function setProjectInto(bool $projectInto): void
+    {
         $this->isProjectInto = $projectInto;
     }
 
@@ -210,16 +213,17 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     }
 
     protected function __construct(
-        ?string $className,
+        ?string                            $className,
         ?InMemoryDocumentSessionOperations $session,
-        ?string $indexName,
-        ?string $collectionName,
-        bool $isGroupBy,
-        ?DeclareTokenArray $declareTokens,
-        ?LoadTokenList $loadTokens,
-        ?string $fromAlias = null,
-        bool $isProjectInto = false
-    ) {
+        ?string                            $indexName,
+        ?string                            $collectionName,
+        bool                               $isGroupBy,
+        ?DeclareTokenArray                 $declareTokens,
+        ?LoadTokenList                     $loadTokens,
+        ?string                            $fromAlias = null,
+        bool                               $isProjectInto = false
+    )
+    {
         $this->queryParameters = new Parameters();
         $this->aliasToGroupByFieldName = new StringArray();
 
@@ -273,7 +277,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         return $this->graphRawQuery;
     }
 
-    public function _usingDefaultOperator(QueryOperator $operator) {
+    public function _usingDefaultOperator(QueryOperator $operator)
+    {
         if (!$this->whereTokens->isEmpty()) {
             throw new IllegalStateException("Default operator can only be set before any where clause is added.");
         }
@@ -544,7 +549,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         if ($includes->compareExchangeValuesToInclude != null) {
             $this->compareExchangeValueIncludesTokens = new CompareExchangeValueIncludesTokenArray();
 
-            foreach($includes->compareExchangeValuesToInclude as $compareExchangeValue) {
+            foreach ($includes->compareExchangeValuesToInclude as $compareExchangeValue) {
                 $this->compareExchangeValueIncludesTokens->append(CompareExchangeValueIncludesToken::create($compareExchangeValue));
             }
         }
@@ -970,7 +975,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
             $close = $last;
 
             $parameter = $this->addQueryParameter($boost);
-            foreach ( array_reverse($tokens->getArrayCopy()) as $token ) {
+            foreach (array_reverse($tokens->getArrayCopy()) as $token) {
                 $last = $token; // find the previous option
 
                 if ($last instanceof OpenSubclauseToken) {
@@ -1222,22 +1227,22 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     {
         if ($this->start > 0 || $this->pageSize != null) {
             $queryText
-                    ->append(" limit $")
-                    ->append($this->addQueryParameter($this->start))
-                    ->append(", $")
-                    ->append($this->addQueryParameter($this->pageSize));
+                ->append(" limit $")
+                ->append($this->addQueryParameter($this->start))
+                ->append(", $")
+                ->append($this->addQueryParameter($this->pageSize));
         }
     }
 
     private function buildInclude(StringBuilder $queryText): void
     {
         if ($this->documentIncludes->isEmpty() &&
-                $this->highlightingTokens->isEmpty() &&
-                $this->explanationToken == null &&
-                $this->queryTimings == null &&
-                $this->counterIncludesTokens == null &&
-                $this->timeSeriesIncludesTokens == null &&
-                $this->compareExchangeValueIncludesTokens == null) {
+            $this->highlightingTokens->isEmpty() &&
+            $this->explanationToken == null &&
+            $this->queryTimings == null &&
+            $this->counterIncludesTokens == null &&
+            $this->timeSeriesIncludesTokens == null &&
+            $this->compareExchangeValueIncludesTokens == null) {
             return;
         }
 
@@ -1253,9 +1258,9 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
             if (IncludesUtil::requiresQuotes($include, $escapedIncludeRef)) {
                 $queryText
-                        ->append("'")
-                        ->append($escapedIncludeRef)
-                        ->append("'");
+                    ->append("'")
+                    ->append($escapedIncludeRef)
+                    ->append("'");
             } else {
                 $queryText->append($include);
             }
@@ -1291,7 +1296,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
             return;
         }
 
-        foreach($tokens as $token) {
+        foreach ($tokens as $token) {
             if (!$firstRef) {
                 $queryText->append(",");
             }
@@ -1317,7 +1322,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         throw new IllegalStateException("Cannot add INTERSECT at this point.");
     }
 
-    public function _whereExists(string $fieldName): void {
+    public function _whereExists(string $fieldName): void
+    {
         $fieldName = $this->ensureValidFieldName($fieldName, false);
 
         $tokens = $this->getCurrentWhereTokens();
@@ -1383,9 +1389,9 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     {
         $this->queryStats->updateQueryStats($queryResult);
         $this->queryHighlightings->update($queryResult);
-//        if ($this->explanations != null) {
-//            $this->explanations->update($queryResult);
-//        }
+        if ($this->explanations != null) {
+            $this->explanations->update($queryResult);
+        }
         if ($this->queryTimings != null) {
             $this->queryTimings->update($queryResult);
         }
@@ -1407,7 +1413,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
         $prevToken = null;
         foreach ($this->selectTokens as $currentToken) {
-            if (($prevToken != null) && !is_a($prevToken,  DistinctToken::class)) {
+            if (($prevToken != null) && !is_a($prevToken, DistinctToken::class)) {
                 $writer->append(",");
             }
 
@@ -1536,7 +1542,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         }
 
         /** QueryOperatorToken */
-        $token = $this->defaultOperator->isAnd() ? QueryOperatorToken::and() : QueryOperatorToken::or() ;
+        $token = $this->defaultOperator->isAnd() ? QueryOperatorToken::and() : QueryOperatorToken::or();
 
         if ($lastWhere != null && $lastWhere->getOptions()->getSearchOperator() != null) {
             $token = QueryOperatorToken::or(); // default to OR operator after search if AND was not specified explicitly
@@ -1860,7 +1866,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     /**
      * @param Closure<IndexQuery> $action
      */
-    public function _removeBeforeQueryExecutedListener(Closure $action): void {
+    public function _removeBeforeQueryExecutedListener(Closure $action): void
+    {
         $this->beforeQueryExecutedCallback->removeValue($action);
     }
 
@@ -1905,7 +1912,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     protected ?QueryTimings $queryTimings = null;
 
-    public function _includeTimings(QueryTimings &$timingsReference): void {
+    public function _includeTimings(QueryTimings &$timingsReference): void
+    {
         if ($this->queryTimings != null) {
             $timingsReference = $this->queryTimings;
             return;
@@ -2102,7 +2110,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
             $queryResult = $command->getResult();
             $this->queryOperation->setResult($queryResult);
         } finally {
-            if($context) {
+            if ($context) {
                 $context->close();
             }
         }
@@ -2226,7 +2234,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         return $this->queryOperation->completeAsArray($this->className);
     }
 
-    private function executeQueryOperationInternal(?int $take): void {
+    private function executeQueryOperationInternal(?int $take): void
+    {
         if ($take != null && ($this->pageSize == null || $this->pageSize > $take)) {
             $this->take($take);
         }
@@ -2327,20 +2336,21 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //            throw new IllegalStateException("Cannot add suggest when ORDER BY statements are present.");
 //        }
 //    }
-//
-//    protected Explanations explanations;
-//
+
+    protected ?Explanations $explanations = null;
+
     protected ?ExplanationToken $explanationToken = null;
-//
-//    public void _includeExplanations(ExplanationOptions options, Reference<Explanations> explanationsReference) {
-//        if (explanationToken != null) {
-//            throw new IllegalStateException("Duplicate IncludeExplanations method calls are forbidden.");
-//        }
-//
-//        String optionsParameterName = options != null ? addQueryParameter(options) : null;
-//        explanationToken = ExplanationToken.create(optionsParameterName);
-//        this.explanations = explanationsReference.value = new Explanations();
-//    }
+
+    public function _includeExplanations(?ExplanationOptions $options, Explanations &$explanationsReference): void
+    {
+        if ($this->explanationToken != null) {
+            throw new IllegalStateException("Duplicate IncludeExplanations method calls are forbidden.");
+        }
+
+        $optionsParameterName = $options != null ? $this->addQueryParameter($options) : null;
+        $this->explanationToken = ExplanationToken::create($optionsParameterName);
+        $this->explanations = $explanationsReference;
+    }
 
     protected ?TimeSeriesIncludesTokenArray $timeSeriesIncludesTokens = null;
 
@@ -2394,7 +2404,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         return $this->parameterPrefix;
     }
 
-    public function setParameterPrefix(string $parameterPrefix): void {
+    public function setParameterPrefix(string $parameterPrefix): void
+    {
         $this->$parameterPrefix = $parameterPrefix;
     }
 }

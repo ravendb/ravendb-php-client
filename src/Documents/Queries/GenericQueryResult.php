@@ -25,7 +25,8 @@ class GenericQueryResult extends QueryResultBase
     /** @var array<array<array<string>>>|null  */
     private ?array $highlightings = null;
 
-//    private Map<String, String[]> explanations;
+    /** @var array<array<string>>|null  */
+    private ?array $explanations = null;
 
     /** @SerializedName("DurationInMs"); */
     private int $durationInMs;
@@ -121,19 +122,21 @@ class GenericQueryResult extends QueryResultBase
         $this->highlightings = $highlightings;
     }
 
-//    /**
-//     * @return Explanations (if requested).
-//     */
-//    public Map<String, String[]> getExplanations() {
-//        return explanations;
-//    }
-//
-//    /**
-//     * @param explanations Explanations (if requested).
-//     */
-//    public void setExplanations(Map<String, String[]> explanations) {
-//        this.explanations = explanations;
-//    }
+    /**
+     * @return array<array<string>> Explanations (if requested).
+     */
+    public function getExplanations(): ?array
+    {
+        return $this->explanations;
+    }
+
+    /**
+     * @param array<array<string>> $explanations Explanations (if requested).
+     */
+    public function setExplanations(?array $explanations): void
+    {
+        $this->explanations = $explanations;
+    }
 
     /**
      * The duration of actually executing the query server side

@@ -23,7 +23,7 @@ class QueryResult extends GenericQueryResult implements ResultInterface
         $queryResult->setTotalResults($this->getTotalResults());
         $queryResult->setLongTotalResults($this->getLongTotalResults());
         $queryResult->setHighlightings($this->getHighlightings());
-//        queryResult.setExplanations(getExplanations() != null ? new HashMap<>(getExplanations()) : null);
+        $queryResult->setExplanations($this->getExplanations());
 //        queryResult.setTimings(getTimings());
 //        queryResult.setLastQueryTime(getLastQueryTime());
         $queryResult->setDurationInMs($this->getDurationInMs());

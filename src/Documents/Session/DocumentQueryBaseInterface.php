@@ -2,6 +2,8 @@
 
 namespace RavenDB\Documents\Session;
 
+use RavenDB\Documents\Queries\Explanation\ExplanationOptions;
+use RavenDB\Documents\Queries\Explanation\Explanations;
 use RavenDB\Documents\Queries\Highlighting\HighlightingOptions;
 use RavenDB\Documents\Queries\Highlighting\Highlightings;
 
@@ -45,14 +47,14 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
 //     */
 //    TSelf includeExplanations(Reference<Explanations> explanations);
 //
-//    /**
-//     * Adds explanations of scores calculated for queried documents to the query result
-//     * @param options Options
-//     * @param explanations Output parameter
-//     * @return Query instance
-//     */
-//    TSelf includeExplanations(ExplanationOptions options, Reference<Explanations> explanations);
-//
+    /**
+     * Adds explanations of scores calculated for queried documents to the query result
+     * @param null|ExplanationOptions $options Options
+     * @param Explanations $explanations Output parameter
+     * @return DocumentQueryBaseInterface Query instance
+     */
+    public function includeExplanations(?ExplanationOptions $options, Explanations &$explanations): DocumentQueryBaseInterface;
+
     /**
      * Specifies a fuzziness factor to the single word term in the last where clause
      * 0.0 to 1.0 where 1.0 means closer match
