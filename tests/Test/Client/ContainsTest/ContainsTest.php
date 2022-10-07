@@ -37,7 +37,7 @@ class ContainsTest extends RemoteTestBase
                 $pascalOrGoDeveloperNames = $session
                     ->query(UserWithFavs::class)
                     ->containsAny("favourites", Collection::fromArray(["pascal", "go"]))
-                    ->selectFields("name")
+                    ->selectFields(null, "name")
                     ->toList();
 
                 $this->assertCount(2, $pascalOrGoDeveloperNames);
@@ -51,7 +51,7 @@ class ContainsTest extends RemoteTestBase
                 $javaDevelopers = $session
                         ->query(UserWithFavs::class)
                         ->containsAll("favourites", Collection::fromArray(["java"]))
-                        ->selectFields("name")
+                        ->selectFields(null, "name")
                         ->toList();
 
                 $this->assertCount(2, $javaDevelopers);

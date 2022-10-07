@@ -52,84 +52,42 @@ class DocumentQuery extends AbstractDocumentQuery
     }
 
     /**
-     * selectFields(string $projectionClass, ?ProjectionBehavior $projectionBehavior = null): DocumentQueryInterface
      *
-     * selectFields(string $field, string $projectionClass = null, ProjectionBehavior $projectionBehavior = null): DocumentQueryInterface
-     * selectFields(string $field, ProjectionBehavior $projectionBehavior = null): DocumentQueryInterface
+     * selectFields(?string $projectionClass)
+     * selectFields(?string $projectionClass, ?string ...$fields)
+     * selectFields(?string $projectionClass, QueryData $queryData)
+     * selectFields(?string $projectionClass, ProjectionBehavior $projectionBehavior)
+     * selectFields(?string $projectionClass, ProjectionBehavior $projectionBehavior, ?string ...$fields)
      *
-     * selectFields(array $fields, ?string $projectionClass = null, ProjectionBehavior $projectionBehavior = null): DocumentQueryInterface
-     * selectFields(StringArray $fields, ?string $projectionClass = null, ProjectionBehavior $projectionBehavior = null): DocumentQueryInterface
-     *
-     * selectFields(QueryData $queryData, ?string $projectionClass = null): DocumentQueryInterface
-     *
+     * @param string|null $projectionClass
      * @param mixed ...$params
      *
      * @return DocumentQueryInterface
      */
-    public function selectFields(...$params): DocumentQueryInterface
+    public function selectFields(?string $projectionClass, ...$params): DocumentQueryInterface
     {
-        if (!count($params)) {
+        if ($projectionClass == null && empty($params)) {
             throw new IllegalArgumentException('You must set select fields params.');
         }
 
-        $fields = null;
-        $projectionClass = null;
-        $projectionBehavior = null;
-        $firstParam = $params[0];
-
-        if (is_string($firstParam)) {
-            if (count($params) > 1 && ($params[1] instanceof ProjectionBehavior)) {
-                $projectionBehavior = $params[1];
-            }
-
-            if (class_exists($firstParam)) { // give string is projectionClass
-                $projectionClass = $firstParam;
-                return $this->_selectFieldsByClass($projectionClass, $projectionBehavior ?? ProjectionBehavior::default());
-            }
-
-            if (count($params) > 1 && !($params[1] instanceof ProjectionBehavior) && class_exists($params[1])) {
-                $projectionClass = $params[1];
-
-                if (count($params) > 2 && ($params[2] instanceof ProjectionBehavior)) {
-                    $projectionBehavior = $params[2];
-                }
-            }
-            $fields = [$firstParam];
+        if (!empty($params) && ($params[0] instanceof QueryData)) {
+            return $this->_selectFieldsByQueryData($params[0], $projectionClass);
         }
 
-        if (is_array($firstParam)) {
-            $firstParam = StringArray::fromArray($firstParam);
-        }
-        if ($firstParam instanceof StringArray) {
-            $fields = $firstParam->getArrayCopy();
-            $projectionClass = count($params) > 1 && is_string($params[1]) ? $params[1] : null;
-            if (count($params) > 2 && ($params[2] instanceof ProjectionBehavior)) {
-                $projectionBehavior = $params[2];
-            }
+        $projectionBehavior = !empty($params) && ($params[0] instanceof ProjectionBehavior) ?
+            array_shift($params) :
+            ProjectionBehavior::default();
+
+        if (empty($params) && class_exists($projectionClass)) {
+            return $this->_selectFieldsByClass($projectionClass, $projectionBehavior);
         }
 
-        if ($fields != null) {
-            if (!$projectionBehavior) {
-                $projectionBehavior = ProjectionBehavior::default();
-            }
+        $fields = StringArray::fromArray($params);
+        $queryData = new QueryData($fields, $fields);
+        $queryData->setProjectInto(true);
+        $queryData->setProjectionBehavior($projectionBehavior);
 
-            $stringArray = StringArray::fromArray($fields);
-            $queryData = new QueryData($stringArray, $stringArray);
-            $queryData->setProjectInto(true);
-            $queryData->setProjectionBehavior($projectionBehavior);
-
-            return $this->_selectFieldsByQueryData($queryData, $projectionClass);
-        }
-
-        if ($firstParam instanceof QueryData) {
-            if (count($params) > 1) {
-                $projectionClass = $params[1];
-            }
-
-            return $this->_selectFieldsByQueryData($firstParam, $projectionClass);
-        }
-
-        throw new IllegalArgumentException('Illegal arguments.');
+        return $this->_selectFieldsByQueryData($queryData, $projectionClass);
     }
 
     private function _selectFieldsByClass(string $projectionClass, ProjectionBehavior $projectionBehavior): DocumentQueryInterface
@@ -749,7 +707,7 @@ class DocumentQuery extends AbstractDocumentQuery
         return new AggregationDocumentQuery($this);
     }
 
-    public function highlight(?string $fieldName, int $fragmentLength, int $fragmentCount, ?HighlightingOptions $options , Highlightings &$highlightings): DocumentQueryInterface
+    public function highlight(?string $fieldName, int $fragmentLength, int $fragmentCount, ?HighlightingOptions $options, Highlightings &$highlightings): DocumentQueryInterface
     {
         $this->_highlight($fieldName, $fragmentLength, $fragmentCount, $options, $highlightings);
         return $this;

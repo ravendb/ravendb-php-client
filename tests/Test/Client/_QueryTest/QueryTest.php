@@ -375,7 +375,7 @@ class QueryTest extends RemoteTestBase
             try {
                 $ages = $session->query(User::class)
                     ->addOrder("age", true, OrderingType::long())
-                    ->selectFields("age")
+                    ->selectFields(null, "age")
                     ->toList();
 
                 $this->assertCount(3, $ages);
@@ -397,7 +397,7 @@ class QueryTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $usersAge = $session->query(User::class)
-                    ->selectFields(["age", "id"], User::class)
+                    ->selectFields(User::class, "age", "id")
                     ->toList();
 
                 /** @var User $user */
@@ -590,7 +590,7 @@ class QueryTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $projections = $session->query(User::class)
-                    ->selectFields(["lastName", "id"], UserProjection::class)
+                    ->selectFields(UserProjection::class, "lastName", "id")
                     ->toList();
 
                 $this->assertCount(3, $projections);
@@ -617,7 +617,7 @@ class QueryTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $uniqueNames = $session->query(User::class)
-                    ->selectFields("name")
+                    ->selectFields(null,"name")
                     ->distinct()
                     ->toList();
 

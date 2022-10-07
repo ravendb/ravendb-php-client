@@ -27,7 +27,7 @@ class RavenDB_14811Test extends RemoteTestBase
             try {
                 /** @var UserProjectionIntId $result */
                 $result = $session->query(User::class)
-                        ->selectFields("name", UserProjectionIntId::class)
+                        ->selectFields(UserProjectionIntId::class, "name")
                         ->firstOrDefault();
 
                 $this->assertNotNull($result);
@@ -41,7 +41,7 @@ class RavenDB_14811Test extends RemoteTestBase
             try {
                 /** @var UserProjectionIntId $result */
                 $result = $session->query(User::class)
-                        ->selectFields(new QueryData([ "id" ], [ "name" ]), UserProjectionIntId::class)
+                        ->selectFields(UserProjectionIntId::class, new QueryData([ "id" ], [ "name" ]))
                         ->firstOrDefault();
 
                 $this->assertNotNull($result);
@@ -75,7 +75,7 @@ class RavenDB_14811Test extends RemoteTestBase
             try {
                 /** @var UserProjectionIntId $result */
                 $result = $session->query(User::class)
-                        ->selectFields("name", UserProjectionIntId::class)
+                        ->selectFields(UserProjectionIntId::class, "name")
                         ->firstOrDefault();
 
                 $this->assertNotNull($result);
@@ -88,7 +88,7 @@ class RavenDB_14811Test extends RemoteTestBase
             try {
                 /** @var UserProjectionIntId $result */
                 $result = $session->query(User::class)
-                        ->selectFields(new QueryData(["age", "name"], ["id", "name"]), UserProjectionIntId::class)
+                        ->selectFields(UserProjectionIntId::class, new QueryData(["age", "name"], ["id", "name"]))
                         ->firstOrDefault();
 
                 $this->assertNotNull($result);
@@ -102,7 +102,7 @@ class RavenDB_14811Test extends RemoteTestBase
             try {
                 /** @var UserProjectionStringId $result */
                 $result = $session->query(User::class)
-                        ->selectFields(["id", "name"], UserProjectionStringId::class)
+                        ->selectFields(UserProjectionStringId::class, "id", "name")
                         ->firstOrDefault();
 
                 $this->assertNotNull($result);
@@ -116,7 +116,7 @@ class RavenDB_14811Test extends RemoteTestBase
             try {
                 /** @var UserProjectionStringId $result */
                 $result = $session->query(User::class)
-                        ->selectFields(new QueryData(["name", "name"], ["id", "name"]), UserProjectionStringId::class)
+                        ->selectFields(UserProjectionStringId::class, new QueryData(["name", "name"], ["id", "name"]))
                         ->firstOrDefault();
 
                 $this->assertNotNull($result);
