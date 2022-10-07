@@ -2,45 +2,43 @@
 
 namespace RavenDB\Documents\Session;
 
+use RavenDB\Documents\Queries\Explanation\ExplanationOptions;
+use RavenDB\Documents\Queries\Explanation\Explanations;
+use RavenDB\Documents\Queries\Highlighting\HighlightingOptions;
+use RavenDB\Documents\Queries\Highlighting\Highlightings;
+
 interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQueryBaseInterface
 {
-//    /**
-//     * Adds an ordering for a specific field to the query
-//     * @param fieldName Field name
-//     * @param descending use descending order
-//     * @return Query instance
-//     */
-//    TSelf addOrder(String fieldName, boolean descending);
-//
-//    /**
-//     * Adds an ordering for a specific field to the query
-//     * @param fieldName Field name
-//     * @param descending use descending order
-//     * @param ordering ordering type
-//     * @return Query instance
-//     */
-//    TSelf addOrder(String fieldName, boolean descending, OrderingType ordering);
-//
+    /**
+     * Adds an ordering for a specific field to the query
+     * @param ?string $fieldName Field name
+     * @param bool $descending use descending order
+     * @param ?OrderingType $ordering ordering type
+     * @return DocumentQueryBaseInterface Query instance
+     */
+    function addOrder(?string $fieldName, bool $descending, ?OrderingType $ordering = null): DocumentQueryBaseInterface;
+
 //    //TBD expr TSelf AddOrder<TValue>(Expression<Func<T, TValue>> propertySelector, bool descending = false, OrderingType ordering = OrderingType.String);
-//
-//    /**
-//     * Specifies a boost weight to the last where clause.
-//     * The higher the boost factor, the more relevant the term will be.
-//     *
-//     * boosting factor where 1.0 is default, less than 1.0 is lower weight, greater than 1.0 is higher weight
-//     *
-//     * http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Boosting%20a%20Term
-//     * @param boost Boost value
-//     * @return Query instance
-//     */
-//    TSelf boost(double boost);
+
+
+    /**
+     * Specifies a boost weight to the last where clause.
+     * The higher the boost factor, the more relevant the term will be.
+     *
+     * boosting factor where 1.0 is default, less than 1.0 is lower weight, greater than 1.0 is higher weight
+     *
+     * http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Boosting%20a%20Term
+     * @param float $boost Boost value
+     * @return DocumentQueryBaseInterface instance
+     */
+    function boost(float $boost): DocumentQueryBaseInterface;
 
     /**
      * Apply distinct operation to this query
      *
-     * @return static
+     * @return DocumentQueryBaseInterface
      */
-    function distinct();
+    function distinct(): DocumentQueryBaseInterface;
 
 //    /**
 //     * Adds explanations of scores calculated for queried documents to the query result
@@ -49,14 +47,14 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
 //     */
 //    TSelf includeExplanations(Reference<Explanations> explanations);
 //
-//    /**
-//     * Adds explanations of scores calculated for queried documents to the query result
-//     * @param options Options
-//     * @param explanations Output parameter
-//     * @return Query instance
-//     */
-//    TSelf includeExplanations(ExplanationOptions options, Reference<Explanations> explanations);
-//
+    /**
+     * Adds explanations of scores calculated for queried documents to the query result
+     * @param null|ExplanationOptions $options Options
+     * @param Explanations $explanations Output parameter
+     * @return DocumentQueryBaseInterface Query instance
+     */
+    public function includeExplanations(?ExplanationOptions $options, Explanations &$explanations): DocumentQueryBaseInterface;
+
     /**
      * Specifies a fuzziness factor to the single word term in the last where clause
      * 0.0 to 1.0 where 1.0 means closer match
@@ -64,12 +62,11 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
      * http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Fuzzy%20Searches
      * @param float $fuzzy Fuzzy value
      *
-     * @return QueryBaseInterface Query instance
+     * @return DocumentQueryBaseInterface Query instance
      */
-    function fuzzy(float $fuzzy): QueryBaseInterface;
+    function fuzzy(float $fuzzy): DocumentQueryBaseInterface;
 
-//    TSelf highlight(String fieldName, int fragmentLength, int fragmentCount, Reference<Highlightings> highlightings);
-//    TSelf highlight(String fieldName, int fragmentLength, int fragmentCount, HighlightingOptions options, Reference<Highlightings> highlightings);
+    public function highlight(?string $fieldName, int $fragmentLength, int $fragmentCount, ?HighlightingOptions $options , Highlightings &$highlightings): DocumentQueryBaseInterface;
 //    //TBD expr TSelf Highlight(Expression<Func<T, object>> path, int fragmentLength, int fragmentCount, out Highlightings highlightings);
 //    //TBD expr TSelf Highlight(Expression<Func<T, object>> path, int fragmentLength, int fragmentCount, HighlightingOptions options, out Highlightings highlightings);
 
@@ -77,9 +74,9 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
      * Includes the specified path in the query, loading the document specified in that path
      * @param Callable|string $includes Path to include
      *
-     * @return static
+     * @return DocumentQueryBaseInterface
      */
-    function include($includes);
+    function include($includes): DocumentQueryBaseInterface;
 
     //TBD expr TSelf Include(Expression<Func<T, object>> path);
 
@@ -87,9 +84,9 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
      * Partition the query so we can intersect different parts of the query
      *  across different index entries.
      *
-     *  @return static Query instance
+     *  @return DocumentQueryBaseInterface Query instance
      */
-    public function intersect();
+    public function intersect(): DocumentQueryBaseInterface;
 
     /**
      * Order the results by the specified fields
@@ -99,9 +96,9 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
      * @param string $field
      * @param OrderingType|string|null $sorterNameOrOrdering
      *
-     * @return static
+     * @return DocumentQueryBaseInterface
      */
-    function orderBy(string $field, $sorterNameOrOrdering = null);
+    function orderBy(string $field, $sorterNameOrOrdering = null): DocumentQueryBaseInterface;
 
     //TBD expr TSelf OrderBy<TValue>(params Expression<Func<T, TValue>>[] propertySelectors);
     //TBD expr TSelf OrderBy<TValue>(Expression<Func<T, TValue>> propertySelector, string sorterName);
@@ -112,9 +109,9 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
      * @param string $field Field to use in order by
      * @param string|OrderingType|null $sorterNameOrOrdering Sorter to use
      *
-     * @return static
+     * @return DocumentQueryBaseInterface
      */
-    function orderByDescending(string $field, $sorterNameOrOrdering = null);
+    function orderByDescending(string $field, $sorterNameOrOrdering = null): DocumentQueryBaseInterface;
 
     //TBD expr TSelf OrderByDescending<TValue>(params Expression<Func<T, TValue>>[] propertySelectors);
     //TBD expr TSelf OrderByDescending<TValue>(Expression<Func<T, TValue>> propertySelector, string sorterName);
@@ -136,18 +133,18 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
      * http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Proximity%20Searches
      * @param int $proximity Proximity value
      *
-     * @return QueryBaseInterface Query instance
+     * @return DocumentQueryBaseInterface Query instance
      */
-    function proximity(int $proximity): QueryBaseInterface;
+    function proximity(int $proximity): DocumentQueryBaseInterface;
 
     /**
      * Order the search results randomly using the specified seed
      * this is useful if you want to have repeatable random queries
      * @param ?string $seed Seed to use
      *
-     * @return static
+     * @return DocumentQueryBaseInterface
      */
-    function randomOrdering(?string $seed = null);
+    function randomOrdering(?string $seed = null): DocumentQueryBaseInterface;
 
     //TBD 4.1 TSelf customSortUsing(String typeName, boolean descending);
 

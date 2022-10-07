@@ -2,80 +2,83 @@
 
 namespace RavenDB\Documents\Session;
 
+use Closure;
+use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Queries\IndexQuery;
 use RavenDB\Documents\Queries\QueryResult;
+use RavenDB\Documents\Queries\Timings\QueryTimings;
 use RavenDB\Type\Duration;
 
 interface QueryBaseInterface
 {
-//    /**
-//     * Gets the document convention from the query session
-//     * @return document conventions
-//     */
-//    DocumentConventions getConventions();
-//
-//    TSelf addBeforeQueryExecutedListener(Consumer<IndexQuery> action);
-//
-//    TSelf removeBeforeQueryExecutedListener(Consumer<IndexQuery> action);
-//
-//    TSelf addAfterQueryExecutedListener(Consumer<QueryResult> action);
-//
-//    TSelf removeAfterQueryExecutedListener(Consumer<QueryResult> action);
-//
-//    TSelf addAfterStreamExecutedListener(Consumer<ObjectNode> action);
-//
-//    TSelf removeAfterStreamExecutedListener(Consumer<ObjectNode> action);
+    /**
+     * Gets the document convention from the query session
+     * @return DocumentConventions document conventions
+     */
+    function getConventions(): DocumentConventions;
+
+    public function addBeforeQueryExecutedListener(Closure $action): QueryBaseInterface;
+
+    public function removeBeforeQueryExecutedListener(Closure $action): QueryBaseInterface;
+
+    public function addAfterQueryExecutedListener(Closure $action): QueryBaseInterface;
+
+    public function removeAfterQueryExecutedListener(Closure $action): QueryBaseInterface;
+
+    public function addAfterStreamExecutedListener(Closure $action): QueryBaseInterface;
+
+    public function removeAfterStreamExecutedListener(Closure $action): QueryBaseInterface;
 
     function invokeAfterQueryExecuted(QueryResult $result): void;
 
-//    void invokeAfterStreamExecuted(ObjectNode result);
+    public function invokeAfterStreamExecuted($result): void;
 
     /**
      * Disables caching for query results.
      *
-     * @return static
+     * @return QueryBaseInterface;
      */
-    function noCaching();
+    function noCaching(): QueryBaseInterface;
 
     /**
      * Disables tracking for queried entities by Raven's Unit of Work.
      * Usage of this option will prevent holding query results in memory.
      *
-     * @return static
+     * @return QueryBaseInterface;
      */
-    function noTracking();
+    function noTracking(): QueryBaseInterface;
 
-//    /**
-//     *  Enables calculation of timings for various parts of a query (Lucene search, loading documents, transforming
-//     *  results). Default: false
-//     * @param timings Reference to output parameter
-//     * @return Query instance
-//     */
-//    TSelf timings(Reference<QueryTimings> timings);
-//
+    /**
+     *  Enables calculation of timings for various parts of a query (Lucene search, loading documents, transforming
+     *  results). Default: false
+     * @param QueryTimings $timings Reference to output parameter
+     * @return QueryBaseInterface Query instance
+     */
+    function timings(QueryTimings &$timings): QueryBaseInterface;
+
     /**
      * Skips the specified count.
      * @param int $count Items to skip
      *
-     * @return static
+     * @return QueryBaseInterface
      */
-    function skip(int $count);
+    function skip(int $count): QueryBaseInterface;
 
     /**
      * Provide statistics about the query, such as total count of matching records
      * @param QueryStatistics $stats Output parameter for query stats
      *
-     * @return static
+     * @return QueryBaseInterface
      */
-    function statistics(QueryStatistics &$stats);
+    function statistics(QueryStatistics &$stats): QueryBaseInterface;
 
     /**
      * Takes the specified count.
      * @param int $count Amount of items to take
      *
-     * @return static
+     * @return QueryBaseInterface
      */
-    function take(int $count);
+    function take(int $count): QueryBaseInterface;
 
 //    /**
 //     * Select the default operator to use for this query
@@ -89,9 +92,9 @@ interface QueryBaseInterface
      * This shouldn't be used outside of unit tests unless you are well aware of the implications
      * @param ?Duration $waitTimeout Max wait timeout
      *
-     * @return static
+     * @return QueryBaseInterface
      */
-    function waitForNonStaleResults(?Duration $waitTimeout = null);
+    function waitForNonStaleResults(?Duration $waitTimeout = null): QueryBaseInterface;
 
     /**
      * Create the index query object for this query
@@ -105,9 +108,9 @@ interface QueryBaseInterface
      * @param string $name Parameter name
      * @param mixed $value Parameter value
      *
-     * @return static
+     * @return QueryBaseInterface
      */
-    function addParameter(string $name, $value);
+    function addParameter(string $name, $value): QueryBaseInterface;
 
     /**
      * @return array

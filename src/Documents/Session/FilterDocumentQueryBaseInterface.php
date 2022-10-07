@@ -10,33 +10,33 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
     /**
      * Negate the next operation
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function not();
+    function not(): FilterDocumentQueryBaseInterface;
 
     /**
      * Add an AND to the query
      * @param bool $wrapPreviousQueryClauses wrap previous query clauses
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    public function andAlso(bool $wrapPreviousQueryClauses = false);
+    public function andAlso(bool $wrapPreviousQueryClauses = false): FilterDocumentQueryBaseInterface;
 
     /**
      * Simplified method for closing a clause within the query
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function closeSubclause();
+    function closeSubclause(): FilterDocumentQueryBaseInterface;
 
     /**
      * Performs a query matching ALL of the provided values against the given field (AND)
      * @param ?string $fieldName Field name
      * @param Collection $values values to match
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function containsAll(?string $fieldName, Collection $values);
+    function containsAll(?string $fieldName, Collection $values): FilterDocumentQueryBaseInterface;
 
     //TBD expr TSelf ContainsAll<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values);
 
@@ -45,32 +45,32 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param ?string $fieldName Field name
      * @param Collection $values values to match
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function containsAny(?string $fieldName, Collection $values);
+    function containsAny(?string $fieldName, Collection $values): FilterDocumentQueryBaseInterface;
 
     //TBD expr TSelf ContainsAny<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values);
 
     /**
      * Negate the next operation
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function negateNext();
+    function negateNext(): FilterDocumentQueryBaseInterface;
 
     /**
      *  Simplified method for opening a new clause within the query
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function openSubclause();
+    function openSubclause(): FilterDocumentQueryBaseInterface;
 
     /**
      * Add an OR to the query
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    public function orElse();
+    public function orElse(): FilterDocumentQueryBaseInterface;
 
     /**
      * Perform a search for documents which fields that match the searchTerms.
@@ -82,7 +82,7 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param string $searchTerms Search terms
      * @param ?SearchOperator $operator Search operator
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
     public function search(string $fieldName, string $searchTerms, ?SearchOperator $operator = null): QueryBaseInterface;
 
@@ -94,9 +94,9 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param string $whereClause Where clause
      * @param bool $exact Use exact matcher
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function whereLucene(string $fieldName, string $whereClause, bool $exact = false);
+    function whereLucene(string $fieldName, string $whereClause, bool $exact = false): FilterDocumentQueryBaseInterface;
 
     /**
      * Matches fields where the value is between the specified start and end, inclusive
@@ -105,9 +105,9 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param mixed $end Range end
      * @param bool $exact Use exact matcher
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function whereBetween(string $fieldName, $start, $end, bool $exact = false);
+    function whereBetween(string $fieldName, $start, $end, bool $exact = false): FilterDocumentQueryBaseInterface;
 
     //TBD expr TSelf WhereBetween<TValue>(Expression<Func<T, TValue>> propertySelector, TValue start, TValue end, bool exact = false);
 
@@ -117,9 +117,9 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param mixed $value Value to use
      * @param bool $exact Use exact matcher
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function whereEndsWith(string $fieldName, $value, bool $exact = false);
+    function whereEndsWith(string $fieldName, $value, bool $exact = false): FilterDocumentQueryBaseInterface;
 
     //TBD expr TSelf WhereEndsWith<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value);
 
@@ -128,9 +128,9 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param mixed|MethodCall $value
      * @param bool $exact
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function whereEquals(string $fieldName, $value, bool $exact = false);
+    function whereEquals(string $fieldName, $value, bool $exact = false): FilterDocumentQueryBaseInterface;
 
     //TBD expr TSelf WhereEquals<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
     //TBD expr TSelf WhereEquals<TValue>(Expression<Func<T, TValue>> propertySelector, MethodCall value, bool exact = false);
@@ -138,18 +138,18 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
     /**
      * @param WhereParams $whereParams
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function whereEqualsWithParams(WhereParams $whereParams);
+    function whereEqualsWithParams(WhereParams $whereParams): FilterDocumentQueryBaseInterface;
 
     /**
      * @param string $fieldName
      * @param mixed|MethodCall $value
      * @param bool $exact
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function whereNotEquals(string $fieldName, $value, bool $exact = false);
+    function whereNotEquals(string $fieldName, $value, bool $exact = false): FilterDocumentQueryBaseInterface;
 
     //TBD expr TSelf WhereNotEquals<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
     //TBD expr TSelf WhereNotEquals<TValue>(Expression<Func<T, TValue>> propertySelector, MethodCall value, bool exact = false);
@@ -157,9 +157,9 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
     /**
      * @param WhereParams $whereParams
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function whereNotEqualsWithParams(WhereParams $whereParams);
+    function whereNotEqualsWithParams(WhereParams $whereParams): FilterDocumentQueryBaseInterface;
 
     /**
      * Matches fields where the value is greater than the specified value
@@ -167,9 +167,9 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param mixed $value Value to use
      * @param bool $exact Use exact matcher
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function whereGreaterThan(string $fieldName, $value, bool $exact = false);
+    function whereGreaterThan(string $fieldName, $value, bool $exact = false): FilterDocumentQueryBaseInterface;
 
 //    //TBD expr TSelf WhereGreaterThan<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
 
@@ -180,9 +180,9 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param mixed $value Value to use
      * @param bool $exact Use exact matcher
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function whereGreaterThanOrEqual(string $fieldName, $value, bool $exact = false);
+    function whereGreaterThanOrEqual(string $fieldName, $value, bool $exact = false): FilterDocumentQueryBaseInterface;
 
     //TBD expr TSelf WhereGreaterThanOrEqual<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
 
@@ -192,9 +192,9 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param Collection $values Values to use
      * @param bool $exact Use exact matcher
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function whereIn(string $fieldName, Collection $values, bool $exact = false);
+    function whereIn(string $fieldName, Collection $values, bool $exact = false): FilterDocumentQueryBaseInterface;
 
     //TBD expr TSelf WhereIn<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values, bool exact = false);
 
@@ -204,9 +204,9 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param mixed $value Value to use
      * @param bool $exact Use exact matcher
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function whereLessThan(string $fieldName, $value, bool $exact = false);
+    function whereLessThan(string $fieldName, $value, bool $exact = false): FilterDocumentQueryBaseInterface;
 
     //TBD expr TSelf WhereLessThan<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
 
@@ -216,9 +216,9 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param mixed $value Value to use
      * @param bool $exact Use exact matcher
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function whereLessThanOrEqual(string $fieldName, $value, bool $exact = false);
+    function whereLessThanOrEqual(string $fieldName, $value, bool $exact = false): FilterDocumentQueryBaseInterface;
 
     //TBD expr TSelf WhereLessThanOrEqual<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact = false);
 
@@ -228,9 +228,9 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * @param mixed $value Value to use
      * @param bool $exact Use exact matcher
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function whereStartsWith(string $fieldName, $value, bool $exact = false);
+    function whereStartsWith(string $fieldName, $value, bool $exact = false): FilterDocumentQueryBaseInterface;
 
     //TBD expr TSelf WhereStartsWith<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value);
 
@@ -240,19 +240,19 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
      * Check if the given field exists
      * @param string $fieldName Field name
      *
-     * @return static
+     * @return FilterDocumentQueryBaseInterface
      */
-    function whereExists(string $fieldName);
+    function whereExists(string $fieldName): FilterDocumentQueryBaseInterface;
 
     //TBD expr TSelf WhereRegex<TValue>(Expression<Func<T, TValue>> propertySelector, string pattern);
 
-//    /**
-//     * Checks value of a given field against supplied regular expression pattern
-//     * @param fieldName Field name
-//     * @param pattern Regexp pattern
-//     * @return Query instance
-//     */
-//    TSelf whereRegex(String fieldName, String pattern);
+    /**
+     * Checks value of a given field against supplied regular expression pattern
+     * @param ?string  $fieldName Field name
+     * @param ?string $pattern Regexp pattern
+     * @return FilterDocumentQueryBaseInterface Query instance
+     */
+    function whereRegex(?string $fieldName, ?string $pattern): FilterDocumentQueryBaseInterface;
 //
 //    //TBD expr TSelf WithinRadiusOf<TValue>(Expression<Func<T, TValue>> propertySelector, double radius, double latitude, double longitude, SpatialUnits? radiusUnits = null, double distanceErrorPct = Constants.Documents.Indexing.Spatial.DefaultDistanceErrorPct);
 //

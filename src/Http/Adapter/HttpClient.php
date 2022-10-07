@@ -48,6 +48,11 @@ class HttpClient implements HttpClientInterface
 
         $this->updateRequestBody($options);
 
+//        print_r($request->getUrl());
+//        if (array_key_exists('body', $options)) {
+//            print_r(json_decode($options['body']));
+//        }
+
         $serverResponse = $this->getClient()->request($request->getMethod(), $request->getUrl(), $options);
 
         return HttpResponseTransformer::fromHttpClientResponse($serverResponse);

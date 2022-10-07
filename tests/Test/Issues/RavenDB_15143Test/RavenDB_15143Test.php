@@ -44,7 +44,7 @@ class RavenDB_15143Test extends RemoteTestBase
                 $lockerObject->setClientId("a");
                 $locker = $session->advanced()->clusterTransaction()->createCompareExchangeValue("cmd/239-A", $lockerObject);
 
-                $locker->getMetadata()->put("@expires", DateUtils::addMinutes(new DateTime(), 2));
+                $locker->getMetadata()->put("@expires", DateUtils::addMinutes(DateUtils::now(), 2));
                 $session->saveChanges();
             } finally {
                 $session->close();

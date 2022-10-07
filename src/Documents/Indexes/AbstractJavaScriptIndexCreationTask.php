@@ -20,8 +20,14 @@ class AbstractJavaScriptIndexCreationTask extends AbstractIndexCreationTaskBase
         return $this->definition->getMaps();
     }
 
-    public function setMaps(?StringSet $maps): void
+    /**
+     * @param StringSet|array|null $maps
+     */
+    public function setMaps($maps): void
     {
+        if (is_array($maps)) {
+            $maps = StringSet::fromArray($maps);
+        }
         $this->definition->setMaps($maps);
     }
 

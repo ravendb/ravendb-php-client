@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Queries\Facets;
 
+use Closure;
 use RavenDB\Documents\Queries\IndexQuery;
 use RavenDB\Documents\Queries\QueryResult;
 use RavenDB\Documents\Session\AbstractDocumentQuery;
@@ -18,19 +19,23 @@ class AggregationDocumentQuery extends AggregationQueryBase implements Aggregati
     }
 
     /**
-     * @param Callable|FacetBase $builderOrFacets
+     * @param Closure|Callable|FacetBase $builderOrFacets
      * @return AggregationDocumentQueryInterface
      */
     public function andAggregateBy($builderOrFacets): AggregationDocumentQueryInterface
     {
         if (is_callable($builderOrFacets)) {
-            return $this->andAggregateByBuilder($builderOrFacets[0]);
+            return $this->andAggregateByBuilder($builderOrFacets);
         }
 
         return $this->andAggregateByFacet($builderOrFacets);
     }
 
-    protected function andAggregateByBuilder(Callable $builder): AggregationDocumentQueryInterface
+    /**
+     * @param Closure|Callable $builder
+     * @return AggregationDocumentQueryInterface
+     */
+    protected function andAggregateByBuilder($builder): AggregationDocumentQueryInterface
     {
         $f = new FacetBuilder();
         $builder($f);

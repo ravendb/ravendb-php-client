@@ -1,6 +1,6 @@
 <?php
 
-namespace tests\RavenDB\Bugs\Caching\Entity;
+namespace tests\RavenDB\Bugs\Caching\_CachingOfDocumentIncludeTest;
 
 class User
 {

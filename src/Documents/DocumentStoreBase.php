@@ -26,14 +26,14 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //      private final List<EventHandler<BeforeStoreEventArgs>> onBeforeStore = new ArrayList<>();
     private ?ClosureArray $onAfterSaveChanges = null;
 //    private final List<EventHandler<BeforeDeleteEventArgs>> onBeforeDelete = new ArrayList<>();
-    private ClosureArray $onBeforeQuery;
+    private ?ClosureArray $onBeforeQuery = null;
 //    private final List<EventHandler<SessionCreatedEventArgs>> onSessionCreated = new ArrayList<>();
 //    private final List<EventHandler<SessionClosingEventArgs>> onSessionClosing = new ArrayList<>();
 //
-//    private final List<EventHandler<BeforeConversionToDocumentEventArgs>> onBeforeConversionToDocument = new ArrayList<>();
-//    private final List<EventHandler<AfterConversionToDocumentEventArgs>> onAfterConversionToDocument = new ArrayList<>();
-//    private final List<EventHandler<BeforeConversionToEntityEventArgs>> onBeforeConversionToEntity = new ArrayList<>();
-//    private final List<EventHandler<AfterConversionToEntityEventArgs>> onAfterConversionToEntity = new ArrayList<>();
+    private ?ClosureArray $onBeforeConversionToDocument = null;
+    private ?ClosureArray $onAfterConversionToDocument = null;
+    private ?ClosureArray $onBeforeConversionToEntity = null;
+    private ?ClosureArray $onAfterConversionToEntity = null;
 //    private final List<EventHandler<BeforeRequestEventArgs>> onBeforeRequest = new ArrayList<>();
 //    private final List<EventHandler<SucceedRequestEventArgs>> onSucceedRequest = new ArrayList<>();
 //
@@ -47,6 +47,11 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 
         $this->onBeforeQuery = new ClosureArray();
         $this->onAfterSaveChanges = new ClosureArray();
+
+        $this->onBeforeConversionToDocument = new ClosureArray();
+        $this->onAfterConversionToDocument = new ClosureArray();
+        $this->onBeforeConversionToEntity = new ClosureArray();
+        $this->onAfterConversionToEntity = new ClosureArray();
 
 //        $this->subscriptions = new DocumentSubscriptions($this);
     }
@@ -329,12 +334,12 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
     }
 
 
-//    public void addBeforeStoreListener(EventHandler<BeforeStoreEventArgs> handler) {
-//        this.onBeforeStore.add(handler);
+//    public function addBeforeStoreListener(EventHandler<BeforeStoreEventArgs> handler) {
+//        $this->onBeforeStore->append($handler);
 //
 //    }
-//    public void removeBeforeStoreListener(EventHandler<BeforeStoreEventArgs> handler) {
-//        this.onBeforeStore.remove(handler);
+//    public function removeBeforeStoreListener(EventHandler<BeforeStoreEventArgs> handler) {
+//        $this->onBeforeStore->removeValue($handler);
 //    }
 
     /** AfterSaveChangesEventArgs */
@@ -349,11 +354,11 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
         $this->onAfterSaveChanges->removeValue($handler);
     }
 
-//    public void addBeforeDeleteListener(EventHandler<BeforeDeleteEventArgs> handler) {
-//        this.onBeforeDelete.add(handler);
+//    public function addBeforeDeleteListener(EventHandler<BeforeDeleteEventArgs> handler) {
+//        $this->onBeforeDelete->append($handler);
 //    }
-//    public void removeBeforeDeleteListener(EventHandler<BeforeDeleteEventArgs> handler) {
-//        this.onBeforeDelete.remove(handler);
+//    public function removeBeforeDeleteListener(EventHandler<BeforeDeleteEventArgs> handler) {
+//        $this->onBeforeDelete->removeValue($handler);
 //    }
 //
 //    public function addBeforeQueryListener(EventHandler<BeforeQueryEventArgs> $handler): void
@@ -362,88 +367,96 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
         $this->onBeforeQuery->append($handler);
     }
 //
-//    public void removeBeforeQueryListener(EventHandler<BeforeQueryEventArgs> handler) {
-//        this.onBeforeQuery.remove(handler);
+//    public function removeBeforeQueryListener(EventHandler<BeforeQueryEventArgs> handler) {
+//        $this->onBeforeQuery->removeValue($handler);
 //    }
 //
-//    public void addOnSessionClosingListener(EventHandler<SessionClosingEventArgs> handler) {
-//        this.onSessionClosing.add(handler);
+//    public function addOnSessionClosingListener(EventHandler<SessionClosingEventArgs> handler) {
+//        $this->onSessionClosing->append($handler);
 //    }
 //
-//    public void removeOnSessionClosingListener(EventHandler<SessionClosingEventArgs> handler) {
-//        this.onSessionClosing.remove(handler);
+//    public function removeOnSessionClosingListener(EventHandler<SessionClosingEventArgs> handler) {
+//        $this->onSessionClosing->removeValue($handler);
 //    }
 //
-//    public void addBeforeConversionToDocumentListener(EventHandler<BeforeConversionToDocumentEventArgs> handler) {
-//        this.onBeforeConversionToDocument.add(handler);
-//    }
-//
-//    public void removeBeforeConversionToDocumentListener(EventHandler<BeforeConversionToDocumentEventArgs> handler) {
-//        this.onBeforeConversionToDocument.remove(handler);
-//    }
-//
-//    public void addAfterConversionToDocumentListener(EventHandler<AfterConversionToDocumentEventArgs> handler) {
-//        this.onAfterConversionToDocument.add(handler);
-//    }
-//
-//    public void removeAfterConversionToDocumentListener(EventHandler<AfterConversionToDocumentEventArgs> handler) {
-//        this.onAfterConversionToDocument.remove(handler);
-//    }
-//
-//    public void addBeforeConversionToEntityListener(EventHandler<BeforeConversionToEntityEventArgs> handler) {
-//        this.onBeforeConversionToEntity.add(handler);
-//    }
-//
-//    public void removeBeforeConversionToEntityListener(EventHandler<BeforeConversionToEntityEventArgs> handler) {
-//        this.onBeforeConversionToEntity.remove(handler);
-//    }
-//
-//    public void addAfterConversionToEntityListener(EventHandler<AfterConversionToEntityEventArgs> handler) {
-//        this.onAfterConversionToEntity.add(handler);
-//    }
-//
-//    public void removeAfterConversionToEntityListener(EventHandler<AfterConversionToEntityEventArgs> handler) {
-//        this.onAfterConversionToEntity.remove(handler);
-//    }
-//
-//    public void addOnBeforeRequestListener(EventHandler<BeforeRequestEventArgs> handler) {
+    public function addBeforeConversionToDocumentListener(Closure $handler): void
+    {
+        $this->onBeforeConversionToDocument->append($handler);
+    }
+
+    public function removeBeforeConversionToDocumentListener(Closure $handler): void
+    {
+        $this->onBeforeConversionToDocument->removeValue($handler);
+    }
+
+    public function addAfterConversionToDocumentListener(Closure $handler): void
+    {
+        $this->onAfterConversionToDocument->append($handler);
+    }
+
+    public function removeAfterConversionToDocumentListener(Closure $handler): void
+    {
+        $this->onAfterConversionToDocument->removeValue($handler);
+    }
+
+    public function addBeforeConversionToEntityListener(Closure $handler): void
+    {
+        $this->onBeforeConversionToEntity->append($handler);
+    }
+
+    public function removeBeforeConversionToEntityListener(Closure $handler): void
+    {
+        $this->onBeforeConversionToEntity->removeValue($handler);
+    }
+
+    public function addAfterConversionToEntityListener(Closure $handler): void
+    {
+        $this->onAfterConversionToEntity->append($handler);
+    }
+
+    public function removeAfterConversionToEntityListener(Closure $handler): void
+    {
+        $this->onAfterConversionToEntity->removeValue($handler);
+    }
+
+//    public function addOnBeforeRequestListener(EventHandler<BeforeRequestEventArgs> handler) {
 //        assertNotInitialized("onSucceedRequest");
-//        this.onBeforeRequest.add(handler);
+//        $this->onBeforeRequest->append($handler);
 //    }
 //
-//    public void removeOnBeforeRequestListener(EventHandler<BeforeRequestEventArgs> handler) {
+//    public function removeOnBeforeRequestListener(EventHandler<BeforeRequestEventArgs> handler) {
 //        assertNotInitialized("onSucceedRequest");
-//        this.onBeforeRequest.remove(handler);
+//        $this->onBeforeRequest->removeValue($handler);
 //    }
 //
-//    public void addOnSucceedRequestListener(EventHandler<SucceedRequestEventArgs> handler) {
+//    public function addOnSucceedRequestListener(EventHandler<SucceedRequestEventArgs> handler) {
 //        assertNotInitialized("onSucceedRequest");
-//        this.onSucceedRequest.add(handler);
+//        $this->onSucceedRequest->append($handler);
 //    }
 //
-//    public void removeOnSucceedRequestListener(EventHandler<SucceedRequestEventArgs> handler) {
+//    public function removeOnSucceedRequestListener(EventHandler<SucceedRequestEventArgs> handler) {
 //        assertNotInitialized("onSucceedRequest");
-//        this.onSucceedRequest.remove(handler);
+//        $this->onSucceedRequest->removeValue($handler);
 //    }
 //
-//    public void addOnFailedRequestListener(EventHandler<FailedRequestEventArgs> handler) {
+//    public function addOnFailedRequestListener(EventHandler<FailedRequestEventArgs> handler) {
 //        assertNotInitialized("onFailedRequest");
-//        this.onFailedRequest.add(handler);
+//        $this->onFailedRequest->append($handler);
 //    }
 //
-//    public void removeOnFailedRequestListener(EventHandler<FailedRequestEventArgs> handler) {
+//    public function removeOnFailedRequestListener(EventHandler<FailedRequestEventArgs> handler) {
 //        assertNotInitialized("onFailedRequest");
-//        this.onFailedRequest.remove(handler);
+//        $this->onFailedRequest->removeValue($handler);
 //    }
 //
-//    public void addOnTopologyUpdatedListener(EventHandler<TopologyUpdatedEventArgs> handler) {
+//    public function addOnTopologyUpdatedListener(EventHandler<TopologyUpdatedEventArgs> handler) {
 //        assertNotInitialized("onTopologyUpdated");
-//        this.onTopologyUpdated.add(handler);
+//        $this->onTopologyUpdated->append($handler);
 //    }
 //
-//    public void removeOnTopologyUpdatedListener(EventHandler<TopologyUpdatedEventArgs> handler) {
+//    public function removeOnTopologyUpdatedListener(EventHandler<TopologyUpdatedEventArgs> handler) {
 //        assertNotInitialized("onTopologyUpdated");
-//        this.onTopologyUpdated.remove(handler);
+//        $this->onTopologyUpdated->removeValue($handler);
 //    }
 
     protected ?string $database = null;
@@ -478,7 +491,7 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //     * The client certificate to use for authentication
 //     * @param certificate Certificate to use
 //     */
-//    public void setCertificate(KeyStore certificate) {
+//    public function setCertificate(KeyStore certificate) {
 //        assertNotInitialized("certificate");
 //        _certificate = certificate;
 //    }
@@ -495,7 +508,7 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //     * If private key is inside certificate is encrypted, you can specify password
 //     * @param certificatePrivateKeyPassword Private key password
 //     */
-//    public void setCertificatePrivateKeyPassword(char[] certificatePrivateKeyPassword) {
+//    public function setCertificatePrivateKeyPassword(char[] certificatePrivateKeyPassword) {
 //        assertNotInitialized("certificatePrivateKeyPassword");
 //        _certificatePrivateKeyPassword = certificatePrivateKeyPassword;
 //    }
@@ -504,8 +517,8 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //        return _trustStore;
 //    }
 //
-//    public void setTrustStore(KeyStore trustStore) {
-//        this._trustStore = trustStore;
+//    public function setTrustStore(KeyStore trustStore) {
+//        $this->_trustStore = trustStore;
 //    }
 //
 //    public abstract DatabaseSmuggler smuggler();
@@ -557,23 +570,23 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //            for (EventHandler<BeforeQueryEventArgs> handler : onBeforeQuery) {
 //            session.addBeforeQueryListener(handler);
 //        }
-//
-//            for (EventHandler<BeforeConversionToDocumentEventArgs> handler : onBeforeConversionToDocument) {
-//            session.addBeforeConversionToDocumentListener(handler);
-//        }
-//
-//            for (EventHandler<AfterConversionToDocumentEventArgs> handler : onAfterConversionToDocument) {
-//            session.addAfterConversionToDocumentListener(handler);
-//        }
-//
-//            for (EventHandler<BeforeConversionToEntityEventArgs> handler : onBeforeConversionToEntity) {
-//            session.addBeforeConversionToEntityListener(handler);
-//        }
-//
-//            for (EventHandler<AfterConversionToEntityEventArgs> handler : onAfterConversionToEntity) {
-//            session.addAfterConversionToEntityListener(handler);
-//        }
-//
+
+        foreach ($this->onBeforeConversionToDocument as $handler) {
+            $session->addBeforeConversionToDocumentListener($handler);
+        }
+
+        foreach ($this->onAfterConversionToDocument as $handler) {
+            $session->addAfterConversionToDocumentListener($handler);
+        }
+
+        foreach ($this->onBeforeConversionToEntity as $handler) {
+            $session->addBeforeConversionToEntityListener($handler);
+        }
+
+        foreach ($this->onAfterConversionToEntity as $handler) {
+            $session->addAfterConversionToEntityListener($handler);
+        }
+
 //            for (EventHandler<SessionClosingEventArgs> handler : onSessionClosing) {
 //            session.addOnSessionClosingListener(handler);
 //        }

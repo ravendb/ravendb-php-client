@@ -13,6 +13,8 @@ class GenericRangeFacet extends FacetBase
 
     public function __construct(?FacetBase $parent = null)
     {
+        parent::__construct();
+
         $this->parent = $parent;
         $this->ranges = new RangeBuilderArray();
     }
@@ -38,6 +40,6 @@ class GenericRangeFacet extends FacetBase
             return $this->parent->toFacetToken($addQueryParameter);
         }
 
-        return FacetToken::createForGenericRangeFacet($this, $addQueryParameter);
+        return FacetToken::create($this, $addQueryParameter);
     }
 }

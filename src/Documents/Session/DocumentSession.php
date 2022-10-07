@@ -55,12 +55,10 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         return $this;
     }
 
-//    @Override
 //    public ILazySessionOperations lazily() {
 //        return new LazySessionOperations(this);
 //    }
 //
-//    @Override
 //    public IEagerSessionOperations eagerly() {
 //        return this;
 //    }
@@ -364,14 +362,14 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
      *
      * load(string $className, string $id1, string $id2, string $id3 ... ): ObjectArray
      *
-     * @param string $className Object class
+     * @param ?string $className Object class
      * @param mixed $params Identifier of an entity that will be loaded.
      *
      * @return null|object|ObjectArray Loaded entity or entities
      *
      * @throws ExceptionInterface
      */
-    public function load(string $className, ...$params)
+    public function load(?string $className, ...$params)
     {
         if (empty($params)) {
             throw new \http\Exception\InvalidArgumentException('Id or ids must be defined for loading.');
@@ -448,7 +446,7 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
      * @throws InvalidArgumentException
      * @throws ExceptionInterface
      */
-    private function loadById(string $className, string $id): ?object
+    private function loadById(?string $className, string $id): ?object
     {
         $id = trim($id);
         if (empty($id)) {
@@ -1028,26 +1026,26 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 
     /**
      * Query the specified index using Lucene syntax
-     * @param string $className The result of the query
-     * @param string|null|AbstractCommonApiForIndexes $indexName Name of the index (mutually exclusive with collectionName) or AbstractCommonApiForIndexes class name
+     * @param ?string $className The result of the query
+     * @param string|null|AbstractCommonApiForIndexes $indexNameOrClass Name of the index (mutually exclusive with collectionName) or AbstractCommonApiForIndexes class name
      * @param string|null $collectionName Name of the collection (mutually exclusive with indexName)
      * @param bool $isMapReduce Whether we are querying a map/reduce index (modify how we treat identifier properties)
      */
-    public function documentQuery(string $className, $indexName = null, ?string $collectionName = null, bool $isMapReduce = false): DocumentQueryInterface
+    public function documentQuery(?string $className, $indexNameOrClass = null, ?string $collectionName = null, bool $isMapReduce = false): DocumentQueryInterface
     {
-        if (class_exists($indexName) && is_a($indexName,  AbstractCommonApiForIndexes::class, true)) {
+        if (class_exists($indexNameOrClass) && is_a($indexNameOrClass,  AbstractCommonApiForIndexes::class, true)) {
             try {
-                $index = new $indexName();
+                $index = new $indexNameOrClass();
                 return  $this->_documentQuery($className, $index->getIndexName(), null, $index->isMapReduce());
             } catch (IllegalStateException $e) {
-                throw new RuntimeException("Unable to query index: " . $indexName . '. ' . $e->getMessage(), $e->getCode());
+                throw new RuntimeException("Unable to query index: " . $indexNameOrClass . '. ' . $e->getMessage(), $e->getCode());
             }
         }
 
-        return $this->_documentQuery($className, $indexName, $collectionName, $isMapReduce);
+        return $this->_documentQuery($className, $indexNameOrClass, $collectionName, $isMapReduce);
     }
 
-    protected function _documentQuery(string $className, ?string $indexName = null, ?string $collectionName = null, bool $isMapReduce = false): DocumentQueryInterface
+    protected function _documentQuery(?string $className, ?string $indexName = null, ?string $collectionName = null, bool $isMapReduce = false): DocumentQueryInterface
     {
         [$indexName, $collectionName] = $this->processQueryParameters($className, $indexName, $collectionName, $this->getConventions());
 
@@ -1067,13 +1065,12 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 
     /**
      *
-     *
-     * @param string $className
+     * @param ?string $className
      * @param Query|null|string $collectionOrIndexName
      *
      * @return DocumentQueryInterface
      */
-    public function query(string $className, $collectionOrIndexName = null): DocumentQueryInterface
+    public function query(?string $className, $collectionOrIndexName = null): DocumentQueryInterface
     {
         if (empty($collectionOrIndexName)) {
             return $this->_documentQuery($className, null, null, false);

@@ -4,50 +4,69 @@ namespace RavenDB\Utils;
 
 use DateInterval;
 use DateTime;
+use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
 
 class DateUtils
 {
 
+    /**
+     * @param DateTime|DateTimeImmutable $dateTime
+     * @param int $hours
+     * @return DateTimeInterface
+     * @throws \Exception
+     */
     public static function addHours(DateTimeInterface $dateTime, int $hours): DateTimeInterface
     {
-        $newDateTime = new DateTime();
-        $newDateTime->setTimestamp($dateTime->getTimestamp());
         $interval = new DateInterval('PT' . abs($hours) . 'H');
         if ($hours < 0) {
             $interval->invert = 1;
         }
-        $newDateTime->add($interval);
-        return $newDateTime;
+
+        $newDateTime = clone $dateTime;
+        return $newDateTime->add($interval);
     }
 
+    /**
+     * @param DateTime|DateTimeImmutable $dateTime
+     * @param int $minutes
+     * @return DateTimeInterface
+     * @throws \Exception
+     */
     public static function addMinutes(DateTimeInterface $dateTime, int $minutes): DateTimeInterface
     {
-        $newDateTime = new DateTime();
-        $newDateTime->setTimestamp($dateTime->getTimestamp());
         $interval = new DateInterval('PT' . abs($minutes) . 'H');
         if ($minutes < 0) {
             $interval->invert = 1;
         }
-        $newDateTime->add($interval);
-        return $newDateTime;
+
+        $newDateTime = clone $dateTime;
+        return $newDateTime->add($interval);
     }
 
+    /**
+     * @param DateTime|DateTimeImmutable $dateTime
+     * @param int $days
+     *
+     * @return DateTimeInterface
+     *
+     * @throws \Exception
+     */
     public static function addDays(DateTimeInterface $dateTime, int $days): DateTimeInterface
     {
-        $newDateTime = new DateTime();
-        $newDateTime->setTimestamp($dateTime->getTimestamp());
         $interval = new DateInterval('P' . abs($days) . 'D');
         if ($days < 0) {
             $interval->invert = 1;
         }
-        $newDateTime->add($interval);
-        return $newDateTime;
+
+        $newDateTime = clone $dateTime;
+        return $newDateTime->add($interval);
     }
 
     public static function unixEpochStart(): DateTimeInterface
     {
-        $d = new DateTime();
+        $d = self::now();
         $d->setTimestamp(0);
         return $d;
     }
@@ -56,5 +75,13 @@ class DateUtils
     {
         $date->setDate($year, $date->format('m'), $date->format('d'));
         return $date;
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public static function now(): DateTime
+    {
+        return new DateTime('now', new DateTimeZone('Z'));
     }
 }

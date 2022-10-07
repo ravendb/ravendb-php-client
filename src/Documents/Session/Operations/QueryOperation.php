@@ -128,15 +128,13 @@ class QueryOperation
 //        return $this->session->getDocumentStore()->disableAggressiveCaching($this->session->getDatabaseName());
     }
 
-//    @SuppressWarnings("unchecked")
-//    public <T> T[] completeAsArray(Class<T> clazz) {
-//        QueryResult queryResult = _currentQueryResults.createSnapshot();
-//
-//        T[] result = (T[]) Array.newInstance(clazz, queryResult.getResults().size());
-//        completeInternal(clazz, queryResult, (idx, item) -> result[idx] = item);
-//
-//        return result;
-//    }
+    /**
+     * Method here just for the convenience
+     */
+    public function completeAsArray(?string $className): array
+    {
+        return $this->complete($className);
+    }
 
     public function complete(?string $className): array
     {
@@ -220,7 +218,7 @@ class QueryOperation
     {
         $projection = array_key_exists('@projection', $metadata) ? $metadata['@projection'] : null;
 
-        if ($projection == null || !boolval($projection)) {
+        if ($projection === null || !boolval($projection)) {
             //@todo: I think we should not track entity if className is null. Check this in nodeJs client
             return $session->trackEntity($className, $id, $document, $metadata, $disableEntitiesTracking);
         }
@@ -264,10 +262,10 @@ class QueryOperation
 //                }
 //            }
         }
-//
-//        if (ObjectNode.class.equals(clazz)) {
-//            return (T)document;
-//        }
+
+        if ($className == null) {
+            return (object)$document;
+        }
 
         $session->onBeforeConversionToEntityInvoke($id, $className, $document);
 

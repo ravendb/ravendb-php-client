@@ -5,7 +5,7 @@ namespace RavenDB\Documents\Queries\Facets;
 // !status: DONE
 interface FacetBuilderInterface
 {
-    public function byRanges(RangeBuilder $range, RangeBuilderArray $ranges): FacetOperationsInterface;
+    public function byRanges(RangeBuilder $range, RangeBuilder ...$ranges): FacetOperationsInterface;
 
     public function byField(String $fieldName): FacetOperationsInterface;
 

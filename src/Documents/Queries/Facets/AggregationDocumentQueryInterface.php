@@ -2,11 +2,13 @@
 
 namespace RavenDB\Documents\Queries\Facets;
 
+use Closure;
+
 //    @todo: implement this
 interface AggregationDocumentQueryInterface
 {
     /**
-     * @param Callable|FacetBase $builderOrFacets
+     * @param Closure|FacetBase $builderOrFacets
      * @return AggregationDocumentQueryInterface
      */
     public function andAggregateBy($builderOrFacets): AggregationDocumentQueryInterface;
