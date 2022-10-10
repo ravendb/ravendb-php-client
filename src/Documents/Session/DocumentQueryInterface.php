@@ -38,20 +38,18 @@ interface DocumentQueryInterface
     function getQueryResult(): QueryResult;
 
     /**
-     * selectFields(string $projectionClass, ?ProjectionBehavior $projectionBehavior = null): DocumentQueryInterface
+     * selectFields(?string $projectionClass)
+     * selectFields(?string $projectionClass, ?string ...$fields)
+     * selectFields(?string $projectionClass, QueryData $queryData)
+     * selectFields(?string $projectionClass, ProjectionBehavior $projectionBehavior)
+     * selectFields(?string $projectionClass, ProjectionBehavior $projectionBehavior, ?string ...$fields)
      *
-     * selectFields(string $field, ProjectionBehavior $projectionBehavior = null): DocumentQueryInterface
-     *
-     * selectFields(array $fields, ?string $projectionClass = null, ProjectionBehavior $projectionBehavior = null): DocumentQueryInterface
-     * selectFields(StringArray $fields, ?string $projectionClass = null, ProjectionBehavior $projectionBehavior = null): DocumentQueryInterface
-     *
-     * selectFields(QueryData $queryData, ?string $projectionClass = null): DocumentQueryInterface
-     *
+     * @param string|null  $projectionClass
      * @param mixed ...$params
      *
      * @return DocumentQueryInterface
      */
-    public function selectFields(...$params): DocumentQueryInterface;
+    public function selectFields(?string $projectionClass, ...$params): DocumentQueryInterface;
 
 //    /**
 //     * Selects a Time Series Aggregation based on

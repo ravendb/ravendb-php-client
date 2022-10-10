@@ -46,7 +46,7 @@ class RavenDB_14272Test extends RemoteTestBase
             try {
                 /** @var array<TalkUserIds> $result */
                 $result = $session->query(get_class($userTalk))
-                    ->selectFields(["userDefs"], TalkUserIds::class)
+                    ->selectFields(TalkUserIds::class, "userDefs")
                     ->toList();
 
                 $this->assertCount(1, $result);
@@ -104,7 +104,7 @@ class RavenDB_14272Test extends RemoteTestBase
             try {
                 /** @var array<TalkUserIds> $result */
                 $result = $session->query(get_class($userTalk))
-                    ->selectFields("name")
+                    ->selectFields(null, "name")
                     ->toList();
 
                 $this->assertCount(1, $result);
