@@ -59,6 +59,13 @@ class ExtendedArrayObject extends \ArrayObject implements \JsonSerializable
         $this->exchangeArray($currentArray);
     }
 
+    public function appendArrayValues(array $items): void
+    {
+        foreach ($items as $item) {
+            $this->append($item);
+        }
+    }
+
     public function removeValue($value): void
     {
         if(($key = array_search($value, $this->getArrayCopy(), true)) !== FALSE) {

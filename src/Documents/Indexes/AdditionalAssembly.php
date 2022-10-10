@@ -6,14 +6,22 @@ use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Type\StringSet;
 use RavenDB\Utils\StringUtils;
 
+use Symfony\Component\Serializer\Annotation\SerializedName;
+
 // !status: DONE
 class AdditionalAssembly
 {
+    /** @SerializedName ("AssemblyName")  */
     private ?string $assemblyName = null;
+    /** @SerializedName ("AssemblyPath")  */
     private ?string $assemblyPath = null;
+    /** @SerializedName ("PackageName")  */
     private ?string $packageName = null;
+    /** @SerializedName ("PackageVersion")  */
     private ?string $packageVersion = null;
+    /** @SerializedName ("PackageSourceUrl")  */
     private ?string $packageSourceUrl = null;
+    /** @SerializedName ("Usings")  */
     private ?StringSet $usings = null;
 
     private function __construct()

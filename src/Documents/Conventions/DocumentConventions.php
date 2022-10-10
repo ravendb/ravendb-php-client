@@ -75,7 +75,7 @@ class DocumentConventions
 
     protected bool $disableAtomicDocumentWritesInClusterWideTransaction = false;
 
-    private ?ShouldIgnoreEntityChangesInterface $shouldIgnoreEntityChanges = null;
+    private ?Closure $shouldIgnoreEntityChanges = null;
     private ?Closure $findIdentityProperty = null;
 
     private ?Closure $transformClassCollectionNameToDocumentIdPrefix = null;
@@ -646,15 +646,12 @@ class DocumentConventions
         $this->findIdentityProperty = $findIdentityProperty;
     }
 
-    public function getShouldIgnoreEntityChanges(): ?ShouldIgnoreEntityChangesInterface
+    public function getShouldIgnoreEntityChanges(): ?Closure
     {
         return $this->shouldIgnoreEntityChanges;
     }
 
-    /**
-     * @throws IllegalStateException
-     */
-    public function setShouldIgnoreEntityChanges(ShouldIgnoreEntityChangesInterface $shouldIgnoreEntityChanges): void
+    public function setShouldIgnoreEntityChanges(Closure $shouldIgnoreEntityChanges): void
     {
         $this->assertNotFrozen();
         $this->shouldIgnoreEntityChanges = $shouldIgnoreEntityChanges;
