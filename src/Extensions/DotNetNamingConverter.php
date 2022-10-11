@@ -35,6 +35,4 @@ class DotNetNamingConverter implements NameConverterInterface
         }
         return StringUtils::capitalize($propertyName);
     }
-
-
 }

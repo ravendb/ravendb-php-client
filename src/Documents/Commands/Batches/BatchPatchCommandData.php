@@ -31,7 +31,7 @@ class BatchPatchCommandData implements CommandDataInterface
     /**
      * @param PatchRequest|null $patch
      * @param PatchRequest|null $patchIfMissing
-     * @param string|IdAndChangeVector ...$ids
+     * @param array|string|IdAndChangeVector ...$ids
      */
     public function __construct(?PatchRequest $patch, ?PatchRequest $patchIfMissing, ...$ids)
     {
@@ -42,7 +42,7 @@ class BatchPatchCommandData implements CommandDataInterface
             throw new IllegalArgumentException("Patch cannot be null");
         }
 
-        $this->$patch = $patch;
+        $this->patch = $patch;
         $this->patchIfMissing = $patchIfMissing;
 
         if (empty($ids)) {
@@ -50,13 +50,24 @@ class BatchPatchCommandData implements CommandDataInterface
         }
 
         foreach ($ids as $id) {
-            if (is_string($id)) {
-                $this->add($id);
-                continue;
+            $this->_add($id);
+        }
+    }
+
+    private function _add($id): void
+    {
+        if (is_array($id)) {
+            foreach ($id as $item) {
+                $this->_add($item);
             }
-            if ($id instanceof IdAndChangeVector) {
-                $this->add($id->getId(), $id->getChangeVector());
-            }
+            return;
+        }
+        if (is_string($id)) {
+            $this->add($id);
+            return;
+        }
+        if ($id instanceof IdAndChangeVector) {
+            $this->add($id->getId(), $id->getChangeVector());
         }
     }
 
@@ -120,7 +131,7 @@ class BatchPatchCommandData implements CommandDataInterface
             $item['Id'] = $idAndChangeVector->getId();
 
             if ($idAndChangeVector->getChangeVector() != null) {
-                $id['ChangeVector'] = $idAndChangeVector->getChangeVector();
+                $item['ChangeVector'] = $idAndChangeVector->getChangeVector();
             }
 
             $ids[] = $item;

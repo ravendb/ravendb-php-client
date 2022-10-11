@@ -10,6 +10,9 @@ use Ramsey\Uuid\Uuid;
 use RavenDB\Auth\AuthOptions;
 use RavenDB\Constants\Headers;
 use RavenDB\Constants\HttpStatusCode;
+use RavenDB\Exceptions\ExecutionException;
+use RavenDB\Exceptions\IllegalArgumentException;
+use RavenDB\Exceptions\MalformedURLException;
 use RavenDB\Extensions\HttpExtensions;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Session\BeforeRequestEventArgs;
@@ -28,13 +31,17 @@ use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Primitives\ClosureArray;
 use RavenDB\Primitives\EventHelper;
 use RavenDB\Primitives\ExceptionsUtils;
+use RavenDB\ServerWide\Commands\GetDatabaseTopologyCommand;
 use RavenDB\Type\Duration;
+use RavenDB\Type\Url;
 use RavenDB\Type\UrlArray;
 use RavenDB\Utils\AtomicInteger;
 use RavenDB\Utils\DateUtils;
+use RavenDB\Utils\StringUtils;
 use RavenDB\Utils\UrlUtils;
 use RavenDB\Documents\Operations\Configuration\GetClientConfigurationResult;
 use RavenDB\Documents\Operations\Configuration\GetClientConfigurationCommand;
+use Throwable;
 
 // !status: IN PROGRESS
 class RequestExecutor implements CleanCloseable
@@ -98,8 +105,8 @@ class RequestExecutor implements CleanCloseable
 
     private ?HttpCache $cache = null;
 
-//    private ServerNode _topologyTakenFromNode;
-//
+    private ?ServerNode $topologyTakenFromNode = null;
+
     public function getCache(): ?HttpCache
     {
         return $this->cache;
@@ -126,14 +133,11 @@ class RequestExecutor implements CleanCloseable
 
     public function getTopologyNodes(): ?ServerNodeArray
     {
+        if ($this->getTopology()) {
+            return $this->getTopology()->getNodes();
+        }
+
         return null;
-
-        // @todo: Check with Marcin what this code does and implement it
-
-//        return Optional.ofNullable(getTopology())
-//                .map(Topology::getNodes)
-//                .map(Collections::unmodifiableList)
-//                .orElse(null);
     }
 
 //    private volatile Timer _updateTopologyTimer;
@@ -335,93 +339,101 @@ class RequestExecutor implements CleanCloseable
         ?string $databaseName,
         ?AuthOptions $authOptions,
         DocumentConventions $conventions
-//        ExecutorService executorService,
-//        String[] initialUrls
-
     ) {
         self::$GLOBAL_APPLICATION_IDENTIFIER = Uuid::uuid4();
 
         $this->onTopologyUpdated = new ClosureArray();
         $this->onBeforeRequest = new ClosureArray();
         $this->onSucceedRequest = new ClosureArray();
-        // --
 
         $this->numberOfServerRequests = new AtomicInteger(0);
 
         $this->cache = new HttpCache($conventions->getMaxHttpCacheSize());
-//        _executorService = executorService;
         $this->databaseName = $databaseName ?? '';
         $this->authOptions = $authOptions;
 
         $this->lastReturnedResponse = DateUtils::now();
-        $this->conventions = $conventions;
-//        this.conventions = conventions.clone();
+        $this->conventions = clone $conventions;
         $this->defaultTimeout = $conventions->getRequestTimeout();
         $this->secondBroadcastAttemptTimeout = $conventions->getSecondBroadcastAttemptTimeout();
         $this->firstBroadcastAttemptTimeout = $conventions->getFirstBroadcastAttemptTimeout();
     }
 
+    /**
+     * @param UrlArray|array $initialUrls
+     * @param string|null $databaseName
+     * @param AuthOptions|null $authOptions
+     * @param DocumentConventions $conventions
+     * @return RequestExecutor
+     * @throws Throwable
+     */
     public static function create(
-        UrlArray $initialUrls,
+        $initialUrls,
         ?string $databaseName,
         ?AuthOptions $authOptions,
-//        ExecutorService executorService,
         DocumentConventions $conventions
     ): RequestExecutor {
+        if (is_array($initialUrls)) {
+            $initialUrls = UrlArray::fromArray($initialUrls);
+        }
+
         $executor = new RequestExecutor(
               $databaseName,
               $authOptions,
               $conventions
-//              $executorService,
-//              $initialUrls
         );
-//        $executor->firstTopologyUpdate = executor.firstTopologyUpdate(initialUrls, GLOBAL_APPLICATION_IDENTIFIER);
-//        return $executor;
 
-        // @todo: check why I added this lines and probably it wont be needed so we can delete it
-        // or we need this for SingleNode!!!!
-        $serverNode = new ServerNode();
-        $serverNode->setDatabase($databaseName);
-        $serverNode->setUrl($initialUrls[0]);
-
-        $topology = new Topology();
-        $topology->setEtag(-1);
-        $topology->getNodes()->append($serverNode);
-
-//        $executor = new RequestExecutor($databaseName, $conventions);
-        $executor->setNodeSelector(new NodeSelector($topology));
+        $executor->firstTopologyUpdate($initialUrls, self::$GLOBAL_APPLICATION_IDENTIFIER);
 
         return $executor;
     }
 
-//
-//    public static RequestExecutor createForSingleNodeWithConfigurationUpdates(String url, String databaseName, KeyStore certificate, char[] keyPassword, KeyStore trustStore, ExecutorService executorService, DocumentConventions conventions) {
-//        RequestExecutor executor = createForSingleNodeWithoutConfigurationUpdates(url, databaseName, certificate, keyPassword, trustStore, executorService, conventions);
-//        executor._disableClientConfigurationUpdates = false;
-//        return executor;
-//    }
-//
-//    public static RequestExecutor createForSingleNodeWithoutConfigurationUpdates(String url, String databaseName, KeyStore certificate, char[] keyPassword, KeyStore trustStore, ExecutorService executorService, DocumentConventions conventions) {
-//        final String[] initialUrls = validateUrls(new String[]{url}, certificate);
-//
-//        RequestExecutor executor = new RequestExecutor(databaseName, certificate, keyPassword, trustStore, conventions, executorService, initialUrls);
-//
-//        Topology topology = new Topology();
-//        topology.setEtag(-1L);
-//
-//        ServerNode serverNode = new ServerNode();
-//        serverNode.setDatabase(databaseName);
-//        serverNode.setUrl(initialUrls[0]);
-//        topology.setNodes(Collections.singletonList(serverNode));
-//
-//        executor._nodeSelector = new NodeSelector(topology, executorService);
-//        executor.topologyEtag = INITIAL_TOPOLOGY_ETAG;
-//        executor._disableTopologyUpdates = true;
-//        executor._disableClientConfigurationUpdates = true;
-//
-//        return executor;
-//    }
-//
+    public static function createForSingleNodeWithConfigurationUpdates(
+        ?string $url,
+        ?string $databaseName,
+        ?AuthOptions $authOptions,
+        DocumentConventions $conventions
+    ): RequestExecutor {
+        $executor = self::createForSingleNodeWithoutConfigurationUpdates(
+            $url,
+            $databaseName, $authOptions,
+            $conventions
+        );
+        $executor->disableClientConfigurationUpdates = false;
+        return $executor;
+    }
+
+    public static function createForSingleNodeWithoutConfigurationUpdates(
+        ?string $url,
+        ?string $databaseName,
+        ?AuthOptions $authOptions,
+        DocumentConventions $conventions
+    ): RequestExecutor {
+        $initialUrls = self::validateUrls([$url], $authOptions);
+
+        $executor = new RequestExecutor(
+            $databaseName,
+            $authOptions,
+            $conventions
+        );
+
+        $topology = new Topology();
+        $topology->setEtag(-1);
+
+        $serverNode = new ServerNode();
+        $serverNode->setDatabase($databaseName);
+        $serverNode->setUrl($initialUrls[0]);
+
+        $topology->setNodes([$serverNode]);
+
+        $executor->setNodeSelector(new NodeSelector($topology));
+        $executor->topologyEtag = self::$INITIAL_TOPOLOGY_ETAG;
+        $executor->disableTopologyUpdates = true;
+        $executor->disableClientConfigurationUpdates = true;
+
+        return $executor;
+    }
+
     protected function updateClientConfigurationAsync(?ServerNode $serverNode): ?Closure
     {
         if ($this->disposed) {
@@ -460,25 +472,24 @@ class RequestExecutor implements CleanCloseable
         };
     }
 
-//    public CompletableFuture<Boolean> updateTopologyAsync(UpdateTopologyParameters parameters) {
-//        if (parameters == null) {
-//            throw new IllegalArgumentException("Parameters cannot be null");
-//        }
-//
-//        if (_disableTopologyUpdates) {
-//            return CompletableFuture.completedFuture(false);
-//        }
-//
-//        if (_disposed) {
-//            return CompletableFuture.completedFuture(false);
-//        }
-//
-//        return CompletableFuture.supplyAsync(() -> {
-//
-//            //prevent double topology updates if execution takes too much time
-//            // --> in cases with transient issues
+    public function updateTopologyAsync(?UpdateTopologyParameters $parameters = null): bool
+    {
+        if ($parameters == null) {
+            throw new IllegalArgumentException("Parameters cannot be null");
+        }
+
+        if ($this->disableTopologyUpdates) {
+            return false;
+        }
+
+        if ($this->disposed) {
+            return false;
+        }
+
+            // prevent double topology updates if execution takes too much time
+            // --> in cases with transient issues
 //            try {
-//                boolean lockTaken = _updateDatabaseTopologySemaphore.tryAcquire(parameters.getTimeoutInMs(), TimeUnit.MILLISECONDS);
+//                $lockTaken = _updateDatabaseTopologySemaphore.tryAcquire(parameters.getTimeoutInMs(), TimeUnit.MILLISECONDS);
 //                if (!lockTaken) {
 //                    return false;
 //                }
@@ -486,46 +497,51 @@ class RequestExecutor implements CleanCloseable
 //                throw new RuntimeException(e);
 //            }
 //
-//            try {
-//
-//                if (_disposed) {
+            try {
+
+//                if ($this->disposed) {
 //                    return false;
 //                }
-//
-//                GetDatabaseTopologyCommand command = new GetDatabaseTopologyCommand(parameters.getDebugTag(),
-//                        getConventions().isSendApplicationIdentifier() ? parameters.getApplicationIdentifier() : null);
-//                execute(parameters.getNode(), null, command, false, null);
-//                Topology topology = command.getResult();
-//
-//                if (_nodeSelector == null) {
-//                    _nodeSelector = new NodeSelector(topology, _executorService);
-//
-//                    if (conventions.getReadBalanceBehavior() == ReadBalanceBehavior.FASTEST_NODE) {
-//                        _nodeSelector.scheduleSpeedTest();
-//                    }
-//                } else if (_nodeSelector.onUpdateTopology(topology, parameters.isForceUpdate())) {
-//                    disposeAllFailedNodesTimers();
-//                    if (conventions.getReadBalanceBehavior() == ReadBalanceBehavior.FASTEST_NODE) {
-//                        _nodeSelector.scheduleSpeedTest();
-//                    }
-//                }
-//
-//                topologyEtag = _nodeSelector.getTopology().getEtag();
-//
-//                onTopologyUpdatedInvoke(topology);
-//            } catch (Exception e) {
-//                if (!_disposed) {
-//                    throw e;
-//                }
-//            } finally {
+
+                $command = new GetDatabaseTopologyCommand(
+                    $parameters->getDebugTag(),
+                    $this->getConventions()->isSendApplicationIdentifier() ? $parameters->getApplicationIdentifier() : null
+                );
+                $options = new ExecuteOptions();
+                $options->setNodeIndex(-1);
+                $options->setChosenNode($parameters->getNode());
+                $options->setShouldRetry(false);
+
+                $this->execute($command, null, $options);
+                $topology = $command->getResult();
+
+                if ($this->nodeSelector == null) {
+                    $this->nodeSelector = new NodeSelector($topology);
+
+                    if ($this->conventions->getReadBalanceBehavior()->isFastestNode()) {
+                        $this->nodeSelector->scheduleSpeedTest();
+                    }
+                } else if ($this->nodeSelector->onUpdateTopology($topology, $parameters->isForceUpdate())) {
+//                    $this->disposeAllFailedNodesTimers();
+                    if ($this->conventions->getReadBalanceBehavior()->isFastestNode()) {
+                        $this->nodeSelector->scheduleSpeedTest();
+                    }
+                }
+
+                $this->topologyEtag = $this->nodeSelector->getTopology()->getEtag();
+
+                $this->onTopologyUpdatedInvoke($topology);
+            } catch (Throwable $e) {
+                if (!$this->disposed) {
+                    throw $e;
+                }
+            } finally {
 //                _updateDatabaseTopologySemaphore.release();
-//            }
-//
-//            return true;
-//        }, _executorService);
-//
-//    }
-//
+            }
+
+            return true;
+    }
+
 //    protected void disposeAllFailedNodesTimers() {
 //        _failedNodesTimers.forEach((node, status) -> status.close());
 //        _failedNodesTimers.clear();
@@ -538,6 +554,7 @@ class RequestExecutor implements CleanCloseable
     ): void {
         if ($options) {
             $this->executeOnSpecificNode($command, $sessionInfo, $options);
+            return;
         }
 
         $currentIndexAndNode = $this->chooseNodeForRequest($command, $sessionInfo);
@@ -552,38 +569,35 @@ class RequestExecutor implements CleanCloseable
 
     public function chooseNodeForRequest(?RavenCommand $cmd, ?SessionInfo $sessionInfo): CurrentIndexAndNode
     {
-        $preferredNode = $this->nodeSelector->getPreferredNode();
-        return new CurrentIndexAndNode($preferredNode->currentIndex, $preferredNode->currentNode);
+        if (!$this->disableTopologyUpdates) {
+            // when we disable topology updates we cannot rely on the node tag,
+            // because the initial topology will not have them
 
-//        if (!_disableTopologyUpdates) {
-//            // when we disable topology updates we cannot rely on the node tag,
-//            // because the initial topology will not have them
-//
-//            if (StringUtils.isNotBlank(cmd.getSelectedNodeTag())) {
-//                return _nodeSelector.getRequestedNode(cmd.getSelectedNodeTag());
-//            }
-//        }
-//
-//        if (conventions.getLoadBalanceBehavior() == LoadBalanceBehavior.USE_SESSION_CONTEXT) {
-//            if (sessionInfo != null && sessionInfo.canUseLoadBalanceBehavior()) {
-//                return _nodeSelector.getNodeBySessionId(sessionInfo.getSessionId());
-//            }
-//        }
-//
-//        if (!cmd.isReadRequest()) {
-//            return _nodeSelector.getPreferredNode();
-//        }
-//
-//        switch (conventions.getReadBalanceBehavior()) {
-//            case NONE:
-//                return _nodeSelector.getPreferredNode();
-//            case ROUND_ROBIN:
-//                return _nodeSelector.getNodeBySessionId(sessionInfo != null ? sessionInfo.getSessionId() : 0);
-//            case FASTEST_NODE:
-//                return _nodeSelector.getFastestNode();
-//            default:
-//                throw new IllegalArgumentException();
-//        }
+            if (StringUtils::isNotBlank($cmd->getSelectedNodeTag())) {
+                return $this->nodeSelector->getRequestedNode($cmd->getSelectedNodeTag());
+            }
+        }
+
+        if ($this->conventions->getLoadBalanceBehavior()->isUseSessionContext()) {
+            if ($sessionInfo != null && $sessionInfo->canUseLoadBalanceBehavior()) {
+                return $this->nodeSelector->getNodeBySessionId($sessionInfo->getSessionId());
+            }
+        }
+
+        if (!$cmd->isReadRequest()) {
+            return $this->nodeSelector->getPreferredNode();
+        }
+
+        switch ($this->conventions->getReadBalanceBehavior()->getValue()) {
+            case ReadBalanceBehavior::NONE:
+                return $this->nodeSelector->getPreferredNode();
+            case ReadBalanceBehavior::ROUND_ROBIN:
+                return $this->nodeSelector->getNodeBySessionId($sessionInfo != null ? $sessionInfo->getSessionId() : 0);
+            case ReadBalanceBehavior::FASTEST_NODE:
+                return $this->nodeSelector->getFastestNode();
+            default:
+                throw new IllegalArgumentException();
+        }
     }
 
     private function executeOnSpecificNode(
@@ -648,7 +662,7 @@ class RequestExecutor implements CleanCloseable
                         if ($command->getResponseType()->isObject()) {
                             $command->setResponse($cachedValue, true);
                         }
-                    } catch (\Throwable $e) {
+                    } catch (Throwable $e) {
                         throw ExceptionsUtils::unwrapException($e);
                     }
 
@@ -688,7 +702,7 @@ class RequestExecutor implements CleanCloseable
 
                 try {
                     $refreshTask->wait();
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     //noinspection ThrowFromFinallyBlock
                     throw ExceptionsUtils::unwrapException($e);
                 }
@@ -846,123 +860,125 @@ class RequestExecutor implements CleanCloseable
 //                    return null;
 //                });
 //    }
-//
-//    protected CompletableFuture<Void> firstTopologyUpdate(String[] inputUrls) {
-//        return firstTopologyUpdate(inputUrls, null);
-//    }
-//
-//    @SuppressWarnings({"ConstantConditions"})
-//    protected CompletableFuture<Void> firstTopologyUpdate(String[] inputUrls, UUID applicationIdentifier) {
-//        final String[] initialUrls = validateUrls(inputUrls, certificate);
-//
-//        ArrayList<Tuple<String, Exception>> list = new ArrayList<>();
-//
-//        return CompletableFuture.runAsync(() -> {
-//
-//            for (String url : initialUrls) {
-//                try {
-//                    ServerNode serverNode = new ServerNode();
-//                    serverNode.setUrl(url);
-//                    serverNode.setDatabase(_databaseName);
-//
-//                    UpdateTopologyParameters updateParameters = new UpdateTopologyParameters(serverNode);
-//                    updateParameters.setTimeoutInMs(Integer.MAX_VALUE);
-//                    updateParameters.setDebugTag("first-topology-update");
-//                    updateParameters.setApplicationIdentifier(applicationIdentifier);
-//
-//                    updateTopologyAsync(updateParameters).get();
-//
+
+    protected function firstTopologyUpdate(UrlArray $inputUrls, ?string $applicationIdentifier = null): void
+    {
+        $initialUrls = $this->validateUrls($inputUrls, $this->authOptions);
+
+        $list = [];
+
+            /** @var Url $url */
+            foreach ($initialUrls as $url) {
+                try {
+                    $serverNode = new ServerNode();
+                    $serverNode->setUrl($url);
+                    $serverNode->setDatabase($this->databaseName);
+
+                    $updateParameters = new UpdateTopologyParameters($serverNode);
+                    $updateParameters->setTimeoutInMs(PHP_INT_MAX);
+                    $updateParameters->setDebugTag("first-topology-update");
+                    $updateParameters->setApplicationIdentifier($applicationIdentifier);
+
+                    $this->updateTopologyAsync($updateParameters);
+
 //                    initializeUpdateTopologyTimer();
 //
-//                    _topologyTakenFromNode = serverNode;
-//                    return;
-//                } catch (Exception e) {
-//
-//                    if (e instanceof ExecutionException && e.getCause() instanceof AuthorizationException) {
-//                        // auth exceptions will always happen, on all nodes
-//                        // so errors immediately
-//                        _lastKnownUrls = initialUrls;
-//                        throw (AuthorizationException) e.getCause();
-//                    }
-//
-//                    if (e instanceof ExecutionException && e.getCause() instanceof DatabaseDoesNotExistException) {
-//                        // Will happen on all node in the cluster,
-//                        // so errors immediately
-//                        _lastKnownUrls = initialUrls;
-//                        throw (DatabaseDoesNotExistException) e.getCause();
-//                    }
-//
-//                    list.add(Tuple.create(url, e));
-//                }
-//            }
-//
-//            Topology topology = new Topology();
-//            topology.setEtag(topologyEtag);
-//
-//            List<ServerNode> topologyNodes = getTopologyNodes();
-//            if (topologyNodes == null) {
-//                topologyNodes = Arrays.stream(initialUrls)
-//                        .map(url -> {
-//                            ServerNode serverNode = new ServerNode();
-//                            serverNode.setUrl(url);
-//                            serverNode.setDatabase(_databaseName);
-//                            serverNode.setClusterTag("!");
-//                            return serverNode;
-//                        }).collect(Collectors.toList());
-//            }
-//
-//            topology.setNodes(topologyNodes);
-//
-//            _nodeSelector = new NodeSelector(topology, _executorService);
-//
-//            if (initialUrls != null && initialUrls.length > 0) {
-//                initializeUpdateTopologyTimer();
-//                return;
-//            }
-//
-//            _lastKnownUrls = initialUrls;
-//            String details = list.stream().map(x -> x.first + " -> " + Optional.ofNullable(x.second).map(Throwable::getMessage).orElse("")).collect(Collectors.joining(", "));
-//            throwExceptions(details);
-//        }, _executorService);
-//    }
-//
-//    protected void throwExceptions(String details) {
-//        throw new IllegalStateException("Failed to retrieve database topology from all known nodes" + System.lineSeparator() + details);
-//    }
-//
-//    public static String[] validateUrls(String[] initialUrls, KeyStore certificate) {
-//        String[] cleanUrls = new String[initialUrls.length];
-//        boolean requireHttps = certificate != null;
-//        for (int index = 0; index < initialUrls.length; index++) {
-//            String url = initialUrls[index];
-//            try {
-//                new URL(url);
-//            } catch (MalformedURLException e) {
-//                throw new IllegalArgumentException("'" + url + "' is not a valid url");
-//            }
-//
-//            cleanUrls[index] = StringUtils.stripEnd(url, "/");
-//            requireHttps |= url.startsWith("https://");
-//        }
-//
-//        if (!requireHttps) {
-//            return cleanUrls;
-//        }
-//
-//        for (String url : initialUrls) {
-//            if (!url.startsWith("http://")) {
-//                continue;
-//            }
-//
-//            if (certificate != null) {
-//                throw new IllegalStateException("The url " + url + " is using HTTP, but a certificate is specified, which require us to use HTTPS");
-//            }
-//            throw new IllegalStateException("The url " + url + " is using HTTP, but other urls are using HTTPS, and mixing of HTTP and HTTPS is not allowed.");
-//        }
-//
-//        return cleanUrls;
-//    }
-//
+                    $this->topologyTakenFromNode = $serverNode;
+                    return;
+                } catch (Throwable $e) {
+                    if ($e instanceof ExecutionException && $e->getPrevious() instanceof AuthorizationException) {
+                        // auth exceptions will always happen, on all nodes
+                        // so errors immediately
+                        $this->lastKnownUrls = $initialUrls;
+                        throw $e->getCause();
+                    }
+
+                    if ($e instanceof ExecutionException && $e->getPrevious() instanceof DatabaseDoesNotExistException) {
+                        // Will happen on all node in the cluster,
+                        // so errors immediately
+                        $this->lastKnownUrls = $initialUrls;
+                        throw $e->getPrevious();
+                    }
+
+                    $list[$url->getValue()] = $e;
+                }
+            }
+
+            $topology = new Topology();
+            $topology->setEtag($this->topologyEtag);
+
+            $topologyNodes = $this->getTopologyNodes();
+            if ($topologyNodes == null) {
+                $databaseName = $this->databaseName;
+                $topologyNodes = array_map(function($url) use ($databaseName) {
+                            $serverNode = new ServerNode();
+                            $serverNode->setUrl($url);
+                            $serverNode->setDatabase($databaseName);
+                            $serverNode->setClusterTag("!");
+                            return $serverNode;
+                }, $initialUrls->getArrayCopy());
+            }
+
+            $topology->setNodes($topologyNodes);
+
+            $this->nodeSelector = new NodeSelector($topology);
+
+            if (!empty($initialUrls)) {
+//                $this->initializeUpdateTopologyTimer();
+                return;
+            }
+
+            $this->lastKnownUrls = $initialUrls;
+
+            $details = [];
+            foreach ($list as $url => $exception) {
+                $details[] = $url . ' -> ' . ($exception != null ? $exception->getMessage() : '');
+            }
+            $this->throwExceptions(implode(", ", $details));
+    }
+
+    protected function throwExceptions(?string $details): void
+    {
+        throw new IllegalStateException("Failed to retrieve database topology from all known nodes" . PHP_EOL . $details);
+    }
+
+    public static function validateUrls($initialUrls, ?AuthOptions $authOptions): UrlArray
+    {
+        if (is_array($initialUrls)) {
+            try {
+                $initialUrls = UrlArray::fromArray($initialUrls);
+            } catch (MalformedURLException $e) {
+                throw new IllegalArgumentException("'" . $e->getMessage() . "' is not a valid url");
+            }
+        }
+
+        $cleanUrls = new UrlArray();
+        $requireHttps = $authOptions != null;
+        /** @var Url $url */
+        foreach ($initialUrls as $url) {
+            $cleanUrls->append( new Url(StringUtils::stripEnd($url->getValue(), "/")));
+            $requireHttps |= "https://" == $url->getScheme();
+        }
+
+        if (!$requireHttps) {
+            return $cleanUrls;
+        }
+
+        /** @var Url $url */
+        foreach ($initialUrls as $url) {
+            if (!$url->getScheme() == "http://") {
+                continue;
+            }
+
+            if ($authOptions != null) {
+                throw new IllegalStateException("The url " . $url . " is using HTTP, but a certificate is specified, which require us to use HTTPS");
+            }
+            throw new IllegalStateException("The url " . $url . " is using HTTP, but other urls are using HTTPS, and mixing of HTTP and HTTPS is not allowed.");
+        }
+
+        return $cleanUrls;
+    }
+
 //    private void initializeUpdateTopologyTimer() {
 //        if (_updateTopologyTimer != null) {
 //            return;
@@ -1189,7 +1205,7 @@ class RequestExecutor implements CleanCloseable
             } else {
                 return $this->send($chosenNode, $command, $sessionInfo, $request);
             }
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             if (!$shouldRetry) {
                 throw ExceptionsUtils::unwrapException($exception);
             }
@@ -1402,10 +1418,10 @@ class RequestExecutor implements CleanCloseable
         $message = 'Tried to send ' . $command->getResultClass() . " request via " . $request->getMethod()
                 . ' ' . $request->getUrl() . " to all configured nodes in the topology, none of the attempt succeeded." . PHP_EOL;
 
-//        if ($this->topologyTakenFromNode != null) {
-//            $message .= "I was able to fetch " . $this->topologyTakenFromNode->getDatabase()
-//                    . " topology from " . $this->topologyTakenFromNode->getUrl() . "." . PHP_EOL;
-//        }
+        if ($this->topologyTakenFromNode != null) {
+            $message .= "I was able to fetch " . $this->topologyTakenFromNode->getDatabase()
+                    . " topology from " . $this->topologyTakenFromNode->getUrl() . "." . PHP_EOL;
+        }
 
         $nodes = null;
         if ($this->nodeSelector != null && $this->nodeSelector->getTopology() != null) {
@@ -1665,9 +1681,9 @@ class RequestExecutor implements CleanCloseable
                         $sessionInfo,
                         $shouldRetry
                     );
-//                case HttpStatus.SC_CONFLICT:
-//                    handleConflict(response);
-//                    break;
+                case HttpStatusCode::CONFLICT:
+                    $this->handleConflict($response);
+                    break;
 //                case 425: // TooEarly
 //                    if (!shouldRetry) {
 //                        return false;
@@ -1699,7 +1715,7 @@ class RequestExecutor implements CleanCloseable
                     ExceptionDispatcher::throwException($response);
                     break;
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             throw ExceptionsUtils::unwrapException($e);
         }
 
@@ -1710,17 +1726,18 @@ class RequestExecutor implements CleanCloseable
     {
         try {
             return $response->getContent();
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             return "Could not read request: " . $exception->getMessage();
         }
 
     }
 
-//
-//    private static void handleConflict(CloseableHttpResponse response) {
-//        ExceptionDispatcher.throwException(response);
-//    }
-//
+
+    private static function handleConflict(HttpResponseInterface $response): void
+    {
+        ExceptionDispatcher::throwException($response);
+    }
+
 //    public static InputStream readAsStream(CloseableHttpResponse response) throws IOException {
 //        return response.getEntity().getContent();
 //    }
@@ -1782,9 +1799,14 @@ class RequestExecutor implements CleanCloseable
         }
 
 //        onFailedRequestInvoke(url, e);
-//
-//        execute(indexAndNodeAndEtag.currentNode, indexAndNodeAndEtag.currentIndex, command, shouldRetry, sessionInfo);
-//
+
+        $executeOptions = new ExecuteOptions();
+        $executeOptions->setNodeIndex($indexAndNodeAndEtag->currentIndex);
+        $executeOptions->setChosenNode($indexAndNodeAndEtag->currentNode);
+        $executeOptions->setShouldRetry($shouldRetry);
+
+        $this->executeOnSpecificNode($command, $sessionInfo, $executeOptions);
+
         return true;
     }
 //
@@ -2095,10 +2117,9 @@ class RequestExecutor implements CleanCloseable
     }
 
 //    protected CompletableFuture<Void> _firstTopologyUpdate;
-//    protected String[] _lastKnownUrls;
+    protected ?UrlArray $lastKnownUrls = null;
     protected bool $disposed = false;
-//
-//    @Override
+
     public function close(): void
     {
         if ($this->disposed) {

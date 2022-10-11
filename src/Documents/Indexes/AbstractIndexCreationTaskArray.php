@@ -12,14 +12,15 @@ class AbstractIndexCreationTaskArray extends TypedArray
         parent::__construct(AbstractIndexCreationTask::class);
     }
 
-    public static function fromArray(array $items): AbstractIndexCreationTaskArray
+    public static function fromArray(array $data, $nullAllowed = false): AbstractIndexCreationTaskArray
     {
-        $array = new AbstractIndexCreationTaskArray();
+        $sa = new AbstractIndexCreationTaskArray();
+        $sa->setNullAllowed($nullAllowed);
 
-        foreach ($items as $item) {
-            $array->append($item);
+        foreach ($data as $key => $value) {
+            $sa->offsetSet($key, $value);
         }
 
-        return $array;
+        return $sa;
     }
 }

@@ -37,4 +37,9 @@ class Url implements ValueObjectInterface
     {
         return parse_url($this->value, PHP_URL_HOST);
     }
+
+    public function getScheme(): string
+    {
+        return parse_url($this->value, PHP_URL_SCHEME);
+    }
 }

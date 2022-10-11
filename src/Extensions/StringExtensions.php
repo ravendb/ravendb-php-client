@@ -49,4 +49,13 @@ class StringExtensions
         $escaped = StringEscapeUtils::escapeEcmaScript($value);
         $builder->append($escaped);
     }
+
+    public static function stringFromEntity(?object $entity): ?string
+    {
+        if ($entity != null && method_exists($entity, '__toString')) {
+            return $entity->__toString();
+        }
+
+        return null;
+    }
 }

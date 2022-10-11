@@ -3,9 +3,9 @@
 namespace RavenDB\Documents\Indexes;
 
 use ArrayObject;
-use RavenDB\Documents\Compilation\IndexCompilationException;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Indexes\Spatial\SpatialOptionsMap;
+use RavenDB\Exceptions\Documents\Compilation\IndexCompilationException;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Type\StringArray;
 use RavenDB\Type\StringSet;

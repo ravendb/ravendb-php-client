@@ -177,8 +177,9 @@ class NodeSelector implements CleanCloseable
 //    protected static void throwEmptyTopology() {
 //        throw new IllegalStateException("Empty database topology, this shouldn't happen.");
 //    }
-//
-//    private void switchToSpeedTestPhase() {
+
+    private function switchToSpeedTestPhase(): void
+    {
 //        NodeSelectorState state = _state;
 //
 //        if (!state.speedTestMode.compareAndSet(0, 1)) {
@@ -188,8 +189,8 @@ class NodeSelector implements CleanCloseable
 //        Arrays.fill(state.fastestRecords, 0);
 //
 //        state.speedTestMode.incrementAndGet();
-//    }
-//
+    }
+
 //    public boolean inSpeedTestPhase() {
 //        return _state.speedTestMode.get() > 1;
 //    }
@@ -249,11 +250,12 @@ class NodeSelector implements CleanCloseable
 //            _updateFastestNodeTimer = new Timer(this::switchToSpeedTestPhase, Duration.ofMinutes(1), executorService);
 //        }
 //    }
-//
-//    public void scheduleSpeedTest() {
-//        switchToSpeedTestPhase();
-//    }
-//
+
+    public function scheduleSpeedTest(): void
+    {
+        $this->switchToSpeedTestPhase();
+    }
+
     public function close(): void
     {
         if ($this->updateFastestNodeTimer != null) {

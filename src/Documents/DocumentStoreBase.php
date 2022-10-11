@@ -16,6 +16,7 @@ use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Exceptions\MalformedURLException;
 use RavenDB\Http\RequestExecutor;
 use RavenDB\Primitives\ClosureArray;
+use RavenDB\Primitives\EventHelper;
 use RavenDB\Type\Url;
 use RavenDB\Type\UrlArray;
 use RavenDB\Utils\StringUtils;
@@ -23,35 +24,45 @@ use RavenDB\Utils\StringUtils;
 // !status: LOGIC COPIED - IN PROGRESS
 abstract class DocumentStoreBase implements DocumentStoreInterface
 {
-//      private final List<EventHandler<BeforeStoreEventArgs>> onBeforeStore = new ArrayList<>();
+    private ?ClosureArray $onBeforeStore = null;
     private ?ClosureArray $onAfterSaveChanges = null;
-//    private final List<EventHandler<BeforeDeleteEventArgs>> onBeforeDelete = new ArrayList<>();
+    private ?ClosureArray $onBeforeDelete = null;
     private ?ClosureArray $onBeforeQuery = null;
-//    private final List<EventHandler<SessionCreatedEventArgs>> onSessionCreated = new ArrayList<>();
-//    private final List<EventHandler<SessionClosingEventArgs>> onSessionClosing = new ArrayList<>();
-//
+    private ?ClosureArray $onSessionCreated = null;
+    private ?ClosureArray $onSessionClosing = null;
+
     private ?ClosureArray $onBeforeConversionToDocument = null;
     private ?ClosureArray $onAfterConversionToDocument = null;
     private ?ClosureArray $onBeforeConversionToEntity = null;
     private ?ClosureArray $onAfterConversionToEntity = null;
-//    private final List<EventHandler<BeforeRequestEventArgs>> onBeforeRequest = new ArrayList<>();
-//    private final List<EventHandler<SucceedRequestEventArgs>> onSucceedRequest = new ArrayList<>();
-//
-//    private final List<EventHandler<FailedRequestEventArgs>> onFailedRequest = new ArrayList<>();
-//    private final List<EventHandler<TopologyUpdatedEventArgs>> onTopologyUpdated = new ArrayList<>();
+    private ?ClosureArray $onBeforeRequest = null;
+    private ?ClosureArray $onSucceedRequest = null;
+
+    private ?ClosureArray $onFailedRequest = null;
+    private ?ClosureArray $onTopologyUpdated = null;
+
 
     public function __construct()
     {
         $this->database = null;
         $this->urls = null;
 
-        $this->onBeforeQuery = new ClosureArray();
+        $this->onBeforeStore = new ClosureArray();
         $this->onAfterSaveChanges = new ClosureArray();
+        $this->onBeforeDelete = new ClosureArray();
+        $this->onBeforeQuery = new ClosureArray();
+        $this->onSessionCreated = new ClosureArray();
+        $this->onSessionClosing = new ClosureArray();
 
         $this->onBeforeConversionToDocument = new ClosureArray();
         $this->onAfterConversionToDocument = new ClosureArray();
         $this->onBeforeConversionToEntity = new ClosureArray();
         $this->onAfterConversionToEntity = new ClosureArray();
+        $this->onBeforeRequest = new ClosureArray();
+        $this->onSucceedRequest = new ClosureArray();
+
+        $this->onFailedRequest = new ClosureArray();
+        $this->onTopologyUpdated = new ClosureArray();
 
 //        $this->subscriptions = new DocumentSubscriptions($this);
     }
@@ -146,7 +157,7 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 
     private ?DocumentConventions $conventions = null;
 
-    public function getConventions(): DocumentConventions
+    public function & getConventions(): DocumentConventions
     {
         if ($this->conventions == null) {
             $this->conventions = new DocumentConventions();
@@ -334,13 +345,13 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
     }
 
 
-//    public function addBeforeStoreListener(EventHandler<BeforeStoreEventArgs> handler) {
-//        $this->onBeforeStore->append($handler);
-//
-//    }
-//    public function removeBeforeStoreListener(EventHandler<BeforeStoreEventArgs> handler) {
-//        $this->onBeforeStore->removeValue($handler);
-//    }
+    public function addBeforeStoreListener(Closure $handler): void
+    {
+        $this->onBeforeStore->append($handler);
+    }
+    public function removeBeforeStoreListener(Closure $handler) {
+        $this->onBeforeStore->removeValue($handler);
+    }
 
     /** AfterSaveChangesEventArgs */
     public function addAfterSaveChangesListener(Closure $handler): void
@@ -354,31 +365,35 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
         $this->onAfterSaveChanges->removeValue($handler);
     }
 
-//    public function addBeforeDeleteListener(EventHandler<BeforeDeleteEventArgs> handler) {
-//        $this->onBeforeDelete->append($handler);
-//    }
-//    public function removeBeforeDeleteListener(EventHandler<BeforeDeleteEventArgs> handler) {
-//        $this->onBeforeDelete->removeValue($handler);
-//    }
-//
-//    public function addBeforeQueryListener(EventHandler<BeforeQueryEventArgs> $handler): void
+    public function addBeforeDeleteListener(Closure $handler): void
+    {
+        $this->onBeforeDelete->append($handler);
+    }
+    public function removeBeforeDeleteListener(Closure $handler): void
+    {
+        $this->onBeforeDelete->removeValue($handler);
+    }
+
     public function addBeforeQueryListener(Closure $handler): void
     {
         $this->onBeforeQuery->append($handler);
     }
-//
-//    public function removeBeforeQueryListener(EventHandler<BeforeQueryEventArgs> handler) {
-//        $this->onBeforeQuery->removeValue($handler);
-//    }
-//
-//    public function addOnSessionClosingListener(EventHandler<SessionClosingEventArgs> handler) {
-//        $this->onSessionClosing->append($handler);
-//    }
-//
-//    public function removeOnSessionClosingListener(EventHandler<SessionClosingEventArgs> handler) {
-//        $this->onSessionClosing->removeValue($handler);
-//    }
-//
+
+    public function removeBeforeQueryListener(Closure $handler): void
+    {
+        $this->onBeforeQuery->removeValue($handler);
+    }
+
+    public function addOnSessionClosingListener(Closure $handler): void
+    {
+        $this->onSessionClosing->append($handler);
+    }
+
+    public function removeOnSessionClosingListener(Closure $handler): void
+    {
+        $this->onSessionClosing->removeValue($handler);
+    }
+
     public function addBeforeConversionToDocumentListener(Closure $handler): void
     {
         $this->onBeforeConversionToDocument->append($handler);
@@ -523,7 +538,7 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //
 //    public abstract DatabaseSmuggler smuggler();
 
-    abstract public function getRequestExecutor(string $databaseName = ''): RequestExecutor;
+    abstract public function getRequestExecutor(?string $database = null): RequestExecutor;
 
     //    @Override
 //    public CleanCloseable aggressivelyCache() {
@@ -555,21 +570,21 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 
     private function _registerEventsForInMemoryDocumentSessionOperations(InMemoryDocumentSessionOperations $session): void
     {
-//        for (EventHandler<BeforeStoreEventArgs> handler : onBeforeStore) {
-//            session.addBeforeStoreListener(handler);
-//        }
+        foreach ($this->onBeforeStore as $handler) {
+            $session->addBeforeStoreListener($handler);
+        }
 
         foreach ($this->onAfterSaveChanges as $handler) {
             $session->addAfterSaveChangesListener($handler);
         }
 
-//            for (EventHandler<BeforeDeleteEventArgs> handler : onBeforeDelete) {
-//            session.addBeforeDeleteListener(handler);
-//        }
-//
-//            for (EventHandler<BeforeQueryEventArgs> handler : onBeforeQuery) {
-//            session.addBeforeQueryListener(handler);
-//        }
+        foreach ($this->onBeforeDelete as $handler) {
+            $session->addBeforeDeleteListener($handler);
+        }
+
+        foreach ($this->onBeforeQuery as $handler) {
+            $session->addBeforeQueryListener($handler);
+        }
 
         foreach ($this->onBeforeConversionToDocument as $handler) {
             $session->addBeforeConversionToDocumentListener($handler);
@@ -587,35 +602,34 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
             $session->addAfterConversionToEntityListener($handler);
         }
 
-//            for (EventHandler<SessionClosingEventArgs> handler : onSessionClosing) {
-//            session.addOnSessionClosingListener(handler);
-//        }
+        foreach ($this->onSessionClosing as $handler) {
+            $session->addOnSessionClosingListener($handler);
+        }
     }
 
     private function _registerEventsForRequestExecutor(RequestExecutor $requestExecutor): void
     {
+//        foreach ($this->onFailedRequest as $handler) {
+//            $requestExecutor->addOnFailedRequestListener($handler);
+//        }
+//
+//        foreach ($this->onTopologyUpdated as $handler) {
+//            $requestExecutor->addOnTopologyUpdatedListener($handler);
+//        }
 
-//        for (EventHandler<FailedRequestEventArgs> handler : onFailedRequest) {
-//            requestExecutor.addOnFailedRequestListener(handler);
-//        }
-//
-//        for (EventHandler<TopologyUpdatedEventArgs> handler : onTopologyUpdated) {
-//            requestExecutor.addOnTopologyUpdatedListener(handler);
-//        }
-//
-//        for (EventHandler<BeforeRequestEventArgs> handler : onBeforeRequest) {
-//            requestExecutor.addOnBeforeRequestListener(handler);
-//        }
-//
-//        for (EventHandler<SucceedRequestEventArgs> handler : onSucceedRequest) {
-//            requestExecutor.addOnSucceedRequestListener(handler);
-//        }
+        foreach ($this->onBeforeRequest as $handler) {
+            $requestExecutor->addOnBeforeRequestListener($handler);
+        }
+
+        foreach ($this->onSucceedRequest as $handler) {
+            $requestExecutor->addOnSucceedRequestListener($handler);
+        }
     }
 
     protected function afterSessionCreated(InMemoryDocumentSessionOperations $session): void
     {
-        // todo: implement this
-        // EventHelper.invoke(onSessionCreated, this, new SessionCreatedEventArgs(session));
+        // @todo: implement this
+//        EventHelper::invoke($this->onSessionCreated, $this, new SessionCreatedEventArgs($session));
     }
 
 //    public abstract MaintenanceOperationExecutor maintenance();

@@ -38,9 +38,9 @@ interface AdvancedDocumentSessionOperationsInterface
     /** AfterSaveChangesEventArgs */
     function removeAfterSaveChangesListener(Closure $handler): void;
 
-//    void addBeforeDeleteListener(EventHandler<BeforeDeleteEventArgs> handler);
-//    void removeBeforeDeleteListener(EventHandler<BeforeDeleteEventArgs> handler);
-//
+    function addBeforeDeleteListener(Closure $handler): void;
+    function removeBeforeDeleteListener(Closure $handler): void;
+
     public function addBeforeQueryListener(Closure $handler): void;
     public function removeBeforeQueryListener(Closure $handler): void;
 //    void removeBeforeQueryListener(EventHandler<BeforeQueryEventArgs> handler);
@@ -89,22 +89,22 @@ interface AdvancedDocumentSessionOperationsInterface
 //     * @return Store identifier
 //     */
 //    String storeIdentifier();
-//
-//    /**
-//     * Gets value indicating whether the session should use optimistic concurrency.
-//     * When set to true, a check is made so that a change made behind the session back would fail
-//     * and raise ConcurrencyException
-//     * @return true if optimistic concurrency should be used
-//     */
-//    boolean isUseOptimisticConcurrency();
-//
-//    /**
-//     * Sets value indicating whether the session should use optimistic concurrency.
-//     * When set to true, a check is made so that a change made behind the session back would fail
-//     * and raise ConcurrencyException
-//     * @param useOptimisticConcurrency Sets the optimistic concurrency
-//     */
-//    void setUseOptimisticConcurrency(boolean useOptimisticConcurrency);
+
+    /**
+     * Gets value indicating whether the session should use optimistic concurrency.
+     * When set to true, a check is made so that a change made behind the session back would fail
+     * and raise ConcurrencyException
+     * @return bool true if optimistic concurrency should be used
+     */
+    function isUseOptimisticConcurrency(): bool;
+
+    /**
+     * Sets value indicating whether the session should use optimistic concurrency.
+     * When set to true, a check is made so that a change made behind the session back would fail
+     * and raise ConcurrencyException
+     * @param bool $useOptimisticConcurrency Sets the optimistic concurrency
+     */
+    function setUseOptimisticConcurrency(bool $useOptimisticConcurrency): void;
 
     /**
      * Clears this instance.
