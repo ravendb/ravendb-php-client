@@ -51,7 +51,6 @@ class TimeUtils
     static public function durationToTimeSpan(Duration $duration): string
     {
         return $duration->format();
-
 //        $result = "";
 //
 //        if ($duration->days) {

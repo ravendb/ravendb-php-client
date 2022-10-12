@@ -178,9 +178,12 @@ class IndexDefinition implements ResultInterface
         return $this->additionalAssemblies;
     }
 
-    public function setAdditionalAssemblies(?AdditionalAssemblySet $additionalAssemblies): void
+    /**
+     * @param AdditionalAssemblySet|array|null $additionalAssemblies
+     */
+    public function setAdditionalAssemblies($additionalAssemblies): void
     {
-        $this->additionalAssemblies = $additionalAssemblies;
+        $this->additionalAssemblies = is_array($additionalAssemblies) ? AdditionalAssemblySet::fromArray($additionalAssemblies) : $additionalAssemblies;
     }
 
     /**

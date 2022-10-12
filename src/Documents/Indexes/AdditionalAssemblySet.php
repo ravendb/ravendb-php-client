@@ -10,4 +10,15 @@ class AdditionalAssemblySet extends TypedSet
     {
         parent::__construct(AdditionalAssembly::class);
     }
+
+    public static function fromArray(array $items): AdditionalAssemblySet
+    {
+        $set = new AdditionalAssemblySet();
+
+        foreach ($items as $item) {
+            $set->append($item);
+        }
+
+        return $set;
+    }
 }

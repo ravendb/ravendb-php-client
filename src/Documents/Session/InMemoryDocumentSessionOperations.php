@@ -1272,7 +1272,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
                 }
 
                 if ($shouldIgnoreEntityChanges != null) {
-                    if ($shouldIgnoreEntityChanges->check(
+                    if ($shouldIgnoreEntityChanges(
                         $this,
                         $entity->getValue()->getEntity(),
                         $entity->getValue()->getId())) {

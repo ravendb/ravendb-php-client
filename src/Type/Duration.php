@@ -53,9 +53,15 @@ class Duration
         $minutes = intval(floor(($this->intervalInMilliSeconds % self::MILLISECONDS_IN_HOUR) / self::MILLISECONDS_IN_MINUTE));
         $seconds = intval(floor(($this->intervalInMilliSeconds % self::MILLISECONDS_IN_MINUTE) / self::MILLISECONDS_IN_SECOND));
 
-        $f = $this->intervalInMilliSeconds % self::MILLISECONDS_IN_SECOND;
+        $duration = sprintf("%02d:%02d:%02d", $hours,$minutes,$seconds);
 
-        return "$hours:$minutes:$seconds.$f";
+        $f = intval(floor($this->intervalInMilliSeconds % self::MILLISECONDS_IN_SECOND));
+
+        if ($f) {
+            $duration .= '.' . $f;
+        }
+
+        return $duration;
     }
 
     public function toString(): string

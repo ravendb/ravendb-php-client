@@ -5,6 +5,7 @@ namespace RavenDB\Documents\Session;
 use RavenDB\Type\Duration;
 use RavenDB\Documents\Commands\Batches\BatchOptions;
 use RavenDB\Documents\Commands\Batches\IndexBatchOptions;
+use RavenDB\Type\StringArray;
 
 class IndexesWaitOptsBuilder
 {
@@ -53,9 +54,24 @@ class IndexesWaitOptsBuilder
         return $this;
     }
 
-    public function waitForIndexes(string ...$indexes): IndexesWaitOptsBuilder
+    /**
+     * @param mixed $indexes
+     * @return $this
+     */
+    public function waitForIndexes(...$indexes): IndexesWaitOptsBuilder
     {
-        $this->getOptionsInternal()->getIndexOptions()->setWaitForSpecificIndexes($indexes);
+        $sa = new StringArray();
+        $sa->allowNull();
+
+        foreach ($indexes as $index) {
+            if (is_array($index)) {
+                $sa->appendArrayValues($index);
+            } else {
+                $sa->append($index);
+            }
+        }
+
+        $this->getOptionsInternal()->getIndexOptions()->setWaitForSpecificIndexes($sa->getArrayCopy());
         return $this;
     }
 }

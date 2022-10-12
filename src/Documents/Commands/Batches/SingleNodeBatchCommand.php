@@ -219,7 +219,9 @@ class SingleNodeBatchCommand extends RavenCommand implements CleanCloseable
             $options .= $indexOptions->isThrowOnTimeoutInWaitForIndexes() ? 'true' : 'false';
 
             foreach ($indexOptions->getWaitForSpecificIndexes() as $specificIndex) {
-                $options .= '&waitForSpecificIndex=' . urlEncode($specificIndex);
+                if ($specificIndex != null) {
+                    $options .= '&waitForSpecificIndex=' . urlEncode($specificIndex);
+                }
             }
         }
 

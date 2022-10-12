@@ -75,7 +75,7 @@ class DocumentConventions
 
     protected bool $disableAtomicDocumentWritesInClusterWideTransaction = false;
 
-    private ?ShouldIgnoreEntityChangesInterface $shouldIgnoreEntityChanges = null;
+    private ?Closure $shouldIgnoreEntityChanges = null;
     private ?Closure $findIdentityProperty = null;
 
     private ?Closure $transformClassCollectionNameToDocumentIdPrefix = null;
@@ -230,7 +230,7 @@ class DocumentConventions
 //        _firstBroadcastAttemptTimeout = Duration.ofSeconds(5);
 //        _secondBroadcastAttemptTimeout = Duration.ofSeconds(30);
 //
-//        _waitForIndexesAfterSaveChangesTimeout = Duration.ofSeconds(15);
+        $this->waitForIndexesAfterSaveChangesTimeout = Duration::ofSeconds(15);
 //        _waitForReplicationAfterSaveChangesTimeout = Duration.ofSeconds(15);
 //        _waitForNonStaleResultsTimeout = Duration.ofSeconds(15);
 //
@@ -341,15 +341,16 @@ class DocumentConventions
         return $this->waitForIndexesAfterSaveChangesTimeout;
     }
 
-//    /**
-//     * Set the wait for indexes after save changes timeout
-//     * Default: 15 seconds
-//     * @param waitForIndexesAfterSaveChangesTimeout wait timeout
-//     */
-//    public void setWaitForIndexesAfterSaveChangesTimeout(Duration waitForIndexesAfterSaveChangesTimeout) {
-//        assertNotFrozen();
-//        _waitForIndexesAfterSaveChangesTimeout = waitForIndexesAfterSaveChangesTimeout;
-//    }
+    /**
+     * Set the wait for indexes after save changes timeout
+     * Default: 15 seconds
+     * @param ?Duration $waitForIndexesAfterSaveChangesTimeout wait timeout
+     */
+    public function setWaitForIndexesAfterSaveChangesTimeout(?Duration $waitForIndexesAfterSaveChangesTimeout): void
+    {
+        $this->assertNotFrozen();
+        $this->waitForIndexesAfterSaveChangesTimeout = $waitForIndexesAfterSaveChangesTimeout;
+    }
 
     /**
      * Get the default timeout for DocumentSession waitForNonStaleResults methods.
@@ -646,15 +647,12 @@ class DocumentConventions
         $this->findIdentityProperty = $findIdentityProperty;
     }
 
-    public function getShouldIgnoreEntityChanges(): ?ShouldIgnoreEntityChangesInterface
+    public function getShouldIgnoreEntityChanges(): ?Closure
     {
         return $this->shouldIgnoreEntityChanges;
     }
 
-    /**
-     * @throws IllegalStateException
-     */
-    public function setShouldIgnoreEntityChanges(ShouldIgnoreEntityChangesInterface $shouldIgnoreEntityChanges): void
+    public function setShouldIgnoreEntityChanges(Closure $shouldIgnoreEntityChanges): void
     {
         $this->assertNotFrozen();
         $this->shouldIgnoreEntityChanges = $shouldIgnoreEntityChanges;
