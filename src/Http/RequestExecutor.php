@@ -710,7 +710,8 @@ class RequestExecutor implements CleanCloseable
 
 //        @todo: Implement following code
 //        if ($this->requestPostProcessor != null) {
-//            $this->requestPostProcessor->accept($request);
+//            $requestPostProcessor = $this->requestPostProcessor;
+//            $requestPostProcessor($request);
 //        }
 
         if ($command instanceof RaftCommandInterface) {

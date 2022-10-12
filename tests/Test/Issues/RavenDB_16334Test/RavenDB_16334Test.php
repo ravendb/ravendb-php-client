@@ -72,8 +72,6 @@ class RavenDB_16334Test extends RemoteTestBase
                 $session->close();
             }
 
-            $this->waitForIndexing($store);
-            
             // assert
             $session = $store->openSession();
             try {
