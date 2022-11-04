@@ -23,7 +23,6 @@ class TrackEntityTest extends RemoteTestBase
 
                     throw new Exception('It should throw exception before reaching this code');
                 } catch (Throwable $exception) {
-                    print_r($exception->getMessage());
                     $this->assertInstanceOf(IllegalStateException::class, $exception);
                     $this->assertStringEndsWith("is not associated with the session, cannot delete unknown entity instance", $exception->getMessage());
                 }
