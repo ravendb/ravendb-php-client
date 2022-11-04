@@ -40,7 +40,7 @@ class BeforeStoreEventArgs extends EventArgs
     public function getDocumentMetadata(): MetadataDictionaryInterface
     {
         if ($this->documentMetadata == null) {
-            $this->documentMetadata = $this->session->getMetadataFor($$this->entity);
+            $this->documentMetadata = $this->session->getMetadataFor($this->entity);
         }
 
         return $this->documentMetadata;

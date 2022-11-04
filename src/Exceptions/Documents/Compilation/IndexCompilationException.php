@@ -1,10 +1,10 @@
 <?php
 
-namespace RavenDB\Documents\Compilation;
+namespace RavenDB\Exceptions\Documents\Compilation;
 
+use RavenDB\Exceptions\Compilation\CompilationException;
 use Throwable;
 
-// !status: DONE
 class IndexCompilationException extends CompilationException
 {
     private string $indexDefinitionProperty;

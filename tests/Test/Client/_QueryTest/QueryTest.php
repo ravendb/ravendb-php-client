@@ -32,7 +32,7 @@ use tests\RavenDB\Test\Client\_QueryTest\Index\UsersByName;
 
 class QueryTest extends RemoteTestBase
 {
-    public function testCreateClausesForQueryDynamicallyWithOnBeforeQueryEvent()
+    public function test_Query_CreateClausesForQueryDynamicallyWithOnBeforeQueryEvent()
     {
         $store = $this->getDocumentStore();
 

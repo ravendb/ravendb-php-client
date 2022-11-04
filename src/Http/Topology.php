@@ -28,8 +28,11 @@ class Topology
         return $this->nodes;
     }
 
-    public function setNodes(ServerNodeArray $nodes): void
+    /**
+     * @param ServerNodeArray|array $nodes
+     */
+    public function setNodes($nodes): void
     {
-        $this->nodes = $nodes;
+        $this->nodes = is_array($nodes) ? ServerNodeArray::fromArray($nodes) : $nodes;
     }
 }

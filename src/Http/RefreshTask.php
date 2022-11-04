@@ -17,9 +17,9 @@ class RefreshTask
         return new RefreshTask();
     }
 
-    public function add(Closure $updateClientConfigurationAsync)
+    public function add(Closure $handle)
     {
-        $updateClientConfigurationAsync();
+        $handle();
     }
 
     public function wait(): void

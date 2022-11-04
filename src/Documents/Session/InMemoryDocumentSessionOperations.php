@@ -27,6 +27,7 @@ use RavenDB\Exceptions\Documents\Session\NonUniqueObjectException;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Extensions\JsonExtensions;
+use RavenDB\Extensions\StringExtensions;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Http\RequestExecutor;
 use RavenDB\Http\ServerNode;
@@ -850,7 +851,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $value = $this->documentsByEntity->get($entity);
 
         if ($value == null) {
-            throw new IllegalStateException($entity . ' is not associated with the session, cannot delete unknown entity instance');
+            throw new IllegalStateException(StringExtensions::stringFromEntity($entity) ?? 'Object' . ' is not associated with the session, cannot delete unknown entity instance');
         }
 
         $this->deletedEntities->add($entity);
@@ -1324,7 +1325,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
                 $changeVector = null;
                 if ($this->useOptimisticConcurrency) {
-                    if ($entity->getValue()->getConcurrencyCheckMode()->isDisabled()) {
+                    if (!$entity->getValue()->getConcurrencyCheckMode()->isDisabled()) {
                         // if the user didn't provide a change vector, we'll test for an empty one
                         $changeVector = $entity->getValue()->getChangeVector() ?? "";
                     } else {

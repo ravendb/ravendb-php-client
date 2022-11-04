@@ -16,7 +16,7 @@ class StringArray extends ExtendedArrayObject implements \JsonSerializable
         return $a;
     }
 
-    public static function fromArray(array $data, $nullAllowed = false): StringArray
+    public static function fromArray(array $data, bool $nullAllowed = false): StringArray
     {
         $sa = new StringArray();
         $sa->setNullAllowed($nullAllowed);

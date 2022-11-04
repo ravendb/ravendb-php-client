@@ -75,8 +75,8 @@ class Operation
                 case 'Faulted':
                     $result = $status['Result'];
 
-                    /** @var OperationCancelledException $exceptionResult */
-                    $exceptionResult = JsonExtensions::getDefaultMapper()->denormalize($result, OperationCancelledException::class);
+                    /** @var OperationExceptionResult $exceptionResult */
+                    $exceptionResult = JsonExtensions::getDefaultMapper()->denormalize($result, OperationExceptionResult::class);
                     $schema = new ExceptionSchema();
 
                     $schema->setUrl($this->requestExecutor->getUrl());
@@ -84,7 +84,7 @@ class Operation
                     $schema->setMessage($exceptionResult->getMessage());
                     $schema->setType($exceptionResult->getType());
 
-                    $exception = ExceptionDispatcher::get($schema, $exceptionResult->getCode());
+                    $exception = ExceptionDispatcher::get($schema, $exceptionResult->getStatusCode());
                     throw new $exception;
             }
 

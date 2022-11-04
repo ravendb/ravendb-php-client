@@ -2,6 +2,8 @@
 
 namespace tests\RavenDB\Test\Client;
 
+use RavenDB\Documents\Operations\PatchByQueryOperation;
+use RavenDB\Exceptions\Documents\Patching\JavaScriptException;
 use tests\RavenDB\RemoteTestBase;
 use tests\RavenDB\Infrastructure\Entity\User;
 use RavenDB\Documents\Operations\PatchStatus;
@@ -122,8 +124,7 @@ class PatchTest extends RemoteTestBase
         }
     }
 
-    // @todo: implement this test
-    public function throwsOnInvalidScript(): void
+    public function testThrowsOnInvalidScript(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -139,12 +140,12 @@ class PatchTest extends RemoteTestBase
                 $session->close();
             }
 
-//            $operation = new PatchByQueryOperation("from Users update {  throw 5 }");
-//
-//            Operation op = store.operations().sendAsync(operation);
-//
-//            assertThatThrownBy(() -> op.waitForCompletion())
-//                    .isExactlyInstanceOf(JavaScriptException.class);
+            $operation = new PatchByQueryOperation("from Users update {  throw 5 }");
+
+            $op = $store->operations()->sendAsync($operation);
+
+            $this->expectException(JavaScriptException::class);
+            $op->waitForCompletion();
         } finally {
             $store->close();
         }

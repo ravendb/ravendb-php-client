@@ -66,6 +66,11 @@ class ExtendedArrayObject extends \ArrayObject implements \JsonSerializable
         }
     }
 
+    public function containsValue($value): bool
+    {
+        return in_array($value, $this->getArrayCopy(), true);
+    }
+
     public function removeValue($value): void
     {
         if(($key = array_search($value, $this->getArrayCopy(), true)) !== FALSE) {

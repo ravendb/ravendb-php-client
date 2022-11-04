@@ -7,6 +7,7 @@ use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Queries\IndexQuery;
 use RavenDB\Documents\Session\EntityToJson;
+use RavenDB\Utils\TimeUtils;
 use Symfony\Component\PropertyAccess\PropertyAccessor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
@@ -26,9 +27,8 @@ class JsonExtensions
     {
         if (self::$entityMapper == null) {
             self::$entityMapper = self::createDefaultEntityMapper($normalizers, $encoders);
+            self::$entityMapper->setPropertyNamingStrategy(PropertyNamingStrategy::none());
         }
-
-        self::$entityMapper->setPropertyNamingStrategy(PropertyNamingStrategy::none());
 
         return self::$entityMapper;
     }
@@ -83,9 +83,8 @@ class JsonExtensions
     {
         if (self::$defaultMapper == null) {
             self::$defaultMapper = self::createDefaultJsonSerializer($normalizers, $encoders);
+            self::$defaultMapper->setPropertyNamingStrategy(PropertyNamingStrategy::none());
         }
-
-        self::$defaultMapper->setPropertyNamingStrategy(PropertyNamingStrategy::none());
 
         return self::$defaultMapper;
     }
@@ -114,9 +113,9 @@ class JsonExtensions
             $data["Start"] = $query->getStart();
         }
 
-//        if ($query->getWaitForNonStaleResultsTimeout() != null) {
-//            $data["WaitForNonStaleResultsTimeout"] = TimeUtils::durationToTimeSpan($query->getWaitForNonStaleResultsTimeout()));
-//        }
+        if ($query->getWaitForNonStaleResultsTimeout() != null) {
+            $data["WaitForNonStaleResultsTimeout"] = TimeUtils::durationToTimeSpan($query->getWaitForNonStaleResultsTimeout());
+        }
 
         if ($query->isDisableCaching()) {
             $data["DisableCaching"] = $query->isDisableCaching();
@@ -146,5 +145,11 @@ class JsonExtensions
             return $metadata[DocumentsMetadata::CONFLICT];
         }
         return false;
+    }
+
+    public static function reset(): void
+    {
+        self::$entityMapper = null;
+        self::$defaultMapper = null;
     }
 }

@@ -30,9 +30,16 @@ class ClusterRequestExecutor extends RequestExecutor
         );
     }
 
+    /**
+     * @param array|UrlArray $initialUrls
+     * @param string|null $databaseName
+     * @param AuthOptions|null $authOptions
+     * @param DocumentConventions|null $conventions
+     * @return ClusterRequestExecutor
+     */
     public static function create(
-        UrlArray $initialUrls,
-        ?string $databaseName = null,
+        $initialUrls,
+        ?string $databaseName,
         ?AuthOptions $authOptions,
 //        ExecutorService executorService,
         ?DocumentConventions $conventions = null
@@ -45,8 +52,8 @@ class ClusterRequestExecutor extends RequestExecutor
 //            initialUrls
         );
 
-//        $executor->_disableClientConfigurationUpdates = true;
-//        $executor->_firstTopologyUpdate = $executor->firstTopologyUpdate($initialUrls, null);
+        $executor->disableClientConfigurationUpdates = true;
+//        $executor->firstTopologyUpdate = $executor->firstTopologyUpdate($initialUrls, null);
 
 
         // @todo: remove following lines
@@ -65,8 +72,9 @@ class ClusterRequestExecutor extends RequestExecutor
     }
 
     public static function createForSingleNodeWithConfigurationUpdates(
-        Url $url,
-        string $databaseName,
+        ?string $url,
+        ?string $databaseName,
+        ?AuthOptions $authOptions,
 //        KeyStore certificate,
 //        char[] keyPassword,
         DocumentConventions $conventions
@@ -75,10 +83,9 @@ class ClusterRequestExecutor extends RequestExecutor
     }
 
     public static function createForSingleNodeWithoutConfigurationUpdates(
-        string $url,
-        string $databaseName,
-//        KeyStore certificate,
-//        char[] keyPassword,
+        ?string $url,
+        ?string $databaseName,
+        ?AuthOptions $authOptions,
         DocumentConventions $conventions
     ): ClusterRequestExecutor {
         throw new UnsupportedOperationException();
@@ -115,14 +122,12 @@ class ClusterRequestExecutor extends RequestExecutor
         $nodes->append($serverNode);
         $topology->setNodes($nodes);
 
-        // @todo: check this line
         $nodeSelector = new NodeSelector($topology); // new NodeSelector($topology, $executorService);
 
         $executor->setNodeSelector($nodeSelector);
-//        @todo: implement following lines
-//        $executor->setTopologyEtag(-2);
-//        executor._disableClientConfigurationUpdates = true;
-//        executor._disableTopologyUpdates = true;
+        $executor->topologyEtag = -2;
+        $executor->disableClientConfigurationUpdates = true;
+        $executor->disableTopologyUpdates = true;
 
         return $executor;
     }
@@ -216,7 +221,7 @@ class ClusterRequestExecutor extends RequestExecutor
     /**
      * @throws IllegalStateException
      */
-    protected function throwExceptions(string $details): void {
+    protected function throwExceptions(?string $details): void {
         throw new IllegalStateException("Failed to retrieve cluster topology from all known nodes" . PHP_EOL . $details);
     }
 }

@@ -19,24 +19,23 @@ use RavenDB\Documents\Conventions\DocumentConventions;
 // !status: IN PROGRESS
 interface DocumentStoreInterface
 {
-
     public function getAuthOptions(): ?AuthOptions;
 //  KeyStore getCertificate();
-//
-//    void addBeforeStoreListener(EventHandler<BeforeStoreEventArgs> handler);
-//    void removeBeforeStoreListener(EventHandler<BeforeStoreEventArgs> handler);
+
+    function addBeforeStoreListener(Closure $handler);
+    function removeBeforeStoreListener(Closure $handler);
 
     /** AfterSaveChangesEventArgs */
     function addAfterSaveChangesListener(Closure $handler): void;
     /** AfterSaveChangesEventArgs */
     function removeAfterSaveChangesListener(Closure $handler): void;
 
-//    void addBeforeDeleteListener(EventHandler<BeforeDeleteEventArgs> handler);
-//    void removeBeforeDeleteListener(EventHandler<BeforeDeleteEventArgs> handler);
-//
-//    void addBeforeQueryListener(EventHandler<BeforeQueryEventArgs> handler);
-//    void removeBeforeQueryListener(EventHandler<BeforeQueryEventArgs> handler);
-//
+    function addBeforeDeleteListener(Closure $handler);
+    function removeBeforeDeleteListener(Closure $handler);
+
+    function addBeforeQueryListener(Closure $handler);
+    function removeBeforeQueryListener(Closure $handler);
+
     function addBeforeConversionToDocumentListener(Closure $handler): void;
     function removeBeforeConversionToDocumentListener(Closure $handler): void;
 
@@ -119,7 +118,7 @@ interface DocumentStoreInterface
      * Gets the conventions
      * @return DocumentConventions Document conventions
      */
-    public function getConventions(): DocumentConventions;
+    public function & getConventions(): DocumentConventions;
 
     /**
      * Gets the URL's
@@ -136,7 +135,7 @@ interface DocumentStoreInterface
 
     public function getDatabase(): ?string;
 
-    public function getRequestExecutor(string $databaseName = ''): RequestExecutor;
+    public function getRequestExecutor(?string $database = null): RequestExecutor;
 
     public function maintenance(): MaintenanceOperationExecutor;
 

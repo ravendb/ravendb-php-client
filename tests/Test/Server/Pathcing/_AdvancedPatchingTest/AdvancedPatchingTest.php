@@ -2,6 +2,7 @@
 
 namespace tests\RavenDB\Test\Server\Pathcing\_AdvancedPatchingTest;
 
+use RavenDB\Documents\Operations\PatchByQueryOperation;
 use RavenDB\Type\StringSet;
 use tests\RavenDB\RemoteTestBase;
 use RavenDB\Documents\Operations\PatchRequest;
@@ -50,8 +51,7 @@ class AdvancedPatchingTest extends RemoteTestBase
         }
     }
 
-    // @todo: implement test
-    public function canCreateDocumentsIfPatchingAppliedByIndex(): void
+    public function testCanCreateDocumentsIfPatchingAppliedByIndex(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -91,14 +91,13 @@ class AdvancedPatchingTest extends RemoteTestBase
                 $session->close();
             }
 
-//            $operation = $store->operations()->sendAsync(new PatchByQueryOperation("FROM INDEX 'TestIndex' WHERE value = 1 update { put('NewItem/3', {'copiedValue': this.value });}"));
-//            $operation->waitForCompletion();
+            $operation = $store->operations()->sendAsync(new PatchByQueryOperation("FROM INDEX 'TestIndex' WHERE value = 1 update { put('NewItem/3', {'copiedValue': this.value });}"));
+            $operation->waitForCompletion();
 
             $session = $store->openSession();
             try {
-//                ObjectNode jsonDocument = $session->load(ObjectNode.class, "NewItem/3");
-//                assertThat(jsonDocument.get("copiedValue").doubleValue())
-//                        .isEqualTo(1.0, Offset.offset(0.0001));
+                $jsonDocument = $session->load(null, "NewItem/3");
+                $this->assertEqualsWithDelta(1.0, $jsonDocument->copiedValue, 0.0001);
             } finally {
                 $session->close();
             }
@@ -152,7 +151,7 @@ class AdvancedPatchingTest extends RemoteTestBase
             $store->close();
         }
     }
-    
+
     public function testCanDeserializeModifiedDocument(): void
     {
         $store = $this->getDocumentStore();

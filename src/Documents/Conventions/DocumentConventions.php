@@ -66,7 +66,7 @@ class DocumentConventions
 
 //    private final Map<Class, Field> _idPropertyCache = new HashMap<>();
     protected array $idPropertyCache = [];                  // @todo: check if this is ok?
-//    private boolean _saveEnumsAsIntegers;
+    private bool $saveEnumsAsIntegers = false;
 
     protected ?string $identityPartsSeparator = null; // @todo: check if this is ok?
 //    private char _identityPartsSeparator;
@@ -83,7 +83,7 @@ class DocumentConventions
     private ?Closure $findIdentityPropertyNameFromCollectionName = null;
     private ?Closure $loadBalancerPerSessionContextSelector = null;
 
-    private ?string $findCollectionName = null;
+    private ?Closure $findCollectionName = null;
 
     private ?Closure $findPhpClassName = null;
 
@@ -105,10 +105,10 @@ class DocumentConventions
     protected LoadBalanceBehavior $loadBalanceBehavior;
     private ReadBalanceBehavior $readBalanceBehavior;
     protected int $maxHttpCacheSize;
-    protected EntityMapper $entityMapper;
-//    private Boolean _useCompression;
-//    private boolean _sendApplicationIdentifier;
-//
+    protected ?EntityMapper $entityMapper = null;
+    private ?bool $useCompression = null;
+    private bool $sendApplicationIdentifier = false;
+
 //    private final BulkInsertConventions _bulkInsert;
 //
 //    private final AggressiveCacheConventions _aggressiveCache;
@@ -185,7 +185,7 @@ class DocumentConventions
             return $q->getName() == 'id';
         };
         $this->identityPartsSeparator = '/';
-//        _findIdentityPropertyNameFromCollectionName = entityName -> "Id";
+        $this->findIdentityPropertyNameFromCollectionName = function($entityName) { return "Id"; };
         $this->findPhpClass = function(?string $id, array $doc): ?string {
             $metadata = array_key_exists(DocumentsMetadata::KEY, $doc) ? $doc[DocumentsMetadata::KEY] : null;
             if ($metadata != null) {
@@ -198,7 +198,6 @@ class DocumentConventions
         };
 
         $this->findPhpClassName = function ($entity) {
-            // ReflectionUtil.getFullNameWithoutVersionInformation(type);
             return get_class($entity);
         };
 
@@ -217,8 +216,8 @@ class DocumentConventions
 
         $this->transformClassCollectionNameToDocumentIdPrefix = Closure::fromCallable([$this, 'defaultTransformCollectionNameToDocumentIdPrefix']);
 
-        $this->findCollectionName = 'defaultGetCollectionName';
-//
+        $this->findCollectionName = Closure::fromCallable([$this, 'defaultGetCollectionName']);
+
         $this->maxNumberOfRequestsPerSession = 30;
 //        _bulkInsert = new BulkInsertConventions(this);
         $this->maxHttpCacheSize = 128 * 1024 * 1024;
@@ -227,21 +226,21 @@ class DocumentConventions
 
 //
 //        _aggressiveCache = new AggressiveCacheConventions(this);
-//        _firstBroadcastAttemptTimeout = Duration.ofSeconds(5);
-//        _secondBroadcastAttemptTimeout = Duration.ofSeconds(30);
-//
+        $this->firstBroadcastAttemptTimeout = Duration::ofSeconds(5);
+        $this->secondBroadcastAttemptTimeout = Duration::ofSeconds(30);
+
         $this->waitForIndexesAfterSaveChangesTimeout = Duration::ofSeconds(15);
-//        _waitForReplicationAfterSaveChangesTimeout = Duration.ofSeconds(15);
-//        _waitForNonStaleResultsTimeout = Duration.ofSeconds(15);
-//
-//        _sendApplicationIdentifier = true;
+        $this->waitForReplicationAfterSaveChangesTimeout = Duration::ofSeconds(15);
+        $this->waitForNonStaleResultsTimeout = Duration::ofSeconds(15);
+
+        $this->sendApplicationIdentifier = true;
     }
 
+    public function hasExplicitlySetCompressionUsage(): bool
+    {
+        return $this->useCompression != null;
+    }
 
-//    public boolean hasExplicitlySetCompressionUsage() {
-//        return _useCompression != null;
-//    }
-//
     public function getRequestTimeout(): ?Duration
     {
         return $this->requestTimeout;
@@ -253,25 +252,27 @@ class DocumentConventions
         $this->requestTimeout = $requestTimeout;
     }
 
-//    /**
-//     * Enables sending a unique application identifier to the RavenDB Server that is used for Client API usage tracking.
-//     * It allows RavenDB Server to issue performance hint notifications e.g. during robust topology update requests which could indicate Client API misuse impacting the overall performance
-//     * @return if option is enabled
-//     */
-//    public boolean isSendApplicationIdentifier() {
-//        return _sendApplicationIdentifier;
-//    }
-//
-//    /**
-//     * Enables sending a unique application identifier to the RavenDB Server that is used for Client API usage tracking.
-//     * It allows RavenDB Server to issue performance hint notifications e.g. during robust topology update requests which could indicate Client API misuse impacting the overall performance
-//     * @param sendApplicationIdentifier if option should be enabled
-//     */
-//    public void setSendApplicationIdentifier(boolean sendApplicationIdentifier) {
-//        assertNotFrozen();
-//        _sendApplicationIdentifier = sendApplicationIdentifier;
-//    }
-//
+    /**
+     * Enables sending a unique application identifier to the RavenDB Server that is used for Client API usage tracking.
+     * It allows RavenDB Server to issue performance hint notifications e.g. during robust topology update requests which could indicate Client API misuse impacting the overall performance
+     * @return bool if option is enabled
+     */
+    public function isSendApplicationIdentifier(): bool
+    {
+        return $this->sendApplicationIdentifier;
+    }
+
+    /**
+     * Enables sending a unique application identifier to the RavenDB Server that is used for Client API usage tracking.
+     * It allows RavenDB Server to issue performance hint notifications e.g. during robust topology update requests which could indicate Client API misuse impacting the overall performance
+     * @param bool $sendApplicationIdentifier if option should be enabled
+     */
+    public function setSendApplicationIdentifier(bool $sendApplicationIdentifier): void
+    {
+        $this->assertNotFrozen();
+        $this->sendApplicationIdentifier = $sendApplicationIdentifier;
+    }
+
     /**
      * Get the timeout for the second broadcast attempt.
      * Default: 30 seconds
@@ -363,45 +364,50 @@ class DocumentConventions
         return $this->waitForNonStaleResultsTimeout;
     }
 
-//    /**
-//     * Sets the default timeout for DocumentSession waitForNonStaleResults methods.
-//     * @param waitForNonStaleResultsTimeout wait timeout
-//     */
-//    public void setWaitForNonStaleResultsTimeout(Duration waitForNonStaleResultsTimeout) {
-//        assertNotFrozen();
-//        _waitForNonStaleResultsTimeout = waitForNonStaleResultsTimeout;
-//    }
-//
-//    /**
-//     * Gets the default timeout for DocumentSession.advanced().waitForReplicationAfterSaveChanges method.
-//     * @return wait timeout
-//     */
-//    public Duration getWaitForReplicationAfterSaveChangesTimeout() {
-//        return _waitForReplicationAfterSaveChangesTimeout;
-//    }
-//
-//    /**
-//     * Sets the default timeout for DocumentSession.advanced().waitForReplicationAfterSaveChanges method.
-//     * @param waitForReplicationAfterSaveChangesTimeout wait timeout
-//     */
-//    public void setWaitForReplicationAfterSaveChangesTimeout(Duration waitForReplicationAfterSaveChangesTimeout) {
-//        assertNotFrozen();
-//        _waitForReplicationAfterSaveChangesTimeout = waitForReplicationAfterSaveChangesTimeout;
-//    }
-//
-//    public Boolean isUseCompression() {
-//        if (_useCompression == null) {
-//            return true;
-//        }
-//        return _useCompression;
-//    }
-//
-//    public void setUseCompression(Boolean useCompression) {
-//        assertNotFrozen();
-//        _useCompression = useCompression;
-//    }
+    /**
+     * Sets the default timeout for DocumentSession waitForNonStaleResults methods.
+     * @param ?Duration $waitForNonStaleResultsTimeout wait timeout
+     */
+    public function setWaitForNonStaleResultsTimeout(?Duration $waitForNonStaleResultsTimeout): void
+    {
+        $this->assertNotFrozen();
+        $this->waitForNonStaleResultsTimeout = $waitForNonStaleResultsTimeout;
+    }
 
-    public function getEntityMapper(): EntityMapper
+    /**
+     * Gets the default timeout for DocumentSession.advanced().waitForReplicationAfterSaveChanges method.
+     * @return ?Duration wait timeout
+     */
+    public function getWaitForReplicationAfterSaveChangesTimeout(): ?Duration
+    {
+        return $this->waitForReplicationAfterSaveChangesTimeout;
+    }
+
+    /**
+     * Sets the default timeout for DocumentSession.advanced().waitForReplicationAfterSaveChanges method.
+     * @param ?Duration $waitForReplicationAfterSaveChangesTimeout wait timeout
+     */
+    public function setWaitForReplicationAfterSaveChangesTimeout(?Duration $waitForReplicationAfterSaveChangesTimeout): void
+    {
+        $this->assertNotFrozen();
+        $this->waitForReplicationAfterSaveChangesTimeout = $waitForReplicationAfterSaveChangesTimeout;
+    }
+
+    public function isUseCompression(): bool
+    {
+        if ($this->useCompression == null) {
+            return true;
+        }
+        return $this->useCompression;
+    }
+
+    public function setUseCompression(bool $useCompression): void
+    {
+        $this->assertNotFrozen();
+        $this->useCompression = $useCompression;
+    }
+
+    public function & getEntityMapper(): EntityMapper
     {
         return $this->entityMapper;
     }
@@ -471,7 +477,7 @@ class DocumentConventions
      *  selection for a particular session. Used in load balancing
      *  scenarios
      *
-     * @param Closure loadBalancerPerSessionContextSelector selector to use
+     * @param Closure $loadBalancerPerSessionContextSelector selector to use
      */
     public function setLoadBalancerPerSessionContextSelector(Closure $loadBalancerPerSessionContextSelector): void
     {
@@ -559,49 +565,59 @@ class DocumentConventions
     }
 
 
-//    public BiFunction<String, ObjectNode, String> getFindJavaClass() {
-//        return _findJavaClass;
-//    }
-//
-//    public void setFindJavaClass(BiFunction<String, ObjectNode, String> _findJavaClass) {
-//        assertNotFrozen();
-//        this._findJavaClass = _findJavaClass;
-//    }
-//
-//    public Function<Class, String> getFindJavaClassName() {
-//        return _findJavaClassName;
-//    }
-//
-//    public void setFindJavaClassName(Function<Class, String> findJavaClassName) {
-//        assertNotFrozen();
-//        _findJavaClassName = findJavaClassName;
-//    }
-//
-//    public Function<Class, String> getFindCollectionName() {
-//        return _findCollectionName;
-//    }
-//
-//    public Function<String, Class> getFindJavaClassByName() {
-//        return _findJavaClassByName;
-//    }
-//
-//    public void setFindJavaClassByName(Function<String, Class> findJavaClassByName) {
-//        _findJavaClassByName = findJavaClassByName;
-//    }
-//
-//    public void setFindCollectionName(Function<Class, String> findCollectionName) {
-//        assertNotFrozen();
-//        _findCollectionName = findCollectionName;
-//    }
-//
-//    public Function<String, String> getFindIdentityPropertyNameFromCollectionName() {
-//        return _findIdentityPropertyNameFromCollectionName;
-//    }
-//
-//    public void setFindIdentityPropertyNameFromCollectionName(Function<String, String> findIdentityPropertyNameFromCollectionName) {
-//        assertNotFrozen();
-//        this._findIdentityPropertyNameFromCollectionName = findIdentityPropertyNameFromCollectionName;
-//    }
+    public function getFindPhpClass(): Closure
+    {
+        return $this->findPhpClass;
+    }
+
+    public function setFindPhpClass(Closure $findPhpClass): void
+    {
+        $this->assertNotFrozen();
+        $this->findPhpClass = $findPhpClass;
+    }
+
+    public function getFindPhpClassName(): Closure
+    {
+        return $this->findPhpClassName;
+    }
+
+    public function setFindPhpClassName(Closure $findPhpClassName): void
+    {
+        $this->assertNotFrozen();
+        $this->findPhpClassName = $findPhpClassName;
+    }
+
+    public function getFindCollectionName(): Closure
+    {
+        return $this->findCollectionName;
+    }
+
+    public function setFindCollectionName(Closure $findCollectionName): void
+    {
+        $this->assertNotFrozen();
+        $this->findCollectionName = $findCollectionName;
+    }
+
+    public function getFindPhpClassByName(): Closure
+    {
+        return $this->findPhpClassByName;
+    }
+
+    public function setFindPhpClassByName(Closure $findPhpClassByName): void
+    {
+        $this->findPhpClassByName = $findPhpClassByName;
+    }
+
+    public function getFindIdentityPropertyNameFromCollectionName(): Closure
+    {
+        return $this->findIdentityPropertyNameFromCollectionName;
+    }
+
+    public function setFindIdentityPropertyNameFromCollectionName(Closure $findIdentityPropertyNameFromCollectionName): void
+    {
+        $this->assertNotFrozen();
+        $this->findIdentityPropertyNameFromCollectionName = $findIdentityPropertyNameFromCollectionName;
+    }
 
     public function getDocumentIdGenerator(): ?Closure
     {
@@ -737,14 +753,14 @@ class DocumentConventions
         if ($reflectionClass->isInterface()) {
             throw new IllegalStateException(
                 "Cannot find collection name for interface " . $className .
-                ", only concrete classes are supported. Did you forget to customize conventions.findCollectionName?"
+                ", only concrete classes are supported. Did you forget to customize conventions->findCollectionName?"
             );
         }
 
         if ($reflectionClass->isAbstract()) {
             throw new IllegalStateException(
                 "Cannot find collection name for abstract class " . $className .
-                ", only concrete class are supported. Did you forget to customize conventions.findCollectionName?"
+                ", only concrete class are supported. Did you forget to customize conventions->findCollectionName?"
             );
 
         }
@@ -787,8 +803,8 @@ class DocumentConventions
     {
         $collectionName = null;
         if (!empty($this->findCollectionName)) {
-            $methodName     = $this->findCollectionName;
-            $collectionName = $this->$methodName($className);
+            $f     = $this->findCollectionName;
+            $collectionName = $f($className);
         }
 
         if ($collectionName != null) {

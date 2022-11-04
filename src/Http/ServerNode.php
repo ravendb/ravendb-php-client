@@ -24,9 +24,12 @@ class ServerNode
         return $this->url;
     }
 
-    public function setUrl(?Url $url): void
+    /**
+     * @param Url|string|null $url
+     */
+    public function setUrl($url): void
     {
-        $this->url = $url;
+        $this->url = is_string($url) ? new Url($url) : $url;
     }
 
     public function getDatabase(): ?string

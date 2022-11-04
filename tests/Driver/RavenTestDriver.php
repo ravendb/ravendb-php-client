@@ -23,6 +23,10 @@ use RavenDB\Type\UrlArray;
 use RavenDB\Utils\Stopwatch;
 use RuntimeException;
 use RavenDB\Documents\Operations\Indexes\GetIndexErrorsOperation;
+use tests\RavenDB\Infrastructure\Graph\Genre;
+use tests\RavenDB\Infrastructure\Graph\Movie;
+use tests\RavenDB\Infrastructure\Graph\User;
+use tests\RavenDB\Infrastructure\Graph\UserRating;
 
 abstract class RavenTestDriver extends TestCase
 {
@@ -191,7 +195,6 @@ abstract class RavenTestDriver extends TestCase
 //        return store.initialize();
 //    }
 
-// @todo: implement method
     public static function waitForIndexing(
         DocumentStoreInterface $store,
         ?string $database = null,
@@ -247,16 +250,16 @@ abstract class RavenTestDriver extends TestCase
             }
         }
 
-//        $errors = $admin->send(new GetIndexErrorsOperation());
+        $errors = $admin->send(new GetIndexErrorsOperation());
         $allIndexErrorsText = "";
-//        Function<IndexErrors, String> formatIndexErrors = indexErrors -> {
-//            String errorsListText = Arrays.stream(indexErrors.getErrors()).map(x -> "-" + x).collect(Collectors.joining(System.lineSeparator()));
-//            return "Index " + indexErrors.getName() + " (" + indexErrors.getErrors().length + " errors): "+ System.lineSeparator() + errorsListText;
-//        };
-//        if (errors != null && errors.length > 0) {
-//            allIndexErrorsText = Arrays.stream(errors).map(formatIndexErrors).collect(Collectors.joining(System.lineSeparator()));
-//        }
-//
+        $formatIndexErrors = function(IndexErrors $indexErrors): string {
+            $errorsListText = implode(PHP_EOL, array_map(function($x) {return '-' . $x;}, $indexErrors->getErrors()->getArrayCopy()));
+            return "Index " . $indexErrors->getName() . " (" . count($indexErrors->getErrors()) . " errors): " . PHP_EOL . $errorsListText;
+        };
+        if (!empty($errors)) {
+            $allIndexErrorsText = implode(PHP_EOL, array_map($formatIndexErrors, $errors));
+        }
+
         throw new TimeoutException("The indexes stayed stale for more than " . $timeout->getSeconds() . "." . $allIndexErrorsText);
     }
 
@@ -290,7 +293,7 @@ abstract class RavenTestDriver extends TestCase
 //
 //        while (sw.elapsed(TimeUnit.MILLISECONDS) <= 10_000) {
 //            try (IDocumentSession session = store.openSession()) {
-//                if (!session.advanced().exists(id)) {
+//                if (!$session->advanced().exists(id)) {
 //                    return true;
 //                }
 //            }
@@ -359,7 +362,7 @@ abstract class RavenTestDriver extends TestCase
 //            }
 //
 //            try (IDocumentSession session = store.openSession()) {
-//                if (session.load(ObjectNode.class, "Debug/Done") != null) {
+//                if ($session->load(ObjectNode.class, "Debug/Done") != null) {
 //                    break;
 //                }
 //            }
@@ -414,15 +417,15 @@ abstract class RavenTestDriver extends TestCase
 //            entityC.setId("entity/3");
 //            entityC.setName("C");
 //
-//            session.store(entityA);
-//            session.store(entityB);
-//            session.store(entityC);
+//            $session->store(entityA);
+//            $session->store(entityB);
+//            $session->store(entityC);
 //
 //            entityA.setReferences(entityB.getId());
 //            entityB.setReferences(entityC.getId());
 //            entityC.setReferences(entityA.getId());
 //
-//            session.saveChanges();
+//            $session->saveChanges();
 //        }
 //    }
 //
@@ -437,11 +440,11 @@ abstract class RavenTestDriver extends TestCase
 //            Dog pheobe = new Dog();
 //            pheobe.setName("Pheobe");
 //
-//            session.store(arava);
-//            session.store(oscar);
-//            session.store(pheobe);
+//            $session->store(arava);
+//            $session->store(oscar);
+//            $session->store(pheobe);
 //
-//            session.saveChanges();
+//            $session->saveChanges();
 //        }
 //    }
 //
@@ -456,9 +459,9 @@ abstract class RavenTestDriver extends TestCase
 //            Dog pheobe = new Dog();
 //            pheobe.setName("Pheobe");
 //
-//            session.store(arava);
-//            session.store(oscar);
-//            session.store(pheobe);
+//            $session->store(arava);
+//            $session->store(oscar);
+//            $session->store(pheobe);
 //
 //            //dogs/1 => dogs/2
 //            arava.setLikes(new String[] { oscar.getId() });
@@ -472,91 +475,95 @@ abstract class RavenTestDriver extends TestCase
 //            pheobe.setLikes(new String[] { oscar.getId() });
 //            pheobe.setDislikes(new String[] { arava.getId() });
 //
-//            session.saveChanges();
+//            $session->saveChanges();
 //        }
 //    }
-//
-//    protected static void createMoviesData(IDocumentStore store) {
-//        try (IDocumentSession session = store.openSession()) {
-//            Genre scifi = new Genre();
-//            scifi.setId("genres/1");
-//            scifi.setName("Sci-Fi");
-//
-//            Genre fantasy = new Genre();
-//            fantasy.setId("genres/2");
-//            fantasy.setName("Fantasy");
-//
-//            Genre adventure = new Genre();
-//            adventure.setId("genres/3");
-//            adventure.setName("Adventure");
-//
-//            session.store(scifi);
-//            session.store(fantasy);
-//            session.store(adventure);
-//
-//            Movie starwars = new Movie();
-//            starwars.setId("movies/1");
-//            starwars.setName("Star Wars Ep.1");
-//            starwars.setGenres(Arrays.asList("genres/1", "genres/2"));
-//
-//            Movie firefly = new Movie();
-//            firefly.setId("movies/2");
-//            firefly.setName("Firefly Serenity");
-//            firefly.setGenres(Arrays.asList("genres/2", "genres/3"));
-//
-//            Movie indianaJones = new Movie();
-//            indianaJones.setId("movies/3");
-//            indianaJones.setName("Indiana Jones and the Temple Of Doom");
-//            indianaJones.setGenres(Arrays.asList("genres/3"));
-//
-//            session.store(starwars);
-//            session.store(firefly);
-//            session.store(indianaJones);
-//
-//            User user1 = new User();
-//            user1.setId("users/1");
-//            user1.setName("Jack");
-//
-//            User.Rating rating11 = new User.Rating();
-//            rating11.setMovie("movies/1");
-//            rating11.setScore(5);
-//
-//            User.Rating rating12 = new User.Rating();
-//            rating12.setMovie("movies/2");
-//            rating12.setScore(7);
-//
-//            user1.setHasRated(Arrays.asList(rating11, rating12));
-//            session.store(user1);
-//
-//            User user2 = new User();
-//            user2.setId("users/2");
-//            user2.setName("Jill");
-//
-//            User.Rating rating21 = new User.Rating();
-//            rating21.setMovie("movies/2");
-//            rating21.setScore(7);
-//
-//            User.Rating rating22 = new User.Rating();
-//            rating22.setMovie("movies/3");
-//            rating22.setScore(9);
-//
-//            user2.setHasRated(Arrays.asList(rating21, rating22));
-//
-//            session.store(user2);
-//
-//            User user3 = new User();
-//            user3.setId("users/3");
-//            user3.setName("Bob");
-//
-//            User.Rating rating31 = new User.Rating();
-//            rating31.setMovie("movies/3");
-//            rating31.setScore(5);
-//
-//            user3.setHasRated(Arrays.asList(rating31));
-//
-//            session.store(user3);
-//
-//            session.saveChanges();
-//        }
-//    }
+
+    protected static function createMoviesData(DocumentStoreInterface $store): void
+    {
+        $session = $store->openSession();
+        try {
+            $scifi = new Genre();
+            $scifi->setId("genres/1");
+            $scifi->setName("Sci-Fi");
+
+            $fantasy = new Genre();
+            $fantasy->setId("genres/2");
+            $fantasy->setName("Fantasy");
+
+            $adventure = new Genre();
+            $adventure->setId("genres/3");
+            $adventure->setName("Adventure");
+
+            $session->store($scifi);
+            $session->store($fantasy);
+            $session->store($adventure);
+
+            $starwars = new Movie();
+            $starwars->setId("movies/1");
+            $starwars->setName("Star Wars Ep.1");
+            $starwars->setGenres(["genres/1", "genres/2"]);
+
+            $firefly = new Movie();
+            $firefly->setId("movies/2");
+            $firefly->setName("Firefly Serenity");
+            $firefly->setGenres(["genres/2", "genres/3"]);
+
+            $indianaJones = new Movie();
+            $indianaJones->setId("movies/3");
+            $indianaJones->setName("Indiana Jones and the Temple Of Doom");
+            $indianaJones->setGenres(["genres/3"]);
+
+            $session->store($starwars);
+            $session->store($firefly);
+            $session->store($indianaJones);
+
+            $user1 = new User();
+            $user1->setId("users/1");
+            $user1->setName("Jack");
+
+            $rating11 = new UserRating();
+            $rating11->setMovie("movies/1");
+            $rating11->setScore(5);
+
+            $rating12 = new UserRating();
+            $rating12->setMovie("movies/2");
+            $rating12->setScore(7);
+
+            $user1->setHasRated([$rating11, $rating12]);
+            $session->store($user1);
+
+            $user2 = new User();
+            $user2->setId("users/2");
+            $user2->setName("Jill");
+
+            $rating21 = new UserRating();
+            $rating21->setMovie("movies/2");
+            $rating21->setScore(7);
+
+            $rating22 = new UserRating();
+            $rating22->setMovie("movies/3");
+            $rating22->setScore(9);
+
+            $user2->setHasRated([$rating21, $rating22]);
+
+            $session->store($user2);
+
+            $user3 = new User();
+            $user3->setId("users/3");
+            $user3->setName("Bob");
+
+            $rating31 = new UserRating();
+            $rating31->setMovie("movies/3");
+            $rating31->setScore(5);
+
+            $user3->setHasRated([$rating31]);
+
+            $session->store($user3);
+
+            $session->saveChanges();
+        } finally {
+            $session->close();
+        }
+    }
 }

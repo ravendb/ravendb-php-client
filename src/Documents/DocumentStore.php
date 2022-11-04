@@ -13,7 +13,9 @@ use RavenDB\Documents\Session\DocumentSessionInterface;
 use RavenDB\Documents\Session\SessionOptions;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Http\RequestExecutor;
+use RavenDB\Http\RequestExecutorMap;
 use RavenDB\Primitives\ClosureArray;
 use RavenDB\Primitives\EventArgs;
 use RavenDB\Primitives\EventHelper;
@@ -27,6 +29,7 @@ class DocumentStore extends DocumentStoreBase
 //    private ExecutorService $executorService = Executors::newCachedThreadPool();
 
 //    private final ConcurrentMap<String, Lazy<RequestExecutor>> requestExecutors = new ConcurrentSkipListMap<>(String.CASE_INSENSITIVE_ORDER);
+    private ?RequestExecutorMap $requestExecutors = null;
 //
     private ?MultiDatabaseHiLoIdGenerator $multiDbHiLo = null;
 
@@ -44,6 +47,8 @@ class DocumentStore extends DocumentStoreBase
     public function __construct($urls = null, ?string $database = null)
     {
         parent::__construct();
+
+        $this->requestExecutors = new RequestExecutorMap();
 
         if ($urls !== null) {
             $this->setUrls($urls);
@@ -124,6 +129,8 @@ class DocumentStore extends DocumentStoreBase
 //        }
 //
 //        executorService.shutdown();
+
+        JsonExtensions::reset();
     }
 
     /**
@@ -182,57 +189,44 @@ class DocumentStore extends DocumentStoreBase
         return $session;
     }
 
-    /**
-     * @throws InvalidArgumentException
-     * @throws IllegalStateException
-     */
-    public function getRequestExecutor(string $databaseName = null): RequestExecutor
+    public function getRequestExecutor(?string $database = null): RequestExecutor
     {
         $this->assertInitialized();
-        $databaseName = $this->getEffectiveDatabase($databaseName);
 
-        return RequestExecutor::create($this->getUrls(), $databaseName, $this->authOptions, $this->getConventions());
+        $database = $this->getEffectiveDatabase($database);
+
+        $executor = $this->requestExecutors->offsetExists($database) ? $this->requestExecutors->offsetGet($database) : null;
+        if ($executor != null) {
+            return $executor;
+        }
+
+        $effectiveDatabase = $database;
+        $self = $this;
+
+        $createRequestExecutor = function() use($effectiveDatabase, $self) : RequestExecutor {
+            $requestExecutor = RequestExecutor::create($this->getUrls(), $effectiveDatabase, $this->authOptions, $this->getConventions());
+            $self->registerEvents($requestExecutor);
+            return $requestExecutor;
+        };
+
+        $createRequestExecutorForSingleNode = function() use ($effectiveDatabase, $self) : RequestExecutor {
+            $forSingleNode = RequestExecutor::createForSingleNodeWithConfigurationUpdates($this->getUrls()[0], $effectiveDatabase, $this->authOptions, $this->getConventions());
+            $self->registerEvents($forSingleNode);
+            return $forSingleNode;
+        };
+
+        if (!$this->getConventions()->isDisableTopologyUpdates()) {
+            $executor = $createRequestExecutor();
+        } else {
+            $executor = $createRequestExecutorForSingleNode();
+        }
+
+        $this->requestExecutors->offsetSet($database, $executor);
+
+        return $executor;
     }
 
-//    @Override
-//    public RequestExecutor getRequestExecutor(String database) {
-//        assertInitialized();
-//
-//        database = getEffectiveDatabase(database);
-//
-//        Lazy<RequestExecutor> executor = requestExecutors.get(database);
-//        if (executor != null) {
-//            return executor.getValue();
-//        }
-//
-//        final String effectiveDatabase = database;
-//
-//        Supplier<RequestExecutor> createRequestExecutor = () -> {
-//            RequestExecutor requestExecutor = RequestExecutor.create(getUrls(), effectiveDatabase, getCertificate(), getCertificatePrivateKeyPassword(), getTrustStore(), executorService, getConventions());
-//            registerEvents(requestExecutor);
-//
-//            return requestExecutor;
-//        };
-//
-//        Supplier<RequestExecutor> createRequestExecutorForSingleNode = () -> {
-//            RequestExecutor forSingleNode = RequestExecutor.createForSingleNodeWithConfigurationUpdates(getUrls()[0], effectiveDatabase, getCertificate(), getCertificatePrivateKeyPassword(), getTrustStore(), executorService, getConventions());
-//            registerEvents(forSingleNode);
-//
-//            return forSingleNode;
-//        };
-//
-//        if (!getConventions().isDisableTopologyUpdates()) {
-//            executor = new Lazy<>(createRequestExecutor);
-//        } else {
-//            executor = new Lazy<>(createRequestExecutorForSingleNode);
-//        }
-//
-//        requestExecutors.put(database, executor);
-//
-//        return executor.getValue();
-//    }
-//
-//    @Override
+
 //    public CleanCloseable setRequestTimeout(Duration timeout) {
 //        return setRequestTimeout(timeout, null);
 //    }

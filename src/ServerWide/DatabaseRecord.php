@@ -2,6 +2,8 @@
 
 namespace RavenDB\ServerWide;
 
+use RavenDB\Documents\Indexes\AutoIndexDefinition;
+use RavenDB\Documents\Indexes\AutoIndexDefinitionMap;
 use RavenDB\Documents\Indexes\RollingIndex;
 use RavenDB\Documents\Indexes\RollingIndexArray;
 use RavenDB\Documents\Operations\Revisions\RevisionsCollectionConfiguration;
@@ -43,7 +45,9 @@ class DatabaseRecord
 //    private Map<String, AnalyzerDefinition> analyzers = new HashMap<>();
 //    private Map<String, IndexDefinition> indexes;
 //    private Map<String, List<IndexHistoryEntry>> indexesHistory;
-//    private Map<String, AutoIndexDefinition> autoIndexes;
+
+    /** @SerializedName("AutoIndexes") */
+    private ?AutoIndexDefinitionMap $autoIndexes =  null;
 //    private Map<String, String> settings = new HashMap<>();
     private RevisionsConfiguration $revisions;
     private TimeSeriesConfiguration $timeSeries;
@@ -73,6 +77,8 @@ class DatabaseRecord
         $this->deletionInProgress = new DeletionInProgressStatusArray();
         $this->lockMode = DatabaseLockMode::none();
         $this->databaseState = DatabaseStateStatus::normal();
+
+        $this->autoIndexes = new AutoIndexDefinitionMap();
     }
 
     public function getDatabaseName(): string
@@ -219,13 +225,15 @@ class DatabaseRecord
 //        this.indexes = indexes;
 //    }
 //
-//    public Map<String, AutoIndexDefinition> getAutoIndexes() {
-//        return autoIndexes;
-//    }
-//
-//    public void setAutoIndexes(Map<String, AutoIndexDefinition> autoIndexes) {
-//        this.autoIndexes = autoIndexes;
-//    }
+    public function getAutoIndexes(): ?AutoIndexDefinitionMap
+    {
+        return $this->autoIndexes;
+    }
+
+    public function setAutoIndexes(?AutoIndexDefinitionMap $autoIndexes): void
+    {
+        $this->autoIndexes = $autoIndexes;
+    }
 
     public function getRevisions(): RevisionsConfiguration
     {

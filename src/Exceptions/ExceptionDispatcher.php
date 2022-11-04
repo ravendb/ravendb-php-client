@@ -3,7 +3,7 @@
 namespace RavenDB\Exceptions;
 
 use RavenDB\Constants\HttpStatusCode;
-use RavenDB\Documents\Compilation\IndexCompilationException;
+use RavenDB\Exceptions\Documents\Compilation\IndexCompilationException;
 use RavenDB\Exceptions\Documents\DocumentConflictException;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Http\HttpResponse;
@@ -38,7 +38,7 @@ class ExceptionDispatcher
             return new RavenException($error, $inner);
         }
 
-        if (!is_a($type, RavenException::class)) {
+        if (!is_a($type, RavenException::class, true)) {
             return new RavenException($error, $exception);
         }
 
@@ -79,13 +79,13 @@ class ExceptionDispatcher
             if ($exception instanceof IndexCompilationException) {
                 /** @var IndexCompilationException $indexCompilationException */
                 $indexCompilationException = $exception;
-                $jsonNode = JsonExtensions::getDefaultMapper()->denormalize($json, \ArrayObject::class);
-                $indexDefinitionProperty = $jsonNode['TransformerDefinitionProperty'];
+                $jsonNode = JsonExtensions::getDefaultMapper()->decode($json, 'json');
+                $indexDefinitionProperty = array_key_exists('TransformerDefinitionProperty', $jsonNode) ?  $jsonNode['TransformerDefinitionProperty'] : null;
                 if ($indexDefinitionProperty != null) {
                     $indexCompilationException->setIndexDefinitionProperty($indexDefinitionProperty);
                 }
 
-                $problematicText = $jsonNode['ProblematicText'];
+                $problematicText = array_key_exists('ProblematicText', $jsonNode) ?  $jsonNode['ProblematicText'] : null;
                 if ($problematicText != null) {
                     $indexCompilationException->setProblematicText($problematicText);
                 }
@@ -119,7 +119,7 @@ class ExceptionDispatcher
         throw new ConcurrencyException($schema->getError());
     }
 
-    private static function getType(string $typeAsString): ?string
+    private static function getType(?string $typeAsString): ?string
     {
         if ($typeAsString == "System.TimeoutException") {
             return TimeoutException::class;

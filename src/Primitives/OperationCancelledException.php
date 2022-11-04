@@ -6,7 +6,7 @@ use Throwable;
 
 class OperationCancelledException extends \RuntimeException
 {
-    private Throwable $cause;
+    private ?Throwable $cause = null;
 
     public function __construct($message = "", ?Throwable $cause = null)
     {

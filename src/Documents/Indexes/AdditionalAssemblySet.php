@@ -11,14 +11,15 @@ class AdditionalAssemblySet extends TypedSet
         parent::__construct(AdditionalAssembly::class);
     }
 
-    public static function fromArray(array $items): AdditionalAssemblySet
+    public static function fromArray(array $data, $nullAllowed = false): AdditionalAssemblySet
     {
-        $set = new AdditionalAssemblySet();
+        $sa = new AdditionalAssemblySet();
+        $sa->setNullAllowed($nullAllowed);
 
-        foreach ($items as $item) {
-            $set->append($item);
+        foreach ($data as $key => $value) {
+            $sa->offsetSet($key, $value);
         }
 
-        return $set;
+        return $sa;
     }
 }
