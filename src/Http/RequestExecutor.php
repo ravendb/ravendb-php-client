@@ -966,7 +966,7 @@ class RequestExecutor implements CleanCloseable
 
         /** @var Url $url */
         foreach ($initialUrls as $url) {
-            if (!$url->getScheme() == "http://") {
+            if ($url->getScheme() != "http") {
                 continue;
             }
 
