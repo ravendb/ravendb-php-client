@@ -6,21 +6,9 @@ PHP client API (v5.2) for [RavenDB](https://ravendb.net/) , a NoSQL document dat
 
 **Package has been made to match Java and other RavenDB clients**
 
-> Please note that **RavenDB PHP client** is still under **DEVELOPMENT** and client API can be changed.
-
 ## Installation
 
-In order to add this library to your project, first you must add the following line to your project composer.json:  
-
-``` json
-{ 
-    ...
-    "minimum-stability": "dev",
-    ... 
-}
-```
-
-Then you can install library to your project via [Composer](https://getcomposer.org/)
+You can install library to your project via [Composer](https://getcomposer.org/)
 
 ``` bash
 $ composer require ravendb/ravendb-php-client
@@ -74,21 +62,27 @@ try {
 
 Read more about **RavenDB** and how to use it in our [documentation](https://ravendb.net/docs/).
 
-## What's new?
+## Client features
 
-#### 5.2.0beta1
-
-- **session**
+- *session*
     - ability to track objects
     - crud
+    - delete
     - include
     - no tracking
+    - cluster transactions
+    - conditional load
 
-- **indexes**
+- *attachments*
+    - crud
+    - session
+    - move, rename
+
+- *indexes*
     - crud (static/auto)
     - modify state: (setting index priority, enabling/disabling indexes, start/stop index, list/clean indexing errors, getting terms)
 
-- **query**
+- *query*
     - static/dynamic indexes
     - document query methos (where equals, starts with, etc)
     - aggregation (group by )
@@ -97,22 +91,20 @@ Read more about **RavenDB** and how to use it in our [documentation](https://rav
     - select fields (projection)
     - delete/patch by query
 
-- **https support**
+- *https support*
     - certificates crud
     - request executor
 
-- **compare exchange**
+- *compare exchange*
     - crud
     - session
 
-- **patch**
+- *patch*
     - by script
     - by path
 
-- **databases**
+- *databases*
     - crud
-
-> The client is still in the **beta** phase.
 
 ----
 #### RavenDB Documentation
