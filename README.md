@@ -40,7 +40,7 @@ try {
         // after calling saveChanges(), an id field if exists
         // is filled by the entity's id
         $companyId = $entity->getId();
-    } finnaly {
+    } finally {
         $session->close();
     }
     
@@ -50,7 +50,7 @@ try {
         $entity = $session->load(Company::class, $companyId);
     
         // do something with the loaded entity
-    } finnaly {
+    } finally {
         $session->close();
     }
 
