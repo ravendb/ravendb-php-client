@@ -177,7 +177,7 @@ class HiLoTest extends RemoteTestBase
         }
     }
 
-    // we already are not implementing async call at the moment, so this test is not to be implemented at the moment
+    // we already decide to not implement async call at the moment, so this test is not going be implemented at the moment
     public function atestDoesNotGetAnotherRangeWhenDoingParallelRequests(): void
     {
         $store = $this->getDocumentStore();

@@ -911,7 +911,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
             return;
         }
 
-        if (end($tokens) instanceof QueryOperatorToken) {
+        if ($tokens->last() instanceof QueryOperatorToken) {
             throw new IllegalStateException("Cannot add AND, previous token was already an operator token.");
         }
 
