@@ -22,7 +22,7 @@ class ObjectArray extends ExtendedArrayObject
         return $sa;
     }
 
-    public function offsetSet($key, $value)
+    public function offsetSet($key, $value): void
     {
         if (!is_object($value) && ($value != null)) {
             throw new \TypeError("Only object as values are supported");

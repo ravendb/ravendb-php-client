@@ -19,7 +19,7 @@ class DotNetNamingConverter implements NameConverterInterface
         return $this->enabled;
     }
 
-    public function normalize(string $propertyName)
+    public function normalize(string $propertyName): string
     {
         if (!$this->isEnabled()) {
             return $propertyName;
@@ -28,7 +28,7 @@ class DotNetNamingConverter implements NameConverterInterface
         return StringUtils::capitalize($propertyName);
     }
 
-    public function denormalize(string $propertyName)
+    public function denormalize(string $propertyName): string
     {
         if (!$this->isEnabled()) {
             return $propertyName;

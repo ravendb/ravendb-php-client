@@ -253,11 +253,11 @@ abstract class RavenTestDriver extends TestCase
         $errors = $admin->send(new GetIndexErrorsOperation());
         $allIndexErrorsText = "";
         $formatIndexErrors = function(IndexErrors $indexErrors): string {
-            $errorsListText = implode(PHP_EOL, array_map(function($x) {return '-' . $x;}, $indexErrors->getErrors()->getArrayCopy()));
+            $errorsListText = implode(PHP_EOL, array_map(function($x) {return '-' . $x->getError();}, $indexErrors->getErrors()->getArrayCopy()));
             return "Index " . $indexErrors->getName() . " (" . count($indexErrors->getErrors()) . " errors): " . PHP_EOL . $errorsListText;
         };
         if (!empty($errors)) {
-            $allIndexErrorsText = implode(PHP_EOL, array_map($formatIndexErrors, $errors));
+            $allIndexErrorsText = implode(PHP_EOL, array_map($formatIndexErrors, $errors->getArrayCopy()));
         }
 
         throw new TimeoutException("The indexes stayed stale for more than " . $timeout->getSeconds() . "." . $allIndexErrorsText);

@@ -352,6 +352,9 @@ class GetDocumentsCommand extends RavenCommand
         $totalLength = intval(array_reduce(
             array_map(
                 function($id) {
+                    if (empty($id)) {
+                        return 0;
+                    }
                     return strlen($id);
                 },
                 $uniqueIds

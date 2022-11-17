@@ -1033,7 +1033,7 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
      */
     public function documentQuery(?string $className, $indexNameOrClass = null, ?string $collectionName = null, bool $isMapReduce = false): DocumentQueryInterface
     {
-        if (class_exists($indexNameOrClass) && is_a($indexNameOrClass,  AbstractCommonApiForIndexes::class, true)) {
+        if (!empty($indexNameOrClass) && class_exists($indexNameOrClass) && is_a($indexNameOrClass,  AbstractCommonApiForIndexes::class, true)) {
             try {
                 $index = new $indexNameOrClass();
                 return  $this->_documentQuery($className, $index->getIndexName(), null, $index->isMapReduce());
