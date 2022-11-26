@@ -62,6 +62,9 @@ try {
 
 Read more about **RavenDB** and how to use it in our [documentation](https://ravendb.net/docs/).
 
+Check out also the [Raven Laravel Demo Application](https://github.com/ravendb/samples-php-laravel) 
+for more information on how to use **RavenDB** with **Laravel**.  
+
 ## Client features
 
 - *session*
