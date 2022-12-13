@@ -3,7 +3,7 @@
 namespace RavenDB\Documents\Session;
 
 use RavenDB\Documents\Conventions\DocumentConventions;
-use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRangeArray;
+use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRangeSet;
 use RavenDB\Documents\Session\Operations\Lazy\EagerSessionOperationsInterface;
 use RavenDB\Type\ObjectArray;
 use RavenDB\Type\StringArray;
@@ -13,13 +13,13 @@ interface DocumentSessionImplementationInterface extends DocumentSessionInterfac
     public function getConventions(): DocumentConventions;
 
     public function loadInternal(
-        string $className,
-        ?StringArray $ids,
-        ?StringArray $includes,
-        ?StringArray $counterIncludes = null,
-        bool $includeAllCounters = false,
-        ?AbstractTimeSeriesRangeArray $timeSeriesIncludes = null,
-        ?StringArray $compareExchangeValueIncludes = null
+        string                      $className,
+        ?StringArray                $ids,
+        ?StringArray                $includes,
+        ?StringArray                $counterIncludes = null,
+        bool                        $includeAllCounters = false,
+        ?AbstractTimeSeriesRangeSet $timeSeriesIncludes = null,
+        ?StringArray                $compareExchangeValueIncludes = null
     ): ObjectArray;
 
     // @todo: uncomment this for lazy loading

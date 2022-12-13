@@ -33,10 +33,10 @@ class ClientConfiguration
 
     public function setIdentityPartsSeparator(?string $identityPartsSeparator): void
     {
-        if ($identityPartsSeparator != null && '|' == $identityPartsSeparator) {
+        if ('|' == $identityPartsSeparator) {
             throw new IllegalArgumentException("Cannot set identity parts separator to '|'");
         }
-        if (strlen($identityPartsSeparator) > 1) {
+        if ($identityPartsSeparator != null && strlen($identityPartsSeparator) > 1) {
             throw new IllegalArgumentException("Cannot set identity parts separator to string longer then 1");
         }
         $this->identityPartsSeparator = $identityPartsSeparator;

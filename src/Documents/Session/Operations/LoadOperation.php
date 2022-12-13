@@ -5,7 +5,7 @@ namespace RavenDB\Documents\Session\Operations;
 use InvalidArgumentException;
 use RavenDB\Documents\Commands\GetDocumentsCommand;
 use RavenDB\Documents\Commands\GetDocumentsResult;
-use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRangeArray;
+use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRangeSet;
 use RavenDB\Documents\Session\DocumentInfo;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Exceptions\IllegalStateException;
@@ -29,7 +29,7 @@ class LoadOperation
     private ?StringArray $compareExchangeValuesToInclude = null;
 
     private bool  $includeAllCounters = false;
-    private AbstractTimeSeriesRangeArray $timeSeriesToInclude;
+    private AbstractTimeSeriesRangeSet $timeSeriesToInclude;
 
     private bool $resultsSet = false;
     private GetDocumentsResult $results;
@@ -42,7 +42,7 @@ class LoadOperation
         $this->includes = new StringArray();
         $this->countersToInclude = new StringArray();
 
-        $this->timeSeriesToInclude = new AbstractTimeSeriesRangeArray();
+        $this->timeSeriesToInclude = new AbstractTimeSeriesRangeSet();
 
         if (self::$logger == null) {
             self::$logger = LoggerFactory::getLogger(LoadOperation::class);
@@ -129,7 +129,7 @@ class LoadOperation
         return $this;
     }
 
-    public function withTimeSeries(?AbstractTimeSeriesRangeArray $timeSeries): LoadOperation
+    public function withTimeSeries(?AbstractTimeSeriesRangeSet $timeSeries): LoadOperation
     {
         if ($timeSeries != null) {
             $this->timeSeriesToInclude = $timeSeries;

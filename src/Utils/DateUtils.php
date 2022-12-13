@@ -7,15 +7,35 @@ use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
+use Exception;
 
 class DateUtils
 {
 
     /**
      * @param DateTime|DateTimeImmutable $dateTime
+     * @param int $days
+     *
+     * @return DateTimeInterface
+     *
+     * @throws Exception
+     */
+    public static function addDays(DateTimeInterface $dateTime, int $days): DateTimeInterface
+    {
+        $interval = new DateInterval('P' . abs($days) . 'D');
+        if ($days < 0) {
+            $interval->invert = 1;
+        }
+
+        $newDateTime = clone $dateTime;
+        return $newDateTime->add($interval);
+    }
+
+    /**
+     * @param DateTime|DateTimeImmutable $dateTime
      * @param int $hours
      * @return DateTimeInterface
-     * @throws \Exception
+     * @throws Exception
      */
     public static function addHours(DateTimeInterface $dateTime, int $hours): DateTimeInterface
     {
@@ -29,14 +49,14 @@ class DateUtils
     }
 
     /**
-     * @param DateTime|DateTimeImmutable $dateTime
+     * @param DateTime $dateTime
      * @param int $minutes
      * @return DateTimeInterface
-     * @throws \Exception
+     * @throws Exception
      */
-    public static function addMinutes(DateTimeInterface $dateTime, int $minutes): DateTimeInterface
+    public static function addMinutes(DateTime $dateTime, int $minutes): DateTimeInterface
     {
-        $interval = new DateInterval('PT' . abs($minutes) . 'H');
+        $interval = new DateInterval('PT' . abs($minutes) . 'M');
         if ($minutes < 0) {
             $interval->invert = 1;
         }
@@ -46,23 +66,23 @@ class DateUtils
     }
 
     /**
-     * @param DateTime|DateTimeImmutable $dateTime
-     * @param int $days
-     *
+     * @param DateTime $dateTime
+     * @param int $seconds
      * @return DateTimeInterface
-     *
-     * @throws \Exception
+     * @throws Exception
      */
-    public static function addDays(DateTimeInterface $dateTime, int $days): DateTimeInterface
+    public static function addSeconds(DateTime $dateTime, int $seconds): DateTimeInterface
     {
-        $interval = new DateInterval('P' . abs($days) . 'D');
-        if ($days < 0) {
+        $interval = new DateInterval('PT' . abs($seconds) . 'S');
+        if ($seconds < 0) {
             $interval->invert = 1;
         }
 
         $newDateTime = clone $dateTime;
         return $newDateTime->add($interval);
     }
+
+
 
     public static function unixEpochStart(): DateTimeInterface
     {
@@ -78,10 +98,18 @@ class DateUtils
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public static function now(): DateTime
     {
         return new DateTime('now', new DateTimeZone('Z'));
+    }
+
+    public static function truncateDayOfMonth(DateTime $date): DateTime
+    {
+        $newDate = clone $date;
+        $newDate->setTime(0, 0,0,0);
+
+        return $newDate;
     }
 }

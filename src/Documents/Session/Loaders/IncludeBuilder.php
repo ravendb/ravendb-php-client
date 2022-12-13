@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Session\Loaders;
 
+use DateTimeInterface;
 use RavenDB\Documents\Conventions\DocumentConventions;
 
 /**
@@ -37,17 +38,12 @@ class IncludeBuilder extends IncludeBuilderBase implements IncludeBuilderInterfa
 //        _includeAllCounters("");
 //        return this;
 //    }
-//
-//    @Override
-//    public IIncludeBuilder includeTimeSeries(String name) {
-//        return includeTimeSeries(name, (Date) null, null);
-//    }
-//
-//    @Override
-//    public IIncludeBuilder includeTimeSeries(String name, Date from, Date to) {
-//        _includeTimeSeriesFromTo("", name, from, to);
-//        return this;
-//    }
+
+    public function includeTimeSeries(?string $name, ?DateTimeInterface $from = null, ?DateTimeInterface $to = null): IncludeBuilderInterface
+    {
+        $this->_includeTimeSeriesFromTo("", $name, $from, $to);
+        return $this;
+    }
 
     public function includeCompareExchangeValue(?string $path): IncludeBuilderInterface
     {
