@@ -5,6 +5,7 @@ namespace RavenDB\Documents\Session;
 use Closure;
 use RavenDB\Constants\HttpStatusCode;
 use RavenDB\Documents\Commands\ConditionalGetDocumentsCommand;
+use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRange;
 use ReflectionException;
 use InvalidArgumentException;
 use Ramsey\Uuid\UuidInterface;
@@ -19,7 +20,7 @@ use RavenDB\Documents\DocumentStore;
 use RavenDB\Documents\Indexes\AbstractCommonApiForIndexes;
 use RavenDB\Documents\Linq\DocumentQueryGeneratorInterface;
 use RavenDB\Documents\Operations\PatchRequest;
-use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRangeArray;
+use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRangeSet;
 use RavenDB\Documents\Queries\Query;
 use RavenDB\Documents\Session\Loaders\IncludeBuilder;
 use RavenDB\Documents\Session\Loaders\IncludeBuilderInterface;
@@ -397,7 +398,7 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
             if (is_array($params[0])) {
                 $ids = new StringArray();
                 foreach ($params[0] as $id) {
-                    if (!empty(trim($id))) {
+                    if (($id != null) && !empty(trim($id))) {
                         $ids->append($id);
                     }
                 }
@@ -526,9 +527,10 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 
         // @todo: continue work with includes from here
         $timeSeriesIncludes = null;
-//        List<AbstractTimeSeriesRange> timeSeriesIncludes = includeBuilder.getTimeSeriesToInclude() != null
-//                ? new ArrayList<>(includeBuilder.getTimeSeriesToInclude())
-//                : null;
+        /** @var array<AbstractTimeSeriesRange> $timeSeriesIncludes */
+        $timeSeriesIncludes = $includeBuilder->getTimeSeriesToInclude() != null
+                ? $includeBuilder->getTimeSeriesToInclude()
+                : null;
 
         $compareExchangeValuesToInclude = $includeBuilder->getCompareExchangeValuesToInclude() != null
             ? $includeBuilder->getCompareExchangeValuesToInclude()
@@ -545,13 +547,13 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
     }
 
     public function loadInternal(
-        string $className,
-        ?StringArray $ids,
-        ?StringArray $includes,
-        ?StringArray $counterIncludes = null,
-        bool $includeAllCounters = false,
-        ?AbstractTimeSeriesRangeArray $timeSeriesIncludes = null,
-        ?StringArray $compareExchangeValueIncludes = null
+        string                      $className,
+        ?StringArray                $ids,
+        ?StringArray                $includes,
+        ?StringArray                $counterIncludes = null,
+        bool                        $includeAllCounters = false,
+        ?AbstractTimeSeriesRangeSet $timeSeriesIncludes = null,
+        ?StringArray                $compareExchangeValueIncludes = null
     ): ObjectArray {
         if ($ids == null) {
             throw new IllegalArgumentException("Ids cannot be null");
@@ -1284,17 +1286,12 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //        GraphDocumentQuery<T> graphQuery = new GraphDocumentQuery<T>(clazz, this, query);
 //        return graphQuery;
 //    }
-//
-//    @Override
-//    public ISessionDocumentTimeSeries timeSeriesFor(String documentId, String name) {
-//        return new SessionDocumentTimeSeries(this, documentId, name);
-//    }
-//
-//    @Override
-//    public ISessionDocumentTimeSeries timeSeriesFor(Object entity, String name) {
-//        return new SessionDocumentTimeSeries(this, entity, name);
-//    }
-//
+
+    public function timeSeriesFor(string|object|null $idOrEntity, ?string $name): SessionDocumentTimeSeriesInterface
+    {
+        return new SessionDocumentTimeSeries($this, $idOrEntity, $name);
+    }
+
 //    @Override
 //    public <T> ISessionDocumentTypedTimeSeries<T> timeSeriesFor(Class<T> clazz, Object entity) {
 //        return timeSeriesFor(clazz, entity, null);

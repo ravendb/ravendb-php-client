@@ -2,9 +2,9 @@
 
 namespace RavenDB\Json;
 
-use _PHPStan_76800bfb5\Nette\NotImplementedException;
 use RavenDB\Documents\Session\MetadataDictionaryInterface;
 use RavenDB\Exceptions\IllegalArgumentException;
+use RavenDB\Exceptions\NotImplementedException;
 use RavenDB\Type\StringSet;
 
 class MetadataAsDictionary implements MetadataDictionaryInterface

@@ -23,9 +23,12 @@ use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\DocumentStoreBase;
 use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Documents\Identity\GenerateEntityIdOnTheClient;
+use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeResult;
+use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeResultList;
 use RavenDB\Exceptions\Documents\Session\NonUniqueObjectException;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Extensions\EntityMapper;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Extensions\StringExtensions;
 use RavenDB\Http\RavenCommand;
@@ -65,7 +68,12 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     protected bool $isDisposed = false;
 
-//    protected final ObjectMapper mapper = JsonExtensions.getDefaultMapper();
+    protected ?EntityMapper $mapper = null;
+
+    public function getMapper(): EntityMapper
+    {
+        return $this->mapper;
+    }
 
     protected UuidInterface $id;
 
@@ -170,7 +178,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     // @todo: This should be set of strings / not array !!! - fix this in future (now it's working like this)
 
-    //Entities whose id we already know do not exists, because they are a missing include, or a missing load, etc.
+    //Entities whose id we already know do not exist, because they are a missing include, or a missing load, etc.
     protected array $knownMissingIds = [];
 
 //    private Map<String, Object> externalState;
@@ -223,15 +231,17 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     // @todo: Change from array to adequate format
 //    private Map<String, Map<String, List<TimeSeriesRangeResult>>> _timeSeriesByDocId;
-    private array $timeSeriesByDocId = [];
+    private ?array $timeSeriesByDocId = null;
 
-//    public Map<String, Map<String, List<TimeSeriesRangeResult>>> getTimeSeriesByDocId() {
-//        if (_timeSeriesByDocId == null) {
-//            _timeSeriesByDocId = new TreeMap<>(String::compareToIgnoreCase);
-//        }
-//
-//        return _timeSeriesByDocId;
-//    }
+    // @todo: Change return type from array to adequate format
+    public function & getTimeSeriesByDocId(): array // Map<String, Map<String, List<TimeSeriesRangeResult>>>
+    {
+        if ($this->timeSeriesByDocId == null) {
+            $this->timeSeriesByDocId = [];
+        }
+
+        return $this->timeSeriesByDocId;
+    }
 
     protected DocumentStoreBase $documentStore;
 
@@ -427,6 +437,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
         $this->entityToJson = new EntityToJson($this);
 
+        $this->mapper = JsonExtensions::getDefaultMapper();
+
         //-- Init
 
         $this->id = $id;
@@ -504,35 +516,37 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //                .mapToObj(i -> countersArray.get(i).asText())
 //                .collect(Collectors.toList());
 //    }
-//
-//    /**
-//     * Gets all time series names for the specified entity.
-//     * @param instance Entity
-//     * @param <T> Entity class
-//     * @return time series names
-//     */
-//    public <T> List<String> getTimeSeriesFor(T instance) {
-//        if (instance == null) {
-//            throw new IllegalArgumentException("Instance cannot be null");
-//        }
-//
-//        DocumentInfo documentInfo = getDocumentInfo(instance);
-//
-//        JsonNode array = documentInfo.getMetadata().get(Constants.Documents.Metadata.TIME_SERIES);
-//        if (array == null) {
-//            return Collections.emptyList();
-//        }
-//
-//        ArrayNode bjra = (ArrayNode) array;
-//
-//        List<String> tsList = new ArrayList<>(bjra.size());
-//
-//        for (JsonNode jsonNode : bjra) {
-//            tsList.add(jsonNode.asText());
-//        }
-//
-//        return tsList;
-//    }
+
+    /**
+     * Gets all time series names for the specified entity.
+     * @param ?object $instance Entity
+     * @return array time series names
+     *
+     * @throws NonUniqueObjectException
+     */
+    public function getTimeSeriesFor(?object $instance): array
+    {
+        if ($instance == null) {
+            throw new IllegalArgumentException("Instance cannot be null");
+        }
+
+        $documentInfo = $this->getDocumentInfo($instance);
+
+        $metadata = $documentInfo->getMetadata();
+        $array = array_key_exists(DocumentsMetadata::TIME_SERIES, $metadata) ? $metadata[DocumentsMetadata::TIME_SERIES] : null;
+
+        if ($array == null) {
+            return [];
+        }
+
+        $tsList = [];
+
+        foreach ($array as $jsonNode) {
+            $tsList[] = strval($jsonNode);
+        }
+
+        return $tsList;
+    }
 
     /**
      * Gets the Change Vector for the specified entity.
@@ -2004,68 +2018,64 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //    }
 
 
-        // @todo: implement this
-    public function registerTimeSeries(array $resultTimeSeries): void
+    public function registerTimeSeries(?array $resultTimeSeries): void
     {
+        if ($this->noTracking || $resultTimeSeries == null) {
+            return;
+        }
+
+        foreach ($resultTimeSeries as $field => $value) {
+            if ($value == null) {
+                continue;
+            }
+
+            $id = $field;
+
+            if (!array_key_exists($id, $this->getTimeSeriesByDocId())) {
+                $this->getTimeSeriesByDocId()[$id] = [];
+            }
+            // Map<String, List<TimeSeriesRangeResult>>
+            $cache =  $this->getTimeSeriesByDocId()[$id];
+
+            // @todo: check this - probably we should put here is_array instead of is_object
+            if (!is_object($value)) {
+                throw new IllegalStateException("Unable to read time series range results on document: '" . $id . "'.");
+            }
+
+            foreach ($value as $name => $innerValue) {
+                if ($innerValue == null) {
+                    continue;
+                }
+
+                if (!is_array($innerValue)) {
+                    throw new IllegalStateException("Unable to read time series range results on document: '" . $id . "', time series: '" . $name . "'.");
+                }
+
+                foreach ($innerValue as $jsonRange) {
+                    /** @var TimeSeriesRangeResult $newRange */
+                    $newRange = self::parseTimeSeriesRangeResult($this->mapper, $jsonRange, $id, $name);
+                    $this->addToCache($cache, $newRange, $name);
+                }
+            }
+        }
     }
 
-//    public void registerTimeSeries(ObjectNode resultTimeSeries) {
-//        if (noTracking || resultTimeSeries == null) {
-//            return;
-//        }
-//
-//        Iterator<Map.Entry<String, JsonNode>> fields = resultTimeSeries.fields();
-//        while (fields.hasNext()) {
-//            Map.Entry<String, JsonNode> field = fields.next();
-//            if (field.getValue() == null || field.getValue().isNull()) {
-//                continue;
-//            }
-//
-//            String id = field.getKey();
-//
-//            Map<String, List<TimeSeriesRangeResult>> cache =
-//                    getTimeSeriesByDocId().computeIfAbsent(id, x -> new TreeMap<>(String::compareToIgnoreCase));
-//
-//            if (!field.getValue().isObject()) {
-//                throw new IllegalStateException("Unable to read time series range results on document: '" + id + "'.");
-//            }
-//
-//            Iterator<Map.Entry<String, JsonNode>> innerFields = field.getValue().fields();
-//
-//            while (innerFields.hasNext()) {
-//                Map.Entry<String, JsonNode> innerField = innerFields.next();
-//
-//                if (innerField.getValue() == null || innerField.getValue().isNull()) {
-//                    continue;
-//                }
-//
-//                String name = innerField.getKey();
-//
-//                if (!innerField.getValue().isArray()) {
-//                    throw new IllegalStateException("Unable to read time series range results on document: '" + id + "', time series: '" + name + "'.");
-//                }
-//
-//                for (JsonNode jsonRange : innerField.getValue()) {
-//                    TimeSeriesRangeResult newRange = parseTimeSeriesRangeResult(mapper, (ObjectNode) jsonRange, id, name);
-//                    addToCache(cache, newRange, name);
-//                }
-//            }
-//        }
-//    }
-//
-//    private static void addToCache(Map<String, List<TimeSeriesRangeResult>> cache,
-//                                   TimeSeriesRangeResult newRange,
-//                                   String name) {
-//        List<TimeSeriesRangeResult> localRanges = cache.get(name);
-//        if (localRanges == null || localRanges.isEmpty()) {
-//            // no local ranges in cache for this series
-//
-//            List<TimeSeriesRangeResult> item = new ArrayList<>();
-//            item.add(newRange);
-//            cache.put(name, item);
-//            return;
-//        }
-//
+    private static function addToCache(array & $cache, // Map<String, List<TimeSeriesRangeResult>>
+                                   ?TimeSeriesRangeResult $newRange,
+                                   ?string $name): void
+    {
+        /** @var ?TimeSeriesRangeResultList $localRanges */
+        $localRanges = array_key_exists($name, $cache) ? $cache[$name] : null;
+        if ($localRanges == null || empty($localRanges)) {
+            // no local ranges in cache for this series
+
+            $item = new TimeSeriesRangeResultList();
+            $item->append($newRange);
+            $cache[$name] = $item;
+            return;
+        }
+
+        // @todo: finish inplementing this
 //        if (DatesComparator.compare(leftDate(localRanges.get(0).getFrom()), rightDate(newRange.getTo())) > 0
 //                || DatesComparator.compare(rightDate(localRanges.get(localRanges.size() - 1).getTo()), leftDate(newRange.getFrom())) < 0) {
 //            // the entire range [from, to] is out of cache bounds
@@ -2102,7 +2112,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //
 //        TimeSeriesEntry[] mergedValues = mergeRanges(fromRangeIndex, toRangeIndex, localRanges, newRange);
 //        addToCache(name, newRange.getFrom(), newRange.getTo(), fromRangeIndex, toRangeIndex, localRanges, cache, mergedValues);
-//    }
+    }
 
 //    static void addToCache(String timeseries, Date from, Date to, int fromRangeIndex, int toRangeIndex,
 //                           List<TimeSeriesRangeResult> ranges, Map<String, List<TimeSeriesRangeResult>> cache,
@@ -2291,11 +2301,12 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //        ranges.get(fromRangeIndex).setEntries(values);
 //        ranges.subList(fromRangeIndex + 1, toRangeIndex + 1).clear();
 //    }
-//
-//    private static TimeSeriesRangeResult parseTimeSeriesRangeResult(ObjectMapper mapper, ObjectNode jsonRange, String id, String databaseName) {
-//        return mapper.convertValue(jsonRange, TimeSeriesRangeResult.class);
-//    }
-//
+
+    private static function parseTimeSeriesRangeResult(EntityMapper $mapper, $jsonRange, $id, $databaseName): TimeSeriesRangeResult
+    {
+        return $mapper->denormalize($jsonRange, TimeSeriesRangeResult::class);
+    }
+
 //    private static TimeSeriesEntry[] mergeRanges(int fromRangeIndex, int toRangeIndex, List<TimeSeriesRangeResult> localRanges, TimeSeriesRangeResult newRange) {
 //        List<TimeSeriesEntry> mergedValues = new ArrayList<>();
 //

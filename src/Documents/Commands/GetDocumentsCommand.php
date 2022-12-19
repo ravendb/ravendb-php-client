@@ -4,7 +4,7 @@ namespace RavenDB\Documents\Commands;
 
 use InvalidArgumentException;
 use RavenDB\Constants\Counters;
-use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRangeArray;
+use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRangeSet;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesCountRange;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRange;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesTimeRange;
@@ -28,7 +28,7 @@ class GetDocumentsCommand extends RavenCommand
     private ?StringArray $counters = null;
     private bool $includeAllCounters = false;
 
-    private ?AbstractTimeSeriesRangeArray $timeSeriesIncludes = null;
+    private ?AbstractTimeSeriesRangeSet $timeSeriesIncludes = null;
     private ?StringArray $compareExchangeValueIncludes = null;
 
     private bool $metadataOnly = false;
@@ -130,19 +130,19 @@ class GetDocumentsCommand extends RavenCommand
      * @param StringArray|array|null $ids
      * @param StringArray|array|null $includes
      * @param StringArray|array|null $counterIncludes
-     * @param AbstractTimeSeriesRangeArray|null $timeSeriesIncludes
+     * @param AbstractTimeSeriesRangeSet|null $timeSeriesIncludes
      * @param StringArray|array|null $compareExchangeValueIncludes
      * @param bool $metadata
      *
      * @return GetDocumentsCommand
      */
     public static function withCounters(
-        $ids,
-        $includes,
-        $counterIncludes,
-        ?AbstractTimeSeriesRangeArray $timeSeriesIncludes,
-        $compareExchangeValueIncludes,
-        bool $metadata
+                                    $ids,
+                                    $includes,
+                                    $counterIncludes,
+        ?AbstractTimeSeriesRangeSet $timeSeriesIncludes,
+                                    $compareExchangeValueIncludes,
+        bool                        $metadata
     ): GetDocumentsCommand {
         $command = GetDocumentsCommand::forMultipleDocuments($ids, $includes, $metadata);
 
@@ -157,7 +157,7 @@ class GetDocumentsCommand extends RavenCommand
      * @param StringArray|array|null $ids
      * @param StringArray|array|null $includes
      * @param bool $includeAllCounters
-     * @param AbstractTimeSeriesRangeArray $timeSeriesIncludes
+     * @param AbstractTimeSeriesRangeSet $timeSeriesIncludes
      * @param StringArray|array|null $compareExchangeValueIncludes
      * @param bool $metadataOnly
      * @return GetDocumentsCommand
@@ -166,7 +166,7 @@ class GetDocumentsCommand extends RavenCommand
         $ids,
         $includes,
         bool $includeAllCounters,
-        AbstractTimeSeriesRangeArray $timeSeriesIncludes,
+        AbstractTimeSeriesRangeSet $timeSeriesIncludes,
         $compareExchangeValueIncludes,
         bool $metadataOnly
     ): GetDocumentsCommand {

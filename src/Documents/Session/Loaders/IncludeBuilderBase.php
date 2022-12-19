@@ -2,7 +2,11 @@
 
 namespace RavenDB\Documents\Session\Loaders;
 
+use DateTimeInterface;
+use RavenDB\Constants\TimeSeries;
 use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRangeSet;
+use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRange;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Type\StringArray;
@@ -30,19 +34,21 @@ class IncludeBuilderBase
      */
     public array $countersToIncludeBySourcePath = [];
 
-//    public Map<String, Set<AbstractTimeSeriesRange>> timeSeriesToIncludeBySourceAlias;
+    /** @var array<AbstractTimeSeriesRangeSet>|null  */
+    public ?array $timeSeriesToIncludeBySourceAlias = null;
     public ?StringSet $compareExchangeValuesToInclude = null;
     public bool $includeTimeSeriesTags = false;
     public bool $includeTimeSeriesDocument = false;
 
-//    public Set<AbstractTimeSeriesRange> getTimeSeriesToInclude() {
-//        if (timeSeriesToIncludeBySourceAlias == null) {
-//            return null;
-//        }
-//
-//        return timeSeriesToIncludeBySourceAlias.get("");
-//    }
-//
+    public function getTimeSeriesToInclude(): ?AbstractTimeSeriesRangeSet
+    {
+        if ($this->timeSeriesToIncludeBySourceAlias == null) {
+            return null;
+        }
+
+        return $this->timeSeriesToIncludeBySourceAlias[""];
+    }
+
     public function getCountersToInclude(): ?StringSet
     {
         if ($this->countersToIncludeBySourcePath == null) {
@@ -180,23 +186,30 @@ class IncludeBuilderBase
         }
     }
 
-//    protected void _includeTimeSeriesFromTo(String alias, String name, Date from, Date to) {
-//        assertValid(alias, name);
-//
-//        if (timeSeriesToIncludeBySourceAlias == null) {
-//            timeSeriesToIncludeBySourceAlias = new HashMap<>();
-//        }
-//
-//        Set<AbstractTimeSeriesRange> hashSet = timeSeriesToIncludeBySourceAlias.computeIfAbsent(alias, (key) -> new TreeSet<>(AbstractTimeSeriesRangeComparer.INSTANCE));
-//
-//        TimeSeriesRange range = new TimeSeriesRange();
-//        range.setName(name);
-//        range.setFrom(from);
-//        range.setTo(to);
-//
-//        hashSet.add(range);
-//    }
-//
+    protected function _includeTimeSeriesFromTo(?string $alias, ?string $name, ?DateTimeInterface $from = null, ?DateTimeInterface $to = null): void
+    {
+        $this->assertValid($alias, $name);
+
+        if ($this->timeSeriesToIncludeBySourceAlias == null) {
+            $this->timeSeriesToIncludeBySourceAlias = [];
+        }
+
+        if (!array_key_exists($alias, $this->timeSeriesToIncludeBySourceAlias)) {
+            $hashSet = new AbstractTimeSeriesRangeSet();
+            $this->timeSeriesToIncludeBySourceAlias[$alias] = $hashSet;
+        } else {
+            /** @var AbstractTimeSeriesRangeSet $hashSet */
+            $hashSet = $this->timeSeriesToIncludeBySourceAlias[$alias];
+        }
+
+        $range = new TimeSeriesRange();
+        $range->setName($name);
+        $range->setFrom($from);
+        $range->setTo($to);
+
+        $hashSet[] = $range;
+    }
+
 //    protected void _includeTimeSeriesByRangeTypeAndTime(String alias, String name, TimeSeriesRangeType type, TimeValue time) {
 //        assertValid(alias, name);
 //        assertValidType(type, time);
@@ -286,24 +299,26 @@ class IncludeBuilderBase
 //        }
 //    }
 //
-//    private void assertValid(String alias, String name) {
-//        if (StringUtils.isBlank(name)) {
-//            throw new IllegalArgumentException("Name cannot be null or whitespace.");
-//        }
-//
-//        if (timeSeriesToIncludeBySourceAlias != null) {
-//            Set<AbstractTimeSeriesRange> hashSet2 = timeSeriesToIncludeBySourceAlias.get(alias);
-//            if (hashSet2 != null && !hashSet2.isEmpty()) {
-//                if (Constants.TimeSeries.ALL.equals(name)) {
-//                    throw new IllegalArgumentException("IIncludeBuilder : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.");
-//                }
-//
-//                if (hashSet2.stream().anyMatch(x -> Constants.TimeSeries.ALL.equals(x.getName()))) {
-//                    throw new IllegalArgumentException("IIncludeBuilder : Cannot use 'includeTimeSeries' or 'includeAllTimeSeries' after using 'includeAllTimeSeries'.");
-//                }
-//            }
-//        }
-//    }
+    private function assertValid(?string $alias, ?string $name): void
+    {
+        if (StringUtils::isBlank($name)) {
+            throw new IllegalArgumentException("Name cannot be null or whitespace.");
+        }
+
+        if ($this->timeSeriesToIncludeBySourceAlias != null) {
+            /** @var AbstractTimeSeriesRangeSet $hashSet2 */
+            $hashSet2 = array_key_exists($alias, $this->timeSeriesToIncludeBySourceAlias) ? $this->timeSeriesToIncludeBySourceAlias[$alias] : null;
+            if ($hashSet2 != null && !empty($hashSet2)) {
+                if (TimeSeries::ALL == $name) {
+                    throw new IllegalArgumentException("IncludeBuilderInterface : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.");
+                }
+
+                if (in_array(true, array_map(function($x) { return TimeSeries::ALL == $x->getName(); }, $hashSet2->getArrayCopy()))) {
+                    throw new IllegalArgumentException("IncludeBuilderInterface : Cannot use 'includeTimeSeries' or 'includeAllTimeSeries' after using 'includeAllTimeSeries'.");
+                }
+            }
+        }
+    }
 
     public function getCompareExchangeValuesToInclude(): StringSet
     {

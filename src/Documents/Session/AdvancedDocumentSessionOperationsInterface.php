@@ -123,13 +123,11 @@ interface AdvancedDocumentSessionOperationsInterface
      */
     public function defer(...$commands): void;
 
-//    /**
-//     * Evicts the specified entity from the session.
-//     * Remove the entity from the delete queue and stops tracking changes for this entity.
-//     * @param <T> entity class
-//     * @param entity Entity to evict
-//     */
-//    <T> void evict(T entity);
+    /**
+     * Evicts the specified entity from the session.
+     * Remove the entity from the delete queue and stops tracking changes for this entity.
+     */
+    public function evict(object $entity): void;
 
     /**
      * Gets the document id for the specified entity.
@@ -168,14 +166,14 @@ interface AdvancedDocumentSessionOperationsInterface
 //     * @return List of counter names
 //     */
 //    <T> List<String> getCountersFor(T instance);
-//
-//    /**
-//     * Gets all time series names for the specified entity.
-//     * @param instance The instance
-//     * @param <T> Class of instance
-//     * @return List of time series names
-//     */
-//    <T> List<String> getTimeSeriesFor(T instance);
+
+    /**
+     * Gets all time series names for the specified entity.
+     *
+     * @param ?object $instance The instance
+     * @return array of time series names
+     */
+    function getTimeSeriesFor(?object $instance): array;
 
     /**
      * Gets last modified date for the specified entity.

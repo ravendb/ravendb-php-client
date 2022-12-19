@@ -25,7 +25,7 @@ use Throwable;
  */
 abstract class RavenCommand
 {
-    private ?string $resultClass = null;
+    protected ?string $resultClass = null;
 
     /** @var ResultInterface|mixed|null  */
     protected $result = null;

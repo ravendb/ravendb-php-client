@@ -92,11 +92,9 @@ interface DocumentSessionInterface
 //    ISessionDocumentCounters countersFor(String documentId);
 //
 //    ISessionDocumentCounters countersFor(Object entity);
-//
-//    ISessionDocumentTimeSeries timeSeriesFor(String documentId, String name);
-//
-//    ISessionDocumentTimeSeries timeSeriesFor(Object entity, String name);
-//
+
+    public function timeSeriesFor(string|object|null $idOrEntity, ?string $name): SessionDocumentTimeSeriesInterface;
+
 //    <T> ISessionDocumentTypedTimeSeries<T> timeSeriesFor(Class<T> clazz, String documentId);
 //
 //    <T> ISessionDocumentTypedTimeSeries<T> timeSeriesFor(Class<T> clazz, String documentId, String name);
