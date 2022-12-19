@@ -211,7 +211,7 @@ class TimeSeriesSessionTest extends RemoteTestBase
                 $user->setName("Oren");
                 $session->store($user, "users/ayende");
                 $session->timeSeriesFor("users/ayende", "Heartrate")
-                        ->delete(DateUtils::addMinutes($baseLine, 2));
+                        ->deleteAt(DateUtils::addMinutes($baseLine, 2));
 
                 $session->saveChanges();
             } finally {

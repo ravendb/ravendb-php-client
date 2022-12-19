@@ -238,7 +238,7 @@ class TimeSeriesOperationsTest extends RemoteTestBase
                 $user->setName("Oren");
                 $session->store($user, $documentId);
                 $session->timeSeriesFor($documentId, "Heartrate")
-                        ->delete(DateUtils::addMinutes($baseLine, 2));
+                        ->deleteAt(DateUtils::addMinutes($baseLine, 2));
 
                 $session->saveChanges();
             } finally {

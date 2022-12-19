@@ -11,6 +11,7 @@ use RavenDB\Documents\Operations\TimeSeries\AppendOperation;
 use RavenDB\Documents\Operations\TimeSeries\DeleteOperation;
 use RavenDB\Documents\Operations\TimeSeries\GetTimeSeriesOperation;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeResult;
+use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeResultList;
 use RavenDB\Documents\Session\TimeSeries\TimeSeriesEntryArray;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
@@ -96,25 +97,13 @@ class SessionTimeSeriesBase
         }
     }
 
-    public function delete(?DateTimeInterface $from = null, null|DateTimeInterface|string $to = 'single'): void
+    public function deleteAt(DateTimeInterface $dateTime): void
     {
-        /**
-         * We must set second parameter to something different from null.
-         *
-         * Reason for this is that we have two different expected behaviors when second parameter is
-         * actualy set to null by developer and not set at all.
-         *
-         *  - delete($from, null) - When $to parameter is set to null by developer - we want to delete all TimeSeries after $from
-         *  - delete($from) - When $to parameter is not set by developer - we want to delete just TimeSeries at given timestamp set in $from
-         */
+        $this->delete($dateTime, $dateTime);
+    }
 
-        if (is_string($to)) {
-            if ($to != 'single') {
-                throw new IllegalArgumentException("Parameter \$to must be type of DateTimeInterface.");
-            }
-            $to = $from;
-        }
-
+    public function delete(?DateTimeInterface $from = null, ?DateTimeInterface $to = null): void
+    {
         $documentInfo = $this->session->documentsById->getValue($this->docId);
         if ($documentInfo != null && $this->session->deletedEntities->contains($documentInfo->getEntity())) {
             $this->throwDocumentAlreadyDeletedInSession($this->docId, $this->name);
@@ -184,11 +173,10 @@ class SessionTimeSeriesBase
         if (!$this->session->noTracking) {
             $this->handleIncludes($rangeResult);
 
-            // Map<String, List<TimeSeriesRangeResult>>
             if (!array_key_exists($this->docId, $this->session->getTimeSeriesByDocId())) {
                 $this->session->getTimeSeriesByDocId()[$this->docId] = [];
             }
-            // Map<String, List<TimeSeriesRangeResult>>
+            /** @var array<TimeSeriesRangeResultList> $cache */
             $cache =  & $this->session->getTimeSeriesByDocId()[$this->docId];
 
             $ranges = null;
