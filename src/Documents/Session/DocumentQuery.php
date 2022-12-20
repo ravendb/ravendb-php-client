@@ -17,6 +17,7 @@ use RavenDB\Documents\Queries\Highlighting\HighlightingOptions;
 use RavenDB\Documents\Queries\Highlighting\Highlightings;
 use RavenDB\Documents\Queries\ProjectionBehavior;
 use RavenDB\Documents\Queries\QueryData;
+use RavenDB\Documents\Queries\QueryOperator;
 use RavenDB\Documents\Queries\SearchOperator;
 use RavenDB\Documents\Queries\Timings\QueryTimings;
 use RavenDB\Documents\Session\Loaders\QueryIncludeBuilder;
@@ -277,11 +278,11 @@ class DocumentQuery extends AbstractDocumentQuery
         return $this;
     }
 
-//    @Override
-//    public IDocumentQuery<T> usingDefaultOperator(QueryOperator queryOperator) {
-//        _usingDefaultOperator(queryOperator);
-//        return this;
-//    }
+    public function usingDefaultOperator(QueryOperator $queryOperator): DocumentQueryInterface
+    {
+        $this->_usingDefaultOperator($queryOperator);
+        return $this;
+    }
 
     public function noTracking(): DocumentQueryInterface
     {
