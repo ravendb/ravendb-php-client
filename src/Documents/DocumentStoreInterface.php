@@ -12,6 +12,7 @@ use RavenDB\Documents\Session\AfterConversionToEntityEventArgs;
 use RavenDB\Documents\Session\BeforeConversionToEntityEventArgs;
 use RavenDB\Documents\Session\DocumentSessionInterface;
 use RavenDB\Documents\Session\SessionOptions;
+use RavenDB\Documents\TimeSeries\TimeSeriesOperations;
 use RavenDB\Type\UrlArray;
 use RavenDB\Http\RequestExecutor;
 use RavenDB\Documents\Conventions\DocumentConventions;
@@ -107,12 +108,12 @@ interface DocumentStoreInterface
 
     /**
      * Executes the index creation
-     * @param AbstractIndexCreationTaskArray|array $tasks Index Creation tasks to use
+     * @param array|AbstractIndexCreationTaskArray $tasks Index Creation tasks to use
      * @param ?string $database Target database
      */
-    function executeIndexes($tasks, ?string $database = null): void;
+    function executeIndexes(AbstractIndexCreationTaskArray|array $tasks, ?string $database = null): void;
 
-//    TimeSeriesOperations timeSeries();
+    function timeSeries(): TimeSeriesOperations;
 
     /**
      * Gets the conventions

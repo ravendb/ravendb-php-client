@@ -6,9 +6,14 @@ use DateTimeInterface;
 use RavenDB\Constants\TimeSeries;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRangeSet;
+use RavenDB\Documents\Operations\TimeSeries\TimeSeriesCountRange;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRange;
+use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeType;
+use RavenDB\Documents\Operations\TimeSeries\TimeSeriesTimeRange;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Exceptions\UnsupportedOperationException;
+use RavenDB\Primitives\TimeValue;
 use RavenDB\Type\StringArray;
 use RavenDB\Type\StringSet;
 use RavenDB\Utils\StringUtils;
@@ -197,10 +202,9 @@ class IncludeBuilderBase
         if (!array_key_exists($alias, $this->timeSeriesToIncludeBySourceAlias)) {
             $hashSet = new AbstractTimeSeriesRangeSet();
             $this->timeSeriesToIncludeBySourceAlias[$alias] = $hashSet;
-        } else {
-            /** @var AbstractTimeSeriesRangeSet $hashSet */
-            $hashSet = $this->timeSeriesToIncludeBySourceAlias[$alias];
         }
+        /** @var AbstractTimeSeriesRangeSet $hashSet */
+        $hashSet = $this->timeSeriesToIncludeBySourceAlias[$alias];
 
         $range = new TimeSeriesRange();
         $range->setName($name);
@@ -210,95 +214,110 @@ class IncludeBuilderBase
         $hashSet[] = $range;
     }
 
-//    protected void _includeTimeSeriesByRangeTypeAndTime(String alias, String name, TimeSeriesRangeType type, TimeValue time) {
-//        assertValid(alias, name);
-//        assertValidType(type, time);
-//
-//        if (timeSeriesToIncludeBySourceAlias == null) {
-//            timeSeriesToIncludeBySourceAlias = new HashMap<>();
-//        }
-//
-//        Set<AbstractTimeSeriesRange> hashSet = timeSeriesToIncludeBySourceAlias
-//                .computeIfAbsent(alias, a -> new TreeSet<>(AbstractTimeSeriesRangeComparer.INSTANCE));
-//
-//        TimeSeriesTimeRange timeRange = new TimeSeriesTimeRange();
-//        timeRange.setName(name);
-//        timeRange.setTime(time);
-//        timeRange.setType(type);
-//        hashSet.add(timeRange);
-//    }
-//
-//    private static void assertValidType(TimeSeriesRangeType type, TimeValue time) {
-//        switch (type) {
-//            case NONE:
-//                throw new IllegalArgumentException("Time range type cannot be set to NONE when time is specified.");
-//            case LAST:
-//                if (time != null) {
-//                    if (time.getValue() <= 0) {
-//                        throw new IllegalArgumentException("Time range type cannot be set to LAST when time is negative or zero.");
-//                    }
-//
-//                    return;
-//                }
-//
-//                throw new IllegalArgumentException("Time range type cannot be set to LAST when time is not specified.");
-//            default:
-//                throw new UnsupportedOperationException("Not supported time range type: " + type);
-//        }
-//    }
-//
-//    protected void _includeTimeSeriesByRangeTypeAndCount(String alias, String name, TimeSeriesRangeType type, int count) {
-//        assertValid(alias, name);
-//        assertValidTypeAndCount(type, count);
-//
-//        if (timeSeriesToIncludeBySourceAlias == null) {
-//            timeSeriesToIncludeBySourceAlias = new HashMap<>();
-//        }
-//
-//        Set<AbstractTimeSeriesRange> hashSet = timeSeriesToIncludeBySourceAlias.computeIfAbsent(alias, a -> new TreeSet<>(AbstractTimeSeriesRangeComparer.INSTANCE));
-//
-//        TimeSeriesCountRange countRange = new TimeSeriesCountRange();
-//        countRange.setName(name);
-//        countRange.setCount(count);
-//        countRange.setType(type);
-//
-//        hashSet.add(countRange);
-//    }
-//
-//    private static void assertValidTypeAndCount(TimeSeriesRangeType type, int count) {
-//        switch (type) {
-//            case NONE:
-//                throw new IllegalArgumentException("Time range type cannot be set to NONE when count is specified.");
-//            case LAST:
-//                if (count <= 0) {
-//                    throw new IllegalArgumentException("Count have to be positive.");
-//                }
-//                break;
-//            default:
-//                throw new UnsupportedOperationException("Not supported time range type: " + type);
-//        }
-//    }
-//
-//    protected void _includeArrayOfTimeSeriesByRangeTypeAndTime(String[] names, TimeSeriesRangeType type, TimeValue time) {
-//        if (names == null) {
-//            throw new IllegalArgumentException("Names cannot be null");
-//        }
-//
-//        for (String name : names) {
-//            _includeTimeSeriesByRangeTypeAndTime("", name, type, time);
-//        }
-//    }
-//
-//    protected void _includeArrayOfTimeSeriesByRangeTypeAndCount(String[] names, TimeSeriesRangeType type, int count) {
-//        if (names == null) {
-//            throw new IllegalArgumentException("Names cannot be null");
-//        }
-//
-//        for (String name : names) {
-//            _includeTimeSeriesByRangeTypeAndCount("", name, type, count);
-//        }
-//    }
-//
+    protected function _includeTimeSeriesByRangeTypeAndTime(?string $alias, ?string $name, TimeSeriesRangeType $type, TimeValue $time): void
+    {
+        $this->assertValid($alias, $name);
+        self::assertValidType($type, $time);
+
+        if ($this->timeSeriesToIncludeBySourceAlias == null) {
+            $this->timeSeriesToIncludeBySourceAlias = [];
+        }
+
+        if (!array_key_exists($alias, $this->timeSeriesToIncludeBySourceAlias)) {
+            $hashSet = new AbstractTimeSeriesRangeSet();
+            $this->timeSeriesToIncludeBySourceAlias[$alias] = $hashSet;
+        }
+        /** @var AbstractTimeSeriesRangeSet $hashSet */
+        $hashSet = $this->timeSeriesToIncludeBySourceAlias[$alias];
+
+        $timeRange = new TimeSeriesTimeRange();
+        $timeRange->setName($name);
+        $timeRange->setTime($time);
+        $timeRange->setType($type);
+        $hashSet[] = $timeRange;
+    }
+
+    private static function assertValidType(TimeSeriesRangeType $type, ?TimeValue $time): void
+    {
+        switch ($type->getValue()) {
+            case TimeSeriesRangeType::NONE:
+                throw new IllegalArgumentException("Time range type cannot be set to NONE when time is specified.");
+            case TimeSeriesRangeType::LAST:
+                if ($time != null) {
+                    if ($time->getValue() <= 0) {
+                        throw new IllegalArgumentException("Time range type cannot be set to LAST when time is negative or zero.");
+                    }
+
+                    return;
+                }
+
+                throw new IllegalArgumentException("Time range type cannot be set to LAST when time is not specified.");
+            default:
+                throw new UnsupportedOperationException("Not supported time range type: " . $type);
+        }
+    }
+
+    protected function _includeTimeSeriesByRangeTypeAndCount(string $alias, string $name, TimeSeriesRangeType $type, int $count): void
+    {
+        $this->assertValid($alias, $name);
+        $this->assertValidTypeAndCount($type, $count);
+
+        if ($this->timeSeriesToIncludeBySourceAlias == null) {
+            $this->timeSeriesToIncludeBySourceAlias = [];
+        }
+
+        if (!array_key_exists($alias, $this->timeSeriesToIncludeBySourceAlias)) {
+            $hashSet = new AbstractTimeSeriesRangeSet();
+            $this->timeSeriesToIncludeBySourceAlias[$alias] = $hashSet;
+        }
+        /** @var AbstractTimeSeriesRangeSet $hashSet */
+        $hashSet = $this->timeSeriesToIncludeBySourceAlias[$alias];
+
+        $countRange = new TimeSeriesCountRange();
+        $countRange->setName($name);
+        $countRange->setCount($count);
+        $countRange->setType($type);
+
+        $hashSet[] = $countRange;
+    }
+
+    private static function assertValidTypeAndCount(TimeSeriesRangeType $type, int $count): void
+    {
+        switch ($type) {
+            case TimeSeriesRangeType::NONE:
+                throw new IllegalArgumentException("Time range type cannot be set to NONE when count is specified.");
+            case TimeSeriesRangeType::LAST:
+                if ($count <= 0) {
+                    throw new IllegalArgumentException("Count have to be positive.");
+                }
+                break;
+            default:
+                throw new UnsupportedOperationException("Not supported time range type: " . $type);
+        }
+    }
+
+    protected function _includeArrayOfTimeSeriesByRangeTypeAndTime(?array $names, TimeSeriesRangeType $type, TimeValue $time): void
+    {
+        if ($names == null) {
+            throw new IllegalArgumentException("Names cannot be null");
+        }
+
+        foreach($names as $name) {
+            $this->_includeTimeSeriesByRangeTypeAndTime("", $name, $type, $time);
+        }
+    }
+
+    protected function _includeArrayOfTimeSeriesByRangeTypeAndCount(?array $names, TimeSeriesRangeType $type, int $count): void
+    {
+        if ($names == null) {
+            throw new IllegalArgumentException("Names cannot be null");
+        }
+
+        foreach ($names as $name) {
+            $this->_includeTimeSeriesByRangeTypeAndCount("", $name, $type, $count);
+        }
+    }
+
     private function assertValid(?string $alias, ?string $name): void
     {
         if (StringUtils::isBlank($name)) {
@@ -320,7 +339,7 @@ class IncludeBuilderBase
         }
     }
 
-    public function getCompareExchangeValuesToInclude(): StringSet
+    public function getCompareExchangeValuesToInclude(): ?StringSet
     {
         return $this->compareExchangeValuesToInclude;
     }

@@ -58,6 +58,7 @@ class JsonExtensions
             new TypedArrayNormalizer(),
             new StringArrayNormalizer(),
             new ValueObjectNormalizer(),
+            new DurationNormalizer(),
             new DateTimeNormalizer([
                 DateTimeNormalizer::FORMAT_KEY => 'Y-m-d\TH:i:s.v0000\Z',
                 DateTimeNormalizer::TIMEZONE_KEY => null

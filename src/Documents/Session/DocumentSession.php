@@ -6,6 +6,7 @@ use Closure;
 use RavenDB\Constants\HttpStatusCode;
 use RavenDB\Documents\Commands\ConditionalGetDocumentsCommand;
 use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRange;
+use RavenDB\Documents\TimeSeries\TimeSeriesOperations;
 use ReflectionException;
 use InvalidArgumentException;
 use Ramsey\Uuid\UuidInterface;
@@ -408,15 +409,20 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         if (count($params) == 2) {
             if ($params[1] instanceof Closure) {
 
-                    // called: load(string $className, StringArray $ids, Closure $includes): ObjectArray;
-                    if ($params[0] instanceof StringArray) {
-                        return $this->loadMultipleWithIncludes($className, $params[0], $params[1]);
-                    }
+                // called: load(string $className, StringArray $ids, Closure $includes): ObjectArray;
+                if ($params[0] instanceof StringArray) {
+                    return $this->loadMultipleWithIncludes($className, $params[0], $params[1]);
+                }
 
-                    // called: load(string $className, string $id, Closure $includes) ?Object;
-                    if (is_string($params[0])) {
-                        return $this->loadSingleWithIncludes($className, $params[0], $params[1]);
-                    }
+                // called: load(string $className, array $ids, Closure $includes): ObjectArray;
+                if (is_array($params[0])) {
+                    return $this->loadMultipleWithIncludes($className, StringArray::fromArray($params[0]), $params[1]);
+                }
+
+                // called: load(string $className, string $id, Closure $includes) ?Object;
+                if (is_string($params[0])) {
+                    return $this->loadSingleWithIncludes($className, $params[0], $params[1]);
+                }
             }
         }
 
@@ -525,24 +531,13 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         $includeBuilder = new IncludeBuilder($this->getConventions());
         $includes($includeBuilder);
 
-        // @todo: continue work with includes from here
-        $timeSeriesIncludes = null;
-        /** @var array<AbstractTimeSeriesRange> $timeSeriesIncludes */
-        $timeSeriesIncludes = $includeBuilder->getTimeSeriesToInclude() != null
-                ? $includeBuilder->getTimeSeriesToInclude()
-                : null;
-
-        $compareExchangeValuesToInclude = $includeBuilder->getCompareExchangeValuesToInclude() != null
-            ? $includeBuilder->getCompareExchangeValuesToInclude()
-            : null;
-
         return $this->loadInternal($className,
-                $ids,
-                $includeBuilder->documentsToInclude != null ? $includeBuilder->documentsToInclude : null,
-                $includeBuilder->getCountersToInclude() != null ? $includeBuilder->getCountersToInclude() : null,
-                $includeBuilder->isAllCounters(),
-                $timeSeriesIncludes,
-                $compareExchangeValuesToInclude
+            $ids,
+            $includeBuilder->documentsToInclude,
+            $includeBuilder->getCountersToInclude(),
+            $includeBuilder->isAllCounters(),
+            $includeBuilder->getTimeSeriesToInclude(),
+            $includeBuilder->getCompareExchangeValuesToInclude()
         );
     }
 
@@ -1292,28 +1287,13 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         return new SessionDocumentTimeSeries($this, $idOrEntity, $name);
     }
 
-//    @Override
-//    public <T> ISessionDocumentTypedTimeSeries<T> timeSeriesFor(Class<T> clazz, Object entity) {
-//        return timeSeriesFor(clazz, entity, null);
-//    }
-//
-//    @Override
-//    public <T> ISessionDocumentTypedTimeSeries<T> timeSeriesFor(Class<T> clazz, Object entity, String name) {
-//        String tsName = ObjectUtils.firstNonNull(name, TimeSeriesOperations.getTimeSeriesName(clazz, getConventions()));
-//        return new SessionDocumentTypedTimeSeries<T>(clazz, this, entity, tsName);
-//    }
-//
-//    @Override
-//    public <T> ISessionDocumentTypedTimeSeries<T> timeSeriesFor(Class<T> clazz, String documentId) {
-//        return timeSeriesFor(clazz, documentId, null);
-//    }
-//
-//    @Override
-//    public <T> ISessionDocumentTypedTimeSeries<T> timeSeriesFor(Class<T> clazz, String documentId, String name) {
-//        String tsName = ObjectUtils.firstNonNull(name, TimeSeriesOperations.getTimeSeriesName(clazz, getConventions()));
-//        return new SessionDocumentTypedTimeSeries<>(clazz, this, documentId, tsName);
-//    }
-//
+    public function typedTimeSeriesFor(string $className, string|object|null $idOrEntity, ?string $name = null): SessionDocumentTypedTimeSeriesInterface
+    {
+        $tsName = $name ?? TimeSeriesOperations::getTimeSeriesName($className, $this->getConventions());
+        return new SessionDocumentTypedTimeSeries($className, $this, $idOrEntity, $tsName);
+    }
+
+
 //    @Override
 //    public <T> ISessionDocumentRollupTypedTimeSeries<T> timeSeriesRollupFor(Class<T> clazz, Object entity, String policy) {
 //        return timeSeriesRollupFor(clazz, entity, policy, null);

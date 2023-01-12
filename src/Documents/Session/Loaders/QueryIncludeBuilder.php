@@ -2,7 +2,11 @@
 
 namespace RavenDB\Documents\Session\Loaders;
 
+use DateTimeInterface;
+use RavenDB\Constants\TimeSeries;
 use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeType;
+use RavenDB\Primitives\TimeValue;
 use RavenDB\Type\StringArray;
 
 class QueryIncludeBuilder extends IncludeBuilderBase implements QueryIncludeBuilderInterface
@@ -56,24 +60,17 @@ class QueryIncludeBuilder extends IncludeBuilderBase implements QueryIncludeBuil
         return $this;
     }
 
-//    public function includeTimeSeries(?string name): QueryIncludeBuilder {
-//        return includeTimeSeries(name, (Date) null, null);
-//    }
-//
-//    public function includeTimeSeries(?string name, Date from, Date to): QueryIncludeBuilder {
-//        _includeTimeSeriesFromTo("", name, from, to);
-//        return this;
-//    }
-//
-//    public function includeTimeSeries(?string path, ?string name): QueryIncludeBuilder {
-//        return includeTimeSeries(path, name, null, null);
-//    }
-//
-//    public function includeTimeSeries(?string path, ?string name, Date from, Date to): QueryIncludeBuilder {
-//        _withAlias();
-//        _includeTimeSeriesFromTo(path, name, from, to);
-//        return this;
-//    }
+    public function includeTimeSeries(?string $name, ?DateTimeInterface $from = null, ?DateTimeInterface $to = null): QueryIncludeBuilder
+    {
+        return $this->includeTimeSeriesWithPath('', $name,$from, $to);
+    }
+
+    public function includeTimeSeriesWithPath(?string $path, ?string $name, ?DateTimeInterface $from = null, ?DateTimeInterface $to = null): QueryIncludeBuilder
+    {
+        $this->_withAlias();
+        $this->_includeTimeSeriesFromTo($path, $name, $from, $to);
+        return $this;
+    }
 
     public function includeCompareExchangeValue(?string $path): QueryIncludeBuilder
     {
@@ -81,33 +78,34 @@ class QueryIncludeBuilder extends IncludeBuilderBase implements QueryIncludeBuil
         return $this;
     }
 
-//    public function includeTimeSeries(?string name, TimeSeriesRangeType type, TimeValue time): QueryIncludeBuilder {
-//        _includeTimeSeriesByRangeTypeAndTime("", name, type, time);
-//        return this;
-//    }
-//
-//    public function includeTimeSeries(?string name, TimeSeriesRangeType type, int count): QueryIncludeBuilder {
-//        _includeTimeSeriesByRangeTypeAndCount("", name, type, count);
-//        return this;
-//    }
-//
-//    public function includeTimeSeries(?string[] names, TimeSeriesRangeType type, TimeValue time): QueryIncludeBuilder {
-//        _includeArrayOfTimeSeriesByRangeTypeAndTime(names, type, time);
-//        return this;
-//    }
-//
-//    public function includeTimeSeries(?string[] names, TimeSeriesRangeType type, int count): QueryIncludeBuilder {
-//        _includeArrayOfTimeSeriesByRangeTypeAndCount(names, type, count);
-//        return this;
-//    }
-//
-//    public function includeAllTimeSeries(TimeSeriesRangeType type, TimeValue time): QueryIncludeBuilder {
-//        _includeTimeSeriesByRangeTypeAndTime("", Constants.TimeSeries.ALL, type, time);
-//        return this;
-//    }
-//
-//    public function includeAllTimeSeries(TimeSeriesRangeType type, int count): QueryIncludeBuilder {
-//        _includeTimeSeriesByRangeTypeAndCount("", Constants.TimeSeries.ALL, type, count);
-//        return this;
-//    }
+    public function includeTimeSeriesRangeType(null | string | array $names, TimeSeriesRangeType $type, TimeValue | int $timeOrCount): QueryIncludeBuilder
+    {
+        if (is_string($names)) {
+            if (is_int($timeOrCount)) {
+//                $this->_includeTimeSeriesByRangeTypeAndCount("", $names, $type, $timeOrCount);
+            } else {
+//                $this->_includeTimeSeriesByRangeTypeAndTime("", $names, $type, $timeOrCount);
+            }
+        } else {
+            if (is_int($timeOrCount)) {
+//                $this->_includeArrayOfTimeSeriesByRangeTypeAndCount($names, $type, $timeOrCount);
+            } else {
+//                $this->_includeArrayOfTimeSeriesByRangeTypeAndTime($names, $type, $timeOrCount);
+            }
+        }
+
+        return $this;
+    }
+
+    public function includeAllTimeSeries(TimeSeriesRangeType $type, TimeValue | int $timeOrCount): QueryIncludeBuilder
+    {
+        if (is_int($timeOrCount)) {
+//          $this->_includeTimeSeriesByRangeTypeAndCount("", TimeSeries::ALL, $type, $timeOrCount);
+
+        } else {
+//            $this->_includeTimeSeriesByRangeTypeAndTime("", TimeSeries::ALL, $type, $timeOrCount);
+        }
+
+        return $this;
+    }
 }

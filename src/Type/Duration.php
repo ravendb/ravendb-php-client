@@ -2,6 +2,7 @@
 
 namespace RavenDB\Type;
 
+use Exception;
 use RavenDB\Utils\HashUtils;
 
 class Duration

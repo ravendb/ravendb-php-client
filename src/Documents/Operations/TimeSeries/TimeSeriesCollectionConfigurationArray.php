@@ -10,4 +10,16 @@ class TimeSeriesCollectionConfigurationArray extends TypedArray
     {
         parent::__construct(TimeSeriesCollectionConfiguration::class);
     }
+
+    public static function fromArray(array $data, $nullAllowed = false): TimeSeriesCollectionConfigurationArray
+    {
+        $array = new TimeSeriesCollectionConfigurationArray();
+        $array->setNullAllowed($nullAllowed);
+
+        foreach ($data as $key => $value) {
+            $array->offsetSet($key, $value);
+        }
+
+        return $array;
+    }
 }

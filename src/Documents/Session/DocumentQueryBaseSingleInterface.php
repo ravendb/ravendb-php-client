@@ -16,7 +16,7 @@ interface DocumentQueryBaseSingleInterface
      *
      * @return mixed first result
      */
-    function first();
+    function first(): mixed;
 
     /**
      * Returns first element or default value for type if sequence is empty.
