@@ -14,8 +14,6 @@ use RavenDB\Primitives\CleanCloseable;
 use RavenDB\ServerWide\DatabaseRecord;
 use RavenDB\ServerWide\Operations\CreateDatabaseOperation;
 use RavenDB\ServerWide\Operations\DeleteDatabasesOperation;
-use RavenDB\Type\Url;
-use RavenDB\Type\UrlArray;
 
 use RavenDB\Utils\AtomicInteger;
 use RuntimeException;

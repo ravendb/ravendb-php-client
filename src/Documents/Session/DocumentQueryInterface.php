@@ -10,6 +10,7 @@ use RavenDB\Documents\Queries\Facets\FacetBase;
 use RavenDB\Documents\Queries\GroupBy;
 use RavenDB\Documents\Queries\Highlighting\HighlightingOptions;
 use RavenDB\Documents\Queries\Highlighting\Highlightings;
+use RavenDB\Documents\Queries\QueryOperator;
 use RavenDB\Documents\Queries\QueryResult;
 use RavenDB\Documents\Queries\SearchOperator;
 use RavenDB\Documents\Queries\Timings\QueryTimings;
@@ -113,7 +114,7 @@ interface DocumentQueryInterface
     function take(int $count): DocumentQueryInterface;
     function waitForNonStaleResults(?Duration $waitTimeout = null): DocumentQueryInterface;
 
-
+    function usingDefaultOperator(QueryOperator $queryOperator): DocumentQueryInterface;
     function not(): DocumentQueryInterface;
     public function andAlso(bool $wrapPreviousQueryClauses = false): DocumentQueryInterface;
     function closeSubclause(): DocumentQueryInterface;

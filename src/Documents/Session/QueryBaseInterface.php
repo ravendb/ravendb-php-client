@@ -5,6 +5,7 @@ namespace RavenDB\Documents\Session;
 use Closure;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Queries\IndexQuery;
+use RavenDB\Documents\Queries\QueryOperator;
 use RavenDB\Documents\Queries\QueryResult;
 use RavenDB\Documents\Queries\Timings\QueryTimings;
 use RavenDB\Type\Duration;
@@ -80,12 +81,12 @@ interface QueryBaseInterface
      */
     function take(int $count): QueryBaseInterface;
 
-//    /**
-//     * Select the default operator to use for this query
-//     * @param queryOperator Query operator to use
-//     * @return Query instance
-//     */
-//    TSelf usingDefaultOperator(QueryOperator queryOperator);
+    /**
+     * Select the default operator to use for this query
+     * @param QueryOperator $queryOperator Query operator to use
+     * @return QueryBaseInterface Query instance
+     */
+    function usingDefaultOperator(QueryOperator $queryOperator): QueryBaseInterface;
 
     /**
      * EXPERT ONLY: Instructs the query to wait for non stale results for the specified wait timeout.
