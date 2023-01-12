@@ -31,7 +31,7 @@ class QueryResult extends GenericQueryResult implements ResultInterface
 //        queryResult.setNodeTag(getNodeTag());
 //        queryResult.setCounterIncludes(getCounterIncludes());
 //        queryResult.setIncludedCounterNames(getIncludedCounterNames());
-//        queryResult.setTimeSeriesIncludes(getTimeSeriesIncludes());
+        $queryResult->setTimeSeriesIncludes($this->getTimeSeriesIncludes());
         $queryResult->setCompareExchangeValueIncludes($this->getCompareExchangeValueIncludes());
         return $queryResult;
     }

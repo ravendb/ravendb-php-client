@@ -5,6 +5,8 @@ namespace RavenDB\Primitives;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 
+use Symfony\Component\Serializer\Annotation\SerializedName;
+
 // !status: IN PROGRESS
 class TimeValue
 {

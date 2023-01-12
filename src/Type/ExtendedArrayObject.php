@@ -6,6 +6,8 @@ class ExtendedArrayObject extends \ArrayObject implements \JsonSerializable
 {
     protected bool $nullAllowed = false;
 
+    protected bool $keysCaseInsensitive = false;
+
     public function setNullAllowed(bool $nullAllowed): void
     {
         $this->nullAllowed = $nullAllowed;
@@ -24,6 +26,26 @@ class ExtendedArrayObject extends \ArrayObject implements \JsonSerializable
     public function isNullAllowed(): bool
     {
         return $this->nullAllowed;
+    }
+
+    public function setKeysCaseInsensitive(bool $caseInsensitive): void
+    {
+        $this->keysCaseInsensitive = $caseInsensitive;
+    }
+
+    public function useKeysCaseInsensitive(): void
+    {
+        $this->keysCaseInsensitive = true;
+    }
+
+    public function useKeysCaseSensitive(): void
+    {
+        $this->keysCaseInsensitive = true;
+    }
+
+    public function isKeysCaseInsensitive(): bool
+    {
+        return $this->keysCaseInsensitive;
     }
 
     protected function validateValue($value): void
@@ -46,7 +68,27 @@ class ExtendedArrayObject extends \ArrayObject implements \JsonSerializable
     public function offsetSet($key, $value): void
     {
         $this->validateValue($value);
-        parent::offsetSet($key, $value);
+        parent::offsetSet($this->key($key), $value);
+    }
+
+    public function offsetGet(mixed $key): mixed
+    {
+        return parent::offsetGet($this->key($key));
+    }
+
+    public function offsetExists($key): bool
+    {
+        return parent::offsetExists($this->key($key));
+    }
+
+    public function offsetUnset($key): void
+    {
+        parent::offsetUnset($this->key($key));
+    }
+
+    private function key($key): ?string
+    {
+        return $this->keysCaseInsensitive ? strtolower($key) : $key;
     }
 
     public function prepend($value): void
@@ -66,6 +108,29 @@ class ExtendedArrayObject extends \ArrayObject implements \JsonSerializable
         }
     }
 
+    public function insertValue($position, $value)
+    {
+        $this->insertValues($position, [ $value ]);
+    }
+
+    public function insertValues($position, $values)
+    {
+        $array = $this->getArrayCopy();
+
+        if (is_int($position)) {
+            array_splice($array, $position, 0, $values);
+        } else {
+            $pos = array_search($this->key($position), array_keys($array));
+            $array = array_merge(
+                array_slice($array, 0, $pos),
+                $this->keysCaseInsensitive ? array_change_key_case($values, CASE_LOWER) : $values,
+                array_slice($array, $pos)
+            );
+        }
+
+        $this->exchangeArray($array);
+    }
+
     public function containsValue($value): bool
     {
         return in_array($value, $this->getArrayCopy(), true);
@@ -76,6 +141,21 @@ class ExtendedArrayObject extends \ArrayObject implements \JsonSerializable
         if(($key = array_search($value, $this->getArrayCopy(), true)) !== FALSE) {
             $this->offsetUnset($key);
         }
+    }
+
+    public function removeValues(int $start, int $count, $preserveKeys = false)
+    {
+        $a = $this->getArrayCopy();
+        array_splice($a, $start, $count);
+        if (!$preserveKeys) {
+            $a = array_values($a);
+        }
+        $this->exchangeArray($a);
+    }
+
+    public function removeRange(int $from, int $to, bool $preserveKeys = false)
+    {
+        $this->removeValues($from, $to - $from);
     }
 
     public function clear(): void

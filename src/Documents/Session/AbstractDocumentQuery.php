@@ -5,6 +5,7 @@ namespace RavenDB\Documents\Session;
 use Closure;
 use RavenDB\Constants\DocumentsIndexingFields;
 use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRange;
 use RavenDB\Documents\Queries\Explanation\ExplanationOptions;
 use RavenDB\Documents\Queries\Explanation\Explanations;
 use RavenDB\Documents\Queries\Facets\FacetBase;
@@ -50,6 +51,7 @@ use RavenDB\Documents\Session\Tokens\OrderByToken;
 use RavenDB\Documents\Session\Tokens\QueryOperatorToken;
 use RavenDB\Documents\Session\Tokens\QueryToken;
 use RavenDB\Documents\Session\Tokens\QueryTokenList;
+use RavenDB\Documents\Session\Tokens\TimeSeriesIncludesToken;
 use RavenDB\Documents\Session\Tokens\TimeSeriesIncludesTokenArray;
 use RavenDB\Documents\Session\Tokens\TimingsToken;
 use RavenDB\Documents\Session\Tokens\TrueToken;
@@ -205,7 +207,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     private bool $isInMoreLikeThis = false;
 
-    private string $includesAlias;
+    private ?string $includesAlias = null;
 
     private function getDefaultTimeout(): ?Duration
     {
@@ -542,9 +544,9 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
         // @todo: implement this for counters and timeseeries
 //        $this->_includeCounters($includes->alias, $includes->countersToIncludeBySourcePath);
-//        if ($includes->timeSeriesToIncludeBySourceAlias != null) {
-//            $this->_includeTimeSeries($includes->alias, $includes->timeSeriesToIncludeBySourceAlias);
-//        }
+        if ($includes->timeSeriesToIncludeBySourceAlias != null) {
+            $this->_includeTimeSeries($includes->alias, $includes->timeSeriesToIncludeBySourceAlias);
+        }
 
         if ($includes->compareExchangeValuesToInclude != null) {
             $this->compareExchangeValueIncludesTokens = new CompareExchangeValueIncludesTokenArray();
@@ -2143,7 +2145,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     /**
      * @return mixed
      */
-    public function first()
+    public function first(): mixed
     {
         $result = $this->executeQueryOperation(1);
         if (empty($result)) {
@@ -2381,23 +2383,25 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 //            }
 //        }
 //    }
-//
-//    private void _includeTimeSeries(String alias, Map<String, Set<AbstractTimeSeriesRange>> timeSeriesToInclude) {
-//        if (timeSeriesToInclude == null || timeSeriesToInclude.isEmpty()) {
-//            return;
-//        }
-//
-//        timeSeriesIncludesTokens = new ArrayList<>();
-//        if (_includesAlias == null) {
-//            _includesAlias = alias;
-//        }
-//
-//        for (Map.Entry<String, Set<AbstractTimeSeriesRange>> kvp : timeSeriesToInclude.entrySet()) {
-//            for (AbstractTimeSeriesRange range : kvp.getValue()) {
-//                timeSeriesIncludesTokens.add(TimeSeriesIncludesToken.create(kvp.getKey(), range));
-//            }
-//        }
-//    }
+
+    private function _includeTimeSeries(?string $alias, ?array $timeSeriesToInclude): void
+    {
+        if (empty($timeSeriesToInclude)) {
+            return;
+        }
+
+        $this->timeSeriesIncludesTokens = new TimeSeriesIncludesTokenArray();
+        if ($this->includesAlias == null) {
+            $this->includesAlias = $alias;
+        }
+
+        foreach ($timeSeriesToInclude as $key => $value) {
+            /** @var AbstractTimeSeriesRange $range */
+            foreach ($value as $range) {
+                $this->timeSeriesIncludesTokens[] = TimeSeriesIncludesToken::create($key, $range);
+            }
+        }
+    }
 
     public function getParameterPrefix(): string
     {

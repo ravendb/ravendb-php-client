@@ -4,15 +4,21 @@ namespace RavenDB\Documents\Operations\TimeSeries;
 
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Primitives\TimeValue;
+use Symfony\Component\Serializer\Annotation\SerializedName;
 
 // !status: DONE
 class TimeSeriesPolicy
 {
+    #[SerializedName("Name")]
     protected string $name;
-    protected TimeValue $retentionTime;
-    protected TimeValue $aggregationTime;
 
-    protected function __construct(string $name, TimeValue $aggregationTime, ?TimeValue $retentionTime = null)
+    #[SerializedName("RetentionTime")]
+    protected ?TimeValue $retentionTime = null;
+
+    #[SerializedName("AggregationTime")]
+    protected ?TimeValue $aggregationTime = null;
+
+    public function __construct(string $name, TimeValue $aggregationTime = null, ?TimeValue $retentionTime = null)
     {
         if ($retentionTime == null) {
             $retentionTime = TimeValue::maxValue();
@@ -71,7 +77,7 @@ class TimeSeriesPolicy
     /**
      * @return TimeValue Define the aggregation of this policy
      */
-    public function getAggregationTime(): TimeValue
+    public function getAggregationTime(): ?TimeValue
     {
         return $this->aggregationTime;
     }

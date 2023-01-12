@@ -2,12 +2,18 @@
 
 namespace RavenDB\Documents\Operations\TimeSeries;
 
+use Symfony\Component\Serializer\Annotation\SerializedName;
+
 // !status: DONE
 class TimeSeriesCollectionConfiguration
 {
-    private bool $disabled;
+    #[SerializedName("Disabled")]
+    private bool $disabled = false;
 
+    #[SerializedName("Policies")]
     private TimeSeriesPolicyArray $policies;
+
+    #[SerializedName("RawPolicy")]
     private RawTimeSeriesPolicy $rawPolicy;
 
     public function __construct()
@@ -38,10 +44,13 @@ class TimeSeriesCollectionConfiguration
     /**
      * Specify roll up and retention policy.
      * Each policy will create a new time-series aggregated from the previous one
-     * @param TimeSeriesPolicyArray $policies roll up policies to use
+     * @param TimeSeriesPolicyArray|array $policies roll up policies to use
      */
-    public function setPolicies(TimeSeriesPolicyArray $policies): void
+    public function setPolicies(TimeSeriesPolicyArray|array $policies): void
     {
+        if (is_array($policies)) {
+            $policies = TimeSeriesPolicyArray::fromArray($policies);
+        }
         $this->policies = $policies;
     }
 

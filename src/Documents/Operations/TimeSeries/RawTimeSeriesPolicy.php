@@ -27,6 +27,10 @@ class RawTimeSeriesPolicy extends TimeSeriesPolicy
         }
 
         parent::__construct(self::POLICY_STRING, TimeValue::maxValue(), $retentionTime);
+
+        // must be called like this after construct,
+        // because in construct we need to have test is aggregation time greater than zero
+        $this->aggregationTime = null;
     }
 }
 

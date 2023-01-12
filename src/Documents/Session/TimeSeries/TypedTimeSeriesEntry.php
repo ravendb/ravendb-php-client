@@ -4,10 +4,10 @@ namespace RavenDB\Documents\Session\TimeSeries;
 
 use DateTime;
 
-use RavenDB\Exceptions\IllegalStateException;
-use Symfony\Component\Serializer\Annotation\SerializedName;
-
-class TimeSeriesEntry
+/**
+ * @template  T
+ */
+class TypedTimeSeriesEntry
 {
     /** @SerializedName( "Timestamp" )  */
     private ?DateTime $timestamp = null;
@@ -21,75 +21,86 @@ class TimeSeriesEntry
     /** @SerializedName( "IsRollup" )  */
     private bool $rollup = false;
 
+    /** @var ?T  */
+    private mixed $value;
+
+    /**
+     * @return DateTime|null
+     */
     public function getTimestamp(): ?DateTime
     {
         return $this->timestamp;
     }
 
+    /**
+     * @param DateTime|null $timestamp
+     */
     public function setTimestamp(?DateTime $timestamp): void
     {
         $this->timestamp = $timestamp;
     }
 
+    /**
+     * @return string|null
+     */
     public function getTag(): ?string
     {
         return $this->tag;
     }
 
+    /**
+     * @param string|null $tag
+     */
     public function setTag(?string $tag): void
     {
         $this->tag = $tag;
     }
 
+    /**
+     * @return array|null
+     */
     public function getValues(): ?array
     {
         return $this->values;
     }
 
+    /**
+     * @param array|null $values
+     */
     public function setValues(?array $values): void
     {
         $this->values = $values;
     }
 
+    /**
+     * @return bool
+     */
     public function isRollup(): bool
     {
         return $this->rollup;
     }
 
+    /**
+     * @param bool $rollup
+     */
     public function setRollup(bool $rollup): void
     {
         $this->rollup = $rollup;
     }
 
-//    @JsonIgnore
-    public function getValue(): float
+    /**
+     * @return mixed
+     */
+    public function getValue(): mixed
     {
-        if (count($this->values) == 1) {
-            return $this->values[0];
-        }
-
-        throw new IllegalStateException("Entry has more than one value.");
+        return $this->value;
     }
 
-//    @JsonIgnore
-    public function setValue(float $value): void
+    /**
+     * @param T|null $value
+     */
+    public function setValue(mixed $value): void
     {
-        if (count($this->values) == 1) {
-            $this->values[0] = $value;
-            return;
-        }
-
-        throw new IllegalStateException("Entry has more than one value.");
-    }
-
-    public function asTypedEntry(string $className): TypedTimeSeriesEntry
-    {
-        $entry = new TypedTimeSeriesEntry();
-        $entry->setRollup($this->rollup);
-        $entry->setTag($this->tag);
-        $entry->setTimestamp($this->timestamp);
-        $entry->setValues($this->values);
-        $entry->setValue(TimeSeriesValuesHelper::setFields($className, $this->values, $this->rollup));
-        return $entry;
+        $this->value = $value;
     }
 }
