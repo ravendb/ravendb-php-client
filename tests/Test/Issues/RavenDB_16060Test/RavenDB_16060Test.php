@@ -372,7 +372,7 @@ class RavenDB_16060Test extends RemoteTestBase
 
                 $user = $session->load(get_class($user),
                         $documentId,
-                        function($i) { $i->includeTimeSeriesRangeType("heartRateMeasures", TimeSeriesRangeType::last(), TimeValue::ofMinutes(10));});
+                        function($i) { $i->includeTimeSeriesByRange("heartRateMeasures", TimeSeriesRangeType::last(), TimeValue::ofMinutes(10));});
 
                 $this->assertEquals(8, $session->advanced()->getNumberOfRequests());
 

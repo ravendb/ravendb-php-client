@@ -6,6 +6,7 @@ use DateTime;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeResultList;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeType;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
+use RavenDB\Documents\Session\TimeSeries\TimeSeriesEntryArray;
 use RavenDB\Primitives\TimeValue;
 use RavenDB\Utils\DateUtils;
 use tests\RavenDB\Infrastructure\Entity\Company;
@@ -327,7 +328,7 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 // and merge the result with existing range [0, 50] into single range [0, ∞]
 
                 $user = $session->load(get_class($user), $documentId,
-                        function($i) { $i->includeTimeSeriesRangeType("heartrate", TimeSeriesRangeType::last(), TimeValue::ofMinutes(10));});
+                        function($i) { $i->includeTimeSeriesByRange("heartrate", TimeSeriesRangeType::last(), TimeValue::ofMinutes(10));});
 
                 $this->assertEquals(8, $session->advanced()->getNumberOfRequests());
 
@@ -898,7 +899,7 @@ class TimeSeriesIncludesTest extends RemoteTestBase
             try {
                 $order = $session->load(get_class($order), "orders/1-A",
                         function($i) { $i->includeDocuments("company")
-                                ->includeTimeSeriesRangeType("heartrate", TimeSeriesRangeType::last(), 11);});
+                                ->includeTimeSeriesByRange("heartrate", TimeSeriesRangeType::last(), 11);});
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -932,92 +933,80 @@ class TimeSeriesIncludesTest extends RemoteTestBase
         }
     }
 
-    public function atestCanLoadAsyncWithInclude_AllTimeSeries_LastRange_ByTime(): void
+
+    public function testCanLoadAsyncWithInclude_AllTimeSeries_LastRange_ByTime(): void
     {
         $store = $this->getDocumentStore();
         try {
-//            Date $baseLine = new Date();
-//
+            $baseLine = DateUtils::ensureMilliseconds(new DateTime());
+
             $session = $store->openSession();
             try {
-//                $company = new Company();
-//                $company->setName("HR");
-//                $session->store($company, "companies/1-A");
-//
-//                $order = new Order();
-//                $order->setCompany("companies/1-A");
-//                $session->store($order, "orders/1-A");
-//
-//                $tsf = $session->timeSeriesFor("orders/1-A", "heartrate");
-//
-//                for ($i = 0; $i < 15; $i++) {
-//                    $tsf->append(DateUtils::addMinutes($baseLine, -i), $i, "watches/bitfit");
-//                }
-//
-//                $tsf2 = $session->timeSeriesFor("orders/1-A", "speedrate");
-//                for ($i = 0; $i < 15; $i++) {
-//                    tsf2->append(DateUtils::addMinutes($baseLine, -i), $i, "watches/fitbit");
-//                }
-//
-//                $session->saveChanges();
+                $company = new Company();
+                $company->setName("HR");
+                $session->store($company, "companies/1-A");
+
+                $order = new Order();
+                $order->setCompany("companies/1-A");
+                $session->store($order, "orders/1-A");
+
+                $tsf = $session->timeSeriesFor("orders/1-A", "heartrate");
+
+                for ($i = 0; $i < 15; $i++) {
+                    $tsf->append(DateUtils::addMinutes($baseLine, -$i), $i, "watches/bitfit");
+                }
+
+                $tsf2 = $session->timeSeriesFor("orders/1-A", "speedrate");
+                for ($i = 0; $i < 15; $i++) {
+                    $tsf2->append(DateUtils::addMinutes($baseLine, -$i), $i, "watches/fitbit");
+                }
+
+                $session->saveChanges();
             } finally {
                 $session->close();
             }
 
             $session = $store->openSession();
             try {
-//                $order = $session->load(get_class($order), "orders/1-A",
-//                        function($i) use ($baseLine) { $i->includeDocuments("company").includeAllTimeSeries(TimeSeriesRangeType.LAST, TimeValue.ofMinutes(10)));
-//
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isEqualTo(1);
-//
-//                // should not go to server
-//                $company = $session->load(get_class($company), $order->getCompany());
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isEqualTo(1);
-//
-//                assertThat($company->getName())
-//                        .isEqualTo("HR");
-//
-//                // should not go to server
-//                TimeSeriesEntry[] heartrateValues = $session->timeSeriesFor($order, "heartrate")
-//                        ->get(DateUtils::addMinutes($baseLine, -10), null);
-//
-//                assertThat(heartrateValues)
-//                        .hasSize(11);
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isEqualTo(1);
-//
-//                TimeSeriesEntry[] speedrateValues = $session->timeSeriesFor($order, "speedrate")
-//                        ->get(DateUtils::addMinutes($baseLine, -10), null);
-//
-//                assertThat(speedrateValues)
-//                        .hasSize(11);
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isEqualTo(1);
-//
-//                for ($i = 0; $i < heartrateValues.length; $i++) {
-//                    assertThat(heartrateValues[i].getValues())
-//                            .hasSize(1);
-//                    assertThat(heartrateValues[i].getValues()[0])
-//                            .isEqualTo(heartrateValues.length - 1 - i);
-//                    assertThat(heartrateValues[i].getTag())
-//                            .isEqualTo("watches/bitfit");
-//                    assertThat(heartrateValues[i]->getTimestamp())
-//                            .isEqualTo(DateUtils::addMinutes($baseLine, -(heartrateValues.length - 1 - i)));
-//                }
-//
-//                for ($i = 0; $i < speedrateValues.length; $i++) {
-//                    assertThat(speedrateValues[i].getValues())
-//                            .hasSize(1);
-//                    assertThat(speedrateValues[i].getValues()[0])
-//                            .isEqualTo(speedrateValues.length - 1 - i);
-//                    assertThat(speedrateValues[i].getTag())
-//                            .isEqualTo("watches/fitbit");
-//                    assertThat(speedrateValues[i]->getTimestamp())
-//                            .isEqualTo(DateUtils::addMinutes($baseLine, -(speedrateValues.length - 1 - i)));
-//                }
+                $order = $session->load(get_class($order), "orders/1-A",
+                        function($i) { $i->includeDocuments("company")->includeAllTimeSeries(TimeSeriesRangeType::last(), TimeValue::ofMinutes(10));});
+
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+
+                // should not go to server
+                $company = $session->load(Company::class, $order->getCompany());
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+
+
+                $this->assertEquals("HR", $company->getName());
+
+                // should not go to server
+                $heartrateValues = $session->timeSeriesFor($order, "heartrate")
+                        ->get(DateUtils::addMinutes($baseLine, -10), null);
+
+                $this->assertCount(11, $heartrateValues);
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+
+                $speedrateValues = $session->timeSeriesFor($order, "speedrate")
+                        ->get(DateUtils::addMinutes($baseLine, -10), null);
+
+                $this->assertCount(11, $speedrateValues);
+
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+
+                for ($i = 0; $i < count($heartrateValues); $i++) {
+                    $this->assertCount(1, $heartrateValues[$i]->getValues());
+                    $this->assertEquals(count($heartrateValues) - 1 - $i, $heartrateValues[$i]->getValues()[0]);
+                    $this->assertEquals("watches/bitfit", $heartrateValues[$i]->getTag());
+                    $this->assertEquals(DateUtils::addMinutes($baseLine, -(count($heartrateValues) - 1 - $i)), $heartrateValues[$i]->getTimestamp());
+                }
+
+                for ($i = 0; $i < count($speedrateValues); $i++) {
+                    $this->assertCount(1, $speedrateValues[$i]->getValues());
+                    $this->assertEquals(count($speedrateValues) - 1 - $i, $speedrateValues[$i]->getValues()[0]);
+                    $this->assertEquals("watches/fitbit", $speedrateValues[$i]->getTag());
+                    $this->assertEquals(DateUtils::addMinutes($baseLine, -(count($speedrateValues) - 1 - $i)), $speedrateValues[$i]->getTimestamp());
+                }
             } finally {
                 $session->close();
             }
@@ -1027,90 +1016,76 @@ class TimeSeriesIncludesTest extends RemoteTestBase
         }
     }
 
-    public function atestCanLoadAsyncWithInclude_AllTimeSeries_LastRange_ByCount(): void
+    public function testCanLoadAsyncWithInclude_AllTimeSeries_LastRange_ByCount(): void
     {
         $store = $this->getDocumentStore();
         try {
-//            Date $baseLine = DateUtils::addHours(RavenTestHelper.utcToday(), 3);
-//
+            $baseLine = DateUtils::addHours(RavenTestHelper::utcToday(), 3);
+
             $session = $store->openSession();
             try {
-//                $company = new Company();
-//                $company->setName("HR");
-//                $session->store($company, "companies/1-A");
-//
-//                $order = new Order();
-//                $order->setCompany("companies/1-A");
-//                $session->store($order, "orders/1-A");
-//                $tsf = $session->timeSeriesFor("orders/1-A", "Heartrate");
-//                for ($i = 0; $i < 15; $i++) {
-//                    $tsf->append(DateUtils::addMinutes($baseLine, -i), $i, "watches/fitbit");
-//                }
-//                $tsf2 = $session->timeSeriesFor("orders/1-A", "speedrate");
-//                for ($i = 0; $i < 15; $i++) {
-//                    tsf2->append(DateUtils::addMinutes($baseLine, -i), $i, "watches/fitbit");
-//                }
-//
-//                $session->saveChanges();
+                $company = new Company();
+                $company->setName("HR");
+                $session->store($company, "companies/1-A");
+
+                $order = new Order();
+                $order->setCompany("companies/1-A");
+                $session->store($order, "orders/1-A");
+                $tsf = $session->timeSeriesFor("orders/1-A", "Heartrate");
+                for ($i = 0; $i < 15; $i++) {
+                    $tsf->append(DateUtils::addMinutes($baseLine, -$i), $i, "watches/fitbit");
+                }
+                $tsf2 = $session->timeSeriesFor("orders/1-A", "speedrate");
+                for ($i = 0; $i < 15; $i++) {
+                    $tsf2->append(DateUtils::addMinutes($baseLine, -$i), $i, "watches/fitbit");
+                }
+
+                $session->saveChanges();
             } finally {
                 $session->close();
             }
 
             $session = $store->openSession();
             try {
-//                $order = $session->load(get_class($order), "orders/1-A",
-//                        function($i) use ($baseLine) { $i->includeDocuments("company").includeAllTimeSeries(TimeSeriesRangeType.LAST, 11));
-//
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isEqualTo(1);
-//
-//                // should not go to server
-//                $company = $session->load(get_class($company), $order->getCompany());
-//
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isEqualTo(1);
-//
-//                assertThat($company->getName())
-//                        .isEqualTo("HR");
-//
-//                // should not go to server
-//                TimeSeriesEntry[] heartrateValues = $session->timeSeriesFor($order, "heartrate")
-//                        ->get(DateUtils::addMinutes($baseLine, -10), null);
-//
-//                assertThat(heartrateValues)
-//                        .hasSize(11);
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isEqualTo(1);
-//
-//                TimeSeriesEntry[] speedrateValues = $session->timeSeriesFor($order, "speedrate")
-//                        ->get(DateUtils::addMinutes($baseLine, -10), null);
-//
-//                assertThat(speedrateValues)
-//                        .hasSize(11);
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isEqualTo(1);
-//
-//                for ($i = 0; $i < heartrateValues.length; $i++) {
-//                    assertThat(heartrateValues[i].getValues())
-//                            .hasSize(1);
-//                    assertThat(heartrateValues[i].getValues()[0])
-//                            .isEqualTo(heartrateValues.length - 1 - i);
-//                    assertThat(heartrateValues[i].getTag())
-//                            .isEqualTo("watches/fitbit");
-//                    assertThat(heartrateValues[i]->getTimestamp())
-//                            .isEqualTo(DateUtils::addMinutes($baseLine, -(heartrateValues.length - 1 - i)));
-//                }
-//
-//                for ($i = 0; $i < speedrateValues.length; $i++) {
-//                    assertThat(speedrateValues[i].getValues())
-//                            .hasSize(1);
-//                    assertThat(speedrateValues[i].getValues()[0])
-//                            .isEqualTo(speedrateValues.length - 1 - i);
-//                    assertThat(speedrateValues[i].getTag())
-//                            .isEqualTo("watches/fitbit");
-//                    assertThat(speedrateValues[i]->getTimestamp())
-//                            .isEqualTo(DateUtils::addMinutes($baseLine, -(speedrateValues.length - 1 - i)));
-//                }
+                $order = $session->load(get_class($order), "orders/1-A",
+                        function($i) { $i->includeDocuments("company")->includeAllTimeSeries(TimeSeriesRangeType::last(), 11); });
+
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+
+                // should not go to server
+                $company = $session->load(Company::class, $order->getCompany());
+
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+
+                $this->assertEquals("HR", $company->getName());
+
+                // should not go to server
+                $heartrateValues = $session->timeSeriesFor($order, "heartrate")
+                        ->get(DateUtils::addMinutes($baseLine, -10), null);
+
+                $this->assertCount(11, $heartrateValues);
+
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+
+                $speedrateValues = $session->timeSeriesFor($order, "speedrate")
+                        ->get(DateUtils::addMinutes($baseLine, -10), null);
+
+                $this->assertCount(11, $speedrateValues);
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+
+                for ($i = 0; $i < count($heartrateValues); $i++) {
+                    $this->assertCount(1, $heartrateValues[$i]->getValues());
+                    $this->assertEquals(count($heartrateValues) - 1 - $i, $heartrateValues[$i]->getValues()[0]);
+                    $this->assertEquals("watches/fitbit", $heartrateValues[$i]->getTag());
+                    $this->assertEquals(DateUtils::addMinutes($baseLine, -(count($heartrateValues) - 1 - $i)), $heartrateValues[$i]->getTimestamp());
+                }
+
+                for ($i = 0; $i < count($speedrateValues); $i++) {
+                    $this->assertCount(1, $speedrateValues[$i]->getValues());
+                    $this->assertEquals(count($speedrateValues) - 1 - $i, $speedrateValues[$i]->getValues()[0]);
+                    $this->assertEquals("watches/fitbit", $speedrateValues[$i]->getTag());
+                    $this->assertEquals(DateUtils::addMinutes($baseLine, -(count($speedrateValues) - 1 - $i)), $speedrateValues[$i]->getTimestamp());
+                }
             } finally {
                 $session->close();
             }
@@ -1439,12 +1414,12 @@ class TimeSeriesIncludesTest extends RemoteTestBase
         }
     }
 
-    public function atestCanLoadAsyncWithInclude_ArrayOfTimeSeriesLastRangeByTime(): void
+    public function testCanLoadAsyncWithInclude_ArrayOfTimeSeriesLastRangeByTime(): void
     {
         $this->canLoadAsyncWithInclude_ArrayOfTimeSeriesLastRange(true);
     }
 
-    public function atestCanLoadAsyncWithInclude_ArrayOfTimeSeriesLastRangeByCount(): void
+    public function testCanLoadAsyncWithInclude_ArrayOfTimeSeriesLastRangeByCount(): void
     {
         $this->canLoadAsyncWithInclude_ArrayOfTimeSeriesLastRange(false);
     }
@@ -1453,129 +1428,105 @@ class TimeSeriesIncludesTest extends RemoteTestBase
     {
         $store = $this->getDocumentStore();
         try {
-//            Date $baseLine = byTime ? new Date() : RavenTestHelper.utcToday();
-//
+            $baseLine = $byTime ? DateUtils::ensureMilliseconds(new DateTime()) : RavenTestHelper::utcToday();
+
             $session = $store->openSession();
             try {
-//                $company = new Company();
-//                $company->setName("HR");
-//                $session->store($company, "companies/1-A");
-//
-//                $order = new Order();
-//                $order->setCompany("companies/1-A");
-//                $session->store($order, "orders/1-A");
-//
-//                $tsf = $session->timeSeriesFor("orders/1-A", "heartrate");
-//                $tsf->append($baseLine, 67, "watches/apple");
-//                $tsf->append(DateUtils::addMinutes($baseLine, -5), 64, "watches/apple");
-//                $tsf->append(DateUtils::addMinutes($baseLine, -10), 65, "watches/fitbit");
-//
-//                $tsf2 = $session->timeSeriesFor("orders/1-A", "speedrate");
-//                tsf2->append(DateUtils::addMinutes($baseLine, -15), 6, "watches/bitfit");
-//                tsf2->append(DateUtils::addMinutes($baseLine, -10), 7, "watches/bitfit");
-//                tsf2->append(DateUtils::addMinutes($baseLine, -9), 7, "watches/bitfit");
-//                tsf2->append(DateUtils::addMinutes($baseLine, -8), 6, "watches/bitfit");
-//
-//                $session->saveChanges();
+                $company = new Company();
+                $company->setName("HR");
+                $session->store($company, "companies/1-A");
+
+                $order = new Order();
+                $order->setCompany("companies/1-A");
+                $session->store($order, "orders/1-A");
+
+                $tsf = $session->timeSeriesFor("orders/1-A", "heartrate");
+                $tsf->append($baseLine, 67, "watches/apple");
+                $tsf->append(DateUtils::addMinutes($baseLine, -5), 64, "watches/apple");
+                $tsf->append(DateUtils::addMinutes($baseLine, -10), 65, "watches/fitbit");
+
+                $tsf2 = $session->timeSeriesFor("orders/1-A", "speedrate");
+                $tsf2->append(DateUtils::addMinutes($baseLine, -15), 6, "watches/bitfit");
+                $tsf2->append(DateUtils::addMinutes($baseLine, -10), 7, "watches/bitfit");
+                $tsf2->append(DateUtils::addMinutes($baseLine, -9), 7, "watches/bitfit");
+                $tsf2->append(DateUtils::addMinutes($baseLine, -8), 6, "watches/bitfit");
+
+                $session->saveChanges();
             } finally {
                 $session->close();
             }
 
             $session = $store->openSession();
             try {
-//                $order = null;
-//                if (byTime) {
-//                    order = $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    ->includeTimeSeries(new String[] { "heartrate", "speedrate" }, TimeSeriesRangeType.LAST, TimeValue.ofMinutes(10))
-//                    );
-//                } else {
-//                    order = $session->load(get_class($order), "orders/1-A",
-//                            function($i) use ($baseLine) { $i->includeDocuments("company")->includeTimeSeries(new String[]{ "heartrate", "speedrate" }, TimeSeriesRangeType.LAST, 3));
-//                }
-//
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isEqualTo(1);
-//
-//                // should not go to server
-//                $company = $session->load(get_class($company), $order->getCompany());
-//
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isEqualTo(1);
-//                assertThat($company->getName())
-//                        .isEqualTo("HR");
-//
-//                // should not go to server
-//                TimeSeriesEntry[] heartrateValues = $session->timeSeriesFor($order, "heartrate")
-//                        ->get(DateUtils::addMinutes($baseLine, -10), null);
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isEqualTo(1);
-//                assertThat(heartrateValues)
-//                        .hasSize(3);
-//
-//                assertThat(heartrateValues[0].getValues())
-//                        .hasSize(1);
-//                assertThat(heartrateValues[0].getValues()[0])
-//                        .isEqualTo(65);
-//                assertThat(heartrateValues[0].getTag())
-//                        .isEqualTo("watches/fitbit");
-//                assertThat(heartrateValues[0]->getTimestamp())
-//                        .isEqualTo(DateUtils::addMinutes($baseLine, -10));
-//
-//                assertThat(heartrateValues[1].getValues())
-//                        .hasSize(1);
-//                assertThat(heartrateValues[1].getValues()[0])
-//                        .isEqualTo(64);
-//                assertThat(heartrateValues[1].getTag())
-//                        .isEqualTo("watches/apple");
-//                assertThat(heartrateValues[1]->getTimestamp())
-//                        .isEqualTo(DateUtils::addMinutes($baseLine, -5));
-//
-//                assertThat(heartrateValues[2].getValues())
-//                        .hasSize(1);
-//                assertThat(heartrateValues[2].getValues()[0])
-//                        .isEqualTo(67);
-//                assertThat(heartrateValues[2].getTag())
-//                        .isEqualTo("watches/apple");
-//                assertThat(heartrateValues[2]->getTimestamp())
-//                        .isEqualTo($baseLine);
-//
-//                // should not go to server
-//                TimeSeriesEntry[] speedrateValues = $session->timeSeriesFor($order, "speedrate")
-//                        ->get(DateUtils::addMinutes($baseLine, -10), null);
-//
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isEqualTo(1);
-//                assertThat(speedrateValues)
-//                        .hasSize(3);
-//
-//                assertThat(speedrateValues[0].getValues())
-//                        .hasSize(1);
-//                assertThat(speedrateValues[0].getValues()[0])
-//                        .isEqualTo(7);
-//                assertThat(speedrateValues[0].getTag())
-//                        .isEqualTo("watches/bitfit");
-//                assertThat(speedrateValues[0]->getTimestamp())
-//                        .isEqualTo(DateUtils::addMinutes($baseLine, -10));
-//
-//                assertThat(speedrateValues[1].getValues())
-//                        .hasSize(1);
-//                assertThat(speedrateValues[1].getValues()[0])
-//                        .isEqualTo(7);
-//                assertThat(speedrateValues[1].getTag())
-//                        .isEqualTo("watches/bitfit");
-//                assertThat(speedrateValues[1]->getTimestamp())
-//                        .isEqualTo(DateUtils::addMinutes($baseLine, -9));
-//
-//                assertThat(speedrateValues[2].getValues())
-//                        .hasSize(1);
-//                assertThat(speedrateValues[2].getValues()[0])
-//                        .isEqualTo(6);
-//                assertThat(speedrateValues[2].getTag())
-//                        .isEqualTo("watches/bitfit");
-//                assertThat(speedrateValues[2]->getTimestamp())
-//                        .isEqualTo(DateUtils::addMinutes($baseLine, -8));
+                $order = null;
+                if ($byTime) {
+                    $order = $session->load(Order::class, "orders/1-A",
+                            function($i) {
+                                $i
+                                    ->includeDocuments("company")
+                                    ->includeTimeSeriesByRange(["heartrate", "speedrate"], TimeSeriesRangeType::last(), TimeValue::ofMinutes(10));
+                            }
+                    );
+                } else {
+                    $order = $session->load(Order::class, "orders/1-A",
+                            function($i) { $i->includeDocuments("company")->includeTimeSeriesByRange([ "heartrate", "speedrate" ], TimeSeriesRangeType::last(), 3); });
+                }
+
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+
+                // should not go to server
+                $company = $session->load(Company::class, $order->getCompany());
+
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+
+                $this->assertEquals("HR", $company->getName());
+
+                // should not go to server
+                /** @var TimeSeriesEntryArray $heartrateValues */
+                $heartrateValues = $session->timeSeriesFor($order, "heartrate")
+                        ->get(DateUtils::addMinutes($baseLine, -10), null);
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+
+                $this->assertCount(3, $heartrateValues);
+
+                $this->assertCount(1, $heartrateValues[0]->getValues());
+                $this->assertEquals(65, $heartrateValues[0]->getValues()[0]);
+                $this->assertEquals("watches/fitbit", $heartrateValues[0]->getTag());
+                $this->assertEquals(DateUtils::addMinutes($baseLine, -10), $heartrateValues[0]->getTimestamp());
+
+                $this->assertCount(1, $heartrateValues[1]->getValues());
+                $this->assertEquals(64, $heartrateValues[1]->getValues()[0]);
+                $this->assertEquals("watches/apple", $heartrateValues[1]->getTag());
+                $this->assertEquals(DateUtils::addMinutes($baseLine, -5), $heartrateValues[1]->getTimestamp());
+
+                $this->assertCount(1, $heartrateValues[2]->getValues());
+                $this->assertEquals(67, $heartrateValues[2]->getValues()[0]);
+                $this->assertEquals("watches/apple", $heartrateValues[2]->getTag());
+                $this->assertEquals($baseLine, $heartrateValues[2]->getTimestamp());
+
+                // should not go to server
+                /** @var TimeSeriesEntryArray $speedrateValues */
+                $speedrateValues = $session->timeSeriesFor($order, "speedrate")
+                        ->get(DateUtils::addMinutes($baseLine, -10), null);
+
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+
+                $this->assertCount(3, $heartrateValues);
+
+                $this->assertCount(1, $speedrateValues[0]->getValues());
+                $this->assertEquals(7, $speedrateValues[0]->getValues()[0]);
+                $this->assertEquals("watches/bitfit", $speedrateValues[0]->getTag());
+                $this->assertEquals(DateUtils::addMinutes($baseLine, -10), $speedrateValues[0]->getTimestamp());
+
+                $this->assertCount(1, $speedrateValues[1]->getValues());
+                $this->assertEquals(7, $speedrateValues[1]->getValues()[0]);
+                $this->assertEquals("watches/bitfit", $speedrateValues[1]->getTag());
+                $this->assertEquals(DateUtils::addMinutes($baseLine, -9), $speedrateValues[1]->getTimestamp());
+
+                $this->assertCount(1, $speedrateValues[2]->getValues());
+                $this->assertEquals(6, $speedrateValues[2]->getValues()[0]);
+                $this->assertEquals("watches/bitfit", $speedrateValues[2]->getTag());
+                $this->assertEquals(DateUtils::addMinutes($baseLine, -8), $speedrateValues[2]->getTimestamp());
             } finally {
                 $session->close();
             }

@@ -52,7 +52,7 @@ class IncludeBuilder extends IncludeBuilderBase implements IncludeBuilderInterfa
         return $this;
     }
 
-    public function includeTimeSeriesRangeType(null | string | array $names, TimeSeriesRangeType $type, TimeValue | int $timeOrCount): IncludeBuilderInterface
+    public function includeTimeSeriesByRange(null | string | array $names, TimeSeriesRangeType $type, TimeValue | int $timeOrCount): IncludeBuilderInterface
     {
         if (is_string($names)) {
             if (is_int($timeOrCount)) {

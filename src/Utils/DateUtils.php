@@ -131,4 +131,19 @@ class DateUtils
 
         return $newDate;
     }
+
+    public static function ensureMilliseconds(DateTimeInterface $date): DateTimeInterface
+    {
+        /** @var DateTime $new */
+        $new = clone $date;
+
+        $hour = intval($new->format('H'));
+        $minute = intval($new->format('i'));
+        $second =intval($new->format('s'));
+        $microsecond = intval($new->format('u'));
+        $microsecond -= $microsecond % 1000;
+        $new->setTime($hour, $minute, $second, $microsecond);
+
+        return $new;
+    }
 }
