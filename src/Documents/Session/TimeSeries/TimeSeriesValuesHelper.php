@@ -11,13 +11,13 @@ use ReflectionObject;
 class TimeSeriesValuesHelper
 {
 //    private static final ConcurrentMap<Class< ? ><!--, SortedMap<Byte, Tuple<Field, String>>> _cache = new ConcurrentHashMap<>();-->
-    private static array $cash = [];
+    private static array $cache = [];
 
     /* SortedMap<Byte, Tuple<Field, String>> */
     public static function getFieldsMapping(?string $className): ?array
     {
-        if (array_key_exists($className, self::$cash)) {
-            return self::$cash[$className];
+        if (array_key_exists($className, self::$cache)) {
+            return self::$cache[$className];
         }
 
         $mapping = null;
@@ -62,7 +62,7 @@ class TimeSeriesValuesHelper
 
         }
 
-        self::$cash[$className] = $mapping;
+        self::$cache[$className] = $mapping;
 
         return $mapping;
     }
