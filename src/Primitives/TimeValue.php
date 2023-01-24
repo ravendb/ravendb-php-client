@@ -2,6 +2,7 @@
 
 namespace RavenDB\Primitives;
 
+use RavenDB\Constants\PhpClient;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 
@@ -45,12 +46,12 @@ class TimeValue
 
     public static function minValue(): TimeValue
     {
-        return new TimeValue(PHP_INT_MIN, TimeValueUnit::none());
+        return new TimeValue(PhpClient::INT_MIN_VALUE, TimeValueUnit::none());
     }
 
     public static function maxValue(): TimeValue
     {
-        return new TimeValue(PHP_INT_MAX, TimeValueUnit::none());
+        return new TimeValue(PhpClient::INT_MAX_VALUE, TimeValueUnit::none());
     }
 
     public static function ofSeconds(int $seconds): TimeValue

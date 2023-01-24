@@ -108,13 +108,20 @@ class TimeSeriesValuesHelper
             $obj = new $className();
 
             $reflection = new ReflectionObject($obj);
-            foreach ($mapping as $key => $value) {
-                 $reflection->getProperty($value)->setValue($obj, $values[$key]);
+            foreach ($mapping as $key => $propertyName) {
+                $value = NAN;
+                if ($key < count($values)) {
+                    if ($asRollup) {
+                        $key *= 6;
+                    }
+                    $value = $values[$key];
+                }
+                $reflection->getProperty($propertyName)->setValue($obj, $value);
             }
 
             return $obj;
         } catch (\Throwable $e) {
-            throw new RavenException("Unable to read time series values.", e);
+            throw new RavenException("Unable to read time series values.", $e);
         }
     }
 }

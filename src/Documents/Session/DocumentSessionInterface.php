@@ -97,13 +97,7 @@ interface DocumentSessionInterface
 
     public function typedTimeSeriesFor(string $className, string|object|null $idOrEntity, ?string $name = null): SessionDocumentTypedTimeSeriesInterface;
 
-//    <T> ISessionDocumentRollupTypedTimeSeries<T> timeSeriesRollupFor(Class<T> clazz, Object entity, String policy);
-//
-//    <T> ISessionDocumentRollupTypedTimeSeries<T> timeSeriesRollupFor(Class<T> clazz, Object entity, String policy, String raw);
-//
-//    <T> ISessionDocumentRollupTypedTimeSeries<T> timeSeriesRollupFor(Class<T> clazz, String documentId, String policy);
-//
-//    <T> ISessionDocumentRollupTypedTimeSeries<T> timeSeriesRollupFor(Class<T> clazz, String documentId, String policy, String raw);
+    public function timeSeriesRollupFor(string $className, string|object|null $idOrEntity, ?string $policy, ?string $raw = null): SessionDocumentRollupTypedTimeSeriesInterface;
 
     public function close(): void;
 }

@@ -41,8 +41,11 @@ class TimeSeriesConfiguration
         return $this->collections;
     }
 
-    public function setCollections(TimeSeriesCollectionConfigurationArray $collections): void
+    public function setCollections(TimeSeriesCollectionConfigurationArray|array $collections): void
     {
+        if (is_array($collections)) {
+            $collections = TimeSeriesCollectionConfigurationArray::fromArray($collections);
+        }
         $this->collections = $collections;
     }
 

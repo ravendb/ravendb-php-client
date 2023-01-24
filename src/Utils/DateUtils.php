@@ -3,6 +3,7 @@
 namespace RavenDB\Utils;
 
 use DateInterval;
+use DatePeriod;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -11,6 +12,24 @@ use Exception;
 
 class DateUtils
 {
+    /**
+     * @param DateTime|DateTimeImmutable $dateTime
+     * @param int $years
+     *
+     * @return DateTime|DateTimeImmutable
+     *
+     * @throws Exception
+     */
+    public static function addYears(DateTime|DateTimeImmutable $dateTime, int $years): DateTime|DateTimeImmutable
+    {
+        $interval = new DateInterval('P' . abs($years) . 'Y');
+        if ($years < 0) {
+            $interval->invert = 1;
+        }
+
+        $newDateTime = clone $dateTime;
+        return $newDateTime->add($interval);
+    }
 
     /**
      * @param DateTime|DateTimeImmutable $dateTime
@@ -101,6 +120,19 @@ class DateUtils
         return $newDateTime->add($interval);
     }
 
+    /**
+     * @param DateTime $dateTime
+     * @param int $milliseconds
+     * @return DateTime
+     * @throws Exception
+     */
+    public static function addMilliseconds(DateTime $dateTime, int $milliseconds): DateTime
+    {
+        $newDateTime = clone $dateTime;
+        $sign = $milliseconds < 0 ? '-' : '+';
+        $newDateTime->modify($sign . ' '. abs($milliseconds) . ' milliseconds');
+        return $newDateTime;
+    }
 
 
     public static function unixEpochStart(): DateTimeInterface
@@ -146,4 +178,13 @@ class DateUtils
 
         return $new;
     }
+
+    public static function intervalToMilliseconds(DateInterval $interval): int
+    {
+        $seconds = date_create('@0')->add($interval)->getTimestamp();
+
+        return $seconds * 1000 + intval($interval->f * 1000) ;
+    }
+
+
 }

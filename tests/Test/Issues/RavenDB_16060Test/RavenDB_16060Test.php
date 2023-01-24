@@ -18,12 +18,19 @@ use RavenDB\Primitives\TimeValue;
 use RavenDB\Type\Duration;
 use RavenDB\Type\ExtendedArrayObject;
 use RavenDB\Utils\DateUtils;
+use tests\RavenDB\Infrastructure\DisableOnPullRequestCondition;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
 use tests\RavenDB\Test\Client\TimeSeries\_TimeSeriesTypedSessionTest\StockPrice;
 
 class RavenDB_16060Test extends RemoteTestBase
 {
+    public function setUp(): void
+    {
+        parent::setUp();
+        DisableOnPullRequestCondition::evaluateExecutionCondition($this);
+    }
+
     public function testCanIncludeTypedTimeSeries(): void
     {
         $store = $this->getDocumentStore();
@@ -484,74 +491,74 @@ class RavenDB_16060Test extends RemoteTestBase
         }
     }
 
-//    @Test
-//    public function canServeTimeSeriesFromCache_Rollup(): void {
-//        $store = $this->getDocumentStore();
-//        try {
-//            RawTimeSeriesPolicy raw = new RawTimeSeriesPolicy(TimeValue.ofHours(24));
-//
-//            $p1 = new TimeSeriesPolicy("By6Hours", TimeValue.ofHours(6), TimeValue.ofDays(4));
-//            $p2 = new TimeSeriesPolicy("By1Day", TimeValue.ofDays(1), TimeValue.ofDays(5));
-//            $p3 = new TimeSeriesPolicy("By30Minutes", TimeValue.ofMinutes(30), TimeValue.ofDays(2));
-//            $p4 = new TimeSeriesPolicy("By1Hour", TimeValue.ofMinutes(60), TimeValue.ofDays(3));
-//
-//            TimeSeriesCollectionConfiguration timeSeriesCollectionConfiguration = new TimeSeriesCollectionConfiguration();
-//            timeSeriesCollectionConfiguration.setRawPolicy(raw);
-//            timeSeriesCollectionConfiguration.setPolicies(Arrays.asList(p1, p2, p3, p4));
-//
-//            TimeSeriesConfiguration config = new TimeSeriesConfiguration();
-//            config.setCollections(Collections.singletonMap("users", timeSeriesCollectionConfiguration));
-//            config.setPolicyCheckFrequency(Duration.ofSeconds(1));
-//
-//            store.maintenance().send(new ConfigureTimeSeriesOperation(config));
-//            store.timeSeries().register(get_class($user), TimeSeriesTypedSessionTest.StockPrice.class);
-//
-//            int total = TimeValue.ofDays(12)->getValue();
-//            Date baseLine = DateUtils.addDays(DateUtils.truncate(new Date(), Calendar.DAY_OF_MONTH), -12);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                $user = new User();
-//                $user->setName("Karmel");
-//                $session->store($user, "users/karmel");
-//
-//                ISessionDocumentTypedTimeSeries<TimeSeriesTypedSessionTest.StockPrice> ts = $session->timeSeriesFor(TimeSeriesTypedSessionTest.StockPrice.class, "users/karmel");
-//                TimeSeriesTypedSessionTest.StockPrice entry = new TimeSeriesTypedSessionTest.StockPrice();
-//                for (int i = 0; i <= total; i++) {
-//                    entry.setOpen(i);
-//                    entry.setClose(i + 100_000);
-//                    entry.setHigh(i + 200_000);
-//                    entry.setLow(i + 300_000);
-//                    entry.setVolume(i + 400_000);
-//                    $ts->append(DateUtils::addMinutes($baseLine, i), entry, "watches/fibit");
-//                }
-//                $session->saveChanges();
-//            }
-//
-//            Thread.sleep(1200); // wait for rollups
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                ISessionDocumentRollupTypedTimeSeries<TimeSeriesTypedSessionTest.StockPrice> ts =
-//                        $session->timeSeriesRollupFor(TimeSeriesTypedSessionTest.StockPrice.class, "users/karmel", p1->getName());
-//                TypedTimeSeriesRollupEntry<TimeSeriesTypedSessionTest.StockPrice>[] res = $ts->get();
-//
-//                assertThat(res)
-//                        .hasSize(16);
-//
-//                // should not go to server
-//                res = $ts->get($baseLine, DateUtils.addYears($baseLine, 1));
-//                assertThat(res)
-//                        .hasSize(16);
-//                assertThat($session->advanced()->getNumberOfRequests())
-//                        .isEqualTo(1);
-//            }
-//        } finally {
-//            $store->close();
-//        }
-//    }
+    public function testCanServeTimeSeriesFromCache_Rollup(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $raw = new RawTimeSeriesPolicy(TimeValue::ofHours(24));
 
+            $p1 = new TimeSeriesPolicy("By6Hours", TimeValue::ofHours(6), TimeValue::ofDays(4));
+            $p2 = new TimeSeriesPolicy("By1Day", TimeValue::ofDays(1), TimeValue::ofDays(5));
+            $p3 = new TimeSeriesPolicy("By30Minutes", TimeValue::ofMinutes(30), TimeValue::ofDays(2));
+            $p4 = new TimeSeriesPolicy("By1Hour", TimeValue::ofMinutes(60), TimeValue::ofDays(3));
 
-    // This test wasn't in the list yet to implement
-    public function atestCanIncludeTypedTimeSeries_Rollup(): void
+            $timeSeriesCollectionConfiguration = new TimeSeriesCollectionConfiguration();
+            $timeSeriesCollectionConfiguration->setRawPolicy($raw);
+            $timeSeriesCollectionConfiguration->setPolicies([ $p1, $p2, $p3, $p4 ]);
+
+            $config = new TimeSeriesConfiguration();
+            $config->setCollections(["users" => $timeSeriesCollectionConfiguration]);
+            $config->setPolicyCheckFrequency(Duration::ofSeconds(1));
+
+            $store->maintenance()->send(new ConfigureTimeSeriesOperation($config));
+            $store->timeSeries()->register(User::class, StockPrice::class);
+
+            $total = TimeValue::ofDays(12)->getValue();
+            $baseLine = DateUtils::addDays(DateUtils::truncateDayOfMonth(new DateTime()), -12);
+
+            $session = $store->openSession();
+            try  {
+                $user = new User();
+                $user->setName("Karmel");
+                $session->store($user, "users/karmel");
+
+                $ts = $session->typedTimeSeriesFor(StockPrice::class, "users/karmel");
+                $entry = new StockPrice();
+                for ($i = 0; $i <= $total; $i++) {
+                    $entry->setOpen($i);
+                    $entry->setClose($i + 100_000);
+                    $entry->setHigh($i + 200_000);
+                    $entry->setLow($i + 300_000);
+                    $entry->setVolume($i + 400_000);
+                    $ts->append(DateUtils::addMinutes($baseLine, $i), $entry, "watches/fibit");
+                }
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            usleep(1200000); // wait for rollups
+
+            $session = $store->openSession();
+            try  {
+                $ts = $session->timeSeriesRollupFor(StockPrice::class, "users/karmel", $p1->getName());
+                $res = $ts->get();
+
+                $this->assertCount(16, $res);
+
+                // should not go to server
+                $res = $ts->get($baseLine, DateUtils::addYears($baseLine, 1));
+                $this->assertCount(16, $res);
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCanIncludeTypedTimeSeries_Rollup(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -607,9 +614,9 @@ class RavenDB_16060Test extends RemoteTestBase
                         ->first();
 
                 // should not go to server
-//                /** @var TypedTimeSeriesRollupEntryArray <StockPrice>  $res */
-//                $res = $session->timeSeriesRollupFor(StockPrice::class, $user->getId(), $p1->getName())
-//                        ->get();
+                /** @var TypedTimeSeriesRollupEntryArray <StockPrice>  $res */
+                $res = $session->timeSeriesRollupFor(StockPrice::class, $user->getId(), $p1->getName())
+                        ->get();
 
                 $this->assertCount(16, $res);
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());

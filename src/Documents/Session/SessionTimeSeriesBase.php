@@ -160,7 +160,7 @@ class SessionTimeSeriesBase
             $metadataTimeSeriesRaw = array_key_exists(DocumentsMetadata::TIME_SERIES, $metadata) ? $metadata[DocumentsMetadata::TIME_SERIES] : null;
             if ($metadataTimeSeriesRaw != null && is_array($metadataTimeSeriesRaw)) {
                 if (!in_array(strtolower($this->name), array_map('strtolower', $metadataTimeSeriesRaw))) {
-                  // the document is loaded in the session, but the metadata says that there is no such timeseries
+                    // the document is loaded in the session, but the metadata says that there is no such timeseries
                     return new TimeSeriesEntryArray();
                 }
             }

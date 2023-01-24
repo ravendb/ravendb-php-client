@@ -7,6 +7,6 @@ use RavenDB\Documents\Session\TimeSeries\TypedTimeSeriesEntry;
 
 interface SessionDocumentTypedAppendTimeSeriesBaseInterface
 {
-    function append(?DateTimeInterface $timestamp, mixed $entry, ?string $tag): void;
+    function append(?DateTimeInterface $timestamp, mixed $entry, ?string $tag = null): void;
     function appendEntry(TypedTimeSeriesEntry $entry): void;
 }

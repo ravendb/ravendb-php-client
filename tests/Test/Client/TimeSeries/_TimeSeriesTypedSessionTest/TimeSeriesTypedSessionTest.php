@@ -2,49 +2,30 @@
 
 namespace tests\RavenDB\Test\Client\TimeSeries\_TimeSeriesTypedSessionTest;
 
+use DateTime;
+use RavenDB\Documents\Operations\TimeSeries\ConfigureTimeSeriesOperation;
+use RavenDB\Documents\Operations\TimeSeries\RawTimeSeriesPolicy;
+use RavenDB\Documents\Operations\TimeSeries\TimeSeriesCollectionConfiguration;
+use RavenDB\Documents\Operations\TimeSeries\TimeSeriesConfiguration;
+use RavenDB\Documents\Operations\TimeSeries\TimeSeriesPolicy;
+use RavenDB\Documents\Session\TimeSeries\TypedTimeSeriesEntry;
+use RavenDB\Primitives\TimeValue;
+use RavenDB\Type\Duration;
+use RavenDB\Utils\DateUtils;
+use tests\RavenDB\Infrastructure\DisableOnPullRequestCondition;
+use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
 
 class TimeSeriesTypedSessionTest extends RemoteTestBase
 {
-//    public static class HeartRateMeasure {
-//        @TimeSeriesValue(idx = 0)
-//        private double heartRate;
-//
-//        public double getHeartRate() {
-//            return heartRate;
-//        }
-//
-//        public void setHeartRate(double heartRate) {
-//            this.heartRate = heartRate;
-//        }
-//
-//        public static HeartRateMeasure create(double value) {
-//            HeartRateMeasure measure = new HeartRateMeasure();
-//            measure.setHeartRate(value);
-//            return measure;
-//        }
-//    }
-//
-//    public static class HeartRateMeasureWithCustomName {
-//        @TimeSeriesValue(idx = 0, name = "HR")
-//        private double heartRate;
-//
-//        public double getHeartRate() {
-//            return heartRate;
-//        }
-//
-//        public void setHeartRate(double heartRate) {
-//            this.heartRate = heartRate;
-//        }
-//    }
-//
+
 //    @Test
-//    public void canRegisterTimeSeries() throws Exception {
+//    public function canRegisterTimeSeries(): void {
 //        try (IDocumentStore store = getDocumentStore()) {
-//            store.timeSeries().register(User.class, StockPrice.class);
-//            store.timeSeries().register("Users", "HeartRateMeasures", new String[] { "heartRate" });
+//            $store->timeSeries()->register($user->class, StockPrice.class);
+//            $store->timeSeries()->register("Users", "HeartRateMeasures", new String[] { "heartRate" });
 //
-//            TimeSeriesConfiguration updated = store.maintenance().server().send(
+//            TimeSeriesConfiguration updated = $store->maintenance().server()->send(
 //                    new GetDatabaseRecordOperation(store.getDatabase())).getTimeSeries();
 //
 //            // this method is case insensitive
@@ -62,11 +43,11 @@ class TimeSeriesTypedSessionTest extends RemoteTestBase
 //    }
 //
 //    @Test
-//    public void canRegisterTimeSeriesWithCustomName() throws Exception {
+//    public function canRegisterTimeSeriesWithCustomName(): void {
 //        try (IDocumentStore store = getDocumentStore()) {
-//            store.timeSeries().register(User.class, HeartRateMeasureWithCustomName.class, "cn");
+//            $store->timeSeries()->register($user->class, HeartRateMeasureWithCustomName.class, "cn");
 //
-//            TimeSeriesConfiguration updated = store.maintenance().server().send(
+//            TimeSeriesConfiguration updated = $store->maintenance().server()->send(
 //                    new GetDatabaseRecordOperation(store.getDatabase())).getTimeSeries();
 //
 //            // this method is case insensitive
@@ -79,13 +60,13 @@ class TimeSeriesTypedSessionTest extends RemoteTestBase
 //    }
 //
 //    @Test
-//    public void canRegisterTimeSeriesForOtherDatabase() throws Exception {
+//    public function canRegisterTimeSeriesForOtherDatabase(): void {
 //        try (IDocumentStore store1 = getDocumentStore()) {
 //            try (IDocumentStore store2 = getDocumentStore()) {
-//                store1.timeSeries().forDatabase(store2.getDatabase()).register(User.class, StockPrice.class);
-//                store1.timeSeries().forDatabase(store2.getDatabase()).register("Users", "HeartRateMeasures", new String[] { "HeartRate" });
+//                store1.timeSeries().forDatabase(store2.getDatabase())->register($user->class, StockPrice.class);
+//                store1.timeSeries().forDatabase(store2.getDatabase())->register("Users", "HeartRateMeasures", new String[] { "HeartRate" });
 //
-//                TimeSeriesConfiguration updated = store1.maintenance().server().send(new GetDatabaseRecordOperation(store2.getDatabase())).getTimeSeries();
+//                TimeSeriesConfiguration updated = store1.maintenance().server()->send(new GetDatabaseRecordOperation(store2.getDatabase())).getTimeSeries();
 //
 //                assertThat(updated)
 //                        .isNotNull();
@@ -112,221 +93,245 @@ class TimeSeriesTypedSessionTest extends RemoteTestBase
 //            }
 //        }
 //    }
-//
-//    @Test
-//    public void canCreateSimpleTimeSeries() throws Exception {
+
+    public function testCanCreateSimpleTimeSeries(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $baseLine = DateUtils::truncateDayOfMonth(new DateTime());
+
+            $session = $store->openSession();
+            try {
+                $user = new User();
+                $session->store($user, "users/ayende");
+
+                $heartRateMeasure = new HeartRateMeasure();
+                $heartRateMeasure->setHeartRate(59);
+                $ts = $session->typedTimeSeriesFor(HeartRateMeasure::class, "users/ayende");
+                $ts->append($baseLine, $heartRateMeasure, "watches/fitbit");
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                $val = $session->typedTimeSeriesFor(HeartRateMeasure::class, "users/ayende")
+                    ->get()[0];
+
+                $this->assertEquals(59, $val->getValue()->getHeartRate());
+                $this->assertEquals("watches/fitbit", $val->getTag());
+                $this->assertEquals($baseLine, $val->getTimestamp());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCanCreateSimpleTimeSeriesAsync(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+
+            $baseLine = DateUtils::truncateDayOfMonth(new DateTime());
+
+            $session = $store->openSession();
+            try {
+                $user = new User();
+                $session->store($user, "users/ayende");
+
+                $heartRateMeasure = new HeartRateMeasure();
+                $heartRateMeasure->setHeartRate(59);
+
+                $measure = new TypedTimeSeriesEntry();
+                $measure->setTimestamp(DateUtils::addMinutes($baseLine, 1));
+                $measure->setValue($heartRateMeasure);
+                $measure->setTag("watches/fitbit");
+
+                $ts = $session->typedTimeSeriesFor(HeartRateMeasure::class, "users/ayende");
+                $ts->appendEntry($measure);
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                $val = $session->typedTimeSeriesFor(HeartRateMeasure::class, "users/ayende")
+                    ->get()[0];
+
+                $this->assertEquals(59, $val->getValue()->getHeartRate());
+                $this->assertEquals("watches/fitbit", $val->getTag());
+                $this->assertEquals(DateUtils::addMinutes($baseLine, 1), $val->getTimestamp());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCanCreateSimpleTimeSeries2(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $baseLine = DateUtils::truncateDayOfMonth(new DateTime());
+
+            $session = $store->openSession();
+            try {
+                $user = new User();
+                $session->store($user, "users/ayende");
+
+                $tsf = $session->timeSeriesFor("users/ayende", "HeartRateMeasures");
+                $tsf->append(DateUtils::addMinutes($baseLine, 1), 59, "watches/fitbit");
+                $tsf->append(DateUtils::addMinutes($baseLine, 2), 60, "watches/fitbit");
+                $tsf->append(DateUtils::addMinutes($baseLine, 2), 61, "watches/fitbit");
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                $val = $session->typedTimeSeriesFor(HeartRateMeasure::class, "users/ayende")
+                    ->get();
+                $this->assertCount(2, $val);
+
+                $this->assertEquals(59, $val[0]->getValue()->getHeartRate());
+                $this->assertEquals(61, $val[1]->getValue()->getHeartRate());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCanRequestNonExistingTimeSeriesRange(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $baseLine = DateUtils::truncateDayOfMonth(new DateTime());
+
+            $session = $store->openSession();
+            try {
+                $user = new User();
+                $session->store($user, "users/ayende");
+
+                $tsf = $session->timeSeriesFor("users/ayende", "HeartRateMeasures");
+                $tsf->append($baseLine, 58, "watches/fitbit");
+                $tsf->append(DateUtils::addMinutes($baseLine, 10), 60, "watches/fitbit");
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                $vals = $session->typedTimeSeriesFor(HeartRateMeasure::class, "users/ayende")
+                    ->get(DateUtils::addMinutes($baseLine, -10), DateUtils::addMinutes($baseLine, -5));
+
+                $this->assertEmpty($vals);
+
+                $vals = $session->timeSeriesFor(HeartRateMeasure::class, "users/ayende")
+                    ->get(DateUtils::addMinutes($baseLine, 5), DateUtils::addMinutes($baseLine, 9));
+
+                $this->assertEmpty($vals);
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCanGetTimeSeriesNames(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $session = $store->openSession();
+            try {
+                $session->store(new User(), "users/karmel");
+                $heartRateMeasure = new HeartRateMeasure();
+                $heartRateMeasure->setHeartRate(66);
+                $session->typedTimeSeriesFor(HeartRateMeasure::class, "users/karmel")
+                    ->append(new DateTime(), $heartRateMeasure, "MyHeart");
+
+                $stockPrice = new StockPrice();
+                $stockPrice->setOpen(66);
+                $stockPrice->setClose(55);
+                $stockPrice->setHigh(113.4);
+                $stockPrice->setLow(52.4);
+                $stockPrice->setVolume(15472);
+                $session->typedTimeSeriesFor(StockPrice::class, "users/karmel")
+                    ->append(new DateTime(), $stockPrice);
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                $user = $session->load(User::class, "users/karmel");
+                $tsNames = $session->advanced()->getTimeSeriesFor($user);
+                $this->assertCount(2, $tsNames);
+
+                // should be sorted
+                $this->assertEquals("HeartRateMeasures", $tsNames[0]);
+                $this->assertEquals("StockPrices", $tsNames[1]);
+
+                $heartRateMeasures = $session->typedTimeSeriesFor(HeartRateMeasure::class, $user)
+                    ->get()[0];
+                $this->assertEquals(66, $heartRateMeasures->getValue()->getHeartRate());
+
+                $stockPriceEntry = $session->typedTimeSeriesFor(StockPrice::class, $user)
+                    ->get()[0];
+                $this->assertEquals(66, $stockPriceEntry->getValue()->getOpen());
+                $this->assertEquals(55, $stockPriceEntry->getValue()->getClose());
+                $this->assertEquals(113.4, $stockPriceEntry->getValue()->getHigh());
+                $this->assertEquals(52.4, $stockPriceEntry->getValue()->getLow());
+                $this->assertEquals(15472, $stockPriceEntry->getValue()->getVolume());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+//    public function canQueryTimeSeriesAggregation_DeclareSyntax_AllDocsQuery(): void {
 //        try (IDocumentStore store = getDocumentStore()) {
-//            Date baseLine = DateUtils.truncate(new Date(), Calendar.DAY_OF_MONTH);
+//            $baseLine = DateUtils::truncateDayOfMonth(new DateTime());
 //
-//            try (IDocumentSession session = store.openSession()) {
-//                User user = new User();
-//                session.store(user, "users/ayende");
+//            try (IDocumentSession session = $store->openSession()) {
+//                $user = new User();
+//                $session->store($user, "users/ayende");
 //
-//                HeartRateMeasure heartRateMeasure = new HeartRateMeasure();
-//                heartRateMeasure.setHeartRate(59);
-//                ISessionDocumentTypedTimeSeries<HeartRateMeasure> ts =
-//                        session.timeSeriesFor(HeartRateMeasure.class, "users/ayende");
-//                ts.append(baseLine, heartRateMeasure, "watches/fitbit");
-//                session.saveChanges();
-//            }
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                TypedTimeSeriesEntry<HeartRateMeasure> val = session.timeSeriesFor(HeartRateMeasure.class, "users/ayende")
-//                        .get()[0];
-//
-//                assertThat(val.getValue().getHeartRate())
-//                        .isEqualTo(59);
-//                assertThat(val.getTag())
-//                        .isEqualTo("watches/fitbit");
-//                assertThat(val.getTimestamp())
-//                        .isEqualTo(baseLine);
-//            }
-//        }
-//    }
-//
-//    @Test
-//    public void canCreateSimpleTimeSeriesAsync() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            Date baseLine = DateUtils.truncate(new Date(), Calendar.DAY_OF_MONTH);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                User user = new User();
-//                session.store(user, "users/ayende");
-//
-//                HeartRateMeasure heartRateMeasure = new HeartRateMeasure();
-//                heartRateMeasure.setHeartRate(59);
-//
-//                TypedTimeSeriesEntry<HeartRateMeasure> measure = new TypedTimeSeriesEntry<>();
-//                measure.setTimestamp(DateUtils.addMinutes(baseLine, 1));
-//                measure.setValue(heartRateMeasure);
-//                measure.setTag("watches/fitbit");
-//
-//                ISessionDocumentTypedTimeSeries<HeartRateMeasure> ts = session.timeSeriesFor(HeartRateMeasure.class, "users/ayende");
-//                ts.append(measure);
-//
-//                session.saveChanges();
-//            }
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                TypedTimeSeriesEntry<HeartRateMeasure> val = session.timeSeriesFor(HeartRateMeasure.class, "users/ayende")
-//                        .get()[0];
-//
-//                assertThat(val.getValue().getHeartRate())
-//                        .isEqualTo(59);
-//                assertThat(val.getTag())
-//                        .isEqualTo("watches/fitbit");
-//                assertThat(val.getTimestamp())
-//                        .isEqualTo(DateUtils.addMinutes(baseLine, 1));
-//            }
-//        }
-//    }
-//
-//    @Test
-//    public void canCreateSimpleTimeSeries2() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            Date baseLine = DateUtils.truncate(new Date(), Calendar.DAY_OF_MONTH);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                User user = new User();
-//                session.store(user, "users/ayende");
-//
-//                ISessionDocumentTimeSeries tsf = session.timeSeriesFor("users/ayende", "HeartRateMeasures");
-//                tsf.append(DateUtils.addMinutes(baseLine, 1), 59, "watches/fitbit");
-//                tsf.append(DateUtils.addMinutes(baseLine, 2), 60, "watches/fitbit");
-//                tsf.append(DateUtils.addMinutes(baseLine, 2), 61, "watches/fitbit");
-//
-//                session.saveChanges();
-//            }
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                List<TypedTimeSeriesEntry<HeartRateMeasure>> val = Arrays.asList(session.timeSeriesFor(HeartRateMeasure.class, "users/ayende")
-//                        .get());
-//                assertThat(val)
-//                        .hasSize(2);
-//
-//                assertThat(val.get(0).getValue().getHeartRate())
-//                        .isEqualTo(59);
-//                assertThat(val.get(1).getValue().getHeartRate())
-//                        .isEqualTo(61);
-//            }
-//        }
-//    }
-//
-//    @Test
-//    public void canRequestNonExistingTimeSeriesRange() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            Date baseLine = DateUtils.truncate(new Date(), Calendar.DAY_OF_MONTH);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                User user = new User();
-//                session.store(user, "users/ayende");
-//
-//                ISessionDocumentTimeSeries tsf = session.timeSeriesFor("users/ayende", "HeartRateMeasures");
-//                tsf.append(baseLine, 58, "watches/fitbit");
-//                tsf.append(DateUtils.addMinutes(baseLine, 10), 60, "watches/fitbit");
-//
-//                session.saveChanges();
-//            }
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                List<TypedTimeSeriesEntry<HeartRateMeasure>> vals = Arrays.asList(session.timeSeriesFor(HeartRateMeasure.class, "users/ayende")
-//                        .get(DateUtils.addMinutes(baseLine, -10), DateUtils.addMinutes(baseLine, -5)));
-//
-//                assertThat(vals)
-//                        .isEmpty();
-//
-//                vals = Arrays.asList(session.timeSeriesFor(HeartRateMeasure.class, "users/ayende")
-//                        .get(DateUtils.addMinutes(baseLine, 5), DateUtils.addMinutes(baseLine, 9)));
-//
-//                assertThat(vals)
-//                        .isEmpty();
-//            }
-//        }
-//    }
-//
-//    @Test
-//    public void canGetTimeSeriesNames() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            try (IDocumentSession session = store.openSession()) {
-//                session.store(new User(), "users/karmel");
-//                HeartRateMeasure heartRateMeasure = new HeartRateMeasure();
-//                heartRateMeasure.setHeartRate(66);
-//                session.timeSeriesFor(HeartRateMeasure.class, "users/karmel")
-//                        .append(new Date(), heartRateMeasure, "MyHeart");
-//
-//                StockPrice stockPrice = new StockPrice();
-//                stockPrice.setOpen(66);
-//                stockPrice.setClose(55);
-//                stockPrice.setHigh(113.4);
-//                stockPrice.setLow(52.4);
-//                stockPrice.setVolume(15472);
-//                session.timeSeriesFor(StockPrice.class, "users/karmel")
-//                        .append(new Date(), stockPrice);
-//
-//                session.saveChanges();
-//            }
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                User user = session.load(User.class, "users/karmel");
-//                List<String> tsNames = session.advanced().getTimeSeriesFor(user);
-//                assertThat(tsNames)
-//                        .hasSize(2);
-//
-//                // should be sorted
-//                assertThat(tsNames.get(0))
-//                        .isEqualTo("HeartRateMeasures");
-//                assertThat(tsNames.get(1))
-//                        .isEqualTo("StockPrices");
-//
-//                TypedTimeSeriesEntry<HeartRateMeasure> heartRateMeasures = session.timeSeriesFor(HeartRateMeasure.class, user)
-//                        .get()[0];
-//                assertThat(heartRateMeasures.getValue().getHeartRate())
-//                        .isEqualTo(66);
-//
-//                TypedTimeSeriesEntry<StockPrice> stockPriceEntry = session.timeSeriesFor(StockPrice.class, user)
-//                        .get()[0];
-//                assertThat(stockPriceEntry.getValue().getOpen())
-//                        .isEqualTo(66);
-//                assertThat(stockPriceEntry.getValue().getClose())
-//                        .isEqualTo(55);
-//                assertThat(stockPriceEntry.getValue().getHigh())
-//                        .isEqualTo(113.4);
-//                assertThat(stockPriceEntry.getValue().getLow())
-//                        .isEqualTo(52.4);
-//                assertThat(stockPriceEntry.getValue().getVolume())
-//                        .isEqualTo(15472);
-//            }
-//        }
-//    }
-//
-//    @Test
-//    public void canQueryTimeSeriesAggregation_DeclareSyntax_AllDocsQuery() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            Date baseLine = DateUtils.truncate(new Date(), Calendar.DAY_OF_MONTH);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                User user = new User();
-//                session.store(user, "users/ayende");
-//
-//                ISessionDocumentTypedTimeSeries<HeartRateMeasure> tsf = session.timeSeriesFor(HeartRateMeasure.class, "users/ayende");
+//                ISessionDocumentTypedTimeSeries<HeartRateMeasure> tsf = $session->timeSeriesFor(HeartRateMeasure::class, "users/ayende");
 //                String tag = "watches/fitbit";
 //                HeartRateMeasure m = new HeartRateMeasure();
 //                m.setHeartRate(59);
 //
-//                tsf.append(DateUtils.addMinutes(baseLine, 61), m, tag);
+//                $tsf->append(DateUtils::addMinutes($baseLine, 61), m, tag);
 //
 //                m.setHeartRate(79);
-//                tsf.append(DateUtils.addMinutes(baseLine, 62), m, tag);
+//                $tsf->append(DateUtils::addMinutes($baseLine, 62), m, tag);
 //
 //                m.setHeartRate(69);
-//                tsf.append(DateUtils.addMinutes(baseLine, 63), m, tag);
+//                $tsf->append(DateUtils::addMinutes($baseLine, 63), m, tag);
 //
-//                session.saveChanges();
+//                $session->saveChanges();
 //            }
 //
-//            try (IDocumentSession session = store.openSession()) {
+//            try (IDocumentSession session = $store->openSession()) {
 //                IRawDocumentQuery<TimeSeriesAggregationResult> query =
-//                        session.advanced().rawQuery(TimeSeriesAggregationResult.class,
+//                        $session->advanced().rawQuery(TimeSeriesAggregationResult.class,
 //                                "declare timeseries out(u)\n" +
 //                        "    {\n" +
 //                        "        from u.HeartRateMeasures between $start and $end\n" +
@@ -337,9 +342,9 @@ class TimeSeriesTypedSessionTest extends RemoteTestBase
 //                        "    where id() == 'users/ayende'\n" +
 //                        "    select out(u)")
 //                        .addParameter("start", baseLine)
-//                        .addParameter("end", DateUtils.addDays(baseLine, 1));
+//                        .addParameter("end", DateUtils.addDays($baseLine, 1));
 //
-//                TypedTimeSeriesAggregationResult<HeartRateMeasure> agg = query.first().asTypedResult(HeartRateMeasure.class);
+//                TypedTimeSeriesAggregationResult<HeartRateMeasure> agg = query.first().asTypedResult(HeartRateMeasure::class);
 //
 //                assertThat(agg.getCount())
 //                        .isEqualTo(3);
@@ -347,66 +352,66 @@ class TimeSeriesTypedSessionTest extends RemoteTestBase
 //                        .hasSize(1);
 //
 //                TypedTimeSeriesRangeAggregation<HeartRateMeasure> val = agg.getResults()[0];
-//                assertThat(val.getFirst().getHeartRate())
+//                assertThat($val->getFirst()->getHeartRate())
 //                        .isEqualTo(59);
-//                assertThat(val.getMin().getHeartRate())
+//                assertThat($val->getMin()->getHeartRate())
 //                        .isEqualTo(59);
 //
-//                assertThat(val.getLast().getHeartRate())
+//                assertThat($val->getLast()->getHeartRate())
 //                        .isEqualTo(69);
-//                assertThat(val.getMax().getHeartRate())
+//                assertThat($val->getMax()->getHeartRate())
 //                        .isEqualTo(79);
 //
-//                assertThat(val.getFrom())
-//                        .isEqualTo(DateUtils.addMinutes(baseLine, 60));
-//                assertThat(val.getTo())
-//                        .isEqualTo(DateUtils.addMinutes(baseLine, 120));
+//                assertThat($val->getFrom())
+//                        .isEqualTo(DateUtils::addMinutes($baseLine, 60));
+//                assertThat($val->getTo())
+//                        .isEqualTo(DateUtils::addMinutes($baseLine, 120));
 //            }
 //        }
 //    }
 //
 //    @Test
-//    public void canQueryTimeSeriesAggregation_NoSelectOrGroupBy() throws Exception {
+//    public function canQueryTimeSeriesAggregation_NoSelectOrGroupBy(): void {
 //        try (IDocumentStore store = getDocumentStore()) {
-//            Date baseLine = DateUtils.truncate(new Date(), Calendar.DAY_OF_MONTH);
+//            $baseLine = DateUtils::truncateDayOfMonth(new DateTime());
 //
-//            try (IDocumentSession session = store.openSession()) {
-//                for (int i = 1; i <= 3; i++) {
+//            try (IDocumentSession session = $store->openSession()) {
+//                for ($i = 1; $i <= 3; $i++) {
 //                    String id = "people/" + i;
 //
-//                    User user = new User();
-//                    user.setName("Oren");
-//                    user.setAge(i * 30);
+//                    $user = new User();
+//                    $user->setName("Oren");
+//                    $user->setAge(i * 30);
 //
-//                    session.store(user, id);
+//                    $session->store($user, id);
 //
-//                    ISessionDocumentTypedTimeSeries<HeartRateMeasure> tsf = session.timeSeriesFor(HeartRateMeasure.class, id);
+//                    ISessionDocumentTypedTimeSeries<HeartRateMeasure> tsf = $session->timeSeriesFor(HeartRateMeasure::class, id);
 //                    HeartRateMeasure m = new HeartRateMeasure();
 //                    m.setHeartRate(59);
 //
-//                    tsf.append(DateUtils.addMinutes(baseLine, 61), m, "watches/fitbit");
+//                    $tsf->append(DateUtils::addMinutes($baseLine, 61), m, "watches/fitbit");
 //
 //                    m.setHeartRate(79);
-//                    tsf.append(DateUtils.addMinutes(baseLine, 62), m,"watches/fitbit");
+//                    $tsf->append(DateUtils::addMinutes($baseLine, 62), m,"watches/fitbit");
 //
 //                    m.setHeartRate(69);
-//                    tsf.append(DateUtils.addMinutes(baseLine, 63), m, "watches/apple");
+//                    $tsf->append(DateUtils::addMinutes($baseLine, 63), m, "watches/apple");
 //
 //                    m.setHeartRate(159);
-//                    tsf.append(DateUtils.addMonths(DateUtils.addMinutes(baseLine, 61), 1), m, "watches/fitbit");
+//                    $tsf->append(DateUtils.addMonths(DateUtils::addMinutes($baseLine, 61), 1), m, "watches/fitbit");
 //
 //                    m.setHeartRate(179);
-//                    tsf.append(DateUtils.addMonths(DateUtils.addMinutes(baseLine, 62), 1), m, "watches/apple");
+//                    $tsf->append(DateUtils.addMonths(DateUtils::addMinutes($baseLine, 62), 1), m, "watches/apple");
 //
 //                    m.setHeartRate(169);
-//                    tsf.append(DateUtils.addMonths(DateUtils.addMinutes(baseLine, 63), 1), m, "watches/fitbit");
+//                    $tsf->append(DateUtils.addMonths(DateUtils::addMinutes($baseLine, 63), 1), m, "watches/fitbit");
 //                }
 //
-//                session.saveChanges();
+//                $session->saveChanges();
 //            }
 //
-//            try (IDocumentSession session = store.openSession()) {
-//                IRawDocumentQuery<TimeSeriesRawResult> query = session.advanced().rawQuery(TimeSeriesRawResult.class, "declare timeseries out(x)\n" +
+//            try (IDocumentSession session = $store->openSession()) {
+//                IRawDocumentQuery<TimeSeriesRawResult> query = $session->advanced().rawQuery(TimeSeriesRawResult.class, "declare timeseries out(x)\n" +
 //                        "{\n" +
 //                        "    from x.HeartRateMeasures between $start and $end\n" +
 //                        "}\n" +
@@ -414,148 +419,151 @@ class TimeSeriesTypedSessionTest extends RemoteTestBase
 //                        "where doc.age > 49\n" +
 //                        "select out(doc)")
 //                        .addParameter("start", baseLine)
-//                        .addParameter("end", DateUtils.addMonths(baseLine, 2));
+//                        .addParameter("end", DateUtils.addMonths($baseLine, 2));
 //
 //                List<TimeSeriesRawResult> result = query.toList();
 //
 //                assertThat(result)
 //                        .hasSize(2);
 //
-//                for (int i = 0; i < 2; i++) {
-//                    TimeSeriesRawResult aggRaw = result.get(i);
-//                    TypedTimeSeriesRawResult<HeartRateMeasure> agg = aggRaw.asTypedResult(HeartRateMeasure.class);
+//                for ($i = 0; $i < 2; $i++) {
+//                    TimeSeriesRawResult aggRaw = result.get($i);
+//                    TypedTimeSeriesRawResult<HeartRateMeasure> agg = aggRaw.asTypedResult(HeartRateMeasure::class);
 //
 //                    assertThat(agg.getResults())
 //                            .hasSize(6);
 //
 //                    TypedTimeSeriesEntry<HeartRateMeasure> val = agg.getResults()[0];
 //
-//                    assertThat(val.getValues())
+//                    assertThat($val->getValues())
 //                            .hasSize(1);
-//                    assertThat(val.getValue().getHeartRate())
+//                    assertThat($val->getValue()->getHeartRate())
 //                            .isEqualTo(59);
-//                    assertThat(val.getTag())
+//                    assertThat($val->getTag())
 //                            .isEqualTo("watches/fitbit");
-//                    assertThat(val.getTimestamp())
-//                            .isEqualTo(DateUtils.addMinutes(baseLine, 61));
+//                    assertThat($val->getTimestamp())
+//                            .isEqualTo(DateUtils::addMinutes($baseLine, 61));
 //
 //                    val = agg.getResults()[1];
 //
-//                    assertThat(val.getValues())
+//                    assertThat($val->getValues())
 //                            .hasSize(1);
-//                    assertThat(val.getValue().getHeartRate())
+//                    assertThat($val->getValue()->getHeartRate())
 //                            .isEqualTo(79);
-//                    assertThat(val.getTag())
+//                    assertThat($val->getTag())
 //                            .isEqualTo("watches/fitbit");
-//                    assertThat(val.getTimestamp())
-//                            .isEqualTo(DateUtils.addMinutes(baseLine, 62));
+//                    assertThat($val->getTimestamp())
+//                            .isEqualTo(DateUtils::addMinutes($baseLine, 62));
 //
 //                    val = agg.getResults()[2];
 //
-//                    assertThat(val.getValues())
+//                    assertThat($val->getValues())
 //                            .hasSize(1);
-//                    assertThat(val.getValue().getHeartRate())
+//                    assertThat($val->getValue()->getHeartRate())
 //                            .isEqualTo(69);
-//                    assertThat(val.getTag())
+//                    assertThat($val->getTag())
 //                            .isEqualTo("watches/apple");
-//                    assertThat(val.getTimestamp())
-//                            .isEqualTo(DateUtils.addMinutes(baseLine, 63));
+//                    assertThat($val->getTimestamp())
+//                            .isEqualTo(DateUtils::addMinutes($baseLine, 63));
 //
 //                    val = agg.getResults()[3];
 //
-//                    assertThat(val.getValues())
+//                    assertThat($val->getValues())
 //                            .hasSize(1);
-//                    assertThat(val.getValue().getHeartRate())
+//                    assertThat($val->getValue()->getHeartRate())
 //                            .isEqualTo(159);
-//                    assertThat(val.getTag())
+//                    assertThat($val->getTag())
 //                            .isEqualTo("watches/fitbit");
-//                    assertThat(val.getTimestamp())
-//                            .isEqualTo(DateUtils.addMonths(DateUtils.addMinutes(baseLine, 61), 1));
+//                    assertThat($val->getTimestamp())
+//                            .isEqualTo(DateUtils.addMonths(DateUtils::addMinutes($baseLine, 61), 1));
 //
 //                    val = agg.getResults()[4];
 //
-//                    assertThat(val.getValues())
+//                    assertThat($val->getValues())
 //                            .hasSize(1);
-//                    assertThat(val.getValue().getHeartRate())
+//                    assertThat($val->getValue()->getHeartRate())
 //                            .isEqualTo(179);
-//                    assertThat(val.getTag())
+//                    assertThat($val->getTag())
 //                            .isEqualTo("watches/apple");
-//                    assertThat(val.getTimestamp())
-//                            .isEqualTo(DateUtils.addMonths(DateUtils.addMinutes(baseLine, 62), 1));
+//                    assertThat($val->getTimestamp())
+//                            .isEqualTo(DateUtils.addMonths(DateUtils::addMinutes($baseLine, 62), 1));
 //
 //                    val = agg.getResults()[5];
 //
-//                    assertThat(val.getValues())
+//                    assertThat($val->getValues())
 //                            .hasSize(1);
-//                    assertThat(val.getValue().getHeartRate())
+//                    assertThat($val->getValue()->getHeartRate())
 //                            .isEqualTo(169);
-//                    assertThat(val.getTag())
+//                    assertThat($val->getTag())
 //                            .isEqualTo("watches/fitbit");
-//                    assertThat(val.getTimestamp())
-//                            .isEqualTo(DateUtils.addMonths(DateUtils.addMinutes(baseLine, 63), 1));
+//                    assertThat($val->getTimestamp())
+//                            .isEqualTo(DateUtils.addMonths(DateUtils::addMinutes($baseLine, 63), 1));
 //                }
 //            }
 //        }
 //    }
-//
-//    @Test
-//    @DisabledOnPullRequest
-//    public void canWorkWithRollupTimeSeries() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            RawTimeSeriesPolicy raw = new RawTimeSeriesPolicy(TimeValue.ofHours(24));
-//            int rawRetentionSeconds = raw.getRetentionTime().getValue();
-//
-//            TimeSeriesPolicy p1 = new TimeSeriesPolicy("By6Hours", TimeValue.ofHours(6), TimeValue.ofSeconds(rawRetentionSeconds * 4));
-//            TimeSeriesPolicy p2 = new TimeSeriesPolicy("By1Day", TimeValue.ofDays(1), TimeValue.ofSeconds(rawRetentionSeconds * 5));
-//            TimeSeriesPolicy p3 = new TimeSeriesPolicy("By30Minutes", TimeValue.ofMinutes(30), TimeValue.ofSeconds(rawRetentionSeconds * 2));
-//            TimeSeriesPolicy p4 = new TimeSeriesPolicy("By1Hour", TimeValue.ofMinutes(60), TimeValue.ofSeconds(rawRetentionSeconds * 3));
-//
-//            TimeSeriesConfiguration config = new TimeSeriesConfiguration();
-//            Map<String, TimeSeriesCollectionConfiguration> collections = new HashMap<>();
-//            config.setCollections(collections);
-//
-//            TimeSeriesCollectionConfiguration usersConfig = new TimeSeriesCollectionConfiguration();
-//            usersConfig.setRawPolicy(raw);
-//            usersConfig.setPolicies(Arrays.asList(p1, p2, p3, p4));
-//
-//            collections.put("Users", usersConfig);
-//
-//            config.setPolicyCheckFrequency(Duration.ofMillis(100));
-//
-//            store.maintenance().send(new ConfigureTimeSeriesOperation(config));
-//            store.timeSeries().register(User.class, StockPrice.class);
-//
-//            // please notice we don't modify server time here!
-//
-//            Date now = new Date();
-//            Date baseline = DateUtils.addDays(now, -12);
-//
-//            int total = (int) Duration.ofDays(12).get(ChronoUnit.SECONDS) / 60;
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                User user = new User();
-//                user.setName("Karmel");
-//                session.store(user, "users/karmel");
-//                ISessionDocumentTypedTimeSeries<StockPrice> ts = session.timeSeriesFor(StockPrice.class, "users/karmel");
-//
-//                StockPrice entry = new StockPrice();
-//
-//                for (int i = 0; i <= total; i++) {
-//                    entry.setOpen(i);
-//                    entry.setClose(i + 100_000);
-//                    entry.setHigh(i + 200_000);
-//                    entry.setLow(i + 300_000);
-//                    entry.setVolume(i + 400_000);
-//                    ts.append(DateUtils.addMinutes(baseline, i), entry, "watches/fitbit");
-//                }
-//
-//                session.saveChanges();
-//            }
-//
-//            Thread.sleep(1500); // wait for rollup
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                IRawDocumentQuery<TimeSeriesRawResult> query = session.advanced().rawQuery(TimeSeriesRawResult.class, "declare timeseries out()\n" +
+
+    public function atestCanWorkWithRollupTimeSeries(): void
+    {
+//        DisableOnPullRequestCondition::evaluateExecutionCondition($this);
+
+        $store = $this->getDocumentStore();
+        try {
+            $raw = new RawTimeSeriesPolicy(TimeValue::ofHours(24));
+            $rawRetentionSeconds = $raw->getRetentionTime()->getValue();
+
+            $p1 = new TimeSeriesPolicy("By6Hours", TimeValue::ofHours(6), TimeValue::ofSeconds($rawRetentionSeconds * 4));
+            $p2 = new TimeSeriesPolicy("By1Day", TimeValue::ofDays(1), TimeValue::ofSeconds($rawRetentionSeconds * 5));
+            $p3 = new TimeSeriesPolicy("By30Minutes", TimeValue::ofMinutes(30), TimeValue::ofSeconds($rawRetentionSeconds * 2));
+            $p4 = new TimeSeriesPolicy("By1Hour", TimeValue::ofMinutes(60), TimeValue::ofSeconds($rawRetentionSeconds * 3));
+
+            $usersConfig = new TimeSeriesCollectionConfiguration();
+            $usersConfig->setRawPolicy($raw);
+            $usersConfig->setPolicies([$p1, $p2, $p3, $p4]);
+
+            $config = new TimeSeriesConfiguration();
+            $config->setCollections(["Users" => $usersConfig]);
+            $config->setPolicyCheckFrequency(Duration::ofMillis(100));
+
+            $store->maintenance()->send(new ConfigureTimeSeriesOperation($config));
+            $store->timeSeries()->register(User::class, StockPrice::class);
+
+            // please notice we don't modify server time here!
+
+            $now = new DateTime();
+            $baseline = DateUtils::addDays($now, -12);
+
+            
+            $total = 10000;// (int) Duration.ofDays(12).get(ChronoUnit.SECONDS) / 60;
+
+            $session = $store->openSession();
+            try {
+                $user = new User();
+                $user->setName("Karmel");
+                $session->store($user, "users/karmel");
+                $ts = $session->typedTimeSeriesFor(StockPrice::class, "users/karmel");
+
+                $entry = new StockPrice();
+
+                for ($i = 0; $i <= $total; $i++) {
+                    $entry->setOpen($i);
+                    $entry->setClose($i + 100_000);
+                    $entry->setHigh($i + 200_000);
+                    $entry->setLow($i + 300_000);
+                    $entry->setVolume($i + 400_000);
+                    $ts->append(DateUtils::addMinutes($baseline, $i), $entry, "watches/fitbit");
+                }
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            usleep(1500000); // wait for rollup
+
+            $session = $store->openSession();
+            try {
+//                IRawDocumentQuery<TimeSeriesRawResult> query = $session->advanced().rawQuery(TimeSeriesRawResult.class, "declare timeseries out()\n" +
 //                        "{\n" +
 //                        "    from StockPrices\n" +
 //                        "    between $start and $end\n" +
@@ -576,257 +584,202 @@ class TimeSeriesTypedSessionTest extends RemoteTestBase
 //                    if (res.isRollup()) {
 //                        assertThat(res.getValues().length)
 //                                .isPositive();
-//                        assertThat(res.getValue().getLow())
+//                        assertThat(res->getValue()->getLow())
 //                                .isPositive();
-//                        assertThat(res.getValue().getHigh())
+//                        assertThat(res->getValue()->getHigh())
 //                                .isPositive();
 //                    } else {
 //                        assertThat(res.getValues())
 //                                .hasSize(5);
 //                    }
 //                }
-//            }
+            } finally {
+                $session->close();
+            }
 //
 //            now = new Date();
 //
-//            try (IDocumentSession session = store.openSession()) {
-//                ISessionDocumentRollupTypedTimeSeries<StockPrice> ts = session.timeSeriesRollupFor(StockPrice.class, "users/karmel", p1.getName());
+            $session = $store->openSession();
+            try {
+//                ISessionDocumentRollupTypedTimeSeries<StockPrice> ts = $session->timeSeriesRollupFor(StockPrice.class, "users/karmel", p1.getName());
 //                TypedTimeSeriesRollupEntry<StockPrice> a = new TypedTimeSeriesRollupEntry<>(StockPrice.class, new Date());
 //                a.getMax().setClose(1);
 //                ts.append(a);
-//                session.saveChanges();
-//            }
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                ISessionDocumentRollupTypedTimeSeries<StockPrice> ts = session.timeSeriesRollupFor(StockPrice.class, "users/karmel", p1.getName());
+//                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+//                ISessionDocumentRollupTypedTimeSeries<StockPrice> ts = $session->timeSeriesRollupFor(StockPrice.class, "users/karmel", p1.getName());
 //
 //                List<TypedTimeSeriesRollupEntry<StockPrice>> res = Arrays.asList(ts.get(DateUtils.addMilliseconds(now, -1), DateUtils.addDays(now, 1)));
 //                assertThat(res)
 //                        .hasSize(1);
 //                assertThat(res.get(0).getMax().getClose())
 //                        .isEqualTo(1);
-//            }
-//        }
-//    }
-//
-//    @Test
-//    @DisabledOnPullRequest
-//    public void canWorkWithRollupTimeSeries2() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            int rawHours = 24;
-//            RawTimeSeriesPolicy raw = new RawTimeSeriesPolicy(TimeValue.ofHours(rawHours));
-//
-//            TimeSeriesPolicy p1 = new TimeSeriesPolicy("By6Hours", TimeValue.ofHours(6), TimeValue.ofHours(rawHours * 4));
-//            TimeSeriesPolicy p2 = new TimeSeriesPolicy("By1Day", TimeValue.ofDays(1), TimeValue.ofHours(rawHours * 5));
-//            TimeSeriesPolicy p3 = new TimeSeriesPolicy("By30Minutes", TimeValue.ofMinutes(30), TimeValue.ofHours(rawHours * 2));
-//            TimeSeriesPolicy p4 = new TimeSeriesPolicy("By1Hour", TimeValue.ofMinutes(60), TimeValue.ofHours(rawHours * 3));
-//
-//            TimeSeriesCollectionConfiguration usersConfig = new TimeSeriesCollectionConfiguration();
-//            usersConfig.setRawPolicy(raw);
-//            usersConfig.setPolicies(Arrays.asList(p1, p2, p3, p4));
-//
-//            TimeSeriesConfiguration config = new TimeSeriesConfiguration();
-//            config.setPolicyCheckFrequency(Duration.ofMillis(100));
-//            config.setCollections(new HashMap<>());
-//            config.getCollections().put("Users", usersConfig);
-//
-//            store.maintenance().send(new ConfigureTimeSeriesOperation(config));
-//            store.timeSeries().register(User.class, StockPrice.class);
-//
-//            Date now = DateUtils.truncate(new Date(), Calendar.DAY_OF_MONTH);
-//            Date baseline = DateUtils.addDays(now, -12);
-//            long total = Duration.ofDays(12).getSeconds() / 60;
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                User user = new User();
-//                user.setName("Karmel");
-//                session.store(user, "users/karmel");
-//                ISessionDocumentTypedTimeSeries<StockPrice> ts = session.timeSeriesFor(StockPrice.class, "users/karmel");
-//
-//                StockPrice entry = new StockPrice();
-//                for (int i = 0; i <= total; i++) {
-//                    entry.open = i;
-//                    entry.close = i + 100_000;
-//                    entry.high = i + 200_000;
-//                    entry.low = i + 300_000;
-//                    entry.volume = i + 400_000;
-//
-//                    ts.append(DateUtils.addMinutes(baseline, i), entry, "watches/fitbit");
-//                }
-//
-//                session.saveChanges();
-//            }
-//
-//            Thread.sleep(1500); // wait for rollups
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                ISessionDocumentRollupTypedTimeSeries<StockPrice> ts1 = session.timeSeriesRollupFor(StockPrice.class, "users/karmel", p1.getName());
-//                TypedTimeSeriesRollupEntry<StockPrice> r = ts1.get()[0];
-//                assertThat(r.getFirst())
-//                        .isNotNull();
-//                assertThat(r.getLast())
-//                        .isNotNull();
-//                assertThat(r.getMin())
-//                        .isNotNull();
-//                assertThat(r.getMax())
-//                        .isNotNull();
-//                assertThat(r.getCount())
-//                        .isNotNull();
-//                assertThat(r.getAverage())
-//                        .isNotNull();
-//            }
-//        }
-//    }
-//
-//    @Test
-//    public void usingDifferentNumberOfValues_LargeToSmall() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            Date baseLine = DateUtils.addDays(DateUtils.truncate(new Date(), Calendar.DAY_OF_MONTH), -1);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                User user = new User();
-//                user.setName("Karmel");;
-//                session.store(user, "users/karmel");
-//
-//                ISessionDocumentTypedTimeSeries<BigMeasure> big = session.timeSeriesFor(BigMeasure.class, "users/karmel");
-//                for (int i = 0; i < 5; i++) {
-//                    BigMeasure bigMeasure = new BigMeasure();
-//                    bigMeasure.setMeasure1(i);
-//                    bigMeasure.setMeasure2(i);
-//                    bigMeasure.setMeasure3(i);
-//                    bigMeasure.setMeasure4(i);
-//                    bigMeasure.setMeasure5(i);
-//                    bigMeasure.setMeasure6(i);
-//                    big.append(DateUtils.addSeconds(baseLine, 3 * i), bigMeasure, "watches/fitbit");
-//                }
-//
-//                session.saveChanges();
-//            }
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                ISessionDocumentTimeSeries big = session.timeSeriesFor("users/karmel", "BigMeasures");
-//
-//                for (int i = 5; i < 10; i++) {
-//                    big.append(DateUtils.addSeconds(DateUtils.addHours(baseLine, 12), 3 * i), i, "watches/fitbit");
-//                }
-//
-//                session.saveChanges();
-//            }
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                TypedTimeSeriesEntry<BigMeasure>[] big = session.timeSeriesFor(BigMeasure.class, "users/karmel")
-//                        .get();
-//
-//                for (int i = 0; i < 5; i++) {
-//                    BigMeasure m = big[i].getValue();
-//                    assertThat(m.measure1)
-//                            .isEqualTo(i);
-//                    assertThat(m.measure2)
-//                            .isEqualTo(i);
-//                    assertThat(m.measure3)
-//                            .isEqualTo(i);
-//                    assertThat(m.measure4)
-//                            .isEqualTo(i);
-//                    assertThat(m.measure5)
-//                            .isEqualTo(i);
-//                    assertThat(m.measure6)
-//                            .isEqualTo(i);
-//                }
-//
-//                for (int i = 5; i < 10; i++) {
-//                    BigMeasure m = big[i].getValue();
-//                    assertThat(m.measure1)
-//                            .isEqualTo(i);
-//                    assertThat(m.measure2)
-//                            .isNaN();
-//                    assertThat(m.measure3)
-//                            .isNaN();
-//                    assertThat(m.measure4)
-//                            .isNaN();
-//                    assertThat(m.measure5)
-//                            .isNaN();
-//                    assertThat(m.measure6)
-//                            .isNaN();
-//                }
-//            }
-//        }
-//    }
-//
-//    @Test
-//    public void mappingNeedsToContainConsecutiveValuesStartingFromZero() throws Exception {
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCanWorkWithRollupTimeSeries2(): void
+    {
+        DisableOnPullRequestCondition::evaluateExecutionCondition($this);
+
+        $store = $this->getDocumentStore();
+        try {
+            $rawHours = 24;
+            $raw = new RawTimeSeriesPolicy(TimeValue::ofHours($rawHours));
+
+            $p1 = new TimeSeriesPolicy("By6Hours", TimeValue::ofHours(6), TimeValue::ofHours($rawHours * 4));
+            $p2 = new TimeSeriesPolicy("By1Day", TimeValue::ofDays(1), TimeValue::ofHours($rawHours * 5));
+            $p3 = new TimeSeriesPolicy("By30Minutes", TimeValue::ofMinutes(30), TimeValue::ofHours($rawHours * 2));
+            $p4 = new TimeSeriesPolicy("By1Hour", TimeValue::ofMinutes(60), TimeValue::ofHours($rawHours * 3));
+
+            $usersConfig = new TimeSeriesCollectionConfiguration();
+            $usersConfig->setRawPolicy($raw);
+            $usersConfig->setPolicies([$p1, $p2, $p3, $p4]);
+
+            $config = new TimeSeriesConfiguration();
+            $config->setPolicyCheckFrequency(Duration::ofMillis(100));
+            $config->setCollections(["Users" => $usersConfig]);
+
+            $store->maintenance()->send(new ConfigureTimeSeriesOperation($config));
+            $store->timeSeries()->register(User::class, StockPrice::class);
+
+            $now = DateUtils::truncateDayOfMonth(new DateTime());
+            $baseline = DateUtils::addDays($now, -12);
+            $total = Duration::ofDays(12)->getSeconds() / 60;
+
+            $session = $store->openSession();
+            try {
+                $user = new User();
+                $user->setName("Karmel");
+                $session->store($user, "users/karmel");
+                $ts = $session->typedTimeSeriesFor(StockPrice::class, "users/karmel");
+
+                $entry = new StockPrice();
+                for ($i = 0; $i <= $total; $i++) {
+                    $entry->setOpen($i);
+                    $entry->setClose($i + 100_000);
+                    $entry->setHigh($i + 200_000);
+                    $entry->setLow($i + 300_000);
+                    $entry->setVolume($i + 400_000);
+
+                    $ts->append(DateUtils::addMinutes($baseline, $i), $entry, "watches/fitbit");
+                }
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            usleep(1500000); // wait for rollups
+
+            $session = $store->openSession();
+            try {
+                $ts1 = $session->timeSeriesRollupFor(StockPrice::class, "users/karmel", $p1->getName());
+                $r = $ts1->get()[0];
+                $this->assertNotNull($r->getFirst());
+                $this->assertNotNull($r->getLast());
+                $this->assertNotNull($r->getMin());
+                $this->assertNotNull($r->getMax());
+                $this->assertNotNull($r->getCount());
+                $this->assertNotNull($r->getAverage());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testUsingDifferentNumberOfValues_LargeToSmall(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $baseLine = DateUtils::addDays(DateUtils::truncateDayOfMonth(new DateTime()), -1);
+
+            $session = $store->openSession();
+            try {
+                $user = new User();
+                $user->setName("Karmel");;
+                $session->store($user, "users/karmel");
+
+                $big = $session->typedTimeSeriesFor(BigMeasure::class, "users/karmel");
+                for ($i = 0; $i < 5; $i++) {
+                    $bigMeasure = new BigMeasure();
+                    $bigMeasure->setMeasure1($i);
+                    $bigMeasure->setMeasure2($i);
+                    $bigMeasure->setMeasure3($i);
+                    $bigMeasure->setMeasure4($i);
+                    $bigMeasure->setMeasure5($i);
+                    $bigMeasure->setMeasure6($i);
+                    $big->append(DateUtils::addSeconds($baseLine, 3 * $i), $bigMeasure, "watches/fitbit");
+                }
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                $big = $session->timeSeriesFor("users/karmel", "BigMeasures");
+
+                for ($i = 5; $i < 10; $i++) {
+                    $big->append(DateUtils::addSeconds(DateUtils::addHours($baseLine, 12), 3 * $i), $i, "watches/fitbit");
+                }
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                $big = $session->typedTimeSeriesFor(BigMeasure::class, "users/karmel")
+                    ->get();
+
+                for ($i = 0; $i < 5; $i++) {
+                    $m = $big[$i]->getValue();
+                    $this->assertEquals($i, $m->getMeasure1());
+                    $this->assertEquals($i, $m->getMeasure2());
+                    $this->assertEquals($i, $m->getMeasure3());
+                    $this->assertEquals($i, $m->getMeasure4());
+                    $this->assertEquals($i, $m->getMeasure5());
+                    $this->assertEquals($i, $m->getMeasure6());
+                }
+
+                for ($i = 5; $i < 10; $i++) {
+                    $m = $big[$i]->getValue();
+                    $this->assertEquals($i, $m->getMeasure1());
+                    $this->assertNan($m->getMeasure2());
+                    $this->assertNan($m->getMeasure3());
+                    $this->assertNan($m->getMeasure4());
+                    $this->assertNan($m->getMeasure5());
+                    $this->assertNan($m->getMeasure6());
+                }
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+//    public function mappingNeedsToContainConsecutiveValuesStartingFromZero(): void {
 //        try (IDocumentStore store = getDocumentStore()) {
 //            assertThatThrownBy(() -> {
-//                store.timeSeries().register(Company.class, StockPriceWithBadAttributes.class);
+//                $store->timeSeries()->register(Company.class, StockPriceWithBadAttributes.class);
 //            })
 //                    .hasMessageContaining("must contain consecutive values starting from 0");
 //        }
 //    }
-//
-//    public static class BigMeasure {
-//        @TimeSeriesValue(idx = 0)
-//        private double measure1;
-//
-//        @TimeSeriesValue(idx = 1)
-//        private double measure2;
-//
-//        @TimeSeriesValue(idx = 2)
-//        private double measure3;
-//
-//        @TimeSeriesValue(idx = 3)
-//        private double measure4;
-//
-//        @TimeSeriesValue(idx = 4)
-//        private double measure5;
-//
-//        @TimeSeriesValue(idx = 5)
-//        private double measure6;
-//
-//        public double getMeasure1() {
-//            return measure1;
-//        }
-//
-//        public void setMeasure1(double measure1) {
-//            this.measure1 = measure1;
-//        }
-//
-//        public double getMeasure2() {
-//            return measure2;
-//        }
-//
-//        public void setMeasure2(double measure2) {
-//            this.measure2 = measure2;
-//        }
-//
-//        public double getMeasure3() {
-//            return measure3;
-//        }
-//
-//        public void setMeasure3(double measure3) {
-//            this.measure3 = measure3;
-//        }
-//
-//        public double getMeasure4() {
-//            return measure4;
-//        }
-//
-//        public void setMeasure4(double measure4) {
-//            this.measure4 = measure4;
-//        }
-//
-//        public double getMeasure5() {
-//            return measure5;
-//        }
-//
-//        public void setMeasure5(double measure5) {
-//            this.measure5 = measure5;
-//        }
-//
-//        public double getMeasure6() {
-//            return measure6;
-//        }
-//
-//        public void setMeasure6(double measure6) {
-//            this.measure6 = measure6;
-//        }
-//    }
+
 }

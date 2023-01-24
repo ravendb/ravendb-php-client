@@ -6,6 +6,7 @@ use Closure;
 use RavenDB\Constants\HttpStatusCode;
 use RavenDB\Documents\Commands\ConditionalGetDocumentsCommand;
 use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRange;
+use RavenDB\Documents\Operations\TimeSeries\TimeSeriesConfiguration;
 use RavenDB\Documents\TimeSeries\TimeSeriesOperations;
 use ReflectionException;
 use InvalidArgumentException;
@@ -1293,29 +1294,12 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         return new SessionDocumentTypedTimeSeries($className, $this, $idOrEntity, $tsName);
     }
 
+    public function timeSeriesRollupFor(string $className, string|object|null $idOrEntity, ?string $policy, ?string $raw = null): SessionDocumentRollupTypedTimeSeriesInterface
+    {
+        $tsName = $raw ?? TimeSeriesOperations::getTimeSeriesName($className, $this->getConventions());
+        return new SessionDocumentRollupTypedTimeSeries($className, $this, $idOrEntity, $tsName . TimeSeriesConfiguration::TIME_SERIES_ROLLUP_SEPARATOR . $policy);
+    }
 
-//    @Override
-//    public <T> ISessionDocumentRollupTypedTimeSeries<T> timeSeriesRollupFor(Class<T> clazz, Object entity, String policy) {
-//        return timeSeriesRollupFor(clazz, entity, policy, null);
-//    }
-//
-//    @Override
-//    public <T> ISessionDocumentRollupTypedTimeSeries<T> timeSeriesRollupFor(Class<T> clazz, Object entity, String policy, String raw) {
-//        String tsName = ObjectUtils.firstNonNull(raw, TimeSeriesOperations.getTimeSeriesName(clazz, getConventions()));
-//        return new SessionDocumentRollupTypedTimeSeries<T>(clazz, this, entity, tsName + TimeSeriesConfiguration.TIME_SERIES_ROLLUP_SEPARATOR + policy);
-//    }
-//
-//    @Override
-//    public <T> ISessionDocumentRollupTypedTimeSeries<T> timeSeriesRollupFor(Class<T> clazz, String documentId, String policy) {
-//        return timeSeriesRollupFor(clazz, documentId, policy, null);
-//    }
-//
-//    @Override
-//    public <T> ISessionDocumentRollupTypedTimeSeries<T> timeSeriesRollupFor(Class<T> clazz, String documentId, String policy, String raw) {
-//        String tsName = ObjectUtils.firstNonNull(raw, TimeSeriesOperations.getTimeSeriesName(clazz, getConventions()));
-//        return new SessionDocumentRollupTypedTimeSeries<T>(clazz, this, documentId, tsName + TimeSeriesConfiguration.TIME_SERIES_ROLLUP_SEPARATOR + policy);
-//    }
-//
     function conditionalLoad(?string $className, ?string $id, ?string $changeVector): ConditionalLoadResult
     {
         if (StringUtils::isEmpty($id)) {
