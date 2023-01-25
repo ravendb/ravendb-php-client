@@ -3,11 +3,11 @@
 namespace RavenDB\Documents\Session\Loaders;
 
 use DateTimeInterface;
+use RavenDB\Constants\TimeSeries;
 use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeType;
+use RavenDB\Primitives\TimeValue;
 
-/**
- *
- */
 class IncludeBuilder extends IncludeBuilderBase implements IncludeBuilderInterface
 {
     public function __construct(?DocumentConventions $conventions)
@@ -15,29 +15,30 @@ class IncludeBuilder extends IncludeBuilderBase implements IncludeBuilderInterfa
         parent::__construct($conventions);
     }
 
-//    @Override
-//    public IncludeBuilder includeDocuments(String path) {
-//        _includeDocuments(path);
-//        return this;
-//    }
-//
-//    @Override
-//    public IIncludeBuilder includeCounter(String name) {
-//        _includeCounter("", name);
-//        return this;
-//    }
-//
-//    @Override
-//    public IIncludeBuilder includeCounters(String[] names) {
-//        _includeCounters("", names);
-//        return this;
-//    }
-//
-//    @Override
-//    public IIncludeBuilder includeAllCounters() {
-//        _includeAllCounters("");
-//        return this;
-//    }
+    public function includeDocuments(?string $path): IncludeBuilder
+    {
+        $this->_includeDocuments($path);
+        return $this;
+    }
+
+    public function includeCounter(?string $name): IncludeBuilderInterface
+    {
+        $this->_includeCounter("", $name);
+        return $this;
+    }
+
+    public function includeCounters(array $names): IncludeBuilderInterface
+    {
+        $this->_includeCounters("", $names);
+        return $this;
+    }
+
+
+    public function includeAllCounters(): IncludeBuilderInterface
+    {
+        $this->_includeAllCounters("");
+        return $this;
+    }
 
     public function includeTimeSeries(?string $name, ?DateTimeInterface $from = null, ?DateTimeInterface $to = null): IncludeBuilderInterface
     {
@@ -51,39 +52,34 @@ class IncludeBuilder extends IncludeBuilderBase implements IncludeBuilderInterfa
         return $this;
     }
 
-//    @Override
-//    public IIncludeBuilder includeTimeSeries(String name, TimeSeriesRangeType type, TimeValue time) {
-//        _includeTimeSeriesByRangeTypeAndTime("", name, type, time);
-//        return this;
-//    }
-//
-//    @Override
-//    public IIncludeBuilder includeTimeSeries(String name, TimeSeriesRangeType type, int count) {
-//        _includeTimeSeriesByRangeTypeAndCount("", name, type, count);
-//        return this;
-//    }
-//
-//    @Override
-//    public IIncludeBuilder includeTimeSeries(String[] names, TimeSeriesRangeType type, TimeValue time) {
-//        _includeArrayOfTimeSeriesByRangeTypeAndTime(names, type, time);
-//        return this;
-//    }
-//
-//    @Override
-//    public IIncludeBuilder includeTimeSeries(String[] names, TimeSeriesRangeType type, int count) {
-//        _includeArrayOfTimeSeriesByRangeTypeAndCount(names, type, count);
-//        return this;
-//    }
-//
-//    @Override
-//    public IIncludeBuilder includeAllTimeSeries(TimeSeriesRangeType type, TimeValue time) {
-//        _includeTimeSeriesByRangeTypeAndTime("", Constants.TimeSeries.ALL, type, time);
-//        return this;
-//    }
-//
-//    @Override
-//    public IIncludeBuilder includeAllTimeSeries(TimeSeriesRangeType type, int count) {
-//        _includeTimeSeriesByRangeTypeAndCount("", Constants.TimeSeries.ALL, type, count);
-//        return this;
-//    }
+    public function includeTimeSeriesByRange(null | string | array $names, TimeSeriesRangeType $type, TimeValue | int $timeOrCount): IncludeBuilderInterface
+    {
+        if (is_string($names)) {
+            if (is_int($timeOrCount)) {
+                $this->_includeTimeSeriesByRangeTypeAndCount("", $names, $type, $timeOrCount);
+            } else {
+                $this->_includeTimeSeriesByRangeTypeAndTime("", $names, $type, $timeOrCount);
+            }
+        } else {
+            if (is_int($timeOrCount)) {
+                $this->_includeArrayOfTimeSeriesByRangeTypeAndCount($names, $type, $timeOrCount);
+            } else {
+                $this->_includeArrayOfTimeSeriesByRangeTypeAndTime($names, $type, $timeOrCount);
+            }
+        }
+
+        return $this;
+    }
+
+    public function includeAllTimeSeries(TimeSeriesRangeType $type, TimeValue | int $timeOrCount): IncludeBuilderInterface
+    {
+        if (is_int($timeOrCount)) {
+          $this->_includeTimeSeriesByRangeTypeAndCount("", TimeSeries::ALL, $type, $timeOrCount);
+
+        } else {
+            $this->_includeTimeSeriesByRangeTypeAndTime("", TimeSeries::ALL, $type, $timeOrCount);
+        }
+
+        return $this;
+    }
 }

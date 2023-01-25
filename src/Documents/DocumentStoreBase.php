@@ -11,6 +11,7 @@ use RavenDB\Documents\Indexes\AbstractIndexCreationTaskInterface;
 use RavenDB\Documents\Indexes\IndexCreation;
 use RavenDB\Documents\Operations\Indexes\PutIndexesOperation;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
+use RavenDB\Documents\TimeSeries\TimeSeriesOperations;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Exceptions\MalformedURLException;
@@ -128,10 +129,10 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
     }
 
     /**
-     * @param AbstractIndexCreationTaskArray|array $tasks
+     * @param array|AbstractIndexCreationTaskArray $tasks
      * @param string|null $database
      */
-    public function executeIndexes($tasks, ?string $database = null): void
+    public function executeIndexes(AbstractIndexCreationTaskArray|array $tasks, ?string $database = null): void
     {
         if (is_array($tasks)) {
             $tasks = AbstractIndexCreationTaskArray::fromArray($tasks);
@@ -144,16 +145,16 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
                 ->send(new PutIndexesOperation($indexesToAdd));
     }
 
-//    private TimeSeriesOperations _timeSeriesOperation;
-//
-//    public TimeSeriesOperations timeSeries() {
-//        if (_timeSeriesOperation == null) {
-//            _timeSeriesOperation = new TimeSeriesOperations(this);
-//        }
-//
-//        return _timeSeriesOperation;
-//    }
-//
+    private ?TimeSeriesOperations $timeSeriesOperation = null;
+
+    public function timeSeries(): TimeSeriesOperations
+    {
+        if ($this->timeSeriesOperation == null) {
+            $this->timeSeriesOperation = new TimeSeriesOperations($this);
+        }
+
+        return $this->timeSeriesOperation;
+    }
 
     private ?DocumentConventions $conventions = null;
 

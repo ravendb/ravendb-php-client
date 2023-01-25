@@ -3,6 +3,7 @@
 namespace RavenDB\Documents\Operations\TimeSeries;
 
 use DateInterval;
+use RavenDB\Type\Duration;
 use RavenDB\Type\StringArray;
 
 use Symfony\Component\Serializer\Annotation\SerializedName;
@@ -16,15 +17,15 @@ class TimeSeriesConfiguration
     private ?TimeSeriesCollectionConfigurationArray $collections = null;
 
     /** @SerializedName("PolicyCheckFrequency") */
-    private ?DateInterval $policyCheckFrequency = null;
+    private ?Duration $policyCheckFrequency = null;
 
     /** @SerializedName("NamedValues") */
-    private array $namedValues = [];
+    private ?array $namedValues = null;
 
     public function __construct(
         ?TimeSeriesCollectionConfigurationArray $collections = null,
-        ?DateInterval $policyCheckFrequency = null,
-        array $namedValues = []
+        ?Duration $policyCheckFrequency = null,
+        ?array $namedValues = null
     )
     {
         $this->collections = $collections;
@@ -45,22 +46,22 @@ class TimeSeriesConfiguration
         $this->collections = $collections;
     }
 
-    public function getPolicyCheckFrequency(): DateInterval
+    public function getPolicyCheckFrequency(): ?Duration
     {
         return $this->policyCheckFrequency;
     }
 
-    public function setPolicyCheckFrequency(DateInterval $policyCheckFrequency): void
+    public function setPolicyCheckFrequency(?Duration $policyCheckFrequency): void
     {
         $this->policyCheckFrequency = $policyCheckFrequency;
     }
 
-    public function getNamedValues(): array
+    public function getNamedValues(): ?array
     {
         return $this->namedValues;
     }
 
-    public function setNamedValues(array $namedValues): void
+    public function setNamedValues(?array $namedValues): void
     {
         $this->namedValues = $namedValues;
     }

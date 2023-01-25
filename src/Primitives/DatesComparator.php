@@ -2,15 +2,17 @@
 
 namespace RavenDB\Primitives;
 
+use DateTime;
 use DateTimeInterface;
 use RavenDB\Exceptions\IllegalArgumentException;
+use RavenDB\Utils\DateUtils;
 
 class DatesComparator
 {
     public static function compare(DateWithContext $lhs, DateWithContext $rhs): int
     {
         if ($lhs->getDate() != null && $rhs->getDate() != null) {
-            if ($lhs->getDate() == $rhs->getDate()) {
+            if (DateUtils::ensureMilliseconds($lhs->getDate()) == DateUtils::ensureMilliseconds($rhs->getDate())) {
                 return 0;
             }
             return $lhs->getDate() > $rhs->getDate() ? 1 : -1;

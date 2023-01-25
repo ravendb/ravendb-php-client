@@ -15,7 +15,7 @@ class DateWithContext
         $this->context = $context;
     }
 
-    public function getDate(): DateTimeInterface
+    public function getDate(): ?DateTimeInterface
     {
         return $this->date;
     }

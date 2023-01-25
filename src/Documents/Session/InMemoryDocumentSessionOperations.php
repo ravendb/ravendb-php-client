@@ -25,6 +25,8 @@ use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Documents\Identity\GenerateEntityIdOnTheClient;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeResult;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeResultList;
+use RavenDB\Documents\Session\TimeSeries\TimeSeriesEntry;
+use RavenDB\Documents\Session\TimeSeries\TimeSeriesEntryArray;
 use RavenDB\Exceptions\Documents\Session\NonUniqueObjectException;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
@@ -39,8 +41,10 @@ use RavenDB\Json\JsonOperation;
 use RavenDB\Json\MetadataAsDictionary;
 use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Primitives\ClosureArray;
+use RavenDB\Primitives\DatesComparator;
 use RavenDB\Primitives\EventHelper;
 use RavenDB\Type\DeferredCommandsMap;
+use RavenDB\Type\ExtendedArrayObject;
 use RavenDB\Type\StringArray;
 use RavenDB\Utils\AtomicInteger;
 use RavenDB\Utils\StringUtils;
@@ -2032,13 +2036,14 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             $id = $field;
 
             if (!array_key_exists($id, $this->getTimeSeriesByDocId())) {
-                $this->getTimeSeriesByDocId()[$id] = [];
+                $a = new ExtendedArrayObject();
+                $a->useKeysCaseInsensitive();
+                $this->getTimeSeriesByDocId()[$id] = $a;
             }
-            // Map<String, List<TimeSeriesRangeResult>>
-            $cache =  $this->getTimeSeriesByDocId()[$id];
 
-            // @todo: check this - probably we should put here is_array instead of is_object
-            if (!is_object($value)) {
+            $cache =  & $this->getTimeSeriesByDocId()[$id];
+
+            if (!is_array($value)) {
                 throw new IllegalStateException("Unable to read time series range results on document: '" . $id . "'.");
             }
 
@@ -2060,13 +2065,12 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
     }
 
-    private static function addToCache(array & $cache, // Map<String, List<TimeSeriesRangeResult>>
-                                   ?TimeSeriesRangeResult $newRange,
-                                   ?string $name): void
+    private static function addToCache(
+        ExtendedArrayObject & $cache, // Map<String, List<TimeSeriesRangeResult>>
+        ?TimeSeriesRangeResult $newRange,
+        ?string $name): void
     {
-        /** @var ?TimeSeriesRangeResultList $localRanges */
-        $localRanges = array_key_exists($name, $cache) ? $cache[$name] : null;
-        if ($localRanges == null || empty($localRanges)) {
+        if (!$cache->offsetExists($name) || empty($cache[$name])) {
             // no local ranges in cache for this series
 
             $item = new TimeSeriesRangeResultList();
@@ -2075,289 +2079,306 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             return;
         }
 
-        // @todo: finish inplementing this
-//        if (DatesComparator.compare(leftDate(localRanges.get(0).getFrom()), rightDate(newRange.getTo())) > 0
-//                || DatesComparator.compare(rightDate(localRanges.get(localRanges.size() - 1).getTo()), leftDate(newRange.getFrom())) < 0) {
-//            // the entire range [from, to] is out of cache bounds
-//
-//            int index = DatesComparator.compare(leftDate(localRanges.get(0).getFrom()), rightDate(newRange.getTo())) > 0 ? 0 : localRanges.size();
-//            localRanges.add(index, newRange);
-//            return;
-//        }
-//
-//        int toRangeIndex;
-//        int fromRangeIndex = -1;
-//        boolean rangeAlreadyInCache = false;
-//
-//        for (toRangeIndex = 0; toRangeIndex < localRanges.size(); toRangeIndex++) {
-//            if (DatesComparator.compare(leftDate(localRanges.get(toRangeIndex).getFrom()), leftDate(newRange.getFrom())) <= 0) {
-//                if (DatesComparator.compare(rightDate(localRanges.get(toRangeIndex).getTo()), rightDate(newRange.getTo())) >= 0) {
-//                    rangeAlreadyInCache = true;
-//                    break;
-//                }
-//
-//                fromRangeIndex = toRangeIndex;
-//                continue;
-//            }
-//
-//            if (DatesComparator.compare(rightDate(localRanges.get(toRangeIndex).getTo()), rightDate(newRange.getTo())) >= 0) {
-//                break;
-//            }
-//        }
-//
-//        if (rangeAlreadyInCache) {
-//            updateExistingRange(localRanges.get(toRangeIndex), newRange);
-//            return;
-//        }
-//
-//        TimeSeriesEntry[] mergedValues = mergeRanges(fromRangeIndex, toRangeIndex, localRanges, newRange);
-//        addToCache(name, newRange.getFrom(), newRange.getTo(), fromRangeIndex, toRangeIndex, localRanges, cache, mergedValues);
+        $localRanges = $cache[$name];
+
+        if (DatesComparator::compare(DatesComparator::leftDate($localRanges[0]->getFrom()), DatesComparator::rightDate($newRange->getTo())) > 0
+                || DatesComparator::compare(DatesComparator::rightDate($localRanges[count($localRanges) - 1]->getTo()), DatesComparator::leftDate($newRange->getFrom())) < 0) {
+            // the entire range [from, to] is out of cache bounds
+
+            $index = DatesComparator::compare(DatesComparator::leftDate($localRanges[0]->getFrom()), DatesComparator::rightDate($newRange->getTo())) > 0 ? 0 : count($localRanges);
+            $localRanges[$index] = $newRange;
+            $cache[$name] = $localRanges;
+            return;
+        }
+
+        $toRangeIndex = 0;
+        $fromRangeIndex = -1;
+        $rangeAlreadyInCache = false;
+
+        for ($toRangeIndex = 0; $toRangeIndex < count($localRanges); $toRangeIndex++) {
+            if (DatesComparator::compare(DatesComparator::leftDate($localRanges[$toRangeIndex]->getFrom()), DatesComparator::leftDate($newRange->getFrom())) <= 0) {
+                if (DatesComparator::compare(DatesComparator::rightDate($localRanges[$toRangeIndex]->getTo()), DatesComparator::rightDate($newRange->getTo())) >= 0) {
+                    $rangeAlreadyInCache = true;
+                    break;
+                }
+
+                $fromRangeIndex = $toRangeIndex;
+                continue;
+            }
+
+            if (DatesComparator::compare(DatesComparator::rightDate($localRanges[$toRangeIndex]->getTo()), DatesComparator::rightDate($newRange->getTo())) >= 0) {
+                break;
+            }
+        }
+
+        if ($rangeAlreadyInCache) {
+            self::updateExistingRange($localRanges[$toRangeIndex], $newRange);
+            $cache[$name] = $localRanges;
+            return;
+        }
+
+        $mergedValues = self::mergeRanges($fromRangeIndex, $toRangeIndex, $localRanges, $newRange);
+        $localRangesSet = TimeSeriesRangeResultList::fromArray($localRanges);
+        self::addToCacheInternal($name,  $newRange->getFrom(), $newRange->getTo(), $fromRangeIndex, $toRangeIndex, $localRangesSet, $cache, $mergedValues);
+        $cache[$name] = $localRangesSet->getArrayCopy();
     }
 
-//    static void addToCache(String timeseries, Date from, Date to, int fromRangeIndex, int toRangeIndex,
-//                           List<TimeSeriesRangeResult> ranges, Map<String, List<TimeSeriesRangeResult>> cache,
-//                           TimeSeriesEntry[] values) {
-//        if (fromRangeIndex == -1) {
-//            // didn't find a 'fromRange' => all ranges in cache start after 'from'
-//
-//            if (toRangeIndex == ranges.size()) {
-//                // the requested range [from, to] contains all the ranges that are in cache
-//
-//                // e.g. if cache is : [[2,3], [4,5], [7, 10]]
-//                // and the requested range is : [1, 15]
-//                // after this action cache will be : [[1, 15]]
-//
-//                TimeSeriesRangeResult timeSeriesRangeResult = new TimeSeriesRangeResult();
-//                timeSeriesRangeResult.setFrom(from);
-//                timeSeriesRangeResult.setTo(to);
-//                timeSeriesRangeResult.setEntries(values);
-//
-//                List<TimeSeriesRangeResult> result = new ArrayList<>();
-//                result.add(timeSeriesRangeResult);
-//                cache.put(timeseries, result);
-//
-//                return;
-//            }
-//
-//            if (DatesComparator.compare(leftDate(ranges.get(toRangeIndex).getFrom()), rightDate(to)) > 0) {
-//                // requested range ends before 'toRange' starts
-//                // remove all ranges that come before 'toRange' from cache
-//                // add the new range at the beginning of the list
-//
-//                // e.g. if cache is : [[2,3], [4,5], [7,10]]
-//                // and the requested range is : [1,6]
-//                // after this action cache will be : [[1,6], [7,10]]
-//
-//                ranges.subList(0, toRangeIndex).clear();
-//                TimeSeriesRangeResult timeSeriesRangeResult = new TimeSeriesRangeResult();
-//                timeSeriesRangeResult.setFrom(from);
-//                timeSeriesRangeResult.setTo(to);
-//                timeSeriesRangeResult.setEntries(values);
-//
-//                ranges.add(0, timeSeriesRangeResult);
-//
-//                return;
-//            }
-//
-//            // the requested range ends inside 'toRange'
-//            // merge the result from server into 'toRange'
-//            // remove all ranges that come before 'toRange' from cache
-//
-//            // e.g. if cache is : [[2,3], [4,5], [7,10]]
-//            // and the requested range is : [1,8]
-//            // after this action cache will be : [[1,10]]
-//
-//            ranges.get(toRangeIndex).setFrom(from);
-//            ranges.get(toRangeIndex).setEntries(values);
-//            ranges.subList(0, toRangeIndex).clear();
-//
-//            return;
-//        }
-//
-//        // found a 'fromRange'
-//
-//        if (toRangeIndex == ranges.size()) {
-//            // didn't find a 'toRange' => all the ranges in cache end before 'to'
-//
-//            if (DatesComparator.compare(rightDate(ranges.get(fromRangeIndex).getTo()), leftDate(from)) < 0) {
-//                // requested range starts after 'fromRange' ends,
-//                // so it needs to be placed right after it
-//                // remove all the ranges that come after 'fromRange' from cache
-//                // add the merged values as a new range at the end of the list
-//
-//                // e.g. if cache is : [[2,3], [5,6], [7,10]]
-//                // and the requested range is : [4,12]
-//                // then 'fromRange' is : [2,3]
-//                // after this action cache will be : [[2,3], [4,12]]
-//
-//
-//                ranges.subList(fromRangeIndex + 1, ranges.size()).clear();
-//                TimeSeriesRangeResult timeSeriesRangeResult = new TimeSeriesRangeResult();
-//                timeSeriesRangeResult.setFrom(from);
-//                timeSeriesRangeResult.setTo(to);
-//                timeSeriesRangeResult.setEntries(values);
-//
-//                ranges.add(timeSeriesRangeResult);
-//
-//                return;
-//            }
-//
-//            // the requested range starts inside 'fromRange'
-//            // merge result into 'fromRange'
-//            // remove all the ranges from cache that come after 'fromRange'
-//
-//            // e.g. if cache is : [[2,3], [4,6], [7,10]]
-//            // and the requested range is : [5,12]
-//            // then 'fromRange' is [4,6]
-//            // after this action cache will be : [[2,3], [4,12]]
-//
-//            ranges.get(fromRangeIndex).setTo(to);
-//            ranges.get(fromRangeIndex).setEntries(values);
-//            ranges.subList(fromRangeIndex + 1, ranges.size()).clear();
-//
-//            return;
-//        }
-//
-//        // found both 'fromRange' and 'toRange'
-//        // the requested range is inside cache bounds
-//
-//        if (DatesComparator.compare(rightDate(ranges.get(fromRangeIndex).getTo()), leftDate(from)) < 0) {
-//            // requested range starts after 'fromRange' ends
-//
-//            if (DatesComparator.compare(leftDate(ranges.get(toRangeIndex).getFrom()), rightDate(to)) > 0)
-//            {
-//                // requested range ends before 'toRange' starts
-//
-//                // remove all ranges in between 'fromRange' and 'toRange'
-//                // place new range in between 'fromRange' and 'toRange'
-//
-//                // e.g. if cache is : [[2,3], [5,6], [7,8], [10,12]]
-//                // and the requested range is : [4,9]
-//                // then 'fromRange' is [2,3] and 'toRange' is [10,12]
-//                // after this action cache will be : [[2,3], [4,9], [10,12]]
-//
-//                ranges.subList(fromRangeIndex + 1, toRangeIndex).clear();
-//
-//                TimeSeriesRangeResult timeSeriesRangeResult = new TimeSeriesRangeResult();
-//                timeSeriesRangeResult.setFrom(from);
-//                timeSeriesRangeResult.setTo(to);
-//                timeSeriesRangeResult.setEntries(values);
-//
-//                ranges.add(fromRangeIndex + 1, timeSeriesRangeResult);
-//
-//                return;
-//            }
-//
-//            // requested range ends inside 'toRange'
-//
-//            // merge the new range into 'toRange'
-//            // remove all ranges in between 'fromRange' and 'toRange'
-//
-//            // e.g. if cache is : [[2,3], [5,6], [7,10]]
-//            // and the requested range is : [4,9]
-//            // then 'fromRange' is [2,3] and 'toRange' is [7,10]
-//            // after this action cache will be : [[2,3], [4,10]]
-//
-//            ranges.subList(fromRangeIndex + 1, toRangeIndex).clear();
-//            ranges.get(toRangeIndex).setFrom(from);
-//            ranges.get(toRangeIndex).setEntries(values);
-//
-//            return;
-//        }
-//
-//        // the requested range starts inside 'fromRange'
-//
-//        if (DatesComparator.compare(leftDate(ranges.get(toRangeIndex).getFrom()), rightDate(to)) > 0)
-//        {
-//            // requested range ends before 'toRange' starts
-//
-//            // remove all ranges in between 'fromRange' and 'toRange'
-//            // merge new range into 'fromRange'
-//
-//            // e.g. if cache is : [[2,4], [5,6], [8,10]]
-//            // and the requested range is : [3,7]
-//            // then 'fromRange' is [2,4] and 'toRange' is [8,10]
-//            // after this action cache will be : [[2,7], [8,10]]
-//
-//            ranges.get(fromRangeIndex).setTo(to);
-//            ranges.get(fromRangeIndex).setEntries(values);
-//            ranges.subList(fromRangeIndex + 1, toRangeIndex).clear();
-//
-//            return;
-//        }
-//
-//        // the requested range starts inside 'fromRange'
-//        // and ends inside 'toRange'
-//
-//        // merge all ranges in between 'fromRange' and 'toRange'
-//        // into a single range [fromRange.From, toRange.To]
-//
-//        // e.g. if cache is : [[2,4], [5,6], [8,10]]
-//        // and the requested range is : [3,9]
-//        // then 'fromRange' is [2,4] and 'toRange' is [8,10]
-//        // after this action cache will be : [[2,10]]
-//
-//        ranges.get(fromRangeIndex).setTo(ranges.get(toRangeIndex).getTo());
-//        ranges.get(fromRangeIndex).setEntries(values);
-//        ranges.subList(fromRangeIndex + 1, toRangeIndex + 1).clear();
-//    }
+    private static function addToCacheInternal(?string $timeseries,
+                                              ?DateTimeInterface $from,
+                                              ?DateTimeInterface $to,
+                                              int $fromRangeIndex,
+                                              int $toRangeIndex,
+                                              TimeSeriesRangeResultList & $ranges,
+                                              ExtendedArrayObject & $cache, // Map<String, List<TimeSeriesRangeResult>>
+                                              TimeSeriesEntryArray $values): void
+    {
+        if ($fromRangeIndex == -1) {
+            // didn't find a 'fromRange' => all ranges in cache start after 'from'
+
+            if ($toRangeIndex == count($ranges)) {
+                // the requested range [from, to] contains all the ranges that are in cache
+
+                // e.g. if cache is : [[2,3], [4,5], [7, 10]]
+                // and the requested range is : [1, 15]
+                // after this action cache will be : [[1, 15]]
+
+                $timeSeriesRangeResult = new TimeSeriesRangeResult();
+                $timeSeriesRangeResult->setFrom($from);
+                $timeSeriesRangeResult->setTo($to);
+                $timeSeriesRangeResult->setEntries($values);
+
+                $result = new TimeSeriesRangeResultList();
+                $result->append($timeSeriesRangeResult);
+                $cache[$timeseries] = $result;
+
+                return;
+            }
+
+            if (DatesComparator::compare(DatesComparator::leftDate($ranges[$toRangeIndex]->getFrom()), DatesComparator::rightDate($to)) > 0) {
+                // requested range ends before 'toRange' starts
+                // remove all ranges that come before 'toRange' from cache
+                // add the new range at the beginning of the list
+
+                // e.g. if cache is : [[2,3], [4,5], [7,10]]
+                // and the requested range is : [1,6]
+                // after this action cache will be : [[1,6], [7,10]]
+
+                $ranges->removeValues(0, $toRangeIndex);
+
+                $timeSeriesRangeResult = new TimeSeriesRangeResult();
+                $timeSeriesRangeResult->setFrom($from);
+                $timeSeriesRangeResult->setTo($to);
+                $timeSeriesRangeResult->setEntries($values);
+                $ranges->prepend($timeSeriesRangeResult);
+
+                return;
+            }
+
+            // the requested range ends inside 'toRange'
+            // merge the result from server into 'toRange'
+            // remove all ranges that come before 'toRange' from cache
+
+            // e.g. if cache is : [[2,3], [4,5], [7,10]]
+            // and the requested range is : [1,8]
+            // after this action cache will be : [[1,10]]
+
+            $ranges[$toRangeIndex]->setFrom($from);
+            $ranges[$toRangeIndex]->setEntries($values);
+            $ranges->removeValues(0, $toRangeIndex);
+
+            return;
+        }
+
+        // found a 'fromRange'
+
+        if ($toRangeIndex == count($ranges)) {
+            // didn't find a 'toRange' => all the ranges in cache end before 'to'
+
+            if (DatesComparator::compare(DatesComparator::rightDate($ranges[$fromRangeIndex]->getTo()), DatesComparator::leftDate($from)) < 0) {
+                // requested range starts after 'fromRange' ends,
+                // so it needs to be placed right after it
+                // remove all the ranges that come after 'fromRange' from cache
+                // add the merged values as a new range at the end of the list
+
+                // e.g. if cache is : [[2,3], [5,6], [7,10]]
+                // and the requested range is : [4,12]
+                // then 'fromRange' is : [2,3]
+                // after this action cache will be : [[2,3], [4,12]]
+
+                $ranges->removeValues($fromRangeIndex + 1, count($ranges) - $fromRangeIndex - 1);
+                $timeSeriesRangeResult = new TimeSeriesRangeResult();
+                $timeSeriesRangeResult->setFrom($from);
+                $timeSeriesRangeResult->setTo($to);
+                $timeSeriesRangeResult->setEntries($values);
+
+                $ranges->append($timeSeriesRangeResult);
+
+                return;
+            }
+
+            // the requested range starts inside 'fromRange'
+            // merge result into 'fromRange'
+            // remove all the ranges from cache that come after 'fromRange'
+
+            // e.g. if cache is : [[2,3], [4,6], [7,10]]
+            // and the requested range is : [5,12]
+            // then 'fromRange' is [4,6]
+            // after this action cache will be : [[2,3], [4,12]]
+
+            $ranges[$fromRangeIndex]->setTo($to);
+            $ranges[$fromRangeIndex]->setEntries($values);
+            $ranges->removeValues($fromRangeIndex + 1, count($ranges) - $fromRangeIndex - 1);
+
+            return;
+        }
+
+        // found both 'fromRange' and 'toRange'
+        // the requested range is inside cache bounds
+
+        if (DatesComparator::compare(DatesComparator::rightDate($ranges[$fromRangeIndex]->getTo()), DatesComparator::leftDate($from)) < 0) {
+            // requested range starts after 'fromRange' ends
+
+            if (DatesComparator::compare(DatesComparator::leftDate($ranges[$toRangeIndex]->getFrom()), DatesComparator::rightDate($to)) > 0) {
+                // requested range ends before 'toRange' starts
+
+                // remove all ranges in between 'fromRange' and 'toRange'
+                // place new range in between 'fromRange' and 'toRange'
+
+                // e.g. if cache is : [[2,3], [5,6], [7,8], [10,12]]
+                // and the requested range is : [4,9]
+                // then 'fromRange' is [2,3] and 'toRange' is [10,12]
+                // after this action cache will be : [[2,3], [4,9], [10,12]]
+
+                $ranges->removeValues($fromRangeIndex + 1, $toRangeIndex - $fromRangeIndex - 1);
+
+                $timeSeriesRangeResult = new TimeSeriesRangeResult();
+                $timeSeriesRangeResult->setFrom($from);
+                $timeSeriesRangeResult->setTo($to);
+                $timeSeriesRangeResult->setEntries($values);
+
+                $ranges->insertValue($fromRangeIndex + 1, $timeSeriesRangeResult);
+
+                return;
+            }
+
+            // requested range ends inside 'toRange'
+
+            // merge the new range into 'toRange'
+            // remove all ranges in between 'fromRange' and 'toRange'
+
+            // e.g. if cache is : [[2,3], [5,6], [7,10]]
+            // and the requested range is : [4,9]
+            // then 'fromRange' is [2,3] and 'toRange' is [7,10]
+            // after this action cache will be : [[2,3], [4,10]]
+
+            $ranges->removeValues($fromRangeIndex + 1, $toRangeIndex - $fromRangeIndex - 1);
+
+            $ranges[$toRangeIndex]->setFrom($from);
+            $ranges[$toRangeIndex]->setEntries($values);
+
+            return;
+        }
+
+        // the requested range starts inside 'fromRange'
+
+        if (DatesComparator::compare(DatesComparator::leftDate($ranges[$toRangeIndex]->getFrom()), DatesComparator::rightDate($to)) > 0) {
+            // requested range ends before 'toRange' starts
+
+            // remove all ranges in between 'fromRange' and 'toRange'
+            // merge new range into 'fromRange'
+
+            // e.g. if cache is : [[2,4], [5,6], [8,10]]
+            // and the requested range is : [3,7]
+            // then 'fromRange' is [2,4] and 'toRange' is [8,10]
+            // after this action cache will be : [[2,7], [8,10]]
+
+            $ranges[$fromRangeIndex]->setTo($to);
+            $ranges[$fromRangeIndex]->setEntries($values);
+            $ranges->removeValues($fromRangeIndex + 1, $toRangeIndex - $fromRangeIndex - 1);
+
+            return;
+        }
+
+        // the requested range starts inside 'fromRange'
+        // and ends inside 'toRange'
+
+        // merge all ranges in between 'fromRange' and 'toRange'
+        // into a single range [fromRange.From, toRange.To]
+
+        // e.g. if cache is : [[2,4], [5,6], [8,10]]
+        // and the requested range is : [3,9]
+        // then 'fromRange' is [2,4] and 'toRange' is [8,10]
+        // after this action cache will be : [[2,10]]
+
+        $ranges[$fromRangeIndex]->setTo($ranges[$toRangeIndex]->getTo());
+        $ranges[$fromRangeIndex]->setEntries($values);
+        $ranges->removeRange($fromRangeIndex + 1, $toRangeIndex + 1);
+    }
 
     private static function parseTimeSeriesRangeResult(EntityMapper $mapper, $jsonRange, $id, $databaseName): TimeSeriesRangeResult
     {
         return $mapper->denormalize($jsonRange, TimeSeriesRangeResult::class);
     }
 
-//    private static TimeSeriesEntry[] mergeRanges(int fromRangeIndex, int toRangeIndex, List<TimeSeriesRangeResult> localRanges, TimeSeriesRangeResult newRange) {
-//        List<TimeSeriesEntry> mergedValues = new ArrayList<>();
-//
-//        if (fromRangeIndex != -1 && localRanges.get(fromRangeIndex).getTo().getTime() >= newRange.getFrom().getTime()) {
-//            for (TimeSeriesEntry val : localRanges.get(fromRangeIndex).getEntries()) {
-//                if (val.getTimestamp().getTime() >= newRange.getFrom().getTime()) {
-//                    break;
-//                }
-//                mergedValues.add(val);
-//            }
-//        }
-//
-//        mergedValues.addAll(Arrays.asList(newRange.getEntries()));
-//
-//        if (toRangeIndex < localRanges.size()
-//                && DatesComparator.compare(leftDate(localRanges.get(toRangeIndex).getFrom()), rightDate(newRange.getTo())) <= 0) {
-//            for (TimeSeriesEntry val : localRanges.get(toRangeIndex).getEntries()) {
-//                if (val.getTimestamp().getTime() <= newRange.getTo().getTime()) {
-//                    continue;
-//                }
-//                mergedValues.add(val);
-//            }
-//        }
-//
-//        return mergedValues.toArray(new TimeSeriesEntry[0]);
-//    }
-//
-//    private static void updateExistingRange(TimeSeriesRangeResult localRange, TimeSeriesRangeResult newRange) {
-//        List<TimeSeriesEntry> newValues = new ArrayList<>();
-//        int index;
-//        for (index = 0; index < localRange.getEntries().length; index++) {
-//            if (localRange.getEntries()[index].getTimestamp().getTime() >= newRange.getFrom().getTime()) {
-//                break;
-//            }
-//
-//            newValues.add(localRange.getEntries()[index]);
-//        }
-//
-//        newValues.addAll(Arrays.asList(newRange.getEntries()));
-//
-//        for (int j = 0; j < localRange.getEntries().length; j++) {
-//            if (localRange.getEntries()[j].getTimestamp().getTime() <= newRange.getTo().getTime()) {
-//                continue;
-//            }
-//
-//            newValues.add(localRange.getEntries()[j]);
-//        }
-//
-//        localRange.setEntries(newValues.toArray(new TimeSeriesEntry[0]));
-//    }
-//
+    private static function mergeRanges(int $fromRangeIndex, int $toRangeIndex, TimeSeriesRangeResultList|array $localRanges, TimeSeriesRangeResult $newRange): TimeSeriesEntryArray
+    {
+        if (is_array($localRanges)) {
+            $localRanges = TimeSeriesRangeResultList::fromArray($localRanges);
+        }
+
+        $mergedValues = new TimeSeriesEntryArray();
+
+        if ($fromRangeIndex != -1 && $localRanges[$fromRangeIndex]->getTo() >= $newRange->getFrom()) {
+            /** @var TimeSeriesEntry $val */
+            foreach ($localRanges[$fromRangeIndex]->getEntries() as $val) {
+                if ($val->getTimestamp() >= $newRange->getFrom()) {
+                    break;
+                }
+                $mergedValues->append($val);
+            }
+        }
+
+        $mergedValues->appendArrayValues($newRange->getEntries()->getArrayCopy());
+
+        if ($toRangeIndex < count($localRanges)
+                && DatesComparator::compare(DatesComparator::leftDate($localRanges[$toRangeIndex]->getFrom()), DatesComparator::rightDate($newRange->getTo())) <= 0) {
+            /** @var TimeSeriesEntry $val */
+            foreach ($localRanges[$toRangeIndex]->getEntries() as $val) {
+                if ($val->getTimestamp() <= $newRange->getTo()) {
+                    continue;
+                }
+                $mergedValues->append($val);
+            }
+        }
+
+        return $mergedValues;
+    }
+
+    private static function updateExistingRange(TimeSeriesRangeResult & $localRange, TimeSeriesRangeResult $newRange): void
+    {
+        $newValues = new TimeSeriesEntryArray();
+        $index = 0;
+        for ($index = 0; $index < count($localRange->getEntries()); $index++) {
+            if ($localRange->getEntries()[$index]->getTimestamp() >= $newRange->getFrom()) {
+                break;
+            }
+
+            $newValues->append($localRange->getEntries()[$index]);
+        }
+
+        $newValues->appendArrayValues($newRange->getEntries()->getArrayCopy());
+
+        for ($j = 0; $j < count($localRange->getEntries()); $j++) {
+            if ($localRange->getEntries()[$j]->getTimestamp() <= $newRange->getTo()) {
+                continue;
+            }
+
+            $newValues->append($localRange->getEntries()[$j]);
+        }
+
+        $localRange->setEntries($newValues);
+    }
+
 
     public function hashCode(): int
     {

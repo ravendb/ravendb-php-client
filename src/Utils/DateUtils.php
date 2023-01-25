@@ -14,13 +14,32 @@ class DateUtils
 
     /**
      * @param DateTime|DateTimeImmutable $dateTime
-     * @param int $days
+     * @param int $months
      *
-     * @return DateTimeInterface
+     * @return DateTime|DateTimeImmutable
      *
      * @throws Exception
      */
-    public static function addDays(DateTimeInterface $dateTime, int $days): DateTimeInterface
+    public static function addMonths(DateTime|DateTimeImmutable $dateTime, int $months): DateTime|DateTimeImmutable
+    {
+        $interval = new DateInterval('P' . abs($months) . 'M');
+        if ($months < 0) {
+            $interval->invert = 1;
+        }
+
+        $newDateTime = clone $dateTime;
+        return $newDateTime->add($interval);
+    }
+
+    /**
+     * @param DateTime|DateTimeImmutable $dateTime
+     * @param int $days
+     *
+     * @return DateTime|DateTimeImmutable
+     *
+     * @throws Exception
+     */
+    public static function addDays(DateTime|DateTimeImmutable $dateTime, int $days): DateTime|DateTimeImmutable
     {
         $interval = new DateInterval('P' . abs($days) . 'D');
         if ($days < 0) {
@@ -34,10 +53,10 @@ class DateUtils
     /**
      * @param DateTime|DateTimeImmutable $dateTime
      * @param int $hours
-     * @return DateTimeInterface
+     * @return DateTime
      * @throws Exception
      */
-    public static function addHours(DateTimeInterface $dateTime, int $hours): DateTimeInterface
+    public static function addHours(DateTime|DateTimeImmutable $dateTime, int $hours): DateTime
     {
         $interval = new DateInterval('PT' . abs($hours) . 'H');
         if ($hours < 0) {
@@ -51,10 +70,10 @@ class DateUtils
     /**
      * @param DateTime $dateTime
      * @param int $minutes
-     * @return DateTimeInterface
+     * @return DateTime
      * @throws Exception
      */
-    public static function addMinutes(DateTime $dateTime, int $minutes): DateTimeInterface
+    public static function addMinutes(DateTime $dateTime, int $minutes): DateTime
     {
         $interval = new DateInterval('PT' . abs($minutes) . 'M');
         if ($minutes < 0) {
@@ -68,10 +87,10 @@ class DateUtils
     /**
      * @param DateTime $dateTime
      * @param int $seconds
-     * @return DateTimeInterface
+     * @return DateTime
      * @throws Exception
      */
-    public static function addSeconds(DateTime $dateTime, int $seconds): DateTimeInterface
+    public static function addSeconds(DateTime $dateTime, int $seconds): DateTime
     {
         $interval = new DateInterval('PT' . abs($seconds) . 'S');
         if ($seconds < 0) {
@@ -111,5 +130,20 @@ class DateUtils
         $newDate->setTime(0, 0,0,0);
 
         return $newDate;
+    }
+
+    public static function ensureMilliseconds(DateTimeInterface $date): DateTimeInterface
+    {
+        /** @var DateTime $new */
+        $new = clone $date;
+
+        $hour = intval($new->format('H'));
+        $minute = intval($new->format('i'));
+        $second =intval($new->format('s'));
+        $microsecond = intval($new->format('u'));
+        $microsecond -= $microsecond % 1000;
+        $new->setTime($hour, $minute, $second, $microsecond);
+
+        return $new;
     }
 }

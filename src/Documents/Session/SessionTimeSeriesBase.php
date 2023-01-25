@@ -10,12 +10,17 @@ use RavenDB\Documents\Commands\Batches\TimeSeriesBatchCommandData;
 use RavenDB\Documents\Operations\TimeSeries\AppendOperation;
 use RavenDB\Documents\Operations\TimeSeries\DeleteOperation;
 use RavenDB\Documents\Operations\TimeSeries\GetTimeSeriesOperation;
+use RavenDB\Documents\Operations\TimeSeries\TimeSeriesDetails;
+use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRange;
+use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeList;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeResult;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeResultList;
+use RavenDB\Documents\Session\TimeSeries\TimeSeriesEntry;
 use RavenDB\Documents\Session\TimeSeries\TimeSeriesEntryArray;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Primitives\DatesComparator;
+use RavenDB\Type\ExtendedArrayObject;
 use RavenDB\Utils\StringUtils;
 
 class SessionTimeSeriesBase
@@ -174,14 +179,16 @@ class SessionTimeSeriesBase
             $this->handleIncludes($rangeResult);
 
             if (!array_key_exists($this->docId, $this->session->getTimeSeriesByDocId())) {
-                $this->session->getTimeSeriesByDocId()[$this->docId] = [];
+                $a = new ExtendedArrayObject();
+                $a->useKeysCaseInsensitive();
+                $this->session->getTimeSeriesByDocId()[$this->docId] = $a;
             }
-            /** @var array<TimeSeriesRangeResultList> $cache */
+            /** @var ExtendedArrayObject<TimeSeriesRangeResultList> $cache */
             $cache =  & $this->session->getTimeSeriesByDocId()[$this->docId];
 
             $ranges = null;
-            if (array_key_exists($this->name, $cache)) {
-                $ranges = & $cache[$this->name];
+            if ($cache->offsetExists($this->name)) {
+                $ranges = $cache[$this->name];
             };
             if (!empty($ranges)) {
                 // update
@@ -191,6 +198,7 @@ class SessionTimeSeriesBase
                 } else {
                     $ranges[] = $rangeResult;
                 }
+                $cache[$this->name] = $ranges;
             } else {
                 $cache[$this->name] = [ $rangeResult ];
             }
@@ -237,7 +245,7 @@ class SessionTimeSeriesBase
      * @param DateTimeInterface|null $to
      * @param int $start
      * @param int $pageSize
-     * @param Closure $includes
+     * @param ?Closure $includes
      * @return TimeSeriesEntryArray|null
      */
     protected function serveFromCache(
@@ -245,82 +253,87 @@ class SessionTimeSeriesBase
         ?DateTimeInterface $to,
         int $start,
         int $pageSize,
-        Closure $includes
+        ?Closure $includes
     ): ?TimeSeriesEntryArray {
-        return new TimeSeriesEntryArray();
-//        Map<String, List<TimeSeriesRangeResult>> cache = session.getTimeSeriesByDocId().get(docId);
-//        List<TimeSeriesRangeResult> ranges = cache.get(name);
-//
-//        // try to find a range in cache that contains [from, to]
-//        // if found, chop just the relevant part from it and return to the user.
-//
-//        // otherwise, try to find two ranges (fromRange, toRange),
-//        // such that 'fromRange' is the last occurence for which range.From <= from
-//        // and 'toRange' is the first occurence for which range.To >= to.
-//        // At the same time, figure out the missing partial ranges that we need to get from the server.
-//
-//        int toRangeIndex;
-//        int fromRangeIndex = -1;
-//
-//        List<TimeSeriesRange> rangesToGetFromServer = null;
-//
-//        for (toRangeIndex = 0; toRangeIndex < ranges.size(); toRangeIndex++) {
-//            if (DatesComparator.compare(leftDate(ranges.get(toRangeIndex).getFrom()), leftDate(from)) <= 0) {
-//                if (DatesComparator.compare(rightDate(ranges.get(toRangeIndex).getTo()), rightDate(to)) >= 0
-//                    || (ranges.get(toRangeIndex).getEntries().length - start >= pageSize)) {
-//                    // we have the entire range in cache
-//                    // we have all the range we need
-//                    // or that we have all the results we need in smaller range
-//
-//                    return chopRelevantRange(ranges.get(toRangeIndex), from, to, start, pageSize);
-//                }
-//
-//                fromRangeIndex = toRangeIndex;
-//                continue;
-//            }
-//
-//            // can't get the entire range from cache
-//            if (rangesToGetFromServer == null) {
-//                rangesToGetFromServer = new ArrayList<>();
-//            }
-//
-//            // add the missing part [f, t] between current range start (or 'from')
-//            // and previous range end (or 'to') to the list of ranges we need to get from server
-//
-//            Date fromToUse = toRangeIndex == 0 || DatesComparator.compare(rightDate(ranges.get(toRangeIndex - 1).getTo()), leftDate(from)) < 0
-//                    ? from
-//                    : ranges.get(toRangeIndex - 1).getTo();
-//            Date toToUse = DatesComparator.compare(leftDate(ranges.get(toRangeIndex).getFrom()), rightDate(to)) <= 0
-//                    ? ranges.get(toRangeIndex).getFrom()
-//                    : to;
-//
-//            rangesToGetFromServer.add(new TimeSeriesRange(name, fromToUse, toToUse));
-//
-//            if (DatesComparator.compare(rightDate(ranges.get(toRangeIndex).getTo()), rightDate(to)) >= 0) {
-//                break;
-//            }
-//        }
-//
-//        if (toRangeIndex == ranges.size()) {
-//            // requested range [from, to] ends after all ranges in cache
-//            // add the missing part between the last range end and 'to'
-//            // to the list of ranges we need to get from server
-//
-//            if (rangesToGetFromServer == null) {
-//                rangesToGetFromServer = new ArrayList<>();
-//            }
-//
-//            rangesToGetFromServer.add(new TimeSeriesRange(name, ranges.get(ranges.size() - 1).getTo(), to));
-//        }
-//
-//        // get all the missing parts from server
-//
-//        session.incrementRequestCount();
-//
-//        TimeSeriesDetails details = session.getOperations().send(new GetMultipleTimeSeriesOperation(docId, rangesToGetFromServer, start, pageSize, includes), session.sessionInfo);
-//
-//        if (includes != null) {
-//            registerIncludes(details);
+        /** @var ExtendedArrayObject<TimeSeriesRangeResultList> $cache */
+        $cache =  &$this->session->getTimeSeriesByDocId()[$this->docId];
+
+        $ranges = null;
+        if ($cache->offsetExists($this->name)) {
+            $ranges = $cache[$this->name];
+        };
+
+        // try to find a range in cache that contains [from, to]
+        // if found, chop just the relevant part from it and return to the user.
+
+        // otherwise, try to find two ranges (fromRange, toRange),
+        // such that 'fromRange' is the last occurrence for which range.From <= from
+        // and 'toRange' is the first occurrence for which range.To >= to.
+        // At the same time, figure out the missing partial ranges that we need to get from the server.
+
+        $toRangeIndex = null;
+        $fromRangeIndex = -1;
+
+        $rangesToGetFromServer = null;
+
+        for ($toRangeIndex = 0; $toRangeIndex < count($ranges); $toRangeIndex++) {
+            if (DatesComparator::compare(DatesComparator::leftDate($ranges[$toRangeIndex]->getFrom()), DatesComparator::leftDate($from)) <= 0) {
+                if (DatesComparator::compare(DatesComparator::rightDate($ranges[$toRangeIndex]->getTo()), DatesComparator::rightDate($to)) >= 0
+                    || (count($ranges[$toRangeIndex]->getEntries()) - $start >= $pageSize)) {
+                    // we have the entire range in cache
+                    // we have all the range we need
+                    // or that we have all the results we need in smaller range
+
+                    return self::chopRelevantRange($ranges[$toRangeIndex], $from, $to, $start, $pageSize);
+                }
+
+                $fromRangeIndex = $toRangeIndex;
+                continue;
+            }
+
+            // can't get the entire range from cache
+            if ($rangesToGetFromServer == null) {
+                $rangesToGetFromServer = new TimeSeriesRangeList();
+            }
+
+            // add the missing part [f, t] between current range start (or 'from')
+            // and previous range end (or 'to') to the list of ranges we need to get from server
+
+            $fromToUse = $toRangeIndex == 0 || DatesComparator::compare(DatesComparator::rightDate($ranges[$toRangeIndex - 1]->getTo()), DatesComparator::leftDate($from)) < 0
+                    ? $from
+                    : $ranges[$toRangeIndex - 1]->getTo();
+            $toToUse = DatesComparator::compare(DatesComparator::leftDate($ranges[$toRangeIndex]->getFrom()), DatesComparator::rightDate($to)) <= 0
+                    ? $ranges[$toRangeIndex]->getFrom()
+                    : $to;
+
+            $rangesToGetFromServer->append(new TimeSeriesRange($this->name, $fromToUse, $toToUse));
+
+            if (DatesComparator::compare(DatesComparator::rightDate($ranges[$toRangeIndex]->getTo()), DatesComparator::rightDate($to)) >= 0) {
+                break;
+            }
+        }
+
+        if ($toRangeIndex == count($ranges)) {
+            // requested range [from, to] ends after all ranges in cache
+            // add the missing part between the last range end and 'to'
+            // to the list of ranges we need to get from server
+
+            if ($rangesToGetFromServer == null) {
+                $rangesToGetFromServer = new TimeSeriesRangeList();
+            }
+
+            $rangesToGetFromServer->append(new TimeSeriesRange($this->name, $ranges[count($ranges) - 1]->getTo(), $to));
+        }
+
+        // get all the missing parts from server
+        $this->session->incrementRequestCount();
+
+        // @todo: continue here to Get Time Series ranges from server
+//        /** @var TimeSeriesDetails $details */
+//        $details = $this->session->getOperations()->send(new GetMultipleTimeSeriesOperation($docId, $rangesToGetFromServer, $start, $pageSize, $includes), $this->session->getSessionInfo());
+
+//        if ($includes != null) {
+//            $this->registerIncludes($details);
 //        }
 //        // merge all the missing parts we got from server
 //        // with all the ranges in cache that are between 'fromRange' and 'toRange'
@@ -351,14 +364,17 @@ class SessionTimeSeriesBase
 //        }
 //
 //        return resultToUser;
+        return new TimeSeriesEntryArray();
     }
 
-//    private void registerIncludes(TimeSeriesDetails details) {
-//        for (TimeSeriesRangeResult rangeResult : details.getValues().get(name)) {
-//            handleIncludes(rangeResult);
-//        }
-//    }
-//
+    private function registerIncludes(?TimeSeriesDetails $details): void
+    {
+        /** @var TimeSeriesRangeResult $rangeResult */
+        foreach ($details->getValues()[$this->name] as $rangeResult) {
+            $this->handleIncludes($rangeResult);
+        }
+    }
+
 //    private static TimeSeriesEntry[] mergeRangesWithResults(Date from, Date to, List<TimeSeriesRangeResult> ranges,
 //                                                                int fromRangeIndex, int toRangeIndex,
 //                                                                List<TimeSeriesRangeResult> resultFromServer,
@@ -452,65 +468,71 @@ class SessionTimeSeriesBase
 //
 //        return mergedValues.toArray(new TimeSeriesEntry[0]);
 //    }
-//
-//    private static List<TimeSeriesEntry> chopRelevantRange(TimeSeriesRangeResult range, Date from, Date to, int start, int pageSize) {
-//        if (range.getEntries() == null) {
-//            return Collections.emptyList();
-//        }
-//
-//        List<TimeSeriesEntry> result = new ArrayList<>();
-//        for (TimeSeriesEntry value : range.getEntries()) {
-//            if (DatesComparator.compare(definedDate(value.getTimestamp()), rightDate(to)) > 0) {
-//                break;
-//            }
-//            if (DatesComparator.compare(definedDate(value.getTimestamp()), leftDate(from)) < 0) {
-//                continue;
-//            }
-//            if (start-- > 0) {
-//                continue;
-//            }
-//
-//            if (pageSize-- <= 0) {
-//                break;
-//            }
-//
-//            result.add(value);
-//        }
-//
-//        return result;
-//    }
-//
-//    protected <T> TimeSeriesEntry[] getFromCache(Date from, Date to, Consumer<ITimeSeriesIncludeBuilder> includes, int start, int pageSize) {
-//        // RavenDB-16060
-//        // Typed TimeSeries results need special handling when served from cache
-//        // since we cache the results untyped
-//
-//        // in java we return untyped entries here
-//
-//        List<TimeSeriesEntry> resultToUser = serveFromCache(from, to, start, pageSize, includes);
-//        if (resultToUser.isEmpty()) {
-//            return new TimeSeriesEntry[0];
-//        }
-//
-//        return resultToUser.toArray(new TimeSeriesEntry[0]);
-//    }
-//
+
+    private static function chopRelevantRange(TimeSeriesRangeResult $range, ?DateTimeInterface $from, ?DateTimeInterface $to, int $start, int $pageSize): TimeSeriesEntryArray
+    {
+        $result = new TimeSeriesEntryArray();
+
+        if (empty($range->getEntries())) {
+            return $result;
+        }
+
+        /** @var TimeSeriesEntry $value */
+        foreach ($range->getEntries() as $value) {
+            if (DatesComparator::compare(DatesComparator::definedDate($value->getTimestamp()), DatesComparator::rightDate($to)) > 0) {
+                break;
+            }
+            if (DatesComparator::compare(DatesComparator::definedDate($value->getTimestamp()), DatesComparator::leftDate($from)) < 0) {
+                continue;
+            }
+            if ($start-- > 0) {
+                continue;
+            }
+
+            if ($pageSize-- <= 0) {
+                break;
+            }
+
+            $result->append($value);
+        }
+
+        return $result;
+    }
+
+    protected function getFromCache(?DateTimeInterface $from, ?DateTimeInterface $to, ?Closure $includes, int $start, int $pageSize): TimeSeriesEntryArray
+    {
+        // RavenDB-16060
+        // Typed TimeSeries results need special handling when served from cache
+        // since we cache the results untyped
+
+        // in PHP we return untyped entries here
+
+        /** @var TimeSeriesEntryArray $resultToUser */
+        $resultToUser = $this->serveFromCache($from, $to, $start, $pageSize, $includes);
+        if (empty($resultToUser)) {
+            return new TimeSeriesEntryArray();
+        }
+
+        return TimeSeriesEntryArray::fromArray($resultToUser->getArrayCopy());
+    }
+
     protected function notInCache(?DateTimeInterface $from, ?DateTimeInterface $to): bool
     {
-        return true;
-//        Map<String, List<TimeSeriesRangeResult>> cache = session.getTimeSeriesByDocId().get(docId);
-//        if (cache == null) {
-//            return true;
-//        }
-//
-//        List<TimeSeriesRangeResult> ranges = cache.get(name);
-//        if (ranges == null) {
-//            return true;
-//        }
-//
-//        return ranges.isEmpty()
-//                || DatesComparator.compare(leftDate(ranges.get(0).getFrom()), rightDate(to)) > 0
-//                || DatesComparator.compare(rightDate(ranges.get(ranges.size() - 1).getTo()), leftDate(from)) < 0;
+        if (!array_key_exists($this->docId, $this->session->getTimeSeriesByDocId())) {
+            return true;
+        }
+        /** @var ExtendedArrayObject<TimeSeriesRangeResultList> $cache */
+        $cache =  & $this->session->getTimeSeriesByDocId()[$this->docId];
+
+        if (!$cache->offsetExists($this->name)) {
+            return true;
+        }
+
+        $ranges = $cache[$this->name];
+
+        return empty($ranges)
+                || DatesComparator::compare(DatesComparator::leftDate($ranges[0]->getFrom()), DatesComparator::rightDate($to)) > 0
+                || DatesComparator::compare(DatesComparator::rightDate($ranges[count($ranges) - 1]->getTo()), DatesComparator::leftDate($from)) < 0;
     }
 
 //    private static class CachedEntryInfo {
