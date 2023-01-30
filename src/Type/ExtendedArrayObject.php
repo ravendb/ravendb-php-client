@@ -189,4 +189,16 @@ class ExtendedArrayObject extends \ArrayObject implements \JsonSerializable
     {
         return $this->getArrayCopy();
     }
+
+    public static function fromArray(array $data, bool $nullAllowed = false): static
+    {
+        $sa = new static();
+        $sa->setNullAllowed($nullAllowed);
+
+        foreach ($data as $key => $value) {
+            $sa->offsetSet($key, $value);
+        }
+
+        return $sa;
+    }
 }

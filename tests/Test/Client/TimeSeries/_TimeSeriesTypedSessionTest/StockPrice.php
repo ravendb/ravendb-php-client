@@ -7,15 +7,15 @@ use RavenDB\Documents\Session\TimeSeries\TimeSeriesValue;
 class StockPrice
 {
     #[TimeSeriesValue(0)]
-    private float $open;
+    private float $open = 0.0;
     #[TimeSeriesValue(1)]
-    private float $close;
+    private float $close = 0.0;
     #[TimeSeriesValue(2)]
-    private float $high;
+    private float $high = 0.0;
     #[TimeSeriesValue(3)]
-    private float $low;
+    private float $low = 0.0;
     #[TimeSeriesValue(4)]
-    private float $volume;
+    private float $volume = 0.0;
 
     public function getOpen(): float
     {

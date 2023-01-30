@@ -150,9 +150,9 @@ class TypedTimeSeriesRollupEntry
 
     public function getValuesFromMembers(): array
     {
-        $valuesCount = count(TimeSeriesValuesHelper::getFieldsMapping($this->clazz));
+        $valuesCount = count(TimeSeriesValuesHelper::getFieldsMapping($this->className));
 
-        $result = array_fill(0, 6*$valuesCount, null);
+        $result = array_fill(0, 6*$valuesCount, 0.0);
         $this->assignRollup($result, $this->first, 0);
         $this->assignRollup($result, $this->last, 1);
         $this->assignRollup($result, $this->min, 2);

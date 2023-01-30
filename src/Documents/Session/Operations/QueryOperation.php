@@ -248,19 +248,23 @@ class QueryOperation
                 return $document[$projectionField];
             }
 
-//            $isTimeSeriesField = str_starts_with($fieldsToFetch->projections[0], TimeSeries::QUERY_FUNCTION);
-//            if (!isProjectInto || isTimeSeriesField) {
-//                JsonNode inner = document.get(projectionField);
-//                if (inner == null) {
-//                    return Defaults.defaultValue(clazz);
-//                }
-//
-//                if (isTimeSeriesField || fieldsToFetch.fieldsToFetch != null && fieldsToFetch.fieldsToFetch[0].equals(fieldsToFetch.projections[0])) {
-//                    if (inner instanceof ObjectNode) { //extraction from original type
-//                        document = (ObjectNode) inner;
-//                    }
-//                }
-//            }
+            $isTimeSeriesField = str_starts_with($fieldsToFetch->projections[0], TimeSeries::QUERY_FUNCTION);
+            if (!$isProjectInto || $isTimeSeriesField) {
+                $inner = $document[$projectionField];
+                if ($inner == null) {
+                    return null;
+                }
+
+                if ($isTimeSeriesField || $fieldsToFetch->fieldsToFetch != null && ($fieldsToFetch->fieldsToFetch[0] == $fieldsToFetch->projections[0])) {
+                    if (is_array($inner)) { //extraction from original type
+                        $metadata = array_key_exists(DocumentsMetadata::KEY, $document) ? $document[DocumentsMetadata::KEY] : null;
+                        $document = $inner;
+                        if ($metadata) {
+                            $document[DocumentsMetadata::KEY] = $metadata;
+                        }
+                    }
+                }
+            }
         }
 
         if ($className == null) {

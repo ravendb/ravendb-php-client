@@ -8,7 +8,10 @@ use RavenDB\Documents\Operations\TimeSeries\RawTimeSeriesPolicy;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesCollectionConfiguration;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesConfiguration;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesPolicy;
+use RavenDB\Documents\Queries\TimeSeries\TimeSeriesRawResult;
 use RavenDB\Documents\Session\TimeSeries\TypedTimeSeriesEntry;
+use RavenDB\Documents\Session\TimeSeries\TypedTimeSeriesRollupEntry;
+use RavenDB\Documents\Session\TimeSeries\TypedTimeSeriesRollupEntryArray;
 use RavenDB\Primitives\TimeValue;
 use RavenDB\Type\Duration;
 use RavenDB\Utils\DateUtils;
@@ -503,9 +506,9 @@ class TimeSeriesTypedSessionTest extends RemoteTestBase
 //        }
 //    }
 
-    public function atestCanWorkWithRollupTimeSeries(): void
+    public function testCanWorkWithRollupTimeSeries(): void
     {
-//        DisableOnPullRequestCondition::evaluateExecutionCondition($this);
+        DisableOnPullRequestCondition::evaluateExecutionCondition($this);
 
         $store = $this->getDocumentStore();
         try {
@@ -533,8 +536,7 @@ class TimeSeriesTypedSessionTest extends RemoteTestBase
             $now = new DateTime();
             $baseline = DateUtils::addDays($now, -12);
 
-            
-            $total = 10000;// (int) Duration.ofDays(12).get(ChronoUnit.SECONDS) / 60;
+            $total =  Duration::ofDays(12)->getSeconds() / 60;
 
             $session = $store->openSession();
             try {
@@ -563,62 +565,58 @@ class TimeSeriesTypedSessionTest extends RemoteTestBase
 
             $session = $store->openSession();
             try {
-//                IRawDocumentQuery<TimeSeriesRawResult> query = $session->advanced().rawQuery(TimeSeriesRawResult.class, "declare timeseries out()\n" +
-//                        "{\n" +
-//                        "    from StockPrices\n" +
-//                        "    between $start and $end\n" +
-//                        "}\n" +
-//                        "from Users as u\n" +
-//                        "select out()")
-//                        .addParameter("start", DateUtils.addDays(baseline, -1))
-//                        .addParameter("end", DateUtils.addDays(now, 1));
-//
-//                TimeSeriesRawResult resultRaw = query.single();
-//                TypedTimeSeriesRawResult<StockPrice> result = resultRaw.asTypedResult(StockPrice.class);
-//
-//                assertThat(result.getResults().length)
-//                        .isPositive();
-//
-//                for (TypedTimeSeriesEntry<StockPrice> res : result.getResults()) {
-//
-//                    if (res.isRollup()) {
-//                        assertThat(res.getValues().length)
-//                                .isPositive();
-//                        assertThat(res->getValue()->getLow())
-//                                .isPositive();
-//                        assertThat(res->getValue()->getHigh())
-//                                .isPositive();
-//                    } else {
-//                        assertThat(res.getValues())
-//                                .hasSize(5);
-//                    }
-//                }
+                $query = $session->advanced()->rawQuery(TimeSeriesRawResult::class, "declare timeseries out()\n" .
+                        "{\n" .
+                        "    from StockPrices\n" .
+                        '    between $start and $end' . "\n" .
+                        "}\n" .
+                        "from Users as u\n" .
+                        "select out()")
+                        ->addParameter("start", DateUtils::addDays($baseline, -1))
+                        ->addParameter("end", DateUtils::addDays($now, 1));
+
+                /** @var TimeSeriesRawResult $resultRaw */
+                $resultRaw = $query->single();
+                $result = $resultRaw->asTypedResult(StockPrice::class);
+
+                $this->assertGreaterThan(0, count($result->getResults()));
+
+                /** @var TypedTimeSeriesEntry<StockPrice> $res */
+                foreach ($result->getResults() as $res) {
+                    if ($res->isRollup()) {
+                        $this->assertGreaterThan(0, count($res->getValues()));
+                        $this->assertGreaterThan(0, $res->getValue()->getLow());
+                        $this->assertGreaterThan(0, $res->getValue()->getHigh());
+                    } else {
+                        $this->assertCount(5, $res->getValues());
+                    }
+                }
             } finally {
                 $session->close();
             }
-//
-//            now = new Date();
-//
+
+            $now = new DateTime();
+
             $session = $store->openSession();
             try {
-//                ISessionDocumentRollupTypedTimeSeries<StockPrice> ts = $session->timeSeriesRollupFor(StockPrice.class, "users/karmel", p1.getName());
-//                TypedTimeSeriesRollupEntry<StockPrice> a = new TypedTimeSeriesRollupEntry<>(StockPrice.class, new Date());
-//                a.getMax().setClose(1);
-//                ts.append(a);
-//                $session->saveChanges();
+                $ts = $session->timeSeriesRollupFor(StockPrice::class, "users/karmel", $p1->getName());
+                $a = new TypedTimeSeriesRollupEntry(StockPrice::class, new DateTime());
+                $a->getMax()->setClose(1);
+                $ts->appendEntry($a);
+                $session->saveChanges();
             } finally {
                 $session->close();
             }
 
             $session = $store->openSession();
             try {
-//                ISessionDocumentRollupTypedTimeSeries<StockPrice> ts = $session->timeSeriesRollupFor(StockPrice.class, "users/karmel", p1.getName());
-//
-//                List<TypedTimeSeriesRollupEntry<StockPrice>> res = Arrays.asList(ts.get(DateUtils.addMilliseconds(now, -1), DateUtils.addDays(now, 1)));
-//                assertThat(res)
-//                        .hasSize(1);
-//                assertThat(res.get(0).getMax().getClose())
-//                        .isEqualTo(1);
+                $ts = $session->timeSeriesRollupFor(StockPrice::class, "users/karmel", $p1->getName());
+
+                /** @var TypedTimeSeriesRollupEntryArray<StockPrice> $res */
+                $res = $ts->get(DateUtils::addMilliseconds($now, -1), DateUtils::addDays($now, 1));
+                $this->assertCount(1, $res);
+
+                $this->assertEquals(1, $res[0]->getMax()->getClose());
             } finally {
                 $session->close();
             }

@@ -10,16 +10,4 @@ class AnalyzerDefinitionArray extends TypedArray
     {
         parent::__construct(AnalyzerDefinition::class);
     }
-
-    public static function fromArray(array $data, $nullAllowed = false): AnalyzerDefinitionArray
-    {
-        $sa = new AnalyzerDefinitionArray();
-        $sa->setNullAllowed($nullAllowed);
-
-        foreach ($data as $key => $value) {
-            $sa->offsetSet($key, $value);
-        }
-
-        return $sa;
-    }
 }

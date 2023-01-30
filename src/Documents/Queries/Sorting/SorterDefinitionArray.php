@@ -10,15 +10,4 @@ class SorterDefinitionArray extends TypedArray
     {
         parent::__construct(SorterDefinition::class);
     }
-
-    public static function fromArray(array $data): SorterDefinitionArray
-    {
-        $array = new SorterDefinitionArray();
-
-        foreach ($data as $key => $value) {
-            $array->offsetSet($key, $value);
-        }
-
-        return $array;
-    }
 }

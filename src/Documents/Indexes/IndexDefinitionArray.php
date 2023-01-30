@@ -12,13 +12,4 @@ class IndexDefinitionArray extends TypedArray implements ResultInterface
     {
         parent::__construct(IndexDefinition::class);
     }
-
-    public static function fromArray(array $data): IndexDefinitionArray
-    {
-        $array = new IndexDefinitionArray();
-        foreach ($data as $item) {
-            $array->append($item);
-        }
-        return $array;
-    }
 }

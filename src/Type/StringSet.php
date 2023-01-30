@@ -15,18 +15,6 @@ class StringSet extends StringArray
         }
     }
 
-    public static function fromArray(array $data, $nullAllowed = false): StringSet
-    {
-        $sa = new StringSet();
-        $sa->setNullAllowed($nullAllowed);
-
-        foreach ($data as $key => $value) {
-            $sa->offsetSet($key, $value);
-        }
-
-        return $sa;
-    }
-
     public function add(string $value): bool
     {
         if (in_array($value, $this->getArrayCopy())) {

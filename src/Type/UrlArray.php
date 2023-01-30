@@ -9,17 +9,9 @@ class UrlArray extends TypedArray
         parent::__construct(Url::class);
     }
 
-    public static function fromArray(array $items, bool $nullAllowed = false): UrlArray
+    public function offsetSet($key, $value): void
     {
-        $a = new UrlArray();
-        $a->setNullAllowed($nullAllowed);
-
-        foreach ($items as $key => $value) {
-            $url = is_string($value) ? new Url($value) : $value;
-            $a->offsetSet($key, $url);
-        }
-
-        return $a;
-
+        $v = is_string($value) ? new Url($value) : $value;
+        parent::offsetSet($key, $v);
     }
 }

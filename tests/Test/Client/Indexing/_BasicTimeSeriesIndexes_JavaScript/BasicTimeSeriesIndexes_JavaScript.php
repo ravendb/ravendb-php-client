@@ -2,210 +2,241 @@
 
 namespace tests\RavenDB\Test\Client\Indexing\_BasicTimeSeriesIndexes_JavaScript;
 
+use DateTime;
 use RavenDB\Documents\Operations\Indexes\GetTermsOperation;
+use RavenDB\Utils\DateUtils;
+use tests\RavenDB\Infrastructure\Entity\Address;
 use tests\RavenDB\Infrastructure\Entity\Company;
+use tests\RavenDB\Infrastructure\Entity\Employee;
+use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RavenTestHelper;
 use tests\RavenDB\RemoteTestBase;
 
 class BasicTimeSeriesIndexes_JavaScript extends RemoteTestBase
 {
-//    public function basicMapIndexWithLoad(): void {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            Date now1 = new Date();
-//            Date now2 = DateUtils.addSeconds(now1, 1);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                Employee employee = new Employee();
-//                employee.setFirstName("John");
-//
-//                session.store(employee, "employees/1");
-//
-//                Company company = new Company();
-//                session.store(company, "companies/1");
-//
-//                session.timeSeriesFor(company, "HeartRate")
-//                        .append(now1, 7.0, employee.getId());
-//
-//                Company company2 = new Company();
-//                session.store(company2, "companies/11");
-//
-//                session.timeSeriesFor(company2, "HeartRate")
-//                        .append(now1, 11.0, employee.getId());
-//
-//                session.saveChanges();
-//            }
-//
-//            MyTsIndex_Load timeSeriesIndex = new MyTsIndex_Load();
-//            String indexName = timeSeriesIndex.getIndexName();
-//            TimeSeriesIndexDefinition indexDefinition = timeSeriesIndex.createIndexDefinition();
-//
-//            timeSeriesIndex.execute(store);
-//
-//            waitForIndexing(store);
-//
-//            String[] terms = store.maintenance().send(new GetTermsOperation(indexName, "employee", null));
-//            assertThat(terms)
-//                    .hasSize(1)
-//                    .contains("john");
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                Employee employee = session.load(Employee.class, "employees/1");
-//                employee.setFirstName("Bob");
-//                session.saveChanges();
-//            }
-//
-//            waitForIndexing(store);
-//
-//            terms = store.maintenance().send(new GetTermsOperation(indexName, "employee", null));
-//            assertThat(terms)
-//                    .hasSize(1)
-//                    .contains("bob");
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                session.delete("employees/1");
-//                session.saveChanges();
-//            }
-//
-//            waitForIndexing(store);
-//
-//            terms = store.maintenance().send(new GetTermsOperation(indexName, "employee", null));
-//            assertThat(terms)
-//                    .hasSize(0);
-//        }
-//    }
-//
-//    @Test
-//    public function basicMapReduceIndexWithLoad(): void {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            Date today = RavenTestHelper.utcToday();
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                Address address = new Address();
-//                address.setCity("NY");
-//
-//                session.store(address, "addresses/1");
-//
-//                User user = new User();
-//                user.setAddressId(address.getId());
-//
-//                session.store(user, "users/1");
-//
-//                for (int i = 0; i < 10; i++) {
-//                    session.timeSeriesFor(user, "heartRate")
-//                            .append(DateUtils.addHours(today, i), 180 + i, address.getId());
-//                }
-//
-//                session.saveChanges();
-//            }
-//
-//            AverageHeartRateDaily_ByDateAndCity timeSeriesIndex = new AverageHeartRateDaily_ByDateAndCity();
-//            String indexName = timeSeriesIndex.getIndexName();
-//            TimeSeriesIndexDefinition indexDefinition = timeSeriesIndex.createIndexDefinition();
-//
-//            timeSeriesIndex.execute(store);
-//
-//            waitForIndexing(store);
-//
-//            String[] terms = store.maintenance().send(new GetTermsOperation(indexName, "heartBeat", null));
-//            assertThat(terms)
-//                    .hasSize(1)
-//                    .contains("184.5");
-//
-//            terms = store.maintenance().send(new GetTermsOperation(indexName, "date", null));
-//            assertThat(terms)
-//                    .hasSize(1);
-//
-//            terms = store.maintenance().send(new GetTermsOperation(indexName, "city", null));
-//            assertThat(terms)
-//                    .hasSize(1)
-//                    .contains("ny");
-//
-//            terms = store.maintenance().send(new GetTermsOperation(indexName, "count", null));
-//            assertThat(terms)
-//                    .hasSize(1);
-//            assertThat(terms[0])
-//                    .isEqualTo("10");
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                Address address = session.load(Address.class, "addresses/1");
-//                address.setCity("LA");
-//                session.saveChanges();
-//            }
-//
-//            waitForIndexing(store);
-//
-//            terms = store.maintenance().send(new GetTermsOperation(indexName, "city", null));
-//            assertThat(terms)
-//                    .hasSize(1)
-//                    .contains("la");
-//        }
-//    }
-//
-//    @Test
-//    public function canMapAllTimeSeriesFromCollection(): void {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            Date now1 = new Date();
-//            Date now2 = DateUtils.addSeconds(now1, 1);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                Company company = new Company();
-//                session.store(company, "companies/1");
-//                session.timeSeriesFor(company, "heartRate")
-//                        .append(now1, 7.0, "tag1");
-//                session.timeSeriesFor(company, "likes")
-//                        .append(now1, 3.0, "tag2");
-//
-//                session.saveChanges();
-//            }
-//
-//            new MyTsIndex_AllTimeSeries().execute(store);
-//
-//            waitForIndexing(store);
-//
-//            String[] terms = store.maintenance().send(new GetTermsOperation("MyTsIndex/AllTimeSeries", "heartBeat", null));
-//            assertThat(terms)
-//                    .hasSize(2)
-//                    .contains("7")
-//                    .contains("3");
-//        }
-//    }
-//
-//    @Test
-//    public function basicMultiMapIndex(): void {
-//        Date now = RavenTestHelper.utcToday();
-//
-//        try (IDocumentStore store = getDocumentStore()) {
-//            MyMultiMapTsIndex timeSeriesIndex = new MyMultiMapTsIndex();
-//            timeSeriesIndex.execute(store);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                Company company = new Company();
-//                session.store(company);
-//
-//                session.timeSeriesFor(company, "heartRate")
-//                        .append(now, 2.5, "tag1");
-//                session.timeSeriesFor(company, "heartRate2")
-//                        .append(now, 3.5, "tag2");
-//
-//                User user = new User();
-//                session.store(user);
-//                session.timeSeriesFor(user, "heartRate")
-//                        .append(now, 4.5, "tag3");
-//
-//                session.saveChanges();
-//            }
-//
-//            waitForIndexing(store);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                List<MyMultiMapTsIndex.Result> results = session.query(MyMultiMapTsIndex.Result.class, MyMultiMapTsIndex.class)
-//                        .toList();
-//
-//                assertThat(results)
-//                        .hasSize(3);
-//            }
-//        }
-//    }
+    public function testBasicMapIndexWithLoad(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $now1 = new DateTime();
+            $now2 = DateUtils::addSeconds($now1, 1);
+
+            $session = $store->openSession();
+            try {
+                $employee = new Employee();
+                $employee->setFirstName("John");
+
+                $session->store($employee, "employees/1");
+
+                $company = new Company();
+                $session->store($company, "companies/1");
+
+                $session->timeSeriesFor($company, "HeartRate")
+                        ->append($now1, 7.0, $employee->getId());
+
+                $company2 = new Company();
+                $session->store($company2, "companies/11");
+
+                $session->timeSeriesFor($company2, "HeartRate")
+                        ->append($now1, 11.0, $employee->getId());
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $timeSeriesIndex = new MyTsIndex_Load();
+            $indexName = $timeSeriesIndex->getIndexName();
+            $indexDefinition = $timeSeriesIndex->createIndexDefinition();
+
+            $timeSeriesIndex->execute($store);
+
+            $this->waitForIndexing($store);
+
+            $terms = $store->maintenance()->send(new GetTermsOperation($indexName, "employee", null));
+            $this->assertCount(1, $terms);
+            $this->assertContains("john", $terms);
+
+            $session = $store->openSession();
+            try {
+                $employee = $session->load(Employee::class, "employees/1");
+                $employee->setFirstName("Bob");
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $this->waitForIndexing($store);
+
+            $terms = $store->maintenance()->send(new GetTermsOperation($indexName, "employee", null));
+            $this->assertCount(1, $terms);
+            $this->assertContains("bob", $terms);
+
+            $session = $store->openSession();
+            try {
+                $session->delete("employees/1");
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $this->waitForIndexing($store);
+
+            $terms = $store->maintenance()->send(new GetTermsOperation($indexName, "employee", null));
+            $this->assertCount(0, $terms);
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testBasicMapReduceIndexWithLoad(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $today = RavenTestHelper::utcToday();
+
+            $session = $store->openSession();
+            try {
+                $address = new Address();
+                $address->setCity("NY");
+
+                $session->store($address, "addresses/1");
+
+                $user = new User();
+                $user->setAddressId($address->getId());
+
+                $session->store($user, "users/1");
+
+                for ($i = 0; $i < 10; $i++) {
+                    $session->timeSeriesFor($user, "heartRate")
+                            ->append(DateUtils::addHours($today, $i), 180 + $i, $address->getId());
+                }
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $timeSeriesIndex = new AverageHeartRateDaily_ByDateAndCity();
+            $indexName = $timeSeriesIndex->getIndexName();
+            $indexDefinition = $timeSeriesIndex->createIndexDefinition();
+
+            $timeSeriesIndex->execute($store);
+
+            $this->waitForIndexing($store);
+
+            $terms = $store->maintenance()->send(new GetTermsOperation($indexName, "heartBeat", null));
+            $this->assertCount(1, $terms);
+            $this->assertContains("184.5", $terms);
+
+            $terms = $store->maintenance()->send(new GetTermsOperation($indexName, "date", null));
+            $this->assertCount(1, $terms);
+
+            $terms = $store->maintenance()->send(new GetTermsOperation($indexName, "city", null));
+            $this->assertCount(1, $terms);
+            $this->assertContains("ny", $terms);
+
+            $terms = $store->maintenance()->send(new GetTermsOperation($indexName, "count", null));
+            $this->assertCount(1, $terms);
+            $this->assertEquals("10", $terms[0]);
+
+            $session = $store->openSession();
+            try {
+                $address = $session->load(Address::class, "addresses/1");
+                $address->setCity("LA");
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $this->waitForIndexing($store);
+
+            $terms = $store->maintenance()->send(new GetTermsOperation($indexName, "city", null));
+            $this->assertCount(1, $terms);
+            $this->assertContains("la", $terms);
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCanMapAllTimeSeriesFromCollection(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $now1 = new DateTime();
+            $now2 = DateUtils::addSeconds($now1, 1);
+
+            $session = $store->openSession();
+            try {
+                $company = new Company();
+                $session->store($company, "companies/1");
+                $session->timeSeriesFor($company, "heartRate")
+                        ->append($now1, 7.0, "tag1");
+                $session->timeSeriesFor($company, "likes")
+                        ->append($now1, 3.0, "tag2");
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            (new MyTsIndex_AllTimeSeries())->execute($store);
+
+            $this->waitForIndexing($store);
+
+            $terms = $store->maintenance()->send(new GetTermsOperation("MyTsIndex/AllTimeSeries", "heartBeat", null));
+            $this->assertCount(2, $terms);
+            $this->assertContains("7", $terms);
+            $this->assertContains("3", $terms);
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testBasicMultiMapIndex(): void
+    {
+        $now = RavenTestHelper::utcToday();
+
+        $store = $this->getDocumentStore();
+        try {
+            $timeSeriesIndex = new MyMultiMapTsIndex();
+            $timeSeriesIndex->execute($store);
+
+            $session = $store->openSession();
+            try {
+                $company = new Company();
+                $session->store($company);
+
+                $session->timeSeriesFor($company, "heartRate")
+                        ->append($now, 2.5, "tag1");
+                $session->timeSeriesFor($company, "heartRate2")
+                        ->append($now, 3.5, "tag2");
+
+                $user = new User();
+                $session->store($user);
+                $session->timeSeriesFor($user, "heartRate")
+                        ->append($now, 4.5, "tag3");
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $this->waitForIndexing($store);
+
+            $session = $store->openSession();
+            try {
+                $results = $session->query(MyMultiMapTsIndexResult::class, MyMultiMapTsIndex::class)
+                        ->toList();
+
+                $this->assertCount(3, $results);
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
 
     public function testTimeSeriesNamesFor(): void
     {

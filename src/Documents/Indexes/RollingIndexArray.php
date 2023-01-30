@@ -11,15 +11,4 @@ class RollingIndexArray extends TypedArray
     {
         parent::__construct(RollingIndex::class);
     }
-
-    public static function fromArray($array): RollingIndexArray
-    {
-        $a = new RollingIndexArray();
-
-        foreach ($array as $key => $item) {
-            $a[$key] = $item;
-        }
-
-        return $a;
-    }
 }

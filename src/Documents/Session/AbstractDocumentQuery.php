@@ -4,6 +4,7 @@ namespace RavenDB\Documents\Session;
 
 use Closure;
 use RavenDB\Constants\DocumentsIndexingFields;
+use RavenDB\Constants\TimeSeries;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRange;
 use RavenDB\Documents\Queries\Explanation\ExplanationOptions;
@@ -20,6 +21,7 @@ use RavenDB\Documents\Queries\QueryFieldUtil;
 use RavenDB\Documents\Queries\QueryOperator;
 use RavenDB\Documents\Queries\QueryResult;
 use RavenDB\Documents\Queries\SearchOperator;
+use RavenDB\Documents\Queries\TimeSeries\TimeSeriesQueryBuilder;
 use RavenDB\Documents\Queries\Timings\QueryTimings;
 use RavenDB\Documents\Session\Loaders\IncludeBuilderBase;
 use RavenDB\Documents\Session\Operations\QueryOperation;
@@ -1835,14 +1837,15 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $sourceAlias = $possibleAlias;
     }
 
-//    protected QueryData createTimeSeriesQueryData(Consumer<ITimeSeriesQueryBuilder> timeSeriesQuery) {
-//        TimeSeriesQueryBuilder builder = new TimeSeriesQueryBuilder();
-//        timeSeriesQuery.accept(builder);
-//
-//        String[] fields = new String[] { Constants.TimeSeries.SELECT_FIELD_NAME + "(" + builder.getQueryText() + ")" };
-//        String[] projections = new String[] { Constants.TimeSeries.QUERY_FUNCTION } ;
-//        return new QueryData(fields, projections);
-//    }
+    protected function createTimeSeriesQueryData(Closure $timeSeriesQuery): QueryData
+    {
+        $builder = new TimeSeriesQueryBuilder();
+        $timeSeriesQuery($builder);
+
+        $fields = [ TimeSeries::SELECT_FIELD_NAME . "(" . $builder->getQueryText() . ")" ];
+        $projections = [ TimeSeries::QUERY_FUNCTION ];
+        return new QueryData($fields, $projections);
+    }
 
     protected ClosureArray $beforeQueryExecutedCallback;
 

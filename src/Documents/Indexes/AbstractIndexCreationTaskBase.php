@@ -7,7 +7,6 @@ use RavenDB\Documents\DocumentStoreBase;
 use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Documents\Operations\Indexes\PutIndexesOperation;
 
-// !status: DONE
 abstract class AbstractIndexCreationTaskBase extends AbstractCommonApiForIndexes implements AbstractIndexCreationTaskInterface
 {
     /**

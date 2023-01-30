@@ -30,7 +30,6 @@ class SessionDocumentRollupTypedTimeSeries extends SessionTimeSeriesBase impleme
             }
 
             return TypedTimeSeriesRollupEntryArray::fromArray(array_map(function(TimeSeriesEntry $e) { return TypedTimeSeriesRollupEntry::fromEntry($this->className, $e); }, $results->getArrayCopy()));
-
         }
 
         $results = $this->getFromCache($from, $to, null, $start, $pageSize);

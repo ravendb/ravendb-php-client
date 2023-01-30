@@ -10,13 +10,4 @@ class UserRatingList extends TypedList
     {
         parent::__construct(UserRating::class);
     }
-
-    public static function fromArray(array $data): UserRatingList
-    {
-        $array = new UserRatingList();
-        foreach ($data as $item) {
-            $array->append($item);
-        }
-        return $array;
-    }
 }
