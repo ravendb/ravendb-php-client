@@ -29,6 +29,24 @@ class TypedArray extends ExtendedArrayObject implements TypedArrayInterface
         return $this->type;
     }
 
+    public static function fromArray(array $data, bool $nullAllowed = false): static
+    {
+        $sa = new static();
+        $sa->setNullAllowed($nullAllowed);
+
+        foreach ($data as $key => $value) {
+            $type = $sa->getType();
+            if ($value instanceof $type) {
+                $sa->offsetSet($key, $value);
+            } else {
+                $obj = new ($sa->getType())($value);
+                $sa->offsetSet($key, $obj);
+            }
+        }
+
+        return $sa;
+    }
+
     protected function isValueValid($value): bool
     {
         if ($this->isNullAllowed() && $value == null) {
