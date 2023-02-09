@@ -57,7 +57,7 @@ class TimeSeriesValuesHelper
             return null;
         }
 
-        if ((array_key_first($mapping) !== 0) && (array_key_last($mapping) !== count($mapping))) {
+        if ((array_key_first($mapping) !== 0) || (array_key_last($mapping) !== (count($mapping)-1))) {
                 throw new IllegalStateException("The mapping of '" . $reflect->getShortName() . "' must contain consecutive values starting from 0.");
 
         }

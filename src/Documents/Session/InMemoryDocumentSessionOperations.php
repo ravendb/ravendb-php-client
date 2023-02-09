@@ -2120,10 +2120,9 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $mergedValues = self::mergeRanges($fromRangeIndex, $toRangeIndex, $localRanges, $newRange);
         $localRangesSet = TimeSeriesRangeResultList::fromArray($localRanges);
         self::addToCacheInternal($name,  $newRange->getFrom(), $newRange->getTo(), $fromRangeIndex, $toRangeIndex, $localRangesSet, $cache, $mergedValues);
-        $cache[$name] = $localRangesSet->getArrayCopy();
     }
 
-    private static function addToCacheInternal(?string $timeseries,
+    public static function addToCacheInternal(?string $timeseries,
                                               ?DateTimeInterface $from,
                                               ?DateTimeInterface $to,
                                               int $fromRangeIndex,
@@ -2171,6 +2170,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
                 $timeSeriesRangeResult->setEntries($values);
                 $ranges->prepend($timeSeriesRangeResult);
 
+                $cache[$timeseries] = $ranges->getArrayCopy();
                 return;
             }
 
@@ -2186,6 +2186,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             $ranges[$toRangeIndex]->setEntries($values);
             $ranges->removeValues(0, $toRangeIndex);
 
+            $cache[$timeseries] = $ranges->getArrayCopy();
             return;
         }
 
@@ -2213,6 +2214,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
                 $ranges->append($timeSeriesRangeResult);
 
+                $cache[$timeseries] = $ranges->getArrayCopy();
                 return;
             }
 
@@ -2229,6 +2231,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             $ranges[$fromRangeIndex]->setEntries($values);
             $ranges->removeValues($fromRangeIndex + 1, count($ranges) - $fromRangeIndex - 1);
 
+            $cache[$timeseries] = $ranges->getArrayCopy();
             return;
         }
 
@@ -2258,6 +2261,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
                 $ranges->insertValue($fromRangeIndex + 1, $timeSeriesRangeResult);
 
+                $cache[$timeseries] = $ranges->getArrayCopy();
                 return;
             }
 
@@ -2276,6 +2280,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             $ranges[$toRangeIndex]->setFrom($from);
             $ranges[$toRangeIndex]->setEntries($values);
 
+            $cache[$timeseries] = $ranges->getArrayCopy();
             return;
         }
 
@@ -2296,6 +2301,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             $ranges[$fromRangeIndex]->setEntries($values);
             $ranges->removeValues($fromRangeIndex + 1, $toRangeIndex - $fromRangeIndex - 1);
 
+            $cache[$timeseries] = $ranges->getArrayCopy();
             return;
         }
 
@@ -2313,6 +2319,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $ranges[$fromRangeIndex]->setTo($ranges[$toRangeIndex]->getTo());
         $ranges[$fromRangeIndex]->setEntries($values);
         $ranges->removeRange($fromRangeIndex + 1, $toRangeIndex + 1);
+
+        $cache[$timeseries] = $ranges->getArrayCopy();
     }
 
     private static function parseTimeSeriesRangeResult(EntityMapper $mapper, $jsonRange, $id, $databaseName): TimeSeriesRangeResult

@@ -101,7 +101,7 @@ class ExtendedArrayObject extends \ArrayObject implements \JsonSerializable
         $this->exchangeArray($currentArray);
     }
 
-    public function appendArrayValues(array $items): void
+    public function appendArrayValues(array|ExtendedArrayObject $items): void
     {
         foreach ($items as $item) {
             $this->append($item);
@@ -185,6 +185,21 @@ class ExtendedArrayObject extends \ArrayObject implements \JsonSerializable
         return $this->offsetGet(array_key_last($this->getArrayCopy()));
     }
 
+    public function slice(int $offset, ?int $length = null, bool $preserveKeys = false): static
+    {
+        return static::fromArray(array_slice($this->getArrayCopy(), $offset, $length, $preserveKeys));
+    }
+
+    public function shift(): mixed
+    {
+        $a = $this->getArrayCopy();
+
+        $removedItem = array_shift($a);
+        $this->exchangeArray($a);
+
+        return $removedItem;
+    }
+
     public function jsonSerialize(): array
     {
         return $this->getArrayCopy();
@@ -200,5 +215,18 @@ class ExtendedArrayObject extends \ArrayObject implements \JsonSerializable
         }
 
         return $sa;
+    }
+
+    public static function ensure(mixed $data, bool $nullAllowed = false): static
+    {
+        if (is_array($data)) {
+            return self::fromArray($data, $nullAllowed);
+        };
+
+        if (is_subclass_of($data, static::class)) {
+            return $data;
+        }
+
+        throw new \TypeError('Passed data must be of type array or subclass of '. static::class . ' class.');
     }
 }

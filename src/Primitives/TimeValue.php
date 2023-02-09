@@ -5,10 +5,8 @@ namespace RavenDB\Primitives;
 use RavenDB\Constants\PhpClient;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
-
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: IN PROGRESS
 class TimeValue
 {
     private const SECONDS_PER_DAY = 86_400;
@@ -17,20 +15,30 @@ class TimeValue
     private const SECONDS_IN_365_DAYS = 365 * self::SECONDS_PER_DAY; // lower-bound of seconds in a year
     private const SECONDS_IN_366_DAYS = 366 * self::SECONDS_PER_DAY; // upper-bound of seconds in a year
 
-    /** @SerializedName("Value") */
-    private int $value;
+    #[SerializedName("Value")]
+    private ?int $value = null;
 
-    /** @SerializedName("Unit") */
-    private TimeValueUnit $unit;
+    #[SerializedName("Unit")]
+    private ?TimeValueUnit $unit = null;
 
-    public function getValue(): int
+    public function getValue(): ?int
     {
         return $this->value;
     }
 
-    public function getUnit(): TimeValueUnit
+    public function setValue(?int $value): void
+    {
+        $this->value = $value;
+    }
+
+    public function getUnit(): ?TimeValueUnit
     {
         return $this->unit;
+    }
+
+    public function setUnit(?TimeValueUnit $unit): void
+    {
+        $this->unit = $unit;
     }
 
     private function __construct(int $value, TimeValueUnit $unit)
@@ -190,78 +198,81 @@ class TimeValue
         }
     }
 
-    public function compareTo(TimeValue $other): int {
+    public function compareTo(TimeValue $other): int
+    {
         if ($this->value == 0 || $other->getValue() == 0) {
             return $this->value - $other->getValue();
         }
 
-//        Reference<Integer> resultRef = new Reference<>();
-//        if (isSpecialCompare(this, other, resultRef)) {
-//            return resultRef.value;
-//        }
+        $resultRef = 0;
+        if (self::isSpecialCompare($this, $other, $resultRef)) {
+            return $resultRef;
+        }
 
         if ($this->getUnit() === $other->getUnit()) {
             return self::trimCompareResult($this->getValue() - $other->getValue());
         }
 
-//        Tuple<Long, Long> myBounds = getBoundsInSeconds(this);
-//        Tuple<Long, Long> otherBounds = getBoundsInSeconds(other);
+        $myBounds = self::getBoundsInSeconds($this);
+        $otherBounds = self::getBoundsInSeconds($other);
 
-//        if ($otherBounds->second < $myBounds->first) {
-//            return 1;
-//        }
-//
-//        if ($otherBounds->first > $myBounds->second) {
-//            return -1;
-//        }
+        if ($otherBounds[1] < $myBounds[0]) {
+            return 1;
+        }
+
+        if ($otherBounds[0] > $myBounds[1]) {
+            return -1;
+        }
 
         throw new IllegalStateException("Unable to compare " . $this . " with " . $other . ", since a month might have different number of days.");
     }
-//
-//    private static Tuple<Long, Long> getBoundsInSeconds(TimeValue time) {
-//        switch (time._unit) {
-//            case SECOND:
-//                return Tuple.create((long) time._value, (long) time._value);
-//            case MONTH:
-//                int years = time._value / 12;
-//                long upperBound = years * SECONDS_IN_366_DAYS;
-//                long lowerBound = years * SECONDS_IN_365_DAYS;
-//
-//                int remainingMonths = time._value % 12;
-//                upperBound += remainingMonths * SECONDS_IN_31_DAYS;
-//                lowerBound += remainingMonths * SECONDS_IN_28_DAYS;
-//
-//                return Tuple.create(lowerBound, upperBound);
-//            default:
-//                throw new IllegalArgumentException("Not supported time value unit: " + time._unit);
-//        }
-//    }
 
-//    private static boolean isSpecialCompare(TimeValue current, TimeValue other, Reference<Integer> resultRef) {
-//        resultRef.value = 0;
-//
-//        if (isMax(current)) {
-//            resultRef.value = isMax(other) ? 0 : 1;
-//            return true;
-//        }
-//
-//        if (isMax(other)) {
-//            resultRef.value = isMax(current) ? 0 : -1;
-//            return true;
-//        }
-//
-//        if (isMin(current)) {
-//            resultRef.value = isMin(other) ? 0 : -1;
-//            return true;
-//        }
-//
-//        if (isMin(other)) {
-//            resultRef.value = isMin(current) ? 0 : 1;
-//            return true;
-//        }
-//
-//        return false;
-//    }
+    private static function getBoundsInSeconds(TimeValue $time): array
+    {
+        switch ($time->unit->getValue()) {
+            case TimeValueUnit::SECOND:
+                return [ $time->value, $time->value ];
+            case TimeValueUnit::MONTH:
+                $years = $time->value / 12;
+                $upperBound = $years * self::SECONDS_IN_366_DAYS;
+                $lowerBound = $years * self::SECONDS_IN_365_DAYS;
+
+                $remainingMonths = $time->value % 12;
+                $upperBound += $remainingMonths * self::SECONDS_IN_31_DAYS;
+                $lowerBound += $remainingMonths * self::SECONDS_IN_28_DAYS;
+
+                return [ $lowerBound, $upperBound ];
+            default:
+                throw new IllegalArgumentException("Not supported time value unit: " . $time->unit->getValue());
+        }
+    }
+
+    private static function isSpecialCompare(TimeValue $current, TimeValue $other, int & $resultRef): bool
+    {
+        $resultRef = 0;
+
+        if (self::isMax($current)) {
+            $resultRef = self::isMax($other) ? 0 : 1;
+            return true;
+        }
+
+        if (self::isMax($other)) {
+            $resultRef = self::isMax($current) ? 0 : -1;
+            return true;
+        }
+
+        if (self::isMin($current)) {
+            $resultRef = self::isMin($other) ? 0 : -1;
+            return true;
+        }
+
+        if (self::isMin($other)) {
+            $resultRef = self::isMin($current) ? 0 : 1;
+            return true;
+        }
+
+        return false;
+    }
 
     private static function isMax(TimeValue $time): bool
     {
@@ -285,7 +296,6 @@ class TimeValue
         return intval($result);
     }
 
-
     public function equals(?object $o): bool {
         if ($this == $o) return true;
         if (($o == null) || (get_class($o) != get_class($this)) ) return false;
@@ -294,14 +304,4 @@ class TimeValue
         $other = $o;
         return $this->compareTo($other) == 0;
     }
-
-
-//      @todo: implement this hash code!!!
-//    public function hashCode(): int
-//    {
-//        if (($this->value == 0) || ($this->value == PHP_INT_MIN) || ($this->value == PHP_INT_MAX)) {
-//            return Objects.hash($this->value);
-//        }
-//        return Objects.hash($this->value, $this->unit);
-//    }
 }

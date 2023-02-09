@@ -3,99 +3,106 @@
 namespace tests\RavenDB\Test\Client\TimeSeries\_TimeSeriesTypedSessionTest;
 
 use DateTime;
+use Exception;
 use RavenDB\Documents\Operations\TimeSeries\ConfigureTimeSeriesOperation;
 use RavenDB\Documents\Operations\TimeSeries\RawTimeSeriesPolicy;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesCollectionConfiguration;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesConfiguration;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesPolicy;
+use RavenDB\Documents\Queries\TimeSeries\TimeSeriesAggregationResult;
 use RavenDB\Documents\Queries\TimeSeries\TimeSeriesRawResult;
 use RavenDB\Documents\Session\TimeSeries\TypedTimeSeriesEntry;
 use RavenDB\Documents\Session\TimeSeries\TypedTimeSeriesRollupEntry;
 use RavenDB\Documents\Session\TimeSeries\TypedTimeSeriesRollupEntryArray;
 use RavenDB\Primitives\TimeValue;
+use RavenDB\ServerWide\GetDatabaseRecordOperation;
 use RavenDB\Type\Duration;
 use RavenDB\Utils\DateUtils;
 use tests\RavenDB\Infrastructure\DisableOnPullRequestCondition;
+use tests\RavenDB\Infrastructure\Entity\Company;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
+use Throwable;
 
 class TimeSeriesTypedSessionTest extends RemoteTestBase
 {
 
-//    @Test
-//    public function canRegisterTimeSeries(): void {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            $store->timeSeries()->register($user->class, StockPrice.class);
-//            $store->timeSeries()->register("Users", "HeartRateMeasures", new String[] { "heartRate" });
-//
-//            TimeSeriesConfiguration updated = $store->maintenance().server()->send(
-//                    new GetDatabaseRecordOperation(store.getDatabase())).getTimeSeries();
-//
-//            // this method is case insensitive
-//            String[] heartRate = updated.getNames("users", "HeartRateMeasures");
-//            assertThat(heartRate)
-//                    .hasSize(1);
-//            assertThat(heartRate[0])
-//                    .isEqualTo("heartRate");
-//
-//            String[] stock = updated.getNames("users", "StockPrices");
-//            assertThat(stock)
-//                    .hasSize(5)
-//                    .containsExactly("open", "close", "high", "low", "volume");
-//        }
-//    }
-//
-//    @Test
-//    public function canRegisterTimeSeriesWithCustomName(): void {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            $store->timeSeries()->register($user->class, HeartRateMeasureWithCustomName.class, "cn");
-//
-//            TimeSeriesConfiguration updated = $store->maintenance().server()->send(
-//                    new GetDatabaseRecordOperation(store.getDatabase())).getTimeSeries();
-//
-//            // this method is case insensitive
-//            String[] heartRate = updated.getNames("users", "cn");
-//            assertThat(heartRate)
-//                    .hasSize(1);
-//            assertThat(heartRate[0])
-//                    .isEqualTo("HR");
-//        }
-//    }
-//
-//    @Test
-//    public function canRegisterTimeSeriesForOtherDatabase(): void {
-//        try (IDocumentStore store1 = getDocumentStore()) {
-//            try (IDocumentStore store2 = getDocumentStore()) {
-//                store1.timeSeries().forDatabase(store2.getDatabase())->register($user->class, StockPrice.class);
-//                store1.timeSeries().forDatabase(store2.getDatabase())->register("Users", "HeartRateMeasures", new String[] { "HeartRate" });
-//
-//                TimeSeriesConfiguration updated = store1.maintenance().server()->send(new GetDatabaseRecordOperation(store2.getDatabase())).getTimeSeries();
-//
-//                assertThat(updated)
-//                        .isNotNull();
-//
-//                String[] heartrate = updated.getNames("users", "HeartRateMeasures");
-//                assertThat(heartrate)
-//                        .hasSize(1);
-//                assertThat(heartrate[0])
-//                        .isEqualTo("HeartRate");
-//
-//                String[] stock = updated.getNames("users", "StockPrices");
-//                assertThat(stock)
-//                        .hasSize(5);
-//                assertThat(stock[0])
-//                        .isEqualTo("open");
-//                assertThat(stock[1])
-//                        .isEqualTo("close");
-//                assertThat(stock[2])
-//                        .isEqualTo("high");
-//                assertThat(stock[3])
-//                        .isEqualTo("low");
-//                assertThat(stock[4])
-//                        .isEqualTo("volume");
-//            }
-//        }
-//    }
+    public function testCanRegisterTimeSeries(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $store->timeSeries()->register(User::class, StockPrice::class);
+            $store->timeSeries()->register("Users", "HeartRateMeasures", [ "heartRate" ]);
+
+            /** @var TimeSeriesConfiguration $updated */
+            $updated = $store->maintenance()->server()->send(
+                    new GetDatabaseRecordOperation($store->getDatabase()))->getTimeSeries();
+
+            // this method is case insensitive
+            $heartRate = $updated->getNames("users", "HeartRateMeasures");
+            $this->assertCount(1, $heartRate);
+
+            $this->assertEquals("heartRate", $heartRate[0]);
+
+            $stock = $updated->getNames("users", "StockPrices");
+            $this->assertCount(5, $stock);
+            $this->assertEquals(["open", "close", "high", "low", "volume"], $stock);
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCanRegisterTimeSeriesWithCustomName(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $store->timeSeries()->register(User::class, HeartRateMeasureWithCustomName::class, "cn");
+
+            /** @var TimeSeriesConfiguration $updated */
+            $updated = $store->maintenance()->server()->send(
+                    new GetDatabaseRecordOperation($store->getDatabase()))->getTimeSeries();
+
+            // this method is case insensitive
+            $heartRate = $updated->getNames("users", "cn");
+            $this->assertCount(1, $heartRate);
+            $this->assertEquals("HR", $heartRate[0]);
+        } finally {
+            $store->close();
+        }
+    }
+
+
+    public function testCanRegisterTimeSeriesForOtherDatabase(): void
+    {
+        $store1 = $this->getDocumentStore();
+        try {
+            $store2 = $this->getDocumentStore();
+            try {
+                $store1->timeSeries()->forDatabase($store2->getDatabase())->register(User::class, StockPrice::class);
+                $store1->timeSeries()->forDatabase($store2->getDatabase())->register("Users", "HeartRateMeasures", [ "HeartRate" ]);
+
+                $updated = $store1->maintenance()->server()->send(new GetDatabaseRecordOperation($store2->getDatabase()))->getTimeSeries();
+
+                $this->assertNotNull($updated);
+
+                $heartrate = $updated->getNames("users", "HeartRateMeasures");
+                $this->assertCount(1, $heartrate);
+                $this->assertEquals("HeartRate", $heartrate[0]);
+
+                $stock = $updated->getNames("users", "StockPrices");
+                $this->assertCount(5, $stock);
+                $this->assertEquals("open", $stock[0]);
+                $this->assertEquals("close", $stock[1]);
+                $this->assertEquals("high", $stock[2]);
+                $this->assertEquals("low", $stock[3]);
+                $this->assertEquals("volume", $stock[4]);
+            } finally {
+                $store2->close();
+            }
+        } finally {
+            $store1->close();
+        }
+    }
 
     public function testCanCreateSimpleTimeSeries(): void
     {
@@ -308,203 +315,190 @@ class TimeSeriesTypedSessionTest extends RemoteTestBase
         }
     }
 
-//    public function canQueryTimeSeriesAggregation_DeclareSyntax_AllDocsQuery(): void {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            $baseLine = DateUtils::truncateDayOfMonth(new DateTime());
-//
-//            try (IDocumentSession session = $store->openSession()) {
-//                $user = new User();
-//                $session->store($user, "users/ayende");
-//
-//                ISessionDocumentTypedTimeSeries<HeartRateMeasure> tsf = $session->timeSeriesFor(HeartRateMeasure::class, "users/ayende");
-//                String tag = "watches/fitbit";
-//                HeartRateMeasure m = new HeartRateMeasure();
-//                m.setHeartRate(59);
-//
-//                $tsf->append(DateUtils::addMinutes($baseLine, 61), m, tag);
-//
-//                m.setHeartRate(79);
-//                $tsf->append(DateUtils::addMinutes($baseLine, 62), m, tag);
-//
-//                m.setHeartRate(69);
-//                $tsf->append(DateUtils::addMinutes($baseLine, 63), m, tag);
-//
-//                $session->saveChanges();
-//            }
-//
-//            try (IDocumentSession session = $store->openSession()) {
-//                IRawDocumentQuery<TimeSeriesAggregationResult> query =
-//                        $session->advanced().rawQuery(TimeSeriesAggregationResult.class,
-//                                "declare timeseries out(u)\n" +
-//                        "    {\n" +
-//                        "        from u.HeartRateMeasures between $start and $end\n" +
-//                        "        group by 1h\n" +
-//                        "        select min(), max(), first(), last()\n" +
-//                        "    }\n" +
-//                        "    from @all_docs as u\n" +
-//                        "    where id() == 'users/ayende'\n" +
-//                        "    select out(u)")
-//                        .addParameter("start", baseLine)
-//                        .addParameter("end", DateUtils.addDays($baseLine, 1));
-//
-//                TypedTimeSeriesAggregationResult<HeartRateMeasure> agg = query.first().asTypedResult(HeartRateMeasure::class);
-//
-//                assertThat(agg.getCount())
-//                        .isEqualTo(3);
-//                assertThat(agg.getResults())
-//                        .hasSize(1);
-//
-//                TypedTimeSeriesRangeAggregation<HeartRateMeasure> val = agg.getResults()[0];
-//                assertThat($val->getFirst()->getHeartRate())
-//                        .isEqualTo(59);
-//                assertThat($val->getMin()->getHeartRate())
-//                        .isEqualTo(59);
-//
-//                assertThat($val->getLast()->getHeartRate())
-//                        .isEqualTo(69);
-//                assertThat($val->getMax()->getHeartRate())
-//                        .isEqualTo(79);
-//
-//                assertThat($val->getFrom())
-//                        .isEqualTo(DateUtils::addMinutes($baseLine, 60));
-//                assertThat($val->getTo())
-//                        .isEqualTo(DateUtils::addMinutes($baseLine, 120));
-//            }
-//        }
-//    }
-//
-//    @Test
-//    public function canQueryTimeSeriesAggregation_NoSelectOrGroupBy(): void {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            $baseLine = DateUtils::truncateDayOfMonth(new DateTime());
-//
-//            try (IDocumentSession session = $store->openSession()) {
-//                for ($i = 1; $i <= 3; $i++) {
-//                    String id = "people/" + i;
-//
-//                    $user = new User();
-//                    $user->setName("Oren");
-//                    $user->setAge(i * 30);
-//
-//                    $session->store($user, id);
-//
-//                    ISessionDocumentTypedTimeSeries<HeartRateMeasure> tsf = $session->timeSeriesFor(HeartRateMeasure::class, id);
-//                    HeartRateMeasure m = new HeartRateMeasure();
-//                    m.setHeartRate(59);
-//
-//                    $tsf->append(DateUtils::addMinutes($baseLine, 61), m, "watches/fitbit");
-//
-//                    m.setHeartRate(79);
-//                    $tsf->append(DateUtils::addMinutes($baseLine, 62), m,"watches/fitbit");
-//
-//                    m.setHeartRate(69);
-//                    $tsf->append(DateUtils::addMinutes($baseLine, 63), m, "watches/apple");
-//
-//                    m.setHeartRate(159);
-//                    $tsf->append(DateUtils.addMonths(DateUtils::addMinutes($baseLine, 61), 1), m, "watches/fitbit");
-//
-//                    m.setHeartRate(179);
-//                    $tsf->append(DateUtils.addMonths(DateUtils::addMinutes($baseLine, 62), 1), m, "watches/apple");
-//
-//                    m.setHeartRate(169);
-//                    $tsf->append(DateUtils.addMonths(DateUtils::addMinutes($baseLine, 63), 1), m, "watches/fitbit");
-//                }
-//
-//                $session->saveChanges();
-//            }
-//
-//            try (IDocumentSession session = $store->openSession()) {
-//                IRawDocumentQuery<TimeSeriesRawResult> query = $session->advanced().rawQuery(TimeSeriesRawResult.class, "declare timeseries out(x)\n" +
-//                        "{\n" +
-//                        "    from x.HeartRateMeasures between $start and $end\n" +
-//                        "}\n" +
-//                        "from Users as doc\n" +
-//                        "where doc.age > 49\n" +
-//                        "select out(doc)")
-//                        .addParameter("start", baseLine)
-//                        .addParameter("end", DateUtils.addMonths($baseLine, 2));
-//
-//                List<TimeSeriesRawResult> result = query.toList();
-//
-//                assertThat(result)
-//                        .hasSize(2);
-//
-//                for ($i = 0; $i < 2; $i++) {
-//                    TimeSeriesRawResult aggRaw = result.get($i);
-//                    TypedTimeSeriesRawResult<HeartRateMeasure> agg = aggRaw.asTypedResult(HeartRateMeasure::class);
-//
-//                    assertThat(agg.getResults())
-//                            .hasSize(6);
-//
-//                    TypedTimeSeriesEntry<HeartRateMeasure> val = agg.getResults()[0];
-//
-//                    assertThat($val->getValues())
-//                            .hasSize(1);
-//                    assertThat($val->getValue()->getHeartRate())
-//                            .isEqualTo(59);
-//                    assertThat($val->getTag())
-//                            .isEqualTo("watches/fitbit");
-//                    assertThat($val->getTimestamp())
-//                            .isEqualTo(DateUtils::addMinutes($baseLine, 61));
-//
-//                    val = agg.getResults()[1];
-//
-//                    assertThat($val->getValues())
-//                            .hasSize(1);
-//                    assertThat($val->getValue()->getHeartRate())
-//                            .isEqualTo(79);
-//                    assertThat($val->getTag())
-//                            .isEqualTo("watches/fitbit");
-//                    assertThat($val->getTimestamp())
-//                            .isEqualTo(DateUtils::addMinutes($baseLine, 62));
-//
-//                    val = agg.getResults()[2];
-//
-//                    assertThat($val->getValues())
-//                            .hasSize(1);
-//                    assertThat($val->getValue()->getHeartRate())
-//                            .isEqualTo(69);
-//                    assertThat($val->getTag())
-//                            .isEqualTo("watches/apple");
-//                    assertThat($val->getTimestamp())
-//                            .isEqualTo(DateUtils::addMinutes($baseLine, 63));
-//
-//                    val = agg.getResults()[3];
-//
-//                    assertThat($val->getValues())
-//                            .hasSize(1);
-//                    assertThat($val->getValue()->getHeartRate())
-//                            .isEqualTo(159);
-//                    assertThat($val->getTag())
-//                            .isEqualTo("watches/fitbit");
-//                    assertThat($val->getTimestamp())
-//                            .isEqualTo(DateUtils.addMonths(DateUtils::addMinutes($baseLine, 61), 1));
-//
-//                    val = agg.getResults()[4];
-//
-//                    assertThat($val->getValues())
-//                            .hasSize(1);
-//                    assertThat($val->getValue()->getHeartRate())
-//                            .isEqualTo(179);
-//                    assertThat($val->getTag())
-//                            .isEqualTo("watches/apple");
-//                    assertThat($val->getTimestamp())
-//                            .isEqualTo(DateUtils.addMonths(DateUtils::addMinutes($baseLine, 62), 1));
-//
-//                    val = agg.getResults()[5];
-//
-//                    assertThat($val->getValues())
-//                            .hasSize(1);
-//                    assertThat($val->getValue()->getHeartRate())
-//                            .isEqualTo(169);
-//                    assertThat($val->getTag())
-//                            .isEqualTo("watches/fitbit");
-//                    assertThat($val->getTimestamp())
-//                            .isEqualTo(DateUtils.addMonths(DateUtils::addMinutes($baseLine, 63), 1));
-//                }
-//            }
-//        }
-//    }
+    public function testCanQueryTimeSeriesAggregation_DeclareSyntax_AllDocsQuery(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $baseLine = DateUtils::truncateDayOfMonth(new DateTime());
+
+            $session = $store->openSession();
+            try {
+                $user = new User();
+                $session->store($user, "users/ayende");
+
+                $tsf = $session->typedTimeSeriesFor(HeartRateMeasure::class, "users/ayende");
+                $tag = "watches/fitbit";
+                $m = new HeartRateMeasure();
+                $m->setHeartRate(59);
+
+                $tsf->append(DateUtils::addMinutes($baseLine, 61), $m, $tag);
+
+                $m->setHeartRate(79);
+                $tsf->append(DateUtils::addMinutes($baseLine, 62), $m, $tag);
+
+                $m->setHeartRate(69);
+                $tsf->append(DateUtils::addMinutes($baseLine, 63), $m, $tag);
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                $query =
+                        $session->advanced()->rawQuery(TimeSeriesAggregationResult::class,
+                                "declare timeseries out(u)\n" .
+                        "    {\n" .
+                        "        from u.HeartRateMeasures between \$start and \$end\n" .
+                        "        group by 1h\n" .
+                        "        select min(), max(), first(), last()\n" .
+                        "    }\n" .
+                        "    from @all_docs as u\n" .
+                        "    where id() == 'users/ayende'\n" .
+                        "    select out(u)")
+                        ->addParameter("start", $baseLine)
+                        ->addParameter("end", DateUtils::addDays($baseLine, 1));
+
+                $agg = $query->first()->asTypedResult(HeartRateMeasure::class);
+
+                $this->assertEquals(3, $agg->getCount());
+                $this->assertCount(1, $agg->getResults());
+
+                $val = $agg->getResults()[0];
+                $this->assertEquals(59, $val->getFirst()->getHeartRate());
+                $this->assertEquals(59, $val->getMin()->getHeartRate());
+
+                $this->assertEquals(69, $val->getLast()->getHeartRate());
+                $this->assertEquals(79, $val->getMax()->getHeartRate());
+
+                $this->assertEquals(DateUtils::addMinutes($baseLine, 60), $val->getFrom());
+                $this->assertEquals(DateUtils::addMinutes($baseLine, 120), $val->getTo());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCanQueryTimeSeriesAggregation_NoSelectOrGroupBy(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $baseLine = DateUtils::truncateDayOfMonth(new DateTime());
+
+
+
+            $session = $store->openSession();
+            try {
+                for ($i = 1; $i <= 3; $i++) {
+                    $id = "people/" . $i;
+
+                    $user = new User();
+                    $user->setName("Oren");
+                    $user->setAge($i * 30);
+
+                    $session->store($user, $id);
+
+                    $tsf = $session->typedTimeSeriesFor(HeartRateMeasure::class, $id);
+                    $m = new HeartRateMeasure();
+                    $m->setHeartRate(59);
+
+                    $tsf->append(DateUtils::addMinutes($baseLine, 61), $m, "watches/fitbit");
+
+                    $m->setHeartRate(79);
+                    $tsf->append(DateUtils::addMinutes($baseLine, 62), $m,"watches/fitbit");
+
+                    $m->setHeartRate(69);
+                    $tsf->append(DateUtils::addMinutes($baseLine, 63), $m, "watches/apple");
+
+                    $m->setHeartRate(159);
+                    $tsf->append(DateUtils::addMonths(DateUtils::addMinutes($baseLine, 61), 1), $m, "watches/fitbit");
+
+                    $m->setHeartRate(179);
+                    $tsf->append(DateUtils::addMonths(DateUtils::addMinutes($baseLine, 62), 1), $m, "watches/apple");
+
+                    $m->setHeartRate(169);
+                    $tsf->append(DateUtils::addMonths(DateUtils::addMinutes($baseLine, 63), 1), $m, "watches/fitbit");
+                }
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                $query = $session->advanced()->rawQuery(TimeSeriesRawResult::class, "declare timeseries out(x)\n" .
+                        "{\n" .
+                        "    from x.HeartRateMeasures between \$start and \$end\n" .
+                        "}\n" .
+                        "from Users as doc\n" .
+                        "where doc.age > 49\n" .
+                        "select out(doc)")
+                        ->addParameter("start", $baseLine)
+                        ->addParameter("end", DateUtils::addMonths($baseLine, 2));
+
+                $result = $query->toList();
+
+                $this->assertCount(2, $result);
+
+                for ($i = 0; $i < 2; $i++) {
+                    $aggRaw = $result[$i];
+                    $agg = $aggRaw->asTypedResult(HeartRateMeasure::class);
+
+                    $this->assertCount(6, $agg->getResults());
+
+                    $val = $agg->getResults()[0];
+
+                    $this->assertCount(1, $val->getValues());
+                    $this->assertEquals(59, $val->getValue()->getHeartRate());
+                    $this->assertEquals("watches/fitbit", $val->getTag());
+                    $this->assertEquals(DateUtils::addMinutes($baseLine, 61), $val->getTimestamp());
+
+                    $val = $agg->getResults()[1];
+
+                    $this->assertCount(1, $val->getValues());
+                    $this->assertEquals(79, $val->getValue()->getHeartRate());
+                    $this->assertEquals("watches/fitbit", $val->getTag());
+                    $this->assertEquals(DateUtils::addMinutes($baseLine, 62), $val->getTimestamp());
+
+                    $val = $agg->getResults()[2];
+
+                    $this->assertCount(1, $val->getValues());
+                    $this->assertEquals(69, $val->getValue()->getHeartRate());
+                    $this->assertEquals("watches/apple", $val->getTag());
+                    $this->assertEquals(DateUtils::addMinutes($baseLine, 63), $val->getTimestamp());
+
+                    $val = $agg->getResults()[3];
+
+                    $this->assertCount(1, $val->getValues());
+                    $this->assertEquals(159, $val->getValue()->getHeartRate());
+                    $this->assertEquals("watches/fitbit", $val->getTag());
+                    $this->assertEquals(DateUtils::addMonths(DateUtils::addMinutes($baseLine, 61), 1), $val->getTimestamp());
+
+                    $val = $agg->getResults()[4];
+
+                    $this->assertCount(1, $val->getValues());
+                    $this->assertEquals(179, $val->getValue()->getHeartRate());
+                    $this->assertEquals("watches/apple", $val->getTag());
+                    $this->assertEquals(DateUtils::addMonths(DateUtils::addMinutes($baseLine, 62), 1), $val->getTimestamp());
+
+                    $val = $agg->getResults()[5];
+
+                    $this->assertCount(1, $val->getValues());
+                    $this->assertEquals(169, $val->getValue()->getHeartRate());
+                    $this->assertEquals("watches/fitbit", $val->getTag());
+                    $this->assertEquals(DateUtils::addMonths(DateUtils::addMinutes($baseLine, 63), 1), $val->getTimestamp());
+                }
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
 
     public function testCanWorkWithRollupTimeSeries(): void
     {
@@ -771,13 +765,20 @@ class TimeSeriesTypedSessionTest extends RemoteTestBase
         }
     }
 
-//    public function mappingNeedsToContainConsecutiveValuesStartingFromZero(): void {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            assertThatThrownBy(() -> {
-//                $store->timeSeries()->register(Company.class, StockPriceWithBadAttributes.class);
-//            })
-//                    .hasMessageContaining("must contain consecutive values starting from 0");
-//        }
-//    }
+    public function testMappingNeedsToContainConsecutiveValuesStartingFromZero(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            try {
+                $store->timeSeries()->register(Company::class, StockPriceWithBadAttributes::class);
+
+                throw new Exception('It should throw exception before reaching this code');
+            } catch (Throwable $exception) {
+                $this->assertStringContainsString("must contain consecutive values starting from 0", $exception->getMessage());
+            }
+        } finally {
+            $store->close();
+        }
+    }
 
 }

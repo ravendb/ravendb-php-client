@@ -41,9 +41,6 @@ class GetDatabaseRecordCommand extends RavenCommand
             return;
         }
 
-//        print_r($response);
-//        print_r($this->result);
-
         $this->result = $this->getMapper()->deserialize($response, $this->getResultClass(), 'json');
     }
 }

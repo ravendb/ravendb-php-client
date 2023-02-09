@@ -4,6 +4,7 @@ namespace RavenDB\Documents\Operations\TimeSeries;
 
 use DateTimeInterface;
 use RavenDB\Documents\Session\TimeSeries\TimeSeriesEntryArray;
+use RavenDB\Primitives\NetISO8601Utils;
 
 class TimeSeriesRangeResult
 {
@@ -12,6 +13,26 @@ class TimeSeriesRangeResult
     private ?TimeSeriesEntryArray $entries = null;
     private ?int $totalResults = null;
     private ?array $includes = null;
+
+    public function __construct(?array $data = null)
+    {
+        if (!empty($data)) {
+            $this->initFromArray($data);
+        }
+    }
+
+    private function initFromArray (array $data): void
+    {
+        if (array_key_exists('From', $data)) {
+            $this->from = is_string($data['From']) ? NetISO8601Utils::fromString($data['From']) : $data['From'];
+        }
+        if (array_key_exists('To', $data)) {
+            $this->to = is_string($data['To']) ? NetISO8601Utils::fromString($data['To']) : $data['To'];
+        }
+        if (array_key_exists('Entries', $data)) {
+            $this->entries = TimeSeriesEntryArray::fromArray($data['Entries']);
+        }
+    }
 
     public function getFrom(): ?DateTimeInterface
     {

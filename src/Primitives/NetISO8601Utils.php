@@ -2,6 +2,7 @@
 
 namespace RavenDB\Primitives;
 
+use DateTime;
 use DateTimeInterface;
 use DateTimeZone;
 
@@ -18,6 +19,7 @@ class NetISO8601Utils
 //     */
 //    private static final TimeZone TIMEZONE_GMT = TimeZone.getTimeZone(GMT_ID);
 
+    const ISO_FORMAT = "Y-m-d\TH:i:s.v0000\Z";
 
     /**
      * Format date into yyyy-MM-ddThh:mm:ss[.sss][Z|[+-]hh:mm]
@@ -30,7 +32,7 @@ class NetISO8601Utils
      */
     public static function format(DateTimeInterface $date, bool $millis = false, ?DateTimeZone $tz = null): string
     {
-        return $date->format("Y-m-d\TH:i:s.v0000\Z") ;
+        return $date->format(self::ISO_FORMAT) ;
     }
 
 //
@@ -188,4 +190,9 @@ class NetISO8601Utils
 //    }
 //        buffer.append(strValue);
 //    }
+
+    public static function fromString(string $datetime): DateTime
+    {
+        return DateTime::createFromFormat(self::ISO_FORMAT, $datetime);
+    }
 }

@@ -10,7 +10,7 @@ class TimeSeriesRange extends AbstractTimeSeriesRange
     private ?DateTimeInterface $from;
     private ?DateTimeInterface $to;
 
-    public function __construct(string $name = '', ?DateTimeInterface $from = null, ?DateTimeInterface $to = null)
+    public function __construct(?string $name = null, ?DateTimeInterface $from = null, ?DateTimeInterface $to = null)
     {
         $this->setName($name);
         $this->from = $from;

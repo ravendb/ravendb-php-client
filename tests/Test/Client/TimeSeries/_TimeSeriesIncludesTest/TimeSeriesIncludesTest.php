@@ -3,16 +3,20 @@
 namespace tests\RavenDB\Test\Client\TimeSeries\_TimeSeriesIncludesTest;
 
 use DateTime;
+use Exception;
+use RavenDB\Constants\PhpClient;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeResultList;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeType;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Documents\Session\TimeSeries\TimeSeriesEntryArray;
+use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Primitives\TimeValue;
 use RavenDB\Utils\DateUtils;
 use tests\RavenDB\Infrastructure\Entity\Company;
 use tests\RavenDB\Infrastructure\Entity\Order;
 use tests\RavenDB\RavenTestHelper;
 use tests\RavenDB\RemoteTestBase;
+use Throwable;
 
 class TimeSeriesIncludesTest extends RemoteTestBase
 {
@@ -45,15 +49,17 @@ class TimeSeriesIncludesTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $order = $session->load(get_class($order), "orders/1-A",
-                        function($i) { $i->includeDocuments("company")
-                                ->includeTimeSeries("Heartrate"); });
+                    function ($i) {
+                        $i->includeDocuments("company")
+                            ->includeTimeSeries("Heartrate");
+                    });
 
                 $company = $session->load(get_class($company), $order->getCompany());
                 $this->assertEquals("HR", $company->getName());
 
                 // should not go to server
                 $values = $session->timeSeriesFor($order, "Heartrate")
-                        ->get(null, null);
+                    ->get(null, null);
 
                 $this->assertCount(3, $values);
 
@@ -114,7 +120,7 @@ class TimeSeriesIncludesTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $vals = $session->timeSeriesFor($documentId, "Heartrate")
-                        ->get(DateUtils::addMinutes($baseLine, 2), DateUtils::addMinutes($baseLine, 10));
+                    ->get(DateUtils::addMinutes($baseLine, 2), DateUtils::addMinutes($baseLine, 10));
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -127,19 +133,19 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                     ->load(
                         get_class($user),
                         $documentId,
-                        function($i) use ($baseLine) {
+                        function ($i) use ($baseLine) {
                             $i->includeTimeSeries("Heartrate",
                                 DateUtils::addMinutes($baseLine, 40),
                                 DateUtils::addMinutes($baseLine, 50));
                         }
-                );
+                    );
 
                 $this->assertEquals(2, $session->advanced()->getNumberOfRequests());
 
                 // should not go to server
 
                 $vals = $session->timeSeriesFor($documentId, "Heartrate")
-                        ->get(DateUtils::addMinutes($baseLine, 40), DateUtils::addMinutes($baseLine, 50));
+                    ->get(DateUtils::addMinutes($baseLine, 40), DateUtils::addMinutes($baseLine, 50));
 
                 $this->assertEquals(2, $session->advanced()->getNumberOfRequests());
 
@@ -171,7 +177,9 @@ class TimeSeriesIncludesTest extends RemoteTestBase
 
                 // should go to server to get [0, 2] and merge it into existing [2, 10]
                 $user = $session->load(get_class($user), $documentId,
-                        function($i) use ($baseLine) { $i->includeTimeSeries("Heartrate", $baseLine, DateUtils::addMinutes($baseLine, 2)); });
+                    function ($i) use ($baseLine) {
+                        $i->includeTimeSeries("Heartrate", $baseLine, DateUtils::addMinutes($baseLine, 2));
+                    });
 
 
                 $this->assertEquals(3, $session->advanced()->getNumberOfRequests());
@@ -179,7 +187,7 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 // should not go to server
 
                 $vals = $session->timeSeriesFor($documentId, "Heartrate")
-                        ->get($baseLine, DateUtils::addMinutes($baseLine, 2));
+                    ->get($baseLine, DateUtils::addMinutes($baseLine, 2));
 
                 $this->assertEquals(3, $session->advanced()->getNumberOfRequests());
 
@@ -201,13 +209,15 @@ class TimeSeriesIncludesTest extends RemoteTestBase
 
                 // should go to server to get [10, 16] and merge it into existing [0, 10]
                 $user = $session->load(get_class($user), $documentId,
-                        function($i) use ($baseLine) { $i->includeTimeSeries("Heartrate", DateUtils::addMinutes($baseLine, 10), DateUtils::addMinutes($baseLine, 16)); } );
+                    function ($i) use ($baseLine) {
+                        $i->includeTimeSeries("Heartrate", DateUtils::addMinutes($baseLine, 10), DateUtils::addMinutes($baseLine, 16));
+                    });
 
                 $this->assertEquals(4, $session->advanced()->getNumberOfRequests());
 
                 // should not go to server
                 $vals = $session->timeSeriesFor($documentId, "Heartrate")
-                        ->get(DateUtils::addMinutes($baseLine, 10), DateUtils::addMinutes($baseLine, 16));
+                    ->get(DateUtils::addMinutes($baseLine, 10), DateUtils::addMinutes($baseLine, 16));
 
                 $this->assertEquals(4, $session->advanced()->getNumberOfRequests());
 
@@ -231,15 +241,17 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 // and add it to cache in between [10, 16] and [40, 50]
 
                 $user = $session->load(get_class($user), $documentId,
-                        function($i) use ($baseLine) { $i->includeTimeSeries("Heartrate",
-                                DateUtils::addMinutes($baseLine, 17), DateUtils::addMinutes($baseLine, 19)); });
+                    function ($i) use ($baseLine) {
+                        $i->includeTimeSeries("Heartrate",
+                            DateUtils::addMinutes($baseLine, 17), DateUtils::addMinutes($baseLine, 19));
+                    });
 
                 $this->assertEquals(5, $session->advanced()->getNumberOfRequests());
 
                 // should not go to server
 
                 $vals = $session->timeSeriesFor($documentId, "Heartrate")
-                        ->get(DateUtils::addMinutes($baseLine, 17), DateUtils::addMinutes($baseLine, 19));
+                    ->get(DateUtils::addMinutes($baseLine, 17), DateUtils::addMinutes($baseLine, 19));
 
                 $this->assertEquals(5, $session->advanced()->getNumberOfRequests());
 
@@ -266,15 +278,17 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 // into single range [17, 50]
 
                 $user = $session->load(get_class($user), $documentId,
-                        function($i) use ($baseLine) { $i->includeTimeSeries("Heartrate",
-                                DateUtils::addMinutes($baseLine, 18), DateUtils::addMinutes($baseLine, 48));});
+                    function ($i) use ($baseLine) {
+                        $i->includeTimeSeries("Heartrate",
+                            DateUtils::addMinutes($baseLine, 18), DateUtils::addMinutes($baseLine, 48));
+                    });
 
                 $this->assertEquals(6, $session->advanced()->getNumberOfRequests());
 
                 // should not go to server
 
                 $vals = $session->timeSeriesFor($documentId, "Heartrate")
-                        ->get(DateUtils::addMinutes($baseLine, 18), DateUtils::addMinutes($baseLine, 48));
+                    ->get(DateUtils::addMinutes($baseLine, 18), DateUtils::addMinutes($baseLine, 48));
 
                 $this->assertEquals(6, $session->advanced()->getNumberOfRequests());
 
@@ -299,14 +313,16 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 // into single range [0, 50]
 
                 $user = $session->load(get_class($user), $documentId,
-                        function($i) use ($baseLine) { $i->includeTimeSeries("Heartrate", DateUtils::addMinutes($baseLine, 12), DateUtils::addMinutes($baseLine, 22)); } );
+                    function ($i) use ($baseLine) {
+                        $i->includeTimeSeries("Heartrate", DateUtils::addMinutes($baseLine, 12), DateUtils::addMinutes($baseLine, 22));
+                    });
 
                 $this->assertEquals(7, $session->advanced()->getNumberOfRequests());
 
                 // should not go to server
 
                 $vals = $session->timeSeriesFor($documentId, "Heartrate")
-                        ->get(DateUtils::addMinutes($baseLine, 12), DateUtils::addMinutes($baseLine, 22));
+                    ->get(DateUtils::addMinutes($baseLine, 12), DateUtils::addMinutes($baseLine, 22));
 
                 $this->assertEquals(7, $session->advanced()->getNumberOfRequests());
 
@@ -328,14 +344,16 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 // and merge the result with existing range [0, 50] into single range [0, ∞]
 
                 $user = $session->load(get_class($user), $documentId,
-                        function($i) { $i->includeTimeSeriesByRange("heartrate", TimeSeriesRangeType::last(), TimeValue::ofMinutes(10));});
+                    function ($i) {
+                        $i->includeTimeSeriesByRange("heartrate", TimeSeriesRangeType::last(), TimeValue::ofMinutes(10));
+                    });
 
                 $this->assertEquals(8, $session->advanced()->getNumberOfRequests());
 
                 // should not go to server
 
                 $vals = $session->timeSeriesFor($documentId, "heartrate")
-                        ->get(DateUtils::addMinutes($baseLine, 50), null);
+                    ->get(DateUtils::addMinutes($baseLine, 50), null);
 
                 $this->assertEquals(8, $session->advanced()->getNumberOfRequests());
 
@@ -389,7 +407,7 @@ class TimeSeriesIncludesTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $vals = $session->timeSeriesFor("users/ayende", "Heartrate")
-                        ->get(DateUtils::addMinutes($baseLine, 2), DateUtils::addMinutes($baseLine, 10));
+                    ->get(DateUtils::addMinutes($baseLine, 2), DateUtils::addMinutes($baseLine, 10));
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -398,21 +416,23 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 $this->assertEquals(DateUtils::addMinutes($baseLine, 10), $vals[48]->getTimestamp());
 
                 $session->timeSeriesFor("users/ayende", "Heartrate")
-                        ->append(DateUtils::addSeconds(DateUtils::addMinutes($baseLine, 3), 3), 6, "watches/fitbit");
+                    ->append(DateUtils::addSeconds(DateUtils::addMinutes($baseLine, 3), 3), 6, "watches/fitbit");
                 $session->saveChanges();
 
                 $this->assertEquals(2, $session->advanced()->getNumberOfRequests());
 
                 $user = $session->load(get_class($user), "users/ayende",
-                        function($i) use ($baseLine) { $i->includeTimeSeries("Heartrate",
-                                DateUtils::addMinutes($baseLine, 3), DateUtils::addMinutes($baseLine, 5));});
+                    function ($i) use ($baseLine) {
+                        $i->includeTimeSeries("Heartrate",
+                            DateUtils::addMinutes($baseLine, 3), DateUtils::addMinutes($baseLine, 5));
+                    });
 
                 $this->assertEquals(3, $session->advanced()->getNumberOfRequests());
 
                 // should not go to server
 
                 $vals = $session->timeSeriesFor("users/ayende", "Heartrate")
-                        ->get(DateUtils::addMinutes($baseLine, 3), DateUtils::addMinutes($baseLine, 5));
+                    ->get(DateUtils::addMinutes($baseLine, 3), DateUtils::addMinutes($baseLine, 5));
 
                 $this->assertEquals(3, $session->advanced()->getNumberOfRequests());
 
@@ -448,11 +468,11 @@ class TimeSeriesIncludesTest extends RemoteTestBase
             try {
                 for ($i = 0; $i < 360; $i++) {
                     $session->timeSeriesFor("users/ayende", "Heartrate")
-                            ->append(DateUtils::addSeconds($baseLine, $i * 10), 6, "watches/fitbit");
+                        ->append(DateUtils::addSeconds($baseLine, $i * 10), 6, "watches/fitbit");
                     $session->timeSeriesFor("users/ayende", "BloodPressure")
-                            ->append(DateUtils::addSeconds($baseLine, $i * 10), 66, "watches/fitbit");
+                        ->append(DateUtils::addSeconds($baseLine, $i * 10), 66, "watches/fitbit");
                     $session->timeSeriesFor("users/ayende", "Nasdaq")
-                            ->append(DateUtils::addSeconds($baseLine, $i * 10), 8097.23, "nasdaq.com");
+                        ->append(DateUtils::addSeconds($baseLine, $i * 10), 8097.23, "nasdaq.com");
                 }
 
                 $session->saveChanges();
@@ -463,10 +483,12 @@ class TimeSeriesIncludesTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $user = $session->load(get_class($user), "users/ayende",
-                        function($i) use ($baseLine) { $i
-                                ->includeTimeSeries("Heartrate", DateUtils::addMinutes($baseLine, 3), DateUtils::addMinutes($baseLine, 5))
-                                ->includeTimeSeries("BloodPressure", DateUtils::addMinutes($baseLine, 40), DateUtils::addMinutes($baseLine, 45))
-                                ->includeTimeSeries("Nasdaq", DateUtils::addMinutes($baseLine, 15), DateUtils::addMinutes($baseLine, 25));});
+                    function ($i) use ($baseLine) {
+                        $i
+                            ->includeTimeSeries("Heartrate", DateUtils::addMinutes($baseLine, 3), DateUtils::addMinutes($baseLine, 5))
+                            ->includeTimeSeries("BloodPressure", DateUtils::addMinutes($baseLine, 40), DateUtils::addMinutes($baseLine, 45))
+                            ->includeTimeSeries("Nasdaq", DateUtils::addMinutes($baseLine, 15), DateUtils::addMinutes($baseLine, 25));
+                    });
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -475,7 +497,7 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 // should not go to server
 
                 $vals = $session->timeSeriesFor("users/ayende", "Heartrate")
-                        ->get(DateUtils::addMinutes($baseLine, 3), DateUtils::addMinutes($baseLine, 5));
+                    ->get(DateUtils::addMinutes($baseLine, 3), DateUtils::addMinutes($baseLine, 5));
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -486,7 +508,7 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 // should not go to server
 
                 $vals = $session->timeSeriesFor("users/ayende", "BloodPressure")
-                        ->get(DateUtils::addMinutes($baseLine, 42), DateUtils::addMinutes($baseLine, 43));
+                    ->get(DateUtils::addMinutes($baseLine, 42), DateUtils::addMinutes($baseLine, 43));
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -497,7 +519,7 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 // should not go to server
 
                 $vals = $session->timeSeriesFor("users/ayende", "BloodPressure")
-                        ->get(DateUtils::addMinutes($baseLine, 40), DateUtils::addMinutes($baseLine, 45));
+                    ->get(DateUtils::addMinutes($baseLine, 40), DateUtils::addMinutes($baseLine, 45));
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -508,7 +530,7 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 // should not go to server
 
                 $vals = $session->timeSeriesFor("users/ayende", "Nasdaq")
-                        ->get(DateUtils::addMinutes($baseLine, 15), DateUtils::addMinutes($baseLine, 25));
+                    ->get(DateUtils::addMinutes($baseLine, 15), DateUtils::addMinutes($baseLine, 25));
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -554,7 +576,9 @@ class TimeSeriesIncludesTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $user = $session->load(get_class($user), "users/ayende",
-                        function($i) use ($baseLine) { $i->includeTimeSeries("Heartrate", DateUtils::addMinutes($baseLine, -30), DateUtils::addMinutes($baseLine, -10));} );
+                    function ($i) use ($baseLine) {
+                        $i->includeTimeSeries("Heartrate", DateUtils::addMinutes($baseLine, -30), DateUtils::addMinutes($baseLine, -10));
+                    });
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -563,7 +587,7 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 // should not go to server
 
                 $vals = $session->timeSeriesFor("users/ayende", "Heartrate")
-                        ->get(DateUtils::addMinutes($baseLine, -30), DateUtils::addMinutes($baseLine, -10));
+                    ->get(DateUtils::addMinutes($baseLine, -30), DateUtils::addMinutes($baseLine, -10));
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -584,7 +608,7 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 // should not go to server
 
                 $vals = $session->timeSeriesFor("users/ayende", "Heartrate")
-                        ->get(DateUtils::addMinutes($baseLine, -25), DateUtils::addMinutes($baseLine, -15));
+                    ->get(DateUtils::addMinutes($baseLine, -25), DateUtils::addMinutes($baseLine, -15));
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -593,15 +617,17 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 $session->advanced()->evict($user);
 
                 $user = $session->load(get_class($user), "users/ayende",
-                        function($i) use ($baseLine) { $i->includeTimeSeries("BloodPressure",
-                                DateUtils::addMinutes($baseLine, 10), DateUtils::addMinutes($baseLine, 30));});
+                    function ($i) use ($baseLine) {
+                        $i->includeTimeSeries("BloodPressure",
+                            DateUtils::addMinutes($baseLine, 10), DateUtils::addMinutes($baseLine, 30));
+                    });
 
                 $this->assertEquals(2, $session->advanced()->getNumberOfRequests());
 
                 // should not go to server
 
                 $vals = $session->timeSeriesFor("users/ayende", "BloodPressure")
-                        ->get(DateUtils::addMinutes($baseLine, 10), DateUtils::addMinutes($baseLine, 30));
+                    ->get(DateUtils::addMinutes($baseLine, 10), DateUtils::addMinutes($baseLine, 30));
 
                 $this->assertEquals(2, $session->advanced()->getNumberOfRequests());
 
@@ -667,7 +693,9 @@ class TimeSeriesIncludesTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $users = $session->load(User::class, ["users/ayende", "users/ppekrol"],
-                        function($i) use ($baseLine) { $i->includeTimeSeries("Heartrate", $baseLine, DateUtils::addMinutes($baseLine, 30));});
+                    function ($i) use ($baseLine) {
+                        $i->includeTimeSeries("Heartrate", $baseLine, DateUtils::addMinutes($baseLine, 30));
+                    });
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -677,7 +705,7 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 // should not go to server
 
                 $vals = $session->timeSeriesFor("users/ayende", "Heartrate")
-                        ->get($baseLine, DateUtils::addMinutes($baseLine, 30));
+                    ->get($baseLine, DateUtils::addMinutes($baseLine, 30));
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -689,7 +717,7 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 // should not go to server
 
                 $vals = $session->timeSeriesFor("users/ppekrol", "Heartrate")
-                        ->get($baseLine, DateUtils::addMinutes($baseLine, 30));
+                    ->get($baseLine, DateUtils::addMinutes($baseLine, 30));
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -705,39 +733,40 @@ class TimeSeriesIncludesTest extends RemoteTestBase
         }
     }
 
-    public function includeTimeSeriesAndDocumentsAndCounters(): void
+    // ! not yet in todo list (contains counters)
+    public function atestIncludeTimeSeriesAndDocumentsAndCounters(): void
     {
         $store = $this->getDocumentStore();
         try {
-//            $baseLine = DateUtils::truncateDayOfMonth(new DateTime());
-//
+            $baseLine = DateUtils::truncateDayOfMonth(new DateTime());
+
             $session = $store->openSession();
             try {
-//                $user = new User();
-//                $user->setName("Oren");
-//                $user->setWorksAt("companies/1");
-//                $session->store($user, "users/ayende");
-//
-//                $company = new Company();
-//                $company->setName("HR");
-//                $session->store($company, "companies/1");
-//
-//                $session->saveChanges();
+                $user = new User();
+                $user->setName("Oren");
+                $user->setWorksAt("companies/1");
+                $session->store($user, "users/ayende");
+
+                $company = new Company();
+                $company->setName("HR");
+                $session->store($company, "companies/1");
+
+                $session->saveChanges();
             } finally {
                 $session->close();
             }
 
             $session = $store->openSession();
             try {
-//                $tsf = $session->timeSeriesFor("users/ayende", "Heartrate");
-//
-//                for ($i = 0; $i < 360; $i++) {
-//                    $tsf->append(DateUtils::addSeconds($baseLine, $i * 10), 67, "watches/fitbit");
-//                }
-//
+                $tsf = $session->timeSeriesFor("users/ayende", "Heartrate");
+
+                for ($i = 0; $i < 360; $i++) {
+                    $tsf->append(DateUtils::addSeconds($baseLine, $i * 10), 67, "watches/fitbit");
+                }
+
 //                $session->countersFor("users/ayende").increment("likes", 100);
 //                $session->countersFor("users/ayende").increment("dislikes", 5);
-//
+
 //                $session->saveChanges();
             } finally {
                 $session->close();
@@ -840,7 +869,9 @@ class TimeSeriesIncludesTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $query = $session->query(get_class($user))
-                        ->include(function($i) { $i->includeTimeSeries("Heartrate");});
+                    ->include(function ($i) {
+                        $i->includeTimeSeries("Heartrate");
+                    });
 
                 $result = $query->toList();
 
@@ -851,7 +882,7 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 // should not go to server
 
                 $vals = $session->timeSeriesFor("users/ayende", "Heartrate")
-                        ->get($baseLine, DateUtils::addMinutes($baseLine, 30));
+                    ->get($baseLine, DateUtils::addMinutes($baseLine, 30));
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -898,8 +929,10 @@ class TimeSeriesIncludesTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $order = $session->load(get_class($order), "orders/1-A",
-                        function($i) { $i->includeDocuments("company")
-                                ->includeTimeSeriesByRange("heartrate", TimeSeriesRangeType::last(), 11);});
+                    function ($i) {
+                        $i->includeDocuments("company")
+                            ->includeTimeSeriesByRange("heartrate", TimeSeriesRangeType::last(), 11);
+                    });
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -913,7 +946,7 @@ class TimeSeriesIncludesTest extends RemoteTestBase
 
                 // should not go to server
                 $values = $session->timeSeriesFor($order, "heartrate")
-                        ->get(DateUtils::addMinutes($baseLine, -10), null);
+                    ->get(DateUtils::addMinutes($baseLine, -10), null);
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -969,7 +1002,9 @@ class TimeSeriesIncludesTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $order = $session->load(get_class($order), "orders/1-A",
-                        function($i) { $i->includeDocuments("company")->includeAllTimeSeries(TimeSeriesRangeType::last(), TimeValue::ofMinutes(10));});
+                    function ($i) {
+                        $i->includeDocuments("company")->includeAllTimeSeries(TimeSeriesRangeType::last(), TimeValue::ofMinutes(10));
+                    });
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -982,13 +1017,13 @@ class TimeSeriesIncludesTest extends RemoteTestBase
 
                 // should not go to server
                 $heartrateValues = $session->timeSeriesFor($order, "heartrate")
-                        ->get(DateUtils::addMinutes($baseLine, -10), null);
+                    ->get(DateUtils::addMinutes($baseLine, -10), null);
 
                 $this->assertCount(11, $heartrateValues);
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
                 $speedrateValues = $session->timeSeriesFor($order, "speedrate")
-                        ->get(DateUtils::addMinutes($baseLine, -10), null);
+                    ->get(DateUtils::addMinutes($baseLine, -10), null);
 
                 $this->assertCount(11, $speedrateValues);
 
@@ -1048,7 +1083,9 @@ class TimeSeriesIncludesTest extends RemoteTestBase
             $session = $store->openSession();
             try {
                 $order = $session->load(get_class($order), "orders/1-A",
-                        function($i) { $i->includeDocuments("company")->includeAllTimeSeries(TimeSeriesRangeType::last(), 11); });
+                    function ($i) {
+                        $i->includeDocuments("company")->includeAllTimeSeries(TimeSeriesRangeType::last(), 11);
+                    });
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -1061,14 +1098,14 @@ class TimeSeriesIncludesTest extends RemoteTestBase
 
                 // should not go to server
                 $heartrateValues = $session->timeSeriesFor($order, "heartrate")
-                        ->get(DateUtils::addMinutes($baseLine, -10), null);
+                    ->get(DateUtils::addMinutes($baseLine, -10), null);
 
                 $this->assertCount(11, $heartrateValues);
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
                 $speedrateValues = $session->timeSeriesFor($order, "speedrate")
-                        ->get(DateUtils::addMinutes($baseLine, -10), null);
+                    ->get(DateUtils::addMinutes($baseLine, -10), null);
 
                 $this->assertCount(11, $speedrateValues);
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
@@ -1094,74 +1131,116 @@ class TimeSeriesIncludesTest extends RemoteTestBase
         }
     }
 
-    public function shouldThrowOnIncludeAllTimeSeriesAfterIncludingTimeSeries(): void
+    public function testShouldThrowOnIncludeAllTimeSeriesAfterIncludingTimeSeries(): void
     {
         $store = $this->getDocumentStore();
         try {
             $session = $store->openSession();
             try {
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, 11)
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, TimeValue.ofMinutes(10)));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("IIncludeBuilder : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, $integer.MAX_VALUE)
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, 11));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("IIncludeBuilder : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    ->includeTimeSeries("heartrate", TimeSeriesRangeType.LAST, $integer.MAX_VALUE)
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, TimeValue.ofMinutes(10)));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("IIncludeBuilder : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    ->includeTimeSeries("heartrate", TimeSeriesRangeType.LAST, $integer.MAX_VALUE)
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, 11));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("IIncludeBuilder : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    ->includeTimeSeries("heartrate", TimeSeriesRangeType.LAST, 11)
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, TimeValue.ofMinutes(10)));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("IIncludeBuilder : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    ->includeTimeSeries("heartrate", TimeSeriesRangeType.LAST, 11)
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, 11));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("IIncludeBuilder : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.");
-//
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isZero();
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), 11)
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), TimeValue::ofMinutes(10));
+
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("IncludeBuilderInterface : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.", $exception->getMessage());
+                }
+
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), PhpClient::INT_MAX_VALUE)
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), 11);
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("IncludeBuilderInterface : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.", $exception->getMessage());
+                }
+
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeTimeSeriesByRange("heartrate", TimeSeriesRangeType::last(), PhpClient::INT_MAX_VALUE)
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), TimeValue::ofMinutes(10));
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("IncludeBuilderInterface : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.", $exception->getMessage());
+                }
+
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeTimeSeriesByRange("heartrate", TimeSeriesRangeType::last(), PhpClient::INT_MAX_VALUE)
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), 11);
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("IncludeBuilderInterface : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.", $exception->getMessage());
+                }
+
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeTimeSeriesByRange("heartrate", TimeSeriesRangeType::last(), 11)
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), TimeValue::ofMinutes(10));
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("IncludeBuilderInterface : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.", $exception->getMessage());
+                }
+
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeTimeSeriesByRange("heartrate", TimeSeriesRangeType::last(), 11)
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), 11);
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("IncludeBuilderInterface : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.", $exception->getMessage());
+                }
+
+                $this->assertEquals(0, $session->advanced()->getNumberOfRequests());
             } finally {
                 $session->close();
             }
@@ -1170,134 +1249,215 @@ class TimeSeriesIncludesTest extends RemoteTestBase
         }
     }
 
-    public function shouldThrowOnIncludingTimeSeriesAfterIncludeAllTimeSeries(): void
+    public function testShouldThrowOnIncludingTimeSeriesAfterIncludeAllTimeSeries(): void
     {
         $store = $this->getDocumentStore();
         try {
             $session = $store->openSession();
             try {
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, 11)
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, TimeValue.ofMinutes(10)));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("IIncludeBuilder : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, $integer.MAX_VALUE)
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, 11));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("IIncludeBuilder : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, TimeValue.ofMinutes(10))
-//                                    ->includeTimeSeries("heartrate", TimeSeriesRangeType.LAST, TimeValue.MAX_VALUE));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("IIncludeBuilder : Cannot use 'includeTimeSeries' or 'includeAllTimeSeries' after using 'includeAllTimeSeries'.");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, 11)
-//                                    ->includeTimeSeries("heartrate", TimeSeriesRangeType.LAST, TimeValue.MAX_VALUE));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("IIncludeBuilder : Cannot use 'includeTimeSeries' or 'includeAllTimeSeries' after using 'includeAllTimeSeries'.");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, TimeValue.ofMinutes(10))
-//                                    ->includeTimeSeries("heartrate", TimeSeriesRangeType.LAST, 11));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("IIncludeBuilder : Cannot use 'includeTimeSeries' or 'includeAllTimeSeries' after using 'includeAllTimeSeries'.");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, 11)
-//                                    ->includeTimeSeries("heartrate", TimeSeriesRangeType.LAST, 11));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("IIncludeBuilder : Cannot use 'includeTimeSeries' or 'includeAllTimeSeries' after using 'includeAllTimeSeries'.");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, 11)
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, TimeValue.ofMinutes(10)));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("IIncludeBuilder : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, TimeValue.MAX_VALUE)
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, 11));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("IIncludeBuilder : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, TimeValue.ofMinutes(10))
-//                                    ->includeTimeSeries("heartrate", TimeSeriesRangeType.LAST, TimeValue.MAX_VALUE));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("IIncludeBuilder : Cannot use 'includeTimeSeries' or 'includeAllTimeSeries' after using 'includeAllTimeSeries'.");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, 11)
-//                                    ->includeTimeSeries("heartrate", TimeSeriesRangeType.LAST, TimeValue.MAX_VALUE));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("IIncludeBuilder : Cannot use 'includeTimeSeries' or 'includeAllTimeSeries' after using 'includeAllTimeSeries'.");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, TimeValue.ofMinutes(10))
-//                                    ->includeTimeSeries("heartrate", TimeSeriesRangeType.LAST, 11));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("IIncludeBuilder : Cannot use 'includeTimeSeries' or 'includeAllTimeSeries' after using 'includeAllTimeSeries'.");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, 11)
-//                                    ->includeTimeSeries("heartrate", TimeSeriesRangeType.LAST, 11));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("IIncludeBuilder : Cannot use 'includeTimeSeries' or 'includeAllTimeSeries' after using 'includeAllTimeSeries'.");
-//
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isZero();
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), 11)
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), TimeValue::ofMinutes(10));
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("IncludeBuilderInterface : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.", $exception->getMessage());
+                }
+
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), PhpClient::INT_MAX_VALUE)
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), 11);
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("IncludeBuilderInterface : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.", $exception->getMessage());
+                }
+
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), TimeValue::ofMinutes(10))
+                                ->includeTimeSeriesByRange("heartrate", TimeSeriesRangeType::last(), TimeValue::maxValue());
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("IncludeBuilderInterface : Cannot use 'includeTimeSeries' or 'includeAllTimeSeries' after using 'includeAllTimeSeries'.", $exception->getMessage());
+                }
+
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), 11)
+                                ->includeTimeSeriesByRange("heartrate", TimeSeriesRangeType::last(), TimeValue::maxValue());
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("IncludeBuilderInterface : Cannot use 'includeTimeSeries' or 'includeAllTimeSeries' after using 'includeAllTimeSeries'.", $exception->getMessage());
+                }
+
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), TimeValue::ofMinutes(10))
+                                ->includeTimeSeriesByRange("heartrate", TimeSeriesRangeType::last(), 11);
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("IncludeBuilderInterface : Cannot use 'includeTimeSeries' or 'includeAllTimeSeries' after using 'includeAllTimeSeries'.", $exception->getMessage());
+                }
+
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), 11)
+                                ->includeTimeSeriesByRange("heartrate", TimeSeriesRangeType::last(), 11);
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("IncludeBuilderInterface : Cannot use 'includeTimeSeries' or 'includeAllTimeSeries' after using 'includeAllTimeSeries'.", $exception->getMessage());
+                }
+
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), 11)
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), TimeValue::ofMinutes(10));
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("IncludeBuilderInterface : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.", $exception->getMessage());
+                }
+
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), TimeValue::maxValue())
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), 11);
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("IncludeBuilderInterface : Cannot use 'includeAllTimeSeries' after using 'includeTimeSeries' or 'includeAllTimeSeries'.", $exception->getMessage());
+                }
+
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), TimeValue::ofMinutes(10))
+                                ->includeTimeSeriesByRange("heartrate", TimeSeriesRangeType::last(), TimeValue::maxValue());
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("IncludeBuilderInterface : Cannot use 'includeTimeSeries' or 'includeAllTimeSeries' after using 'includeAllTimeSeries'.", $exception->getMessage());
+                }
+
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), 11)
+                                ->includeTimeSeriesByRange("heartrate", TimeSeriesRangeType::last(), TimeValue::maxValue());
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("IncludeBuilderInterface : Cannot use 'includeTimeSeries' or 'includeAllTimeSeries' after using 'includeAllTimeSeries'.", $exception->getMessage());
+                }
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), TimeValue::ofMinutes(10))
+                                ->includeTimeSeriesByRange("heartrate", TimeSeriesRangeType::last(), 11);
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("IncludeBuilderInterface : Cannot use 'includeTimeSeries' or 'includeAllTimeSeries' after using 'includeAllTimeSeries'.", $exception->getMessage());
+                }
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), 11)
+                                ->includeTimeSeriesByRange("heartrate", TimeSeriesRangeType::last(), 11);
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("IncludeBuilderInterface : Cannot use 'includeTimeSeries' or 'includeAllTimeSeries' after using 'includeAllTimeSeries'.", $exception->getMessage());
+                }
+
+                $this->assertEquals(0, $session->advanced()->getNumberOfRequests());
             } finally {
                 $session->close();
             }
@@ -1306,32 +1466,46 @@ class TimeSeriesIncludesTest extends RemoteTestBase
         }
     }
 
-    public function shouldThrowOnIncludingTimeSeriesWithLastRangeZeroOrNegativeTime(): void
+    public function testShouldThrowOnIncludingTimeSeriesWithLastRangeZeroOrNegativeTime(): void
     {
         $store = $this->getDocumentStore();
         try {
             $session = $store->openSession();
             try {
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, TimeValue.MIN_VALUE));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("Time range type cannot be set to LAST when time is negative or zero.");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, TimeValue.ZERO));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("Time range type cannot be set to LAST when time is negative or zero.");
-//
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isZero();
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), TimeValue::minValue());
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("Time range type cannot be set to LAST when time is negative or zero.", $exception->getMessage());
+                }
+
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), TimeValue::zero());
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("Time range type cannot be set to LAST when time is negative or zero.", $exception->getMessage());
+                }
+
+                $this->assertEquals(0, $session->advanced()->getNumberOfRequests());
+
             } finally {
                 $session->close();
             }
@@ -1340,50 +1514,77 @@ class TimeSeriesIncludesTest extends RemoteTestBase
         }
     }
 
-    public function shouldThrowOnIncludingTimeSeriesWithNoneRange(): void
+    public function testShouldThrowOnIncludingTimeSeriesWithNoneRange(): void
     {
         $store = $this->getDocumentStore();
         try {
             $session = $store->openSession();
             try {
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.NONE, TimeValue.ofMinutes(-30)));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("Time range type cannot be set to NONE when time is specified.");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.NONE, TimeValue.ZERO));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("Time range type cannot be set to NONE when time is specified.");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.NONE, 1024));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("Time range type cannot be set to NONE when count is specified.");
-//
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.NONE, TimeValue.ofMinutes(30)));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("Time range type cannot be set to NONE when time is specified.");
-//
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isEqualTo(0);
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::none(), TimeValue::ofMinutes(-30));
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("Time range type cannot be set to NONE when time is specified.", $exception->getMessage());
+                }
+
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::none(), TimeValue::zero());
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("Time range type cannot be set to NONE when time is specified.", $exception->getMessage());
+                }
+
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::none(), 1024);
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith('Time range type cannot be set to NONE when count is specified.', $exception->getMessage());
+                }
+
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::none(), TimeValue::ofMinutes(30));
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("Time range type cannot be set to NONE when time is specified.", $exception->getMessage());
+                }
+
+                $this->assertEquals(0, $session->advanced()->getNumberOfRequests());
             } finally {
                 $session->close();
             }
@@ -1392,20 +1593,27 @@ class TimeSeriesIncludesTest extends RemoteTestBase
         }
     }
 
-    public function shouldThrowOnIncludingTimeSeriesWithNegativeCount(): void
+    public function testShouldThrowOnIncludingTimeSeriesWithNegativeCount(): void
     {
         $store = $this->getDocumentStore();
         try {
             $session = $store->openSession();
             try {
-//                assertThatThrownBy(() -> {
-//                    $session->load(get_class($order), "orders/1-A",
-//                            i -> i
-//                                    .includeDocuments("company")
-//                                    .includeAllTimeSeries(TimeSeriesRangeType.LAST, -1024));
-//                })
-//                        .isExactlyInstanceOf(IllegalArgumentException.class)
-//                        .hasMessageStartingWith("Count have to be positive.");
+                try {
+                    $session->load(
+                        Order::class,
+                        "orders/1-A",
+                        function ($i) {
+                            $i->includeDocuments("company")
+                                ->includeAllTimeSeries(TimeSeriesRangeType::last(), -1024);
+                        });
+
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalArgumentException::class, $exception);
+                    $this->assertStringStartsWith("Count have to be positive.", $exception->getMessage());
+                }
             } finally {
                 $session->close();
             }
@@ -1461,15 +1669,17 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 $order = null;
                 if ($byTime) {
                     $order = $session->load(Order::class, "orders/1-A",
-                            function($i) {
-                                $i
-                                    ->includeDocuments("company")
-                                    ->includeTimeSeriesByRange(["heartrate", "speedrate"], TimeSeriesRangeType::last(), TimeValue::ofMinutes(10));
-                            }
+                        function ($i) {
+                            $i
+                                ->includeDocuments("company")
+                                ->includeTimeSeriesByRange(["heartrate", "speedrate"], TimeSeriesRangeType::last(), TimeValue::ofMinutes(10));
+                        }
                     );
                 } else {
                     $order = $session->load(Order::class, "orders/1-A",
-                            function($i) { $i->includeDocuments("company")->includeTimeSeriesByRange([ "heartrate", "speedrate" ], TimeSeriesRangeType::last(), 3); });
+                        function ($i) {
+                            $i->includeDocuments("company")->includeTimeSeriesByRange(["heartrate", "speedrate"], TimeSeriesRangeType::last(), 3);
+                        });
                 }
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
@@ -1484,7 +1694,7 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 // should not go to server
                 /** @var TimeSeriesEntryArray $heartrateValues */
                 $heartrateValues = $session->timeSeriesFor($order, "heartrate")
-                        ->get(DateUtils::addMinutes($baseLine, -10), null);
+                    ->get(DateUtils::addMinutes($baseLine, -10), null);
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
                 $this->assertCount(3, $heartrateValues);
@@ -1507,7 +1717,7 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                 // should not go to server
                 /** @var TimeSeriesEntryArray $speedrateValues */
                 $speedrateValues = $session->timeSeriesFor($order, "speedrate")
-                        ->get(DateUtils::addMinutes($baseLine, -10), null);
+                    ->get(DateUtils::addMinutes($baseLine, -10), null);
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 

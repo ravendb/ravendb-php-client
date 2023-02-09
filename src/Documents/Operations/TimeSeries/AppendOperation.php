@@ -43,7 +43,7 @@ class AppendOperation
         $this->tag = $tag;
     }
 
-    public function __construct(?DateTimeInterface $timestamp, array $values, ?string $tag = null)
+    public function __construct(?DateTimeInterface $timestamp = null, ?array $values = null, ?string $tag = null)
     {
         $this->timestamp = $timestamp;
         $this->values = $values;
