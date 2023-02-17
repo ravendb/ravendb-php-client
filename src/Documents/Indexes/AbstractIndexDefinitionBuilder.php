@@ -92,7 +92,7 @@ abstract class AbstractIndexDefinitionBuilder
             $indexDefinition->setAdditionalAssemblies($this->additionalAssemblies);
             $indexDefinition->setConfiguration($this->configuration);
 
-            $this->toIndexDefinitionInternal($indexDefinition, $conventions);
+            $this->addToIndexDefinition($indexDefinition, $conventions);
 
             return $indexDefinition;
         } catch (\Throwable $e) {
@@ -102,7 +102,7 @@ abstract class AbstractIndexDefinitionBuilder
 
     protected abstract function newIndexDefinition(): IndexDefinition;
 
-    protected abstract function toIndexDefinitionInternal(IndexDefinition $indexDefinition, ?DocumentConventions $conventions): void;
+    protected abstract function addToIndexDefinition(IndexDefinition $indexDefinition, ?DocumentConventions $conventions): void;
 
     private function applyValues(IndexDefinition $indexDefinition, ArrayObject $values, /*BiConsumer<IndexFieldOptions, T>*/ \Closure $action): void
     {
@@ -133,7 +133,7 @@ abstract class AbstractIndexDefinitionBuilder
         return $this->reduce;
     }
 
-    public function setReduce(?string $reduce): void
+    public function setReduce(null|string $reduce): void
     {
         $this->reduce = $reduce;
     }
@@ -163,8 +163,11 @@ abstract class AbstractIndexDefinitionBuilder
         return $this->analyzersStrings;
     }
 
-    public function setAnalyzersStrings(?StringArray $analyzersStrings): void
+    public function setAnalyzersStrings(null|StringArray|array $analyzersStrings): void
     {
+        if (is_array($analyzersStrings)) {
+            $analyzersStrings = StringArray::fromArray($analyzersStrings);
+        }
         $this->analyzersStrings = $analyzersStrings;
     }
 
@@ -173,8 +176,11 @@ abstract class AbstractIndexDefinitionBuilder
         return $this->suggestionsOptions;
     }
 
-    public function setSuggestionsOptions(?StringSet $suggestionsOptions): void
+    public function setSuggestionsOptions(null|StringSet|array $suggestionsOptions): void
     {
+        if (is_array($suggestionsOptions)) {
+            $suggestionsOptions = StringSet::fromArray($suggestionsOptions);
+        }
         $this->suggestionsOptions = $suggestionsOptions;
     }
 

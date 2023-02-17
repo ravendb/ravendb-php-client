@@ -136,12 +136,12 @@ class DocumentQuery extends AbstractDocumentQuery
         return $this->createDocumentQueryInternal($queryData, $projectionClass);
     }
 
-//    @Override
-//    public <TTimeSeries> IDocumentQuery<TTimeSeries> selectTimeSeries(Class<TTimeSeries> clazz, Consumer<ITimeSeriesQueryBuilder> timeSeriesQuery) {
-//        QueryData queryData = createTimeSeriesQueryData(timeSeriesQuery);
-//        return selectFields(clazz, queryData);
-//    }
-//
+    public function selectTimeSeries(?string $className, Closure $timeSeriesQuery): DocumentQueryInterface
+    {
+        $queryData = $this->createTimeSeriesQueryData($timeSeriesQuery);
+        return $this->selectFields($className, $queryData);
+    }
+
     public function distinct(): DocumentQueryInterface
     {
         $this->_distinct();

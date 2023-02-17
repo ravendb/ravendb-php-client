@@ -11,13 +11,4 @@ class IndexInformationArray extends TypedArray
     {
         parent::__construct(IndexInformation::class);
     }
-
-    public static function fromArray(array $items): IndexInformationArray
-    {
-        $i = new IndexInformationArray();
-        foreach ($items as $item) {
-            $i->append($item);
-        }
-        return $i;
-    }
 }

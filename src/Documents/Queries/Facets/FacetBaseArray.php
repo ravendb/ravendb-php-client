@@ -10,15 +10,4 @@ class FacetBaseArray extends TypedArray
     {
         parent::__construct(FacetBase::class);
     }
-
-    public static function fromArray(array $data): FacetBaseArray
-    {
-        $array = new FacetBaseArray();
-
-        foreach ($data as $key => $value) {
-            $array->offsetSet($key, $value);
-        }
-
-        return $array;
-    }
 }

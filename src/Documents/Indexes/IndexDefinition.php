@@ -163,10 +163,13 @@ class IndexDefinition implements ResultInterface
 
     /**
      * Additional code files to be compiled with this index.
-     * @param AdditionalSourcesArray|null $additionalSources
+     * @param AdditionalSourcesArray|array|null $additionalSources
      */
-    public function setAdditionalSources(?AdditionalSourcesArray $additionalSources): void
+    public function setAdditionalSources(null|array|AdditionalSourcesArray $additionalSources): void
     {
+        if (is_array($additionalSources)) {
+            $additionalSources =  AdditionalSourcesArray::fromArray($additionalSources);
+        }
         $this->additionalSources = $additionalSources;
     }
 
@@ -181,7 +184,7 @@ class IndexDefinition implements ResultInterface
     /**
      * @param AdditionalAssemblySet|array|null $additionalAssemblies
      */
-    public function setAdditionalAssemblies($additionalAssemblies): void
+    public function setAdditionalAssemblies(AdditionalAssemblySet|array|null $additionalAssemblies): void
     {
         $this->additionalAssemblies = is_array($additionalAssemblies) ? AdditionalAssemblySet::fromArray($additionalAssemblies) : $additionalAssemblies;
     }
@@ -200,9 +203,9 @@ class IndexDefinition implements ResultInterface
 
     /**
      * All the map functions for this index
-     * @param StringSet|array|null $maps Sets the value
+     * @param array|StringSet|null $maps Sets the value
      */
-    public function setMaps($maps): void
+    public function setMaps(array|StringSet|null $maps): void
     {
         if (is_array($maps)) {
             $maps = StringSet::fromArray($maps);
@@ -212,7 +215,7 @@ class IndexDefinition implements ResultInterface
 
     /**
      * Index reduce function
-     * @return string reduce function
+     * @return ?string reduce function
      */
     public function getReduce(): ?string
     {

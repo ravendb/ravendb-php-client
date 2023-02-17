@@ -10,16 +10,4 @@ class RangeFacetList extends TypedList
     {
         parent::__construct(RangeFacetList::class);
     }
-
-    public static function fromArray(array $data, $nullAllowed = false): RangeFacetList
-    {
-        $sa = new RangeFacetList();
-        $sa->setNullAllowed($nullAllowed);
-
-        foreach ($data as $key => $value) {
-            $sa->offsetSet($key, $value);
-        }
-
-        return $sa;
-    }
 }

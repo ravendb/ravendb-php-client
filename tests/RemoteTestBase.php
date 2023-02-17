@@ -38,7 +38,7 @@ class RemoteTestBase extends RavenTestDriver implements CleanCloseable
 
     public function __construct()
     {
-        parent::__construct();
+        parent::__construct("");
 
         $this->locator = new TestServiceLocator();
         $this->securedLocator = new TestSecuredServiceLocator();

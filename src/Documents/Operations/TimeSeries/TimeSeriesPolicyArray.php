@@ -11,16 +11,4 @@ class TimeSeriesPolicyArray extends TypedArray
     {
         parent::__construct(TimeSeriesPolicy::class);
     }
-
-    public static function fromArray(array $data, $nullAllowed = false): TimeSeriesPolicyArray
-    {
-        $array = new TimeSeriesPolicyArray();
-        $array->setNullAllowed($nullAllowed);
-
-        foreach ($data as $key => $value) {
-            $array->offsetSet($key, $value);
-        }
-
-        return $array;
-    }
 }

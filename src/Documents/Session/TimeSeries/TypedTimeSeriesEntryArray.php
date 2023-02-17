@@ -10,16 +10,4 @@ class TypedTimeSeriesEntryArray extends TypedArray
     {
         parent::__construct(TypedTimeSeriesEntry::class);
     }
-
-    public static function fromArray(array $data, $nullAllowed = false): TypedTimeSeriesEntryArray
-    {
-        $sa = new TypedTimeSeriesEntryArray();
-        $sa->setNullAllowed($nullAllowed);
-
-        foreach ($data as $key => $value) {
-            $sa->offsetSet($key, $value);
-        }
-
-        return $sa;
-    }
 }

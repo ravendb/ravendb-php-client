@@ -38,7 +38,7 @@ jobs:
                   php-version: ${{ matrix.php-versions }}
                   extensions: ds, json, fileinfo, zip
 #                  ini-values: "post_max_size=256M"
-                  tools: composer:v2, phpunit
+                  tools: composer:v2, phpunit:v9.6
                   coverage: none
 
             - name: Check PHP Version

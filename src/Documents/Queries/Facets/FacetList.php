@@ -10,16 +10,4 @@ class FacetList extends TypedList
     {
         parent::__construct(Facet::class);
     }
-
-    public static function fromArray(array $data, $nullAllowed = false): FacetList
-    {
-        $sa = new FacetList();
-        $sa->setNullAllowed($nullAllowed);
-
-        foreach ($data as $key => $value) {
-            $sa->offsetSet($key, $value);
-        }
-
-        return $sa;
-    }
 }

@@ -11,16 +11,6 @@ class ObjectArray extends ExtendedArrayObject
         return $a;
     }
 
-    public static function fromArray(array $data): ObjectArray
-    {
-        $sa = new ObjectArray();
-
-        foreach ($data as $key => $value) {
-            $sa->offsetSet($key, $value);
-        }
-
-        return $sa;
-    }
 
     public function offsetSet($key, $value): void
     {

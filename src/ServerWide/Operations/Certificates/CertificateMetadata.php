@@ -23,7 +23,7 @@ class CertificateMetadata implements ResultInterface
     private ?\DateTimeInterface $notAfter = null;
 
     /** @SerializedName("Permissions") */
-    protected DatabaseAccessArray $permissions;
+    protected ?DatabaseAccessArray $permissions = null;
 
     /** @SerializedName("CollectionSecondaryKeys") */
     private StringArray $collectionSecondaryKeys;
@@ -80,22 +80,19 @@ class CertificateMetadata implements ResultInterface
         $this->notAfter = $notAfter;
     }
 
-    public function getPermissions(): DatabaseAccessArray
+    public function getPermissions(): ?DatabaseAccessArray
     {
         return $this->permissions;
     }
 
-    /**
-     * @param DatabaseAccessArray|array $permissions
-     */
-    public function setPermissions($permissions): void
+    public function setPermissions(null|array|DatabaseAccessArray $permissions): void
     {
-        if (is_a($permissions, DatabaseAccessArray::class)) {
-            $this->permissions = $permissions;
-            return;
+        if (is_array($permissions)) {
+            $permissions = DatabaseAccessArray::fromArray($permissions);
         }
 
-        $this->permissions = DatabaseAccessArray::fromArray($permissions);
+        $this->permissions = $permissions;
+
     }
 
     public function addPermission(string $key, DatabaseAccess $permission): void

@@ -32,7 +32,7 @@
     },
     "require-dev": {
         "phpstan/phpstan": "^0.12.98",
-        "phpunit/phpunit": ">=8.0",
+        "phpunit/phpunit": "~9.6",
         "squizlabs/php_codesniffer": "^3.0"
     },
     "autoload": {

@@ -39,7 +39,7 @@ class IndexDefinitionBuilder extends AbstractIndexDefinitionBuilder
         return parent::toIndexDefinition($conventions, $validateMap);
     }
 
-    protected function toIndexDefinitionInternal(IndexDefinition $indexDefinition, ?DocumentConventions $conventions): void
+    protected function addToIndexDefinition(IndexDefinition $indexDefinition, ?DocumentConventions $conventions): void
     {
         if ($this->map == null) {
             return;

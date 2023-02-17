@@ -7,11 +7,19 @@ use RavenDB\Utils\HashUtils;
 
 class Duration
 {
+    const MILLISECONDS_IN_DAY = 24*60*60*1000;
     const MILLISECONDS_IN_HOUR = 60*60*1000;
     const MILLISECONDS_IN_MINUTE = 60*1000;
     const MILLISECONDS_IN_SECOND = 1000;
 
     private int $intervalInMilliSeconds = 0;
+
+    public static function ofDays(int $days): Duration
+    {
+        $duration = new Duration();
+        $duration->intervalInMilliSeconds = $days * self::MILLISECONDS_IN_DAY;
+        return $duration;
+    }
 
     public static function ofHours(int $hours): Duration
     {
