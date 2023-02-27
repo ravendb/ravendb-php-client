@@ -21,7 +21,7 @@ class GetMultipleTimeSeriesCommand extends RavenCommand
     private ?int $pageSize = null;
     private ?Closure $includes = null;
 
-    public function __construct(?string $docId, ?TimeSeriesRangeList $ranges, int $start, int $pageSize, ?Closure $includes = null)
+    public function __construct(?string $docId, null|TimeSeriesRangeList|array $ranges, int $start, int $pageSize, ?Closure $includes = null)
     {
         parent::__construct(TimeSeriesDetails::class);
 
@@ -30,7 +30,9 @@ class GetMultipleTimeSeriesCommand extends RavenCommand
         }
 
         $this->docId = $docId;
-        $this->ranges = $ranges;
+        if ($ranges != null) {
+            $this->ranges = TimeSeriesRangeList::ensure($ranges);
+        }
         $this->start = $start;
         $this->pageSize = $pageSize;
         $this->includes = $includes;

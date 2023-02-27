@@ -125,6 +125,10 @@ class ExceptionDispatcher
             return TimeoutException::class;
         }
 
+        if ($typeAsString == "System.ArgumentNullException") {
+            return IllegalArgumentException::class;
+        }
+
         $prefix = "Raven.Client.Exceptions.";
 
         if (str_starts_with($typeAsString, $prefix)) {

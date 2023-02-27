@@ -6,9 +6,15 @@ use _PHPStan_b8e553790\Symfony\Component\Console\Exception\InvalidOptionExceptio
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Documents\Operations\MaintenanceOperationExecutor;
+use RavenDB\Documents\Operations\TimeSeries\ConfigureRawTimeSeriesPolicyOperation;
+use RavenDB\Documents\Operations\TimeSeries\ConfigureTimeSeriesPolicyOperation;
 use RavenDB\Documents\Operations\TimeSeries\ConfigureTimeSeriesValueNamesOperation;
 use RavenDB\Documents\Operations\TimeSeries\ConfigureTimeSeriesValueNamesParameters;
+use RavenDB\Documents\Operations\TimeSeries\RawTimeSeriesPolicy;
+use RavenDB\Documents\Operations\TimeSeries\RemoveTimeSeriesPolicyOperation;
+use RavenDB\Documents\Operations\TimeSeries\TimeSeriesPolicy;
 use RavenDB\Documents\Session\TimeSeries\TimeSeriesValuesHelper;
+use RavenDB\Primitives\TimeValue;
 use RavenDB\Type\StringArray;
 
 class TimeSeriesOperations
@@ -149,72 +155,63 @@ class TimeSeriesOperations
 //        ConfigureTimeSeriesValueNamesOperation command = new ConfigureTimeSeriesValueNamesOperation(parameters);
 //        _executor.send(command);
 //    }
-//
-//    /**
-//     * Set rollup and retention policy
-//     * @param collectionClass Collection class
-//     * @param name Policy name
-//     * @param aggregation Aggregation time
-//     * @param retention Retention time
-//     * @param <TCollection> Collection class
-//     */
-//    public <TCollection> void setPolicy(Class<TCollection> collectionClass, String name, TimeValue aggregation, TimeValue retention) {
-//        String collection = _store.getConventions().getFindCollectionName().apply(collectionClass);
-//        setPolicy(collection, name, aggregation, retention);
-//    }
-//
-//    /**
-//     * Set rollup and retention policy
-//     * @param collection Collection name
-//     * @param name Policy name
-//     * @param aggregation Aggregation time
-//     * @param retention Retention time
-//     */
-//    public void setPolicy(String collection, String name, TimeValue aggregation, TimeValue retention) {
-//        TimeSeriesPolicy p = new TimeSeriesPolicy(name, aggregation, retention);
-//        _executor.send(new ConfigureTimeSeriesPolicyOperation(collection, p));
-//    }
-//
-//    /**
-//     * Set raw retention policy
-//     * @param collectionClass Collection class
-//     * @param retention Retention time
-//     * @param <TCollection> Collection class
-//     */
-//    public <TCollection> void setRawPolicy(Class<TCollection> collectionClass, TimeValue retention) {
-//        String collection = _store.getConventions().getFindCollectionName().apply(collectionClass);
-//        setRawPolicy(collection, retention);
-//    }
-//
-//    /**
-//     * Set raw retention policy
-//     * @param collection Collection name
-//     * @param retention Retention time
-//     */
-//    public void setRawPolicy(String collection, TimeValue retention) {
-//        RawTimeSeriesPolicy p = new RawTimeSeriesPolicy(retention);
-//        _executor.send(new ConfigureRawTimeSeriesPolicyOperation(collection, p));
-//    }
-//
-//    /**
-//     * Remove policy
-//     * @param collection Collection name
-//     * @param name Policy name
-//     */
-//    public void removePolicy(String collection, String name) {
-//        _executor.send(new RemoveTimeSeriesPolicyOperation(collection, name));
-//    }
-//
-//    /**
-//     * Remove policy
-//     * @param clazz Collection class
-//     * @param name Policy name
-//     * @param <TCollection> Collection class
-//     */
-//    public <TCollection> void removePolicy(Class<TCollection> clazz, String name) {
-//        String collection = _store.getConventions().getFindCollectionName().apply(clazz);
-//        removePolicy(collection, name);
-//    }
+
+    /**
+     * Set rollup and retention policy
+     *
+     * @param string $collectionClassOrCollection
+     * @param string $name
+     * @param TimeValue|null $aggregation
+     * @param TimeValue|null $retention
+     */
+    public function setPolicy(
+        string    $collectionClassOrCollection,
+        string    $name,
+        TimeValue $aggregation = null,
+        TimeValue $retention = null
+    ): void
+    {
+        $collection = $collectionClassOrCollection;
+        if (class_exists($collectionClassOrCollection)) {
+            $f = $this->store->getConventions()->getFindCollectionName();
+            $collection = $f($collectionClassOrCollection);
+        }
+
+        $p = new TimeSeriesPolicy($name, $aggregation, $retention);
+        $this->executor->send(new ConfigureTimeSeriesPolicyOperation($collection, $p));
+    }
+
+    /**
+     * Set raw retention policy
+     */
+    public function setRawPolicy(
+        string    $collectionClassOrCollection,
+        TimeValue $retention = null
+    ): void {
+        $collection = $collectionClassOrCollection;
+        if (class_exists($collectionClassOrCollection)) {
+            $f = $this->store->getConventions()->getFindCollectionName();
+            $collection = $f($collectionClassOrCollection);
+        }
+
+        $p = new RawTimeSeriesPolicy($retention);
+        $this->executor->send(new ConfigureRawTimeSeriesPolicyOperation($collection, $p));
+
+    }
+
+    /**
+     * Remove policy
+     */
+    public function removePolicy(string $collectionClassOrCollection, string $name): void
+    {
+        $collection = $collectionClassOrCollection;
+        if (class_exists($collectionClassOrCollection)) {
+            $f = $this->store->getConventions()->getFindCollectionName();
+            $collection = $f($collectionClassOrCollection);
+        }
+
+        $this->executor->send(new RemoveTimeSeriesPolicyOperation($collection, $name));
+    }
 
     public static function getTimeSeriesName(string $className, ?DocumentConventions $conventions): string
     {

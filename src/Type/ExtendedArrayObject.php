@@ -30,6 +30,10 @@ class ExtendedArrayObject extends \ArrayObject implements \JsonSerializable
 
     public function setKeysCaseInsensitive(bool $caseInsensitive): void
     {
+        if ($caseInsensitive) {
+            $arrayWithAllLowerCase = array_change_key_case($this->getArrayCopy(), CASE_LOWER);
+            $this->exchangeArray($arrayWithAllLowerCase);
+        }
         $this->keysCaseInsensitive = $caseInsensitive;
     }
 
@@ -219,11 +223,15 @@ class ExtendedArrayObject extends \ArrayObject implements \JsonSerializable
 
     public static function ensure(mixed $data, bool $nullAllowed = false): static
     {
+        if (is_null($data)) {
+            return new static();
+        }
+
         if (is_array($data)) {
-            return self::fromArray($data, $nullAllowed);
+            return static::fromArray($data, $nullAllowed);
         };
 
-        if (is_subclass_of($data, static::class)) {
+        if (is_a($data, static::class)) {
             return $data;
         }
 

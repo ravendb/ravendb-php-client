@@ -81,12 +81,13 @@ class TimeSeriesConfiguration
         if (!$this->namedValues->offsetExists($collection)) {
             return null;
         }
-        $timeSeriesHolder = $this->namedValues[$collection];
+        $timeSeriesHolder = array_change_key_case($this->namedValues[$collection], CASE_LOWER);
 
-        if (!array_key_exists($timeSeries, $timeSeriesHolder)) {
+        $timeSeriesLowerCase = strtolower($timeSeries);
+        if (!array_key_exists($timeSeriesLowerCase, $timeSeriesHolder)) {
             return null;
         }
-        return $timeSeriesHolder[$timeSeries];
+        return $timeSeriesHolder[$timeSeriesLowerCase];
     }
 
     private function internalPostJsonDeserialization(): void

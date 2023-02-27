@@ -4,7 +4,11 @@ namespace tests\RavenDB\Test\Client\TimeSeries;
 
 use DateTime;
 use Exception;
+use RavenDB\Documents\Operations\TimeSeries\ConfigureRawTimeSeriesPolicyOperation;
 use RavenDB\Documents\Operations\TimeSeries\ConfigureTimeSeriesOperation;
+use RavenDB\Documents\Operations\TimeSeries\ConfigureTimeSeriesPolicyOperation;
+use RavenDB\Documents\Operations\TimeSeries\ConfigureTimeSeriesValueNamesOperation;
+use RavenDB\Documents\Operations\TimeSeries\ConfigureTimeSeriesValueNamesParameters;
 use RavenDB\Documents\Operations\TimeSeries\RawTimeSeriesPolicy;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesCollectionConfiguration;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesCollectionConfigurationMap;
@@ -106,7 +110,7 @@ class TimeSeriesConfigurationTest extends RemoteTestBase
         }
     }
 
-    public function atestNotValidConfigureShouldThrow(): void
+    public function testNotValidConfigureShouldThrow(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -157,10 +161,6 @@ class TimeSeriesConfigurationTest extends RemoteTestBase
                 $this->assertStringContainsString("month might have different number of days", $exception->getMessage());
             }
 
-            $config3 = new TimeSeriesConfiguration();
-            $config3->setCollections($collectionsConfig);
-
-
             $timeSeriesCollectionConfiguration = new TimeSeriesCollectionConfiguration();
             $timeSeriesCollectionConfiguration->setRawPolicy(new RawTimeSeriesPolicy(TimeValue::ofMonths(1)));
             $timeSeriesCollectionConfiguration->setPolicies([
@@ -170,6 +170,9 @@ class TimeSeriesConfigurationTest extends RemoteTestBase
 
             $collectionsConfig = [];
             $collectionsConfig["Users"] = $timeSeriesCollectionConfiguration;
+
+            $config3 = new TimeSeriesConfiguration();
+            $config3->setCollections($collectionsConfig);
 
             try {
                 $store->maintenance()->send(new ConfigureTimeSeriesOperation($config3));
@@ -255,7 +258,7 @@ class TimeSeriesConfigurationTest extends RemoteTestBase
         }
     }
 
-    public function atestCanConfigureTimeSeries2(): void
+    public function testCanConfigureTimeSeries2(): void
     {
         DisableOnPullRequestCondition::evaluateExecutionCondition($this);
 
@@ -273,73 +276,57 @@ class TimeSeriesConfigurationTest extends RemoteTestBase
             $policies = [ $p1, $p2, $p3, $p4, $p5, $p6];
 
             foreach ($policies as $policy) {
-//                $store->maintenance()->send(new ConfigureTimeSeriesPolicyOperation($collectionName, $policy));
+                $store->maintenance()->send(new ConfigureTimeSeriesPolicyOperation($collectionName, $policy));
             }
 
-//            $store->maintenance()->send(new ConfigureRawTimeSeriesPolicyOperation($collectionName, new RawTimeSeriesPolicy(TimeValue::ofHours(96))));
+            $store->maintenance()->send(new ConfigureRawTimeSeriesPolicyOperation($collectionName, new RawTimeSeriesPolicy(TimeValue::ofHours(96))));
+            $parameters = new ConfigureTimeSeriesValueNamesParameters();
+            $parameters->setCollection($collectionName);
+            $parameters->setTimeSeries("HeartRate");
+            $parameters->setValueNames([ "HeartRate" ]);
+            $parameters->setUpdate(true);
 
-//            $parameters = new ConfigureTimeSeriesValueNamesOperationParameters();
-//            parameters.setCollection(collectionName);
-//            parameters.setTimeSeries("HeartRate");
-//            parameters.setValueNames(new String[] { "HeartRate" });
-//            parameters.setUpdate(true);
-//
-//            ConfigureTimeSeriesValueNamesOperation nameConfig = new ConfigureTimeSeriesValueNamesOperation(parameters);
-//            $store->maintenance()->send(nameConfig);
-//
-//            $updated = $store->maintenance()->server()->send(new GetDatabaseRecordOperation($store->getDatabase()))->getTimeSeries();
-//            $collection = $updated->getCollections().get(collectionName);
-//            policies = collection.getPolicies();
-//
-//            assertThat(policies)
-//                    .hasSize(6);
-//
-//            assertThat($policies[0]->getRetentionTime())
-//                    .isEqualTo(TimeValue::ofSeconds(60));
-//            assertThat($policies[0]->getAggregationTime())
-//                    .isEqualTo(TimeValue::ofSeconds(1));
-//
-//            assertThat($policies[1]->getRetentionTime())
-//                    .isEqualTo(TimeValue::ofMinutes(180));
-//            assertThat($policies[1]->getAggregationTime())
-//                    .isEqualTo(TimeValue::ofMinutes(1));
-//
-//            assertThat($policies[2]->getRetentionTime())
-//                    .isEqualTo(TimeValue::ofHours(48));
-//            assertThat($policies[2]->getAggregationTime())
-//                    .isEqualTo(TimeValue::ofHours(1));
-//
-//            assertThat($policies[3]->getRetentionTime())
-//                    .isEqualTo(TimeValue::ofMonths(1));
-//            assertThat($policies[3]->getAggregationTime())
-//                    .isEqualTo(TimeValue::ofDays(1));
-//
-//            assertThat($policies[4]->getRetentionTime())
-//                    .isEqualTo(TimeValue::ofYears(1));
-//            assertThat($policies[4]->getAggregationTime())
-//                    .isEqualTo(TimeValue::ofMonths(1));
-//
-//            assertThat($policies[5]->getRetentionTime())
-//                    .isEqualTo(TimeValue::ofYears(3));
-//            assertThat($policies[5]->getAggregationTime())
-//                    .isEqualTo(TimeValue::ofYears(1));
-//
-//            assertThat(updated.getNamedValues())
-//                    .isNotNull();
-//
-//            assertThat(updated.getNamedValues())
-//                    .hasSize(1);
-//            String[] mapper = $updated->getNames(collectionName, "heartrate");
-//            assertThat(mapper)
-//                    .isNotNull()
-//                    .hasSize(1)
-//                    .contains("HeartRate");
+            $nameConfig = new ConfigureTimeSeriesValueNamesOperation($parameters);
+            $store->maintenance()->send($nameConfig);
+
+            $updated = $store->maintenance()->server()->send(new GetDatabaseRecordOperation($store->getDatabase()))->getTimeSeries();
+            $collection = $updated->getCollections()[$collectionName];
+            $policies = $collection->getPolicies();
+
+            $this->assertCount(6, $policies);
+
+            $this->assertEquals(TimeValue::ofSeconds(60), $policies[0]->getRetentionTime());
+            $this->assertEquals(TimeValue::ofSeconds(1), $policies[0]->getAggregationTime());
+
+            $this->assertEquals(TimeValue::ofMinutes(180), $policies[1]->getRetentionTime());
+            $this->assertEquals(TimeValue::ofMinutes(1), $policies[1]->getAggregationTime());
+
+            $this->assertEquals(TimeValue::ofHours(48), $policies[2]->getRetentionTime());
+            $this->assertEquals(TimeValue::ofHours(1), $policies[2]->getAggregationTime());
+
+            $this->assertEquals(TimeValue::ofMonths(1), $policies[3]->getRetentionTime());
+            $this->assertEquals(TimeValue::ofDays(1), $policies[3]->getAggregationTime());
+
+            $this->assertEquals(TimeValue::ofYears(1), $policies[4]->getRetentionTime());
+            $this->assertEquals(TimeValue::ofMonths(1), $policies[4]->getAggregationTime());
+
+            $this->assertEquals(TimeValue::ofYears(3), $policies[5]->getRetentionTime());
+            $this->assertEquals(TimeValue::ofYears(1), $policies[5]->getAggregationTime());
+
+            $this->assertNotNull($updated->getNamedValues());
+
+            $this->assertCount(1, $updated->getNamedValues());
+
+            $mapper = $updated->getNames($collectionName, "heartrate");
+            $this->assertNotNull($mapper);
+            $this->assertCount(1, $mapper);
+            $this->assertContains("HeartRate", $mapper);
         } finally {
             $store->close();
         }
     }
 
-    public function atestcanConfigureTimeSeries3(): void
+    public function testCanConfigureTimeSeries3(): void
     {
         DisableOnPullRequestCondition::evaluateExecutionCondition($this);
         $store = $this->getDocumentStore();
@@ -351,75 +338,66 @@ class TimeSeriesConfigurationTest extends RemoteTestBase
             $store->timeSeries()->setPolicy(User::class, "ByMonthFor1Year", TimeValue::ofMonths(1), TimeValue::ofYears(1));
             $store->timeSeries()->setPolicy(User::class, "ByYearFor3Years", TimeValue::ofYears(1), TimeValue::ofYears(3));
 
-//            $updated = $store->maintenance()->server()->send(new GetDatabaseRecordOperation($store->getDatabase()))->getTimeSeries();
-//            $collection = $updated->getCollections().get("Users");
-//            List<TimeSeriesPolicy> policies = collection.getPolicies();
-//
-//            assertThat(policies)
-//                    .hasSize(6);
-//
-//            assertThat($policies[0]->getRetentionTime())
-//                    .isEqualTo(TimeValue::ofSeconds(60));
-//            assertThat($policies[0]->getAggregationTime())
-//                    .isEqualTo(TimeValue::ofSeconds(15));
-//
-//            assertThat($policies[1]->getRetentionTime())
-//                    .isEqualTo(TimeValue::ofMinutes(180));
-//            assertThat($policies[1]->getAggregationTime())
-//                    .isEqualTo(TimeValue::ofMinutes(1));
-//
-//            assertThat($policies[2]->getRetentionTime())
-//                    .isEqualTo(TimeValue::ofHours(48));
-//            assertThat($policies[2]->getAggregationTime())
-//                    .isEqualTo(TimeValue::ofHours(1));
-//
-//            assertThat($policies[3]->getRetentionTime())
-//                    .isEqualTo(TimeValue::ofMonths(1));
-//            assertThat($policies[3]->getAggregationTime())
-//                    .isEqualTo(TimeValue::ofDays(1));
-//
-//            assertThat($policies[4]->getRetentionTime())
-//                    .isEqualTo(TimeValue::ofYears(1));
-//            assertThat($policies[4]->getAggregationTime())
-//                    .isEqualTo(TimeValue::ofMonths(1));
-//
-//            assertThat($policies[5]->getRetentionTime())
-//                    .isEqualTo(TimeValue::ofYears(3));
-//            assertThat($policies[5]->getAggregationTime())
-//                    .isEqualTo(TimeValue::ofYears(1));
-//
-//            assertThatThrownBy(() -> {
-//                $store->timeSeries().removePolicy(User::class, "ByMinuteFor3Hours");
-//            }).hasMessageContaining("System.InvalidOperationException: The policy 'By15SecondsFor1Minute' has a retention time of '60 seconds' but should be aggregated by policy 'ByHourFor12Hours' with the aggregation time frame of 60 minutes");
-//
-//            assertThatThrownBy(() -> {
-//                $store->timeSeries().setRawPolicy(User::class, TimeValue::ofSeconds(10));
-//            }).hasMessageContaining("System.InvalidOperationException: The policy 'rawpolicy' has a retention time of '10 seconds' but should be aggregated by policy 'By15SecondsFor1Minute' with the aggregation time frame of 15 seconds");
-//
-//            $store->timeSeries().setRawPolicy(User::class, TimeValue::ofMinutes(120));
-//            $store->timeSeries()->setPolicy(User::class, "By15SecondsFor1Minute", TimeValue::ofSeconds(30), TimeValue::ofSeconds(120));
-//
-//            updated = $store->maintenance()->server()->send(new GetDatabaseRecordOperation($store->getDatabase()))->getTimeSeries();
-//            collection = $updated->getCollections().get("Users");
-//            policies = collection.getPolicies();
-//
-//            assertThat(policies)
-//                    .hasSize(6);
-//            assertThat($policies[0]->getRetentionTime())
-//                    .isEqualTo(TimeValue::ofSeconds(120));
-//            assertThat($policies[0]->getAggregationTime())
-//                    .isEqualTo(TimeValue::ofSeconds(30));
-//
-//            $store->timeSeries().removePolicy(User::class, "By15SecondsFor1Minute");
-//
-//            updated = $store->maintenance()->server()->send(new GetDatabaseRecordOperation($store->getDatabase()))->getTimeSeries();
-//            collection = $updated->getCollections().get("Users");
-//            policies = collection.getPolicies();
-//
-//            assertThat(policies)
-//                    .hasSize(5);
-//
-//            $store->timeSeries().removePolicy(User::class, RawTimeSeriesPolicy.POLICY_STRING);
+            $updated = $store->maintenance()->server()->send(new GetDatabaseRecordOperation($store->getDatabase()))->getTimeSeries();
+            $collection = $updated->getCollections()["Users"];
+            $policies = $collection->getPolicies();
+
+            $this->assertCount(6, $policies);
+
+            $this->assertEquals(TimeValue::ofSeconds(60), $policies[0]->getRetentionTime());
+            $this->assertEquals(TimeValue::ofSeconds(15), $policies[0]->getAggregationTime());
+
+            $this->assertEquals(TimeValue::ofMinutes(180), $policies[1]->getRetentionTime());
+            $this->assertEquals(TimeValue::ofMinutes(1), $policies[1]->getAggregationTime());
+
+            $this->assertEquals(TimeValue::ofHours(48), $policies[2]->getRetentionTime());
+            $this->assertEquals(TimeValue::ofHours(1), $policies[2]->getAggregationTime());
+
+            $this->assertEquals(TimeValue::ofMonths(1), $policies[3]->getRetentionTime());
+            $this->assertEquals(TimeValue::ofDays(1), $policies[3]->getAggregationTime());
+
+            $this->assertEquals(TimeValue::ofYears(1), $policies[4]->getRetentionTime());
+            $this->assertEquals(TimeValue::ofMonths(1), $policies[4]->getAggregationTime());
+
+            $this->assertEquals(TimeValue::ofYears(3), $policies[5]->getRetentionTime());
+            $this->assertEquals(TimeValue::ofYears(1), $policies[5]->getAggregationTime());
+
+            try {
+                $store->timeSeries()->removePolicy(User::class, "ByMinuteFor3Hours");
+
+                throw new Exception('It should throw exception before reaching this code');
+            } catch (Throwable $exception) {
+                $this->assertStringContainsString("System.InvalidOperationException: The policy 'By15SecondsFor1Minute' has a retention time of '60 seconds' but should be aggregated by policy 'ByHourFor12Hours' with the aggregation time frame of 60 minutes", $exception->getMessage());
+            }
+
+            try {
+                $store->timeSeries()->setRawPolicy(User::class, TimeValue::ofSeconds(10));
+
+                throw new Exception('It should throw exception before reaching this code');
+            } catch (Throwable $exception) {
+                $this->assertStringContainsString("System.InvalidOperationException: The policy 'rawpolicy' has a retention time of '10 seconds' but should be aggregated by policy 'By15SecondsFor1Minute' with the aggregation time frame of 15 seconds", $exception->getMessage());
+            }
+
+            $store->timeSeries()->setRawPolicy(User::class, TimeValue::ofMinutes(120));
+            $store->timeSeries()->setPolicy(User::class, "By15SecondsFor1Minute", TimeValue::ofSeconds(30), TimeValue::ofSeconds(120));
+
+            $updated = $store->maintenance()->server()->send(new GetDatabaseRecordOperation($store->getDatabase()))->getTimeSeries();
+            $collection = $updated->getCollections()["Users"];
+            $policies = $collection->getPolicies();
+
+            $this->assertCount(6, $policies);
+            $this->assertEquals(TimeValue::ofSeconds(120), $policies[0]->getRetentionTime());
+            $this->assertEquals(TimeValue::ofSeconds(30), $policies[0]->getAggregationTime());
+
+            $store->timeSeries()->removePolicy(User::class, "By15SecondsFor1Minute");
+
+            $updated = $store->maintenance()->server()->send(new GetDatabaseRecordOperation($store->getDatabase()))->getTimeSeries();
+            $collection = $updated->getCollections()["Users"];
+            $policies = $collection->getPolicies();
+
+            $this->assertCount(5, $policies);
+
+            $store->timeSeries()->removePolicy(User::class, RawTimeSeriesPolicy::POLICY_STRING);
         } finally {
             $store->close();
         }
