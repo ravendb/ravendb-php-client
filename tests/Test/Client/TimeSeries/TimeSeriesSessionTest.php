@@ -981,7 +981,7 @@ class TimeSeriesSessionTest extends RemoteTestBase
         }
     }
 
-    public function testGetAllTimeSeriesNamesWhenNoTimeSeries(): void
+    public function testGetAllTimeSeriesNamesWhenNoTimeSeriesTimeSeriesTypedSessionTest(): void
     {
         $store = $this->getDocumentStore();
         try {

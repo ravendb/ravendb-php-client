@@ -9,6 +9,7 @@ use RavenDB\Documents\Commands\Batches\CommandType;
 use RavenDB\Documents\Commands\Batches\TimeSeriesBatchCommandData;
 use RavenDB\Documents\Operations\TimeSeries\AppendOperation;
 use RavenDB\Documents\Operations\TimeSeries\DeleteOperation;
+use RavenDB\Documents\Operations\TimeSeries\GetMultipleTimeSeriesOperation;
 use RavenDB\Documents\Operations\TimeSeries\GetTimeSeriesOperation;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesDetails;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRange;
@@ -17,6 +18,7 @@ use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeResult;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeResultList;
 use RavenDB\Documents\Session\TimeSeries\TimeSeriesEntry;
 use RavenDB\Documents\Session\TimeSeries\TimeSeriesEntryArray;
+use RavenDB\Documents\Session\TimeSeries\TimeSeriesEntryList;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Primitives\DatesComparator;
@@ -218,27 +220,27 @@ class SessionTimeSeriesBase
         $rangeResult->setIncludes(null);
     }
 
-//    private static List<TimeSeriesEntry> skipAndTrimRangeIfNeeded(Date from, Date to, TimeSeriesRangeResult fromRange,
-//                                                                  TimeSeriesRangeResult toRange, List<TimeSeriesEntry> values,
-//                                                                  int skip, int trim) {
-//        if (fromRange != null && DatesComparator.compare(rightDate(fromRange.getTo()), leftDate(from)) >= 0) {
-//            // need to skip a part of the first range
-//            if (toRange != null && DatesComparator.compare(leftDate(toRange.getFrom()), rightDate(to)) <= 0) {
-//                // also need to trim a part of the last range
-//                return values.stream().skip(skip).limit(values.size() - skip - trim).collect(Collectors.toList());
-//            }
-//
-//            return values.stream().skip(skip).collect(Collectors.toList());
-//        }
-//
-//        if (toRange != null && DatesComparator.compare(leftDate(toRange.getFrom()), rightDate(to)) <= 0) {
-//            // trim a part of the last range
-//
-//            return values.stream().limit(values.size() - trim).collect(Collectors.toList());
-//        }
-//
-//        return values;
-//    }
+    private static function skipAndTrimRangeIfNeeded(?DateTimeInterface $from, ?DateTimeInterface $to, ?TimeSeriesRangeResult $fromRange,
+                                                                  ?TimeSeriesRangeResult $toRange, ?TimeSeriesEntryArray $values,
+                                                                  int $skip, int $trim): TimeSeriesEntryArray {
+        if ($fromRange != null && DatesComparator::compare(DatesComparator::rightDate($fromRange->getTo()), DatesComparator::leftDate($from)) >= 0) {
+            // need to skip a part of the first range
+            if ($toRange != null && DatesComparator::compare(DatesComparator::leftDate($toRange->getFrom()), DatesComparator::rightDate($to)) <= 0) {
+                // also need to trim a part of the last range
+                return $values->slice($skip, count($values) - $skip - $trim);
+            }
+
+            return $values->slice($skip);
+        }
+
+        if ($toRange != null && DatesComparator::compare(DatesComparator::leftDate($toRange->getFrom()), DatesComparator::rightDate($to)) <= 0) {
+            // trim a part of the last range
+
+            return $values->slice(0, count($values) - $trim);
+        }
+
+        return $values;
+    }
 
     /**
      * @param DateTimeInterface|null $from
@@ -329,42 +331,53 @@ class SessionTimeSeriesBase
         $this->session->incrementRequestCount();
 
         // @todo: continue here to Get Time Series ranges from server
-//        /** @var TimeSeriesDetails $details */
-//        $details = $this->session->getOperations()->send(new GetMultipleTimeSeriesOperation($docId, $rangesToGetFromServer, $start, $pageSize, $includes), $this->session->getSessionInfo());
+        /** @var TimeSeriesDetails $details */
+        $details = $this->session->getOperations()->send(new GetMultipleTimeSeriesOperation($this->docId, $rangesToGetFromServer, $start, $pageSize, $includes), $this->session->getSessionInfo());
 
-//        if ($includes != null) {
-//            $this->registerIncludes($details);
-//        }
-//        // merge all the missing parts we got from server
-//        // with all the ranges in cache that are between 'fromRange' and 'toRange'
-//
-//        Reference<List<TimeSeriesEntry>> resultToUserRef = new Reference<>();
-//        TimeSeriesEntry[] mergedValues = mergeRangesWithResults(from, to, ranges, fromRangeIndex, toRangeIndex, details.getValues().get(name), resultToUserRef);
-//        List<TimeSeriesEntry> resultToUser = resultToUserRef.value;
-//
-//        if (!session.noTracking) {
-//            from = details
-//                    .getValues()
-//                    .get(name)
-//                    .stream()
-//                    .map(x -> x.getFrom())
-//                    .filter(Objects::nonNull)
-//                    .min(Date::compareTo)
-//                    .orElse(null);
-//            to = details
-//                    .getValues()
-//                    .get(name)
-//                    .stream()
-//                    .map(x -> x.getTo())
-//                    .filter(Objects::nonNull)
-//                    .max(Date::compareTo)
-//                    .orElse(null);
-//            InMemoryDocumentSessionOperations.addToCache(name, from, to,
-//                    fromRangeIndex, toRangeIndex, ranges, cache, mergedValues);
-//        }
-//
-//        return resultToUser;
-        return new TimeSeriesEntryArray();
+        if ($includes != null) {
+            $this->registerIncludes($details);
+        }
+        // merge all the missing parts we got from server
+        // with all the ranges in cache that are between 'fromRange' and 'toRange'
+
+        $resultToUser = new TimeSeriesEntryArray();
+        $mergedValues = $this->mergeRangesWithResults($from, $to, $ranges, $fromRangeIndex, $toRangeIndex, $details->getValues()[$this->name], $resultToUser);
+
+        if (!$this->session->noTracking) {
+            $from = array_reduce(
+                array_filter(
+                    array_map(function($x) { return $x->getFrom(); } ,$details->getValues()[$this->name]->getArrayCopy()),
+                    function($x) {return $x != null; }
+                ),
+                function($carry, $item) {
+                    if ($carry == null) {
+                        return $item;
+                    }
+                    return $carry < $item ? $carry : $item;
+                },
+                null
+            );
+
+            $to = array_reduce(
+                array_filter(
+                    array_map(function($x) { return $x->getTo(); } ,$details->getValues()[$this->name]->getArrayCopy()),
+                    function($x) {return $x != null; }
+                ),
+                function($carry, $item) {
+                    if ($carry == null) {
+                        return $item;
+                    }
+                    return $carry > $item ? $carry : $item;
+                },
+                null
+            );
+
+            $rangeList = TimeSeriesRangeResultList::fromArray($ranges);
+            InMemoryDocumentSessionOperations::addToCacheInternal($this->name, $from, $to,
+                    $fromRangeIndex, $toRangeIndex, $rangeList, $cache, $mergedValues);
+        }
+
+        return $resultToUser;
     }
 
     private function registerIncludes(?TimeSeriesDetails $details): void
@@ -375,99 +388,110 @@ class SessionTimeSeriesBase
         }
     }
 
-//    private static TimeSeriesEntry[] mergeRangesWithResults(Date from, Date to, List<TimeSeriesRangeResult> ranges,
-//                                                                int fromRangeIndex, int toRangeIndex,
-//                                                                List<TimeSeriesRangeResult> resultFromServer,
-//                                                                Reference<List<TimeSeriesEntry>> resultToUserRef) {
-//        int skip = 0;
-//        int trim = 0;
-//        int currentResultIndex = 0;
-//        List<TimeSeriesEntry> mergedValues = new ArrayList<>();
-//
-//        int start = fromRangeIndex != -1 ? fromRangeIndex : 0;
-//        int end = toRangeIndex == ranges.size() ? ranges.size() - 1 : toRangeIndex;
-//
-//        for (int i = start; i <= end; i++) {
-//            if (i == fromRangeIndex) {
-//                if (DatesComparator.compare(leftDate(ranges.get(i).getFrom()), leftDate(from)) <= 0 &&
-//                        DatesComparator.compare(leftDate(from), rightDate(ranges.get(i).getTo())) <= 0) {
-//                    // requested range [from, to] starts inside 'fromRange'
-//                    // i.e fromRange.From <= from <= fromRange.To
-//                    // so we might need to skip a part of it when we return the
-//                    // result to the user (i.e. skip [fromRange.From, from])
-//
-//                    if (ranges.get(i).getEntries() != null) {
-//                        for (TimeSeriesEntry v : ranges.get(i).getEntries()) {
-//                            mergedValues.add(v);
-//                            if (DatesComparator.compare(definedDate(v.getTimestamp()), leftDate(from)) < 0) {
-//                                skip++;
-//                            }
-//
-//                        }
-//                    }
-//                }
-//
-//                continue;
-//            }
-//
-//            if (currentResultIndex < resultFromServer.size()
-//                    && DatesComparator.compare(leftDate(resultFromServer.get(currentResultIndex).getFrom()), leftDate(ranges.get(i).getFrom())) < 0) {
-//                // add current result from server to the merged list
-//                // in order to avoid duplication, skip first item in range
-//                // (unless this is the first time we're adding to the merged list)
-//                List<TimeSeriesEntry> toAdd = Arrays.stream(resultFromServer.get(currentResultIndex++)
-//                        .getEntries())
-//                        .skip(mergedValues.size() == 0 ? 0 : 1)
-//                        .collect(Collectors.toList());
-//                mergedValues.addAll(toAdd);
-//            }
-//
-//            if (i == toRangeIndex) {
-//                if (DatesComparator.compare(leftDate(ranges.get(i).getFrom()), rightDate(to)) <= 0) {
-//                    // requested range [from, to] ends inside 'toRange'
-//                    // so we might need to trim a part of it when we return the
-//                    // result to the user (i.e. trim [to, toRange.to])
-//
-//                    for (int index = mergedValues.size() == 0 ? 0 : 1; index < ranges.get(i).getEntries().length; index++) {
-//                        mergedValues.add(ranges.get(i).getEntries()[index]);
-//                        if (DatesComparator.compare(definedDate(ranges.get(i).getEntries()[index].getTimestamp()), rightDate(to)) > 0) {
-//                            trim++;
-//                        }
-//                    }
-//                }
-//
-//                continue;
-//            }
-//
-//            // add current range from cache to the merged list.
-//            // in order to avoid duplication, skip first item in range if needed
-//            List<TimeSeriesEntry> toAdd = Arrays.stream(ranges.get(i)
-//                    .getEntries())
-//                    .skip(mergedValues.size() == 0 ? 0 : 1)
-//                    .collect(Collectors.toList());
-//
-//            mergedValues.addAll(toAdd);
-//        }
-//
-//        if (currentResultIndex < resultFromServer.size()) {
-//            // the requested range ends after all the ranges in cache,
-//            // so the last missing part is from server
-//            // add last missing part to the merged list
-//
-//            List<TimeSeriesEntry> toAdd = Arrays.stream(resultFromServer.get(currentResultIndex++)
-//                    .getEntries())
-//                    .skip(mergedValues.size() == 0 ? 0 : 1)
-//                    .collect(Collectors.toList());
-//            mergedValues.addAll(toAdd);
-//        }
-//
-//        resultToUserRef.value = skipAndTrimRangeIfNeeded(from, to,
-//                fromRangeIndex == -1 ? null : ranges.get(fromRangeIndex),
-//                toRangeIndex == ranges.size() ? null : ranges.get(toRangeIndex),
-//                mergedValues, skip, trim);
-//
-//        return mergedValues.toArray(new TimeSeriesEntry[0]);
-//    }
+    private static function mergeRangesWithResults(?DateTimeInterface $from, ?DateTimeInterface $to, TimeSeriesRangeResultList|array $ranges,
+                                                                int $fromRangeIndex, int $toRangeIndex,
+                                                                TimeSeriesRangeResultList|array $resultFromServer,
+                                                   TimeSeriesEntryArray &$resultToUserRef):  TimeSeriesEntryArray
+    {
+        if (is_array($ranges)) {
+            $ranges = TimeSeriesRangeResultList::fromArray($ranges);
+        }
+
+        if (is_array($resultFromServer)) {
+            $resultFromServer = TimeSeriesRangeResultList::fromArray($resultFromServer);
+        }
+
+        $skip = 0;
+        $trim = 0;
+        $currentResultIndex = 0;
+        $mergedValues = new TimeSeriesEntryArray();
+
+        $start = $fromRangeIndex != -1 ? $fromRangeIndex : 0;
+        $end = $toRangeIndex == count($ranges) ? count($ranges) - 1 : $toRangeIndex;
+
+        for ($i = $start; $i <= $end; $i++) {
+            if ($i == $fromRangeIndex) {
+                if (DatesComparator::compare(DatesComparator::leftDate($ranges[$i]->getFrom()), DatesComparator::leftDate($from)) <= 0 &&
+                        DatesComparator::compare(DatesComparator::leftDate($from), DatesComparator::rightDate($ranges[$i]->getTo())) <= 0) {
+                    // requested range [from, to] starts inside 'fromRange'
+                    // i.e fromRange.From <= from <= fromRange.To
+                    // so we might need to skip a part of it when we return the
+                    // result to the user (i.e. skip [fromRange.From, from])
+
+                    if ($ranges[$i]->getEntries() != null) {
+                        foreach ($ranges[$i]->getEntries() as $v) {
+                            $mergedValues[] = $v;
+                            if (DatesComparator::compare(DatesComparator::definedDate($v->getTimestamp()), DatesComparator::leftDate($from)) < 0) {
+                                $skip++;
+                            }
+
+                        }
+                    }
+                }
+
+                continue;
+            }
+
+            if ($currentResultIndex < count($resultFromServer)
+                    && DatesComparator::compare(DatesComparator::leftDate($resultFromServer[$currentResultIndex]->getFrom()), DatesComparator::leftDate($ranges[$i]->getFrom())) < 0) {
+                // add current result from server to the merged list
+                // in order to avoid duplication, skip first item in range
+                // (unless this is the first time we're adding to the merged list)
+                $toAdd = $resultFromServer[$currentResultIndex++]->getEntries();
+                if (count($mergedValues) != 0) {
+                    $toAdd->shift();
+                }
+
+                if (count($toAdd)) {
+                    $mergedValues->appendArrayValues($toAdd);
+                }
+            }
+
+            if ($i == $toRangeIndex) {
+                if (DatesComparator::compare(DatesComparator::leftDate($ranges[$i]->getFrom()), DatesComparator::rightDate($to)) <= 0) {
+                    // requested range [from, to] ends inside 'toRange'
+                    // so we might need to trim a part of it when we return the
+                    // result to the user (i.e. trim [to, toRange.to])
+
+                    for ($index = count($mergedValues) == 0 ? 0 : 1; $index < count($ranges[$i]->getEntries()); $index++) {
+                        $mergedValues[] = $ranges[$i]->getEntries()[$index];
+                        if (DatesComparator::compare(DatesComparator::definedDate($ranges[$i]->getEntries()[$index]->getTimestamp()), DatesComparator::rightDate($to)) > 0) {
+                            $trim++;
+                        }
+                    }
+                }
+
+                continue;
+            }
+
+            // add current range from cache to the merged list.
+            // in order to avoid duplication, skip first item in range if needed
+            $toAdd = $ranges[$i]->getEntries();
+            if (count($mergedValues) != 0) {
+                $toAdd->shift();
+            }
+            $mergedValues->appendArrayValues($toAdd);
+        }
+
+        if ($currentResultIndex < count($resultFromServer)) {
+            // the requested range ends after all the ranges in cache,
+            // so the last missing part is from server
+            // add last missing part to the merged list
+
+            $toAdd = $resultFromServer[$currentResultIndex++]->getEntries();
+            if (count($mergedValues) != 0) {
+                $toAdd->shift();
+            }
+            $mergedValues->appendArrayValues($toAdd);
+        }
+
+        $resultToUserRef = self::skipAndTrimRangeIfNeeded($from, $to,
+                $fromRangeIndex == -1 ? null : $ranges[$fromRangeIndex],
+                $toRangeIndex == count($ranges) ? null : $ranges[$toRangeIndex],
+                $mergedValues, $skip, $trim);
+
+        return $mergedValues;
+    }
 
     private static function chopRelevantRange(TimeSeriesRangeResult $range, ?DateTimeInterface $from, ?DateTimeInterface $to, int $start, int $pageSize): TimeSeriesEntryArray
     {

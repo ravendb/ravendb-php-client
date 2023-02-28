@@ -5,8 +5,8 @@ namespace RavenDB\Documents\Operations\TimeSeries;
 class TimeSeriesDetails
 {
     private ?string $id = null;
-    /** @var array<TimeSeriesRangeResultList>  */
-    private array $values;
+
+    private TimeSeriesRangeResultListArray $values;
 
     public function getId(): ?string
     {
@@ -18,13 +18,16 @@ class TimeSeriesDetails
         $this->id = $id;
     }
 
-    public function getValues(): array
+    public function getValues(): TimeSeriesRangeResultListArray
     {
         return $this->values;
     }
 
-    public function setValues(array $values): void
+    public function setValues(TimeSeriesRangeResultListArray|array $values): void
     {
+        if (is_array($values)) {
+            $values = TimeSeriesRangeResultListArray::fromArray($values);
+        }
         $this->values = $values;
     }
 }

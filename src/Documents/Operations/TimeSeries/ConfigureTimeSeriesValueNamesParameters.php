@@ -59,9 +59,9 @@ class ConfigureTimeSeriesValueNamesParameters
         return $this->valueNames;
     }
 
-    public function setValueNames(?StringArray $valueNames): void
+    public function setValueNames(null|array|StringArray $valueNames): void
     {
-        $this->valueNames = $valueNames;
+        $this->valueNames = is_array($valueNames) ? StringArray::fromArray($valueNames) : $valueNames;
     }
 
     public function isUpdate(): bool

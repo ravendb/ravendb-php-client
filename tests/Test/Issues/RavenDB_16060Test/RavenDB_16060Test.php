@@ -6,7 +6,7 @@ use DateTime;
 use RavenDB\Documents\Operations\TimeSeries\ConfigureTimeSeriesOperation;
 use RavenDB\Documents\Operations\TimeSeries\RawTimeSeriesPolicy;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesCollectionConfiguration;
-use RavenDB\Documents\Operations\TimeSeries\TimeSeriesCollectionConfigurationArray;
+use RavenDB\Documents\Operations\TimeSeries\TimeSeriesCollectionConfigurationMap;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesConfiguration;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesPolicy;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeType;
@@ -574,7 +574,7 @@ class RavenDB_16060Test extends RemoteTestBase
             $timeSeriesCollectionConfiguration->setPolicies([$p1, $p2, $p3, $p4]);
 
             $config = new TimeSeriesConfiguration();
-            $config->setCollections(TimeSeriesCollectionConfigurationArray::fromArray(["users" => $timeSeriesCollectionConfiguration]));
+            $config->setCollections(TimeSeriesCollectionConfigurationMap::fromArray(["users" => $timeSeriesCollectionConfiguration]));
             $config->setPolicyCheckFrequency(Duration::ofSeconds(1));
 
             $store->maintenance()->send(new ConfigureTimeSeriesOperation($config));

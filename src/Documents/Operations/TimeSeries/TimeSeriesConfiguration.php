@@ -4,6 +4,7 @@ namespace RavenDB\Documents\Operations\TimeSeries;
 
 use DateInterval;
 use RavenDB\Type\Duration;
+use RavenDB\Type\ExtendedArrayObject;
 use RavenDB\Type\StringArray;
 
 use Symfony\Component\Serializer\Annotation\SerializedName;
@@ -14,37 +15,38 @@ class TimeSeriesConfiguration
     public const TIME_SERIES_ROLLUP_SEPARATOR = '@';
 
     /** @SerializedName("Collections") */
-    private ?TimeSeriesCollectionConfigurationArray $collections = null;
+    private ?TimeSeriesCollectionConfigurationMap $collections = null;
 
     /** @SerializedName("PolicyCheckFrequency") */
     private ?Duration $policyCheckFrequency = null;
 
     /** @SerializedName("NamedValues") */
-    private ?array $namedValues = null;
+    private ?ExtendedArrayObject $namedValues = null;
 
     public function __construct(
-        ?TimeSeriesCollectionConfigurationArray $collections = null,
-        ?Duration $policyCheckFrequency = null,
-        ?array $namedValues = null
+        ?TimeSeriesCollectionConfigurationMap $collections = null,
+        ?Duration                             $policyCheckFrequency = null,
+        null|array                            $namedValues = null
     )
     {
         $this->collections = $collections;
         $this->policyCheckFrequency = $policyCheckFrequency;
-        $this->namedValues = $namedValues;
+        $this->namedValues = ExtendedArrayObject::ensure($namedValues);
+        $this->namedValues->setKeysCaseInsensitive(true);
 
         $this->internalPostJsonDeserialization();
     }
 
 
-    public function getCollections(): TimeSeriesCollectionConfigurationArray
+    public function & getCollections(): ?TimeSeriesCollectionConfigurationMap
     {
         return $this->collections;
     }
 
-    public function setCollections(TimeSeriesCollectionConfigurationArray|array $collections): void
+    public function setCollections(null|TimeSeriesCollectionConfigurationMap|array $collections): void
     {
         if (is_array($collections)) {
-            $collections = TimeSeriesCollectionConfigurationArray::fromArray($collections);
+            $collections = TimeSeriesCollectionConfigurationMap::fromArray($collections);
         }
         $this->collections = $collections;
     }
@@ -61,29 +63,31 @@ class TimeSeriesConfiguration
 
     public function getNamedValues(): ?array
     {
-        return $this->namedValues;
+        return $this->namedValues->getArrayCopy();
     }
 
-    public function setNamedValues(?array $namedValues): void
+    public function setNamedValues(null|array $namedValues): void
     {
-        $this->namedValues = $namedValues;
+        $this->namedValues = ExtendedArrayObject::ensure($namedValues);
+        $this->namedValues->setKeysCaseInsensitive(true);
     }
 
-    public function getNames(string $collection, string $timeSeries): ?StringArray
+    public function getNames(string $collection, string $timeSeries): ?array
     {
         if (empty($this->namedValues)) {
             return null;
         }
 
-        if (!in_array($collection, $this->namedValues)) {
+        if (!$this->namedValues->offsetExists($collection)) {
             return null;
         }
-        $timeSeriesHolder = $this->namedValues[$collection];
+        $timeSeriesHolder = array_change_key_case($this->namedValues[$collection], CASE_LOWER);
 
-        if (!in_array($timeSeries, $timeSeriesHolder)) {
+        $timeSeriesLowerCase = strtolower($timeSeries);
+        if (!array_key_exists($timeSeriesLowerCase, $timeSeriesHolder)) {
             return null;
         }
-        return $timeSeriesHolder[$timeSeries];
+        return $timeSeriesHolder[$timeSeriesLowerCase];
     }
 
     private function internalPostJsonDeserialization(): void
@@ -99,7 +103,7 @@ class TimeSeriesConfiguration
         }
 
         // @todo: we should test does this work as expected
-        $dic = new TimeSeriesCollectionConfigurationArray();
+        $dic = new TimeSeriesCollectionConfigurationMap();
 
         foreach ($this->collections as $key => $value) {
             $dic[$key] = $value;
@@ -113,12 +117,12 @@ class TimeSeriesConfiguration
             return;
         }
 
-        // @todo: we should test does this work as expected
-        $dic = [];
+        $dic = new ExtendedArrayObject();
+        $dic->setKeysCaseInsensitive(true);
         foreach ($this->namedValues as $key => $value) {
             $valueMap = [];
             $valueMap = $value;
-            $dic[$key] = $valueMap;
+            $dic->offsetSet($key, $valueMap);
         }
 
         $this->namedValues = $dic;

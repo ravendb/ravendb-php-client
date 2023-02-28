@@ -7,6 +7,7 @@ use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Queries\IndexQuery;
 use RavenDB\Documents\Session\EntityToJson;
+use RavenDB\Type\ExtendedArrayObject;
 use RavenDB\Utils\TimeUtils;
 use Symfony\Component\PropertyAccess\PropertyAccessor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
@@ -57,6 +58,7 @@ class JsonExtensions
             new RavenArrayNormalizer(),
             new TypedArrayNormalizer(),
             new StringArrayNormalizer(),
+            new ExtendedObjectArrayNormalizer(),
             new ValueObjectNormalizer(),
             new DurationNormalizer(),
             new DateTimeNormalizer([

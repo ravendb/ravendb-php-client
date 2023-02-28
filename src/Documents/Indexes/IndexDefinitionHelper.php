@@ -5,7 +5,6 @@ namespace RavenDB\Documents\Indexes;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Utils\StringUtils;
 
-// !status: DONE
 class IndexDefinitionHelper
 {
   public static function detectStaticIndexType(string $map, ?string $reduce): IndexType
@@ -61,7 +60,6 @@ class IndexDefinitionHelper
         if (str_starts_with($map, "from")) {
             // detect `from ts in timeseries` or `from ts in timeseries.Users.HeartRate`
 
-            // @todo: following five lines of code should be tested
             $tokens = [];
             foreach (explode(' ', $mapLower) as $item) {
                 if (StringUtils::isNotEmpty($item)) {
@@ -83,17 +81,13 @@ class IndexDefinitionHelper
         return IndexSourceType::documents();
     }
 
-    // @todo: implement and this code should be tested
     private static function stripComments(string $input): string
     {
-        return $input;
-//        return trim(preg_replace("(?:/\\*(?:[^*]|(?:\\*+[^*/]))*\\*+/)|(?://.*)","", $input));
+        return trim(preg_replace('~(?:/\\*(?:[^*]|(?:\\*+[^*/]))*\\*+/)|(?://.*)~',"", $input));
     }
 
-    // @todo: implement and this code should be tested
     private static function unifyWhiteSpace(string $input): string
     {
-        return $input;
-//        return preg_replace("\\s+", " ", $input);
+        return preg_replace("/\s+/", " ", $input);
     }
 }
