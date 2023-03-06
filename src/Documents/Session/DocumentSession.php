@@ -1266,17 +1266,12 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
 //            _innerIterator.close();
 //        }
 //    }
-//
-//    @Override
-//    public ISessionDocumentCounters countersFor(String documentId) {
-//        return new SessionDocumentCounters(this, documentId);
-//    }
-//
-//    @Override
-//    public ISessionDocumentCounters countersFor(Object entity) {
-//        return new SessionDocumentCounters(this, entity);
-//    }
-//
+
+    public function countersFor(string|object $idOrEntity): SessionDocumentCountersInterface
+    {
+        return new SessionDocumentCounters($this, $idOrEntity);
+    }
+
 //    @Override
 //    public <T> IGraphDocumentQuery<T> graphQuery(Class<T> clazz, String query) {
 //        GraphDocumentQuery<T> graphQuery = new GraphDocumentQuery<T>(clazz, this, query);

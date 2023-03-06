@@ -9,6 +9,7 @@ use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Documents\Commands\Batches\CommandDataInterface;
 use RavenDB\Exceptions\Documents\Session\NonUniqueObjectException;
 use RavenDB\Http\RequestExecutor;
+use RavenDB\Type\StringList;
 
 interface AdvancedDocumentSessionOperationsInterface
 {
@@ -159,13 +160,15 @@ interface AdvancedDocumentSessionOperationsInterface
      */
     function getChangeVectorFor(?object $instance): ?string;
 
-//    /**
-//     * Gets all the counter names for the specified entity.
-//     * @param instance The instance
-//     * @param <T> Class of instance
-//     * @return List of counter names
-//     */
-//    <T> List<String> getCountersFor(T instance);
+    /**
+     * Gets all the counter names for the specified entity.
+     *
+     * @template T Class of instance
+     *
+     * @param T $instance The instance
+     * @return StringList List of counter names
+     */
+    function getCountersFor(mixed $instance): ?StringList;
 
     /**
      * Gets all time series names for the specified entity.

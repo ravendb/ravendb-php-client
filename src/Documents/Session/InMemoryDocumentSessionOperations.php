@@ -46,6 +46,7 @@ use RavenDB\Primitives\EventHelper;
 use RavenDB\Type\DeferredCommandsMap;
 use RavenDB\Type\ExtendedArrayObject;
 use RavenDB\Type\StringArray;
+use RavenDB\Type\StringList;
 use RavenDB\Utils\AtomicInteger;
 use RavenDB\Utils\StringUtils;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
@@ -219,15 +220,16 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
      */
     public DeletedEntitiesHolder $deletedEntities;
 
-//    /**
-//     * @return map which holds the data required to manage Counters tracking for RavenDB's Unit of Work
-//     */
-//    public Map<String, Tuple<Boolean, Map<String, Long>>> getCountersByDocId() {
-//        if (_countersByDocId == null) {
-//            _countersByDocId = new TreeMap<>(String::compareToIgnoreCase);
-//        }
-//        return _countersByDocId;
-//    }
+    /**
+     * @return array map which holds the data required to manage Counters tracking for RavenDB's Unit of Work
+     */
+    public function & getCountersByDocId(): array // Map<String, Tuple<Boolean, Map<String, Long>>>
+    {
+        if ($this->countersByDocId == null) {
+            $this->countersByDocId = []; //new TreeMap<>(String::compareToIgnoreCase);
+        }
+        return $this->countersByDocId;
+    }
 
     // @todo: Change from array to adequate format
 //    private Map<String, Tuple<Boolean, Map<String, Long>>> _countersByDocId;
@@ -235,7 +237,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     // @todo: Change from array to adequate format
 //    private Map<String, Map<String, List<TimeSeriesRangeResult>>> _timeSeriesByDocId;
-    private ?array $timeSeriesByDocId = null;
+    private array $timeSeriesByDocId = [];
 
     // @todo: Change return type from array to adequate format
     public function & getTimeSeriesByDocId(): array // Map<String, Map<String, List<TimeSeriesRangeResult>>>
@@ -498,28 +500,29 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         return $metadata;
     }
 
-//    /**
-//     * Gets all counter names for the specified entity.
-//     * @param instance Instance
-//     * @param <T> Instance class
-//     * @return All counters names
-//     */
-//    public <T> List<String> getCountersFor(T instance) {
-//        if (instance == null) {
-//            throw new IllegalArgumentException("Instance cannot be null");
-//        }
-//
-//        DocumentInfo documentInfo = getDocumentInfo(instance);
-//
-//        ArrayNode countersArray = (ArrayNode) documentInfo.getMetadata().get(Constants.Documents.Metadata.COUNTERS);
-//        if (countersArray == null) {
-//            return null;
-//        }
-//
-//        return IntStream.range(0, countersArray.size())
-//                .mapToObj(i -> countersArray.get(i).asText())
-//                .collect(Collectors.toList());
-//    }
+    /**
+     * Gets all counter names for the specified entity.
+    * @template T Class of instance
+    *
+    * @param T $instance The instance
+    * @return null|StringList List of all counter names
+*/
+    public function getCountersFor(mixed $instance): ?StringList
+    {
+        if ($instance == null) {
+            throw new IllegalArgumentException("Instance cannot be null");
+        }
+
+        $documentInfo = $this->getDocumentInfo($instance);
+
+        if (!array_key_exists(DocumentsMetadata::COUNTERS, $documentInfo->getMetadata())) {
+            return null;
+        }
+
+        $countersArray = $documentInfo->getMetadata()[DocumentsMetadata::COUNTERS];
+
+        return StringList::fromArray($countersArray);
+    }
 
     /**
      * Gets all time series names for the specified entity.

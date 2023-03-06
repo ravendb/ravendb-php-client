@@ -89,9 +89,7 @@ interface DocumentSessionInterface
      */
     public function rawQuery(string $className, string $query): RawDocumentQueryInterface;
 
-//    ISessionDocumentCounters countersFor(String documentId);
-//
-//    ISessionDocumentCounters countersFor(Object entity);
+    public function countersFor(string|object $idOrEntity): SessionDocumentCountersInterface;
 
     public function timeSeriesFor(string|object|null $idOrEntity, ?string $name): SessionDocumentTimeSeriesInterface;
 
