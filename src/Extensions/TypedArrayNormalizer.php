@@ -34,7 +34,7 @@ class TypedArrayNormalizer implements
 
         if ($data) {
             foreach ($data as $key => $item) {
-                $itemObject = $this->denormalizer->denormalize($item, $object->getType(), $format, $context);
+                $itemObject = $item != null ? $this->denormalizer->denormalize($item, $object->getType(), $format, $context) : null;
                 $object->offsetSet($key, $itemObject);
             }
         }

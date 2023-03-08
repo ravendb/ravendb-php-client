@@ -134,7 +134,10 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
     public function get($key)
     {
         if ($this->metadata != null) {
-            return $this->metadata[$key];
+            if (array_key_exists($key, $this->metadata)) {
+                return $this->metadata[$key];
+            }
+            return null;
         }
 
         return $this->convertValue($key, $this->source[$key]);
