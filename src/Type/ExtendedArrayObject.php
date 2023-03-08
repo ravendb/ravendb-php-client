@@ -69,10 +69,16 @@ class ExtendedArrayObject extends \ArrayObject implements \JsonSerializable
         return 'This value is not allowed.';
     }
 
+    private array $keyMap = [];
+
     public function offsetSet($key, $value): void
     {
         $this->validateValue($value);
-        parent::offsetSet($this->key($key), $value);
+        parent::offsetSet($key, $value);
+        if ($key == null) {
+            $key = array_key_last($this->getArrayCopy());
+        }
+        $this->keyMap[strtolower($key)] = $key;
     }
 
     public function offsetGet(mixed $key): mixed
@@ -82,17 +88,25 @@ class ExtendedArrayObject extends \ArrayObject implements \JsonSerializable
 
     public function offsetExists($key): bool
     {
-        return parent::offsetExists($this->key($key));
+        if ($this->keysCaseInsensitive) {
+            return array_key_exists(strtolower($key), $this->keyMap);
+        }
+        return parent::offsetExists($key);
     }
 
     public function offsetUnset($key): void
     {
         parent::offsetUnset($this->key($key));
+        unset($this->keyMap[strtolower($key)]);
     }
 
     private function key($key): ?string
     {
-        return $this->keysCaseInsensitive ? strtolower($key) : $key;
+        if (!$this->keysCaseInsensitive) {
+            return $key;
+        }
+
+        return $this->keyMap[strtolower($key)];
     }
 
     public function prepend($value): void
