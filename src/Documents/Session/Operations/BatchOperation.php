@@ -16,6 +16,7 @@ use RavenDB\Exceptions\ClientVersionMismatchException;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Json\BatchCommandResult;
+use RavenDB\Type\ExtendedArrayObject;
 
 // !status: IN PROGRESS
 class BatchOperation
@@ -175,7 +176,7 @@ class BatchOperation
                 case CommandType::FORCE_REVISION_CREATION:
                     break;
                 case CommandType::COUNTERS:
-//                    handleCounters(batchResult);
+                    $this->handleCounters($batchResult);
                     break;
                 case CommandType::TIME_SERIES:
 //                    //TODO: RavenDB-13474 add to time series cache
@@ -523,50 +524,52 @@ class BatchOperation
         $this->applyMetadataModifications($id, $documentInfo);
     }
 
-//    private void handleCounters(ObjectNode batchResult) {
-//
-//        String docId = getStringField(batchResult, CommandType.COUNTERS, "Id");
-//
-//        ObjectNode countersDetail = (ObjectNode) batchResult.get("CountersDetail");
-//        if (countersDetail == null) {
-//            throwMissingField(CommandType.COUNTERS, "CountersDetail");
-//        }
-//
-//        ArrayNode counters = (ArrayNode) countersDetail.get("Counters");
-//        if (counters == null) {
-//            throwMissingField(CommandType.COUNTERS, "Counters");
-//        }
-//
-//        Tuple<Boolean, Map<String, Long>> cache = _session.getCountersByDocId().get(docId);
-//        if (cache == null) {
-//            cache = Tuple.create(false, new TreeMap<>(String::compareToIgnoreCase));
-//            _session.getCountersByDocId().put(docId, cache);
-//        }
-//
-//        String changeVector = getStringField(batchResult, CommandType.COUNTERS, "DocumentChangeVector", false);
-//        if (changeVector != null) {
-//            DocumentInfo documentInfo = _session.documentsById.getValue(docId);
-//            if (documentInfo != null) {
-//                documentInfo.setChangeVector(changeVector);
-//            }
-//        }
-//
-//        for (JsonNode counter : counters) {
-//            JsonNode name = counter.get("CounterName");
-//            JsonNode value = counter.get("TotalValue");
-//
-//            if (name != null && !name.isNull() && value != null && !value.isNull()) {
-//                cache.second.put(name.asText(), value.longValue());
-//            }
-//        }
-//    }
+    private function handleCounters(array $batchResult): void
+    {
+        $docId = $this->getStringField($batchResult, CommandType::counters(), "Id");
+
+        $countersDetail = array_key_exists('CountersDetail', $batchResult) ? $batchResult['CountersDetail'] : null;
+        if ($countersDetail === null) {
+            $this->throwMissingField(CommandType::counters(), "CountersDetail");
+        }
+
+        $counters = array_key_exists('Counters', $countersDetail) ? $countersDetail['Counters'] : null;
+        if ($counters === null) {
+            $this->throwMissingField(CommandType::counters(), "Counters");
+        }
+
+        if (array_key_exists($docId, $this->session->getCountersByDocId())) {
+            $cache = $this->session->getCountersByDocId()[$docId];
+        } else {
+            $array = new ExtendedArrayObject();
+            $array->setKeysCaseInsensitive(true);
+            $cache = [false, $array];
+        }
+
+        $changeVector = $this->getStringField($batchResult, CommandType::counters(), "DocumentChangeVector", false);
+        if ($changeVector != null) {
+            $documentInfo = $this->session->documentsById->getValue($docId);
+            $documentInfo?->setChangeVector($changeVector);
+        }
+
+        foreach ($counters as $counter) {
+            $name = array_key_exists('CounterName', $counter) ? $counter['CounterName'] : null;
+            $value = array_key_exists('TotalValue', $counter) ? $counter['TotalValue'] : null;
+
+            if (!empty($name) && !empty($value)) {
+                $cache[1][$name] = $value;
+            }
+        }
+
+        $this->session->getCountersByDocId()[$docId] = $cache;
+    }
 
     private function getStringField(
         array       $json,
         CommandType $type,
         string      $fieldName,
         bool        $throwOnMissing = true
-    ): ?string
+    ): string
     {
         $jsonNode = null;
         if (key_exists($fieldName, $json)) {

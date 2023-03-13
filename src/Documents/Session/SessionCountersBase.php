@@ -95,12 +95,12 @@ abstract class SessionCountersBase
             $this->session->defer(new CountersBatchCommandData($this->docId, $counterOp));
         }
 
-//        Tuple<Boolean, Map<String, Long>> cache = session.getCountersByDocId().get(docId);
-
         if (array_key_exists($this->docId, $this->session->getCountersByDocId())) {
             $cache = $this->session->getCountersByDocId()[$this->docId];
-            // @todo: implement this!!!
-//            cache.second.remove(counter);
+            if ($cache[1]->offsetExists($counter)) {
+                $cache[1]->offsetUnset($counter);
+            }
+            $this->session->getCountersByDocId()[$this->docId] = $cache;
         }
     }
 

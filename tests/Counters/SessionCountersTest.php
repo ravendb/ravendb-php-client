@@ -407,7 +407,7 @@ class SessionCountersTest extends RemoteTestBase
         }
     }
 
-    public function atestShouldThrow(): void
+    public function testShouldThrow(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -1004,7 +1004,7 @@ class SessionCountersTest extends RemoteTestBase
         }
     }
 
-    public function atestSessionIncrementCounterShouldUpdateCounterValueAfterSaveChanges(): void
+    public function testSessionIncrementCounterShouldUpdateCounterValueAfterSaveChanges(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -1064,7 +1064,7 @@ class SessionCountersTest extends RemoteTestBase
         }
     }
 
-    public function atestSessionShouldRemoveCounterFromCacheAfterCounterDeletion(): void
+    public function testSessionShouldRemoveCounterFromCacheAfterCounterDeletion(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -1102,7 +1102,7 @@ class SessionCountersTest extends RemoteTestBase
         }
     }
 
-    public function atestSessionShouldRemoveCountersFromCacheAfterDocumentDeletion(): void
+    public function testSessionShouldRemoveCountersFromCacheAfterDocumentDeletion(): void
     {
         $store = $this->getDocumentStore();
         try {

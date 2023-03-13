@@ -119,11 +119,11 @@ class QueryResultBase
      */
     public function getIncludedCounterNames(): array
     {
-        return $includedCounterNames;
+        return $this->includedCounterNames;
     }
 
     /**
-     * @param array includedCounterNames The names of all the counters that the server was asked to include in the result, by document id.
+     * @param array $includedCounterNames The names of all the counters that the server was asked to include in the result, by document id.
      */
     public function setIncludedCounterNames(array $includedCounterNames): void
     {
