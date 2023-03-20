@@ -28,6 +28,7 @@ use RavenDB\Documents\Session\Operations\QueryOperation;
 use RavenDB\Documents\Session\Tokens\CloseSubclauseToken;
 use RavenDB\Documents\Session\Tokens\CompareExchangeValueIncludesToken;
 use RavenDB\Documents\Session\Tokens\CompareExchangeValueIncludesTokenArray;
+use RavenDB\Documents\Session\Tokens\CounterIncludesToken;
 use RavenDB\Documents\Session\Tokens\CounterIncludesTokenArray;
 use RavenDB\Documents\Session\Tokens\DeclareTokenArray;
 use RavenDB\Documents\Session\Tokens\DistinctToken;
@@ -544,8 +545,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
             }
         }
 
-        // @todo: implement this for counters and timeseeries
-//        $this->_includeCounters($includes->alias, $includes->countersToIncludeBySourcePath);
+
+        $this->_includeCounters($includes->alias, $includes->countersToIncludeBySourcePath);
         if ($includes->timeSeriesToIncludeBySourceAlias != null) {
             $this->_includeTimeSeries($includes->alias, $includes->timeSeriesToIncludeBySourceAlias);
         }
@@ -2363,29 +2364,30 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     protected ?CompareExchangeValueIncludesTokenArray $compareExchangeValueIncludesTokens = null;
 
-//    protected void _includeCounters(String alias, Map<String, Tuple<Boolean, Set<String>>> counterToIncludeByDocId) {
-//        if (counterToIncludeByDocId == null || counterToIncludeByDocId.isEmpty()) {
-//            return;
-//        }
-//
-//        counterIncludesTokens = new ArrayList<>();
-//        _includesAlias = alias;
-//
-//        for (Map.Entry<String, Tuple<Boolean, Set<String>>> kvp : counterToIncludeByDocId.entrySet()) {
-//            if (kvp.getValue().first) {
-//                counterIncludesTokens.add(CounterIncludesToken.all(kvp.getKey()));
-//                continue;
-//            }
-//
-//            if (kvp.getValue().second == null || kvp.getValue().second.isEmpty()) {
-//                continue;
-//            }
-//
-//            for (String name : kvp.getValue().second) {
-//                counterIncludesTokens.add(CounterIncludesToken.create(kvp.getKey(), name));
-//            }
-//        }
-//    }
+    protected function _includeCounters(?string $alias, array $counterToIncludeByDocId): void
+    {
+        if ($counterToIncludeByDocId == null || empty($counterToIncludeByDocId)) {
+            return;
+        }
+
+        $this->counterIncludesTokens = new CounterIncludesTokenArray();
+        $this->includesAlias = $alias;
+
+        foreach ($counterToIncludeByDocId as $key => $value) {
+            if ($value[0]) {
+                $this->counterIncludesTokens[] = CounterIncludesToken::all($key);
+                continue;
+            }
+
+            if ($value[1] == null || empty($value[1])) {
+                continue;
+            }
+
+            foreach ($value[1] as $name) {
+                $this->counterIncludesTokens[] = CounterIncludesToken::create($key, $name);
+            }
+        }
+    }
 
     private function _includeTimeSeries(?string $alias, ?array $timeSeriesToInclude): void
     {

@@ -1895,8 +1895,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             return;
         }
 
-        if (empty($resultCounters)) {
-//            $this->setGotAllInCacheIfNeeded($countersToInclude);
+        if (count($resultCounters) == 0) {
+            $this->setGotAllInCacheIfNeeded($countersToInclude);
         } else {
             $this->registerCountersInternal($resultCounters, $countersToInclude, true, false);
         }
@@ -1923,7 +1923,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
                 if (!empty($countersToInclude)) {
                     $counters = array_key_exists($field, $countersToInclude) ? $countersToInclude[$field] : null;
                 }
-                $gotAll = $counters != null && count($counters) == 0;
+                $gotAll = $counters !== null && count($counters) == 0;
             }
 
             if (count($value) == 0 && !$gotAll) {
@@ -1963,7 +1963,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             $cache = [$gotAll, $array];
         }
 
-        $deletedCounters = empty($cache[1])
+        $emptyCache = $cache[1] == null || count($cache[1]) == 0;
+        $deletedCounters = $emptyCache
                 ? []
                 : ($countersToInclude === null || count($countersToInclude[$id]) == 0 ? array_keys($cache[1]->getArrayCopy()) : $countersToInclude[$id]);
 
@@ -1973,15 +1974,15 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
             if ($counterName != null && $totalValue != null) {
                 $cache[1][strval($counterName)] = intval($totalValue);
-                if (array_key_exists($counterName, $deletedCounters)) {
-                    unset($deletedCounters[$counterName]);
+                if (($key = array_search($counterName, $deletedCounters)) !== false) {
+                    unset($deletedCounters[$key]);
                 }
             }
         }
 
         if (!empty($deletedCounters)) {
             foreach ($deletedCounters as $name) {
-                if (array_key_exists($name, $cache[1])) {
+                if ($cache[1]->offsetExists($name)) {
                     unset($cache[1][$name]);
                 }
             }
@@ -1991,15 +1992,16 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $this->getCountersByDocId()[$id] = $cache;
     }
 
-//    private void setGotAllInCacheIfNeeded(Map<String, String[]> countersToInclude) {
-//        for (Map.Entry<String, String[]> kvp : countersToInclude.entrySet()) {
-//            if (kvp.getValue().length > 0) {
-//                continue;
-//            }
-//
-//            setGotAllCountersForDocument(kvp.getKey());
-//        }
-//    }
+    private function setGotAllInCacheIfNeeded(array $countersToInclude): void
+    {
+        foreach ($countersToInclude as $key => $value) {
+            if (count($value) > 0) {
+                continue;
+            }
+
+            $this->setGotAllCountersForDocument($key);
+        }
+    }
 
     private
     function setGotAllCountersForDocument(?string $id): void
