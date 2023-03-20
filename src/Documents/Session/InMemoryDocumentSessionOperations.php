@@ -1883,7 +1883,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             $this->registerCountersInternal($resultCounters, null, false, $gotAll);
         }
 
-//        $this->registerMissingCounters($ids, $countersToInclude);
+        $this->registerMissingCountersByIds($ids, $countersToInclude);
     }
 
     public function registerCountersFromQuery(
@@ -1901,12 +1901,12 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             $this->registerCountersInternal($resultCounters, $countersToInclude, true, false);
         }
 
-//        $this->registerMissingCounters($countersToInclude);
+        $this->registerMissingCounters($countersToInclude);
     }
 
     private function registerCountersInternal(
         array $resultCounters,
-        array $countersToInclude,   // Map<String, String[]>
+        ?array $countersToInclude,   // Map<String, String[]>
         bool  $fromQueryResult,
         bool  $gotAll
     ): void
@@ -1917,10 +1917,12 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
                 continue;
             }
 
-            $counters = [];
+            $counters = null;
 
             if ($fromQueryResult) {
-                $counters = array_key_exists($field, $countersToInclude) ? $countersToInclude[$field] : null;
+                if (!empty($countersToInclude)) {
+                    $counters = array_key_exists($field, $countersToInclude) ? $countersToInclude[$field] : null;
+                }
                 $gotAll = $counters != null && count($counters) == 0;
             }
 
@@ -1950,7 +1952,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         ?string $id,
         bool    $gotAll,
         array   $counters,          // String[]
-        array   $countersToInclude  // Map<String, String[]>
+        ?array   $countersToInclude  // Map<String, String[]>
     ): void
     {
         if (array_key_exists($id, $this->getCountersByDocId())) {
@@ -1963,11 +1965,11 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
         $deletedCounters = empty($cache[1])
                 ? []
-                : (count($countersToInclude[$id]) == 0 ? array_keys($cache[1]) : $countersToInclude[$id]);
+                : ($countersToInclude === null || count($countersToInclude[$id]) == 0 ? array_keys($cache[1]->getArrayCopy()) : $countersToInclude[$id]);
 
         foreach ($counters as $counterJson) {
-            $counterName = array_key_exists('CounterName', $counterJson) ? $counterJson['CounterName'] : null;
-            $totalValue = array_key_exists('TotalValue', $counterJson) ? $counterJson['TotalValue'] : null;
+            $counterName = $counterJson !== null && array_key_exists('CounterName', $counterJson) ? $counterJson['CounterName'] : null;
+            $totalValue = $counterJson !== null && array_key_exists('TotalValue', $counterJson) ? $counterJson['TotalValue'] : null;
 
             if ($counterName != null && $totalValue != null) {
                 $cache[1][strval($counterName)] = intval($totalValue);
@@ -2014,49 +2016,55 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $this->getCountersByDocId()[$id] = $cache;
     }
 
-//    private void registerMissingCounters(Map<String, String[]> countersToInclude) {
-//        if (countersToInclude == null) {
-//            return;
-//        }
-//
-//        for (Map.Entry<String, String[]> kvp : countersToInclude.entrySet()) {
-//            Tuple<Boolean, Map<String, Long>> cache = getCountersByDocId().get(kvp.getKey());
-//            if (cache == null) {
-//                cache = Tuple.create(false, new TreeMap<>(String::compareToIgnoreCase));
-//                getCountersByDocId().put(kvp.getKey(), cache);
-//            }
-//
-//            for (String counter : kvp.getValue()) {
-//                if (cache.second.containsKey(counter)) {
-//                    continue;
-//                }
-//
-//                cache.second.put(counter, null);
-//            }
-//        }
-//    }
-//
-//    private void registerMissingCounters(String[] ids, String[] countersToInclude) {
-//        if (countersToInclude == null) {
-//            return;
-//        }
-//
-//        for (String counter : countersToInclude) {
-//            for (String id : ids) {
-//                Tuple<Boolean, Map<String, Long>> cache = getCountersByDocId().get(id);
-//                if (cache == null) {
-//                    cache = Tuple.create(false, new TreeMap<>(String::compareToIgnoreCase));
-//                    getCountersByDocId().put(id, cache);
-//                }
-//
-//                if (cache.second.containsKey(counter)) {
-//                    continue;
-//                }
-//
-//                cache.second.put(counter, null);
-//            }
-//        }
-//    }
+    private function registerMissingCounters(array $countersToInclude): void
+    {
+        if ($countersToInclude == null) {
+            return;
+        }
+
+        foreach ($countersToInclude as $key => $counters) {
+            if (!array_key_exists($key, $this->getCountersByDocId())) {
+                $array = new ExtendedArrayObject();
+                $array->setKeysCaseInsensitive(true);
+                $cache = [false, $array];
+            } else {
+                $cache = $this->getCountersByDocId()[$key];
+            }
+
+            foreach ($counters as $counter) {
+                if ($cache[1]->offsetExists($counter)) {
+                    continue;
+                }
+                $cache[1][$counter] = null;
+            }
+            $this->getCountersByDocId()[$key] = $cache;
+        }
+    }
+
+    private function registerMissingCountersByIds(StringArray $ids, ?StringArray $countersToInclude): void
+    {
+        if ($countersToInclude == null) {
+            return;
+        }
+
+        foreach ($countersToInclude as $counter) {
+            foreach ($ids as $id) {
+                if (!array_key_exists($id, $this->getCountersByDocId())) {
+                    $array = new ExtendedArrayObject();
+                    $array->setKeysCaseInsensitive(true);
+                    $cache = [false, $array];
+                } else {
+                    $cache = $this->getCountersByDocId()[$id];
+                }
+
+                if (!$cache[1]->offsetExists($counter)) {
+                    $cache[1][$counter] = null;
+                }
+
+                $this->getCountersByDocId()[$id] = $cache;
+            }
+        }
+    }
 
 
     public

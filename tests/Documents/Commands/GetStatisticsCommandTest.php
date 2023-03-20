@@ -6,8 +6,10 @@ use RavenDB\Documents\Operations\DatabaseStatistics;
 use RavenDB\Documents\Operations\GetStatisticsCommand;
 use RavenDB\Documents\Operations\GetStatisticsOperation;
 use RavenDB\Documents\Operations\IndexInformation;
+use RavenDB\Documents\Session\SessionDocumentTimeSeriesInterface;
 use RavenDB\Documents\Smuggler\DatabaseItemType;
 use RavenDB\Documents\Smuggler\DatabaseItemTypeSet;
+use RavenDB\Utils\DateUtils;
 use tests\RavenDB\Infrastructure\CreateSampleDataOperation;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
@@ -82,8 +84,7 @@ class GetStatisticsCommandTest extends RemoteTestBase
         }
     }
 
-    /** @todo: active test method when counters and time series are implemented */
-    public function atestCanGetStatsForCountersAndTimeSeries(): void
+    public function testCanGetStatsForCountersAndTimeSeries(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -91,16 +92,15 @@ class GetStatisticsCommandTest extends RemoteTestBase
             try {
                 $session->store(new User(), "users/1");
 
-//                $session->countersFor("users/1")
-//                        ->increment("c1");
-//
-//                $session->countersFor("users/1")
-//                        ->increment("c2");
-//
-//                /** @var SessionDocumentTimeSeriesInterface $tsf */
-//                $tsf = $session->timeSeriesFor("users/1", "Heartrate");
-//                $tsf->append(DateUtils::now(), 70);
-//                $tsf->append(DateUtils::addMinutes(DateUtils::now(), 1), 20);
+                $session->countersFor("users/1")
+                        ->increment("c1");
+
+                $session->countersFor("users/1")
+                        ->increment("c2");
+
+                $tsf = $session->timeSeriesFor("users/1", "Heartrate");
+                $tsf->append(DateUtils::now(), 70);
+                $tsf->append(DateUtils::addMinutes(DateUtils::now(), 1), 20);
 
                 $session->saveChanges();
             } finally {

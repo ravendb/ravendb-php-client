@@ -174,7 +174,7 @@ class IncludeBuilderBase
             if (array_key_exists($path, $this->countersToIncludeBySourcePath)) {
                 $value = $this->countersToIncludeBySourcePath[$path];
             }
-            if ($value != null && $value[1]) {
+            if ($value != null && $value[0]) {
                 throw new IllegalStateException("You cannot use counter(name) after using allCounters()");
             }
         }

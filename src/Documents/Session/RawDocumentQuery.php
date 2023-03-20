@@ -13,7 +13,7 @@ use RavenDB\Type\Duration;
 // !status: DONE
 class RawDocumentQuery extends AbstractDocumentQuery implements RawDocumentQueryInterface
 {
-    public function __construct(string $className, InMemoryDocumentSessionOperations $session, string $rawQuery)
+    public function __construct(?string $className, InMemoryDocumentSessionOperations $session, string $rawQuery)
     {
         parent::__construct($className, $session, null, null, false, null, null);
         $this->queryRaw = $rawQuery;

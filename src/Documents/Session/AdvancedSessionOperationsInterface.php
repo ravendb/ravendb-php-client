@@ -49,12 +49,12 @@ interface AdvancedSessionOperationsInterface extends
     /**
      * Query the specified index using provided raw query
      *
-     * @param string $className result class
+     * @param ?string $className result class
      * @param string $query Query
      *
      * @return RawDocumentQueryInterface Raw document query
      */
-    public function rawQuery(string $className, string $query): RawDocumentQueryInterface;
+    public function rawQuery(?string $className, string $query): RawDocumentQueryInterface;
 
 //    /**
 //     * Issue a graph query based on the raw match query provided

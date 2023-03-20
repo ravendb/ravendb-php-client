@@ -1150,7 +1150,7 @@ class SessionCountersTest extends RemoteTestBase
         }
     }
 
-    public function atestSessionIncludeSingleCounter(): void
+    public function testSessionIncludeSingleCounter(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -1187,7 +1187,7 @@ class SessionCountersTest extends RemoteTestBase
         }
     }
 
-    public function atestSessionChainedIncludeCounter(): void
+    public function testSessionChainedIncludeCounter(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -1211,9 +1211,13 @@ class SessionCountersTest extends RemoteTestBase
 
             $session = $store->openSession();
             try {
-                $order = $session->load(Order::class, "orders/1-A", function ($i) {
-                    $i->includeCounter("likes")->includeCounter("dislikes");
-                });
+                $order = $session->load(Order::class, "orders/1-A",
+                    function ($i) {
+                        $i
+                            ->includeCounter("likes")
+                            ->includeCounter("dislikes");
+                    }
+                );
 
                 $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
 
@@ -1232,7 +1236,7 @@ class SessionCountersTest extends RemoteTestBase
         }
     }
 
-    public function atestSessionChainedIncludeAndIncludeCounter(): void
+    public function testSessionChainedIncludeAndIncludeCounter(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -1298,7 +1302,7 @@ class SessionCountersTest extends RemoteTestBase
         }
     }
 
-    public function atestSessionIncludeCounters(): void
+    public function testSessionIncludeCounters(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -1349,7 +1353,7 @@ class SessionCountersTest extends RemoteTestBase
         }
     }
 
-    public function atestSessionIncludeAllCounters(): void
+    public function testSessionIncludeAllCounters(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -1404,7 +1408,7 @@ class SessionCountersTest extends RemoteTestBase
         }
     }
 
-    public function atestSessionIncludeSingleCounterAfterIncludeAllCountersShouldThrow(): void
+    public function testSessionIncludeSingleCounterAfterIncludeAllCountersShouldThrow(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -1495,7 +1499,7 @@ class SessionCountersTest extends RemoteTestBase
         }
     }
 
-    public function atestSessionIncludeCountersShouldRegisterMissingCounters(): void
+    public function testSessionIncludeCountersShouldRegisterMissingCounters(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -1560,7 +1564,7 @@ class SessionCountersTest extends RemoteTestBase
         }
     }
 
-    public function atestSessionIncludeCountersMultipleLoads(): void
+    public function testSessionIncludeCountersMultipleLoads(): void
     {
         $store = $this->getDocumentStore();
         try {
