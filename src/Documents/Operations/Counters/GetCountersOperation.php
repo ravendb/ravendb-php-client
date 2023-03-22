@@ -15,7 +15,7 @@ class GetCountersOperation implements OperationInterface
     private ?StringArray $counters = null;
     private bool $returnFullResults = false;
 
-    public function __construct(?string $docId, string|StringArray|array|null $counters, bool $returnFullResults = false)
+    public function __construct(?string $docId, string|StringArray|array|null $counters = null, bool $returnFullResults = false)
     {
         if ($counters == null) {
             $counters = [];

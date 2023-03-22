@@ -57,7 +57,7 @@ class GetCounterValuesCommand extends RavenCommand
             ->append("/counters?docId=")
             ->append(UrlUtils::escapeDataString($this->docId));
 
-        if (!empty($this->counters)) {
+        if (!empty($this->counters) && $this->counters->count()) {
             if (count($this->counters) > 1) {
                 $options = $this->prepareRequestWithMultipleCounters($pathBuilder, $method);
             } else {

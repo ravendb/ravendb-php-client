@@ -2,192 +2,198 @@
 
 namespace tests\RavenDB\Test\Issues;
 
+use Exception;
 use RavenDB\Documents\Session\QueryStatistics;
 use RavenDB\Documents\Session\SessionOptions;
+use RavenDB\Exceptions\IllegalStateException;
 use tests\RavenDB\Infrastructure\Orders\Product;
+use tests\RavenDB\Infrastructure\Orders\Supplier;
 use tests\RavenDB\RemoteTestBase;
+use Throwable;
 
 class RavenDB_11217Test extends RemoteTestBase
 {
-//    public void sessionWideNoTrackingShouldWork() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            try (IDocumentSession session = store.openSession()) {
-//                Supplier supplier = new Supplier();
-//                supplier.setName("Supplier1");
+    public function testSessionWideNoTrackingShouldWork(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $session = $store->openSession();
+            try {
+                $supplier = new Supplier();
+                $supplier->setName("Supplier1");
+
+                $session->store($supplier);
+
+                $product = new Product();
+                $product->setName("Product1");
+                $product->setSupplier($supplier->getId());
+
+                $session->store($product);
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $noTrackingOptions = new SessionOptions();
+            $noTrackingOptions->setNoTracking(true);
+
+            $session = $store->openSession($noTrackingOptions);
+            try {
+                $supplier = new Supplier();
+                $supplier->setName("Supplier2");
+
+                try {
+                    $session->store($supplier);
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(IllegalStateException::class, $exception);
+                }
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession($noTrackingOptions);
+            try {
+                $this->assertEquals(0, $session->advanced()->getNumberOfRequests());
+
+                $product1 = $session->load(Product::class, "products/1-A", function($b) { $b->includeDocuments("supplier"); });
+
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+
+                $this->assertNotNull($product1);
+
+                $this->assertEquals("Product1", $product1->getName());
+                $this->assertFalse($session->advanced()->isLoaded($product1->getId()));
+                $this->assertFalse($session->advanced()->isLoaded($product1->getSupplier()));
+
+                $supplier = $session->load(Supplier::class, $product1->getSupplier());
+                $this->assertNotNull($supplier);
+                $this->assertEquals("Supplier1", $supplier->getName());
+                $this->assertEquals(2, $session->advanced()->getNumberOfRequests());
+                $this->assertFalse($session->advanced()->isLoaded($supplier->getId()));
+
+                $product2 = $session->load(Product::class, "products/1-A", function($b) { $b->includeDocuments("supplier"); });
+                $this->assertNotSame($product1, $product2);
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession($noTrackingOptions);
+            try {
+                $this->assertEquals(0, $session->advanced()->getNumberOfRequests());
+
+                $product1 = $session
+                        ->advanced()
+                        ->loadStartingWith(Product::class, "products/")[0];
+
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+
+                $this->assertNotNull($product1);
+                $this->assertEquals("Product1", $product1->getName());
+                $this->assertFalse($session->advanced()->isLoaded($product1->getId()));
+                $this->assertFalse($session->advanced()->isLoaded($product1->getSupplier()));
+
+                $supplier = $session->advanced()->loadStartingWith(Supplier::class, $product1->getSupplier())[0];
+
+                $this->assertNotNull($supplier);
+
+                $this->assertEquals("Supplier1", $supplier->getName());
+                $this->assertEquals(2, $session->advanced()->getNumberOfRequests());
+                $this->assertFalse($session->advanced()->isLoaded($supplier->getId()));
+
+                $product2 = $session
+                        ->advanced()
+                        ->loadStartingWith(Product::class, "products/")[0];
+
+                $this->assertNotSame($product1, $product2);
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession($noTrackingOptions);
+            try {
+                $this->assertEquals(0, $session->advanced()->getNumberOfRequests());
+
+                $products = $session
+                        ->query(Product::class)
+                        ->include("supplier")
+                        ->toList();
+
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+                $this->assertCount(1, $products);
+
+                $product1 = $products[0];
+                $this->assertNotNull($product1);
+                $this->assertFalse($session->advanced()->isLoaded($product1->getId()));
+                $this->assertFalse($session->advanced()->isLoaded($product1->getSupplier()));
+
+                $supplier = $session->load(Supplier::class, $product1->getSupplier());
+                $this->assertNotNull($supplier);
+                $this->assertEquals("Supplier1", $supplier->getName());
+                $this->assertEquals(2, $session->advanced()->getNumberOfRequests());
+                $this->assertFalse($session->advanced()->isLoaded($supplier->getId()));
+
+                $products = $session
+                        ->query(Product::class)
+                        ->include("supplier")
+                        ->toList();
+
+                $this->assertCount(1, $products);
+
+                $product2 = $products[0];
+                $this->assertNotSame($product1, $product2);
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                $session->countersFor("products/1-A")->increment("c1");
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession($noTrackingOptions);
+            try {
+                $product1 = $session->load(Product::class, "products/1-A");
+                $counters = $session->countersFor($product1->getId());
+
+                $counters->get("c1");
+
+                $this->assertEquals(2, $session->advanced()->getNumberOfRequests());
+
+                $counters->get("c1");
+
+                $this->assertEquals(3, $session->advanced()->getNumberOfRequests());
+
+                $val1 = $counters->getAll();
+
+                $this->assertEquals(4, $session->advanced()->getNumberOfRequests());
+
+                $val2 = $counters->getAll();
+
+                $this->assertEquals(5, $session->advanced()->getNumberOfRequests());
+
+//                $this->assertNotSame($val1, $val2);
 //
-//                session.store(supplier);
-//
-//                Product product = new Product();
-//                product.setName("Product1");
-//                product.setSupplier(supplier.getId());
-//
-//                session.store(product);
-//                session.saveChanges();
-//            }
-//
-//            SessionOptions noTrackingOptions = new SessionOptions();
-//            noTrackingOptions.setNoTracking(true);
-//
-//            try (IDocumentSession session = store.openSession(noTrackingOptions)) {
-//                Supplier supplier = new Supplier();
-//                supplier.setName("Supplier2");
-//
-//                assertThatThrownBy(() -> session.store(supplier))
-//                        .isInstanceOf(IllegalStateException.class);
-//            }
-//
-//            try (IDocumentSession session = store.openSession(noTrackingOptions)) {
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isZero();
-//
-//                Product product1 = session.load(Product.class, "products/1-A", b -> b.includeDocuments("supplier"));
-//
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isOne();
-//
-//                assertThat(product1)
-//                        .isNotNull();
-//                assertThat(product1.getName())
-//                        .isEqualTo("Product1");
-//                assertThat(session.advanced().isLoaded(product1.getId()))
-//                        .isFalse();
-//                assertThat(session.advanced().isLoaded(product1.getSupplier()))
-//                        .isFalse();
-//
-//                Supplier supplier = session.load(Supplier.class, product1.getSupplier());
-//                assertThat(supplier)
-//                        .isNotNull();
-//                assertThat(supplier.getName())
-//                        .isEqualTo("Supplier1");
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isEqualTo(2);
-//                assertThat(session.advanced().isLoaded(supplier.getId()))
-//                        .isFalse();
-//
-//                Product product2 = session.load(Product.class, "products/1-A", b -> b.includeDocuments("supplier"));
-//                assertThat(product1)
-//                        .isNotSameAs(product2);
-//            }
-//
-//            try (IDocumentSession session = store.openSession(noTrackingOptions)) {
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isZero();
-//
-//                Product product1 = session
-//                        .advanced()
-//                        .loadStartingWith(Product.class, "products/")[0];
-//
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isOne();
-//
-//                assertThat(product1)
-//                        .isNotNull();
-//                assertThat(product1.getName())
-//                        .isEqualTo("Product1");
-//                assertThat(session.advanced().isLoaded(product1.getId()))
-//                        .isFalse();
-//                assertThat(session.advanced().isLoaded(product1.getSupplier()))
-//                        .isFalse();
-//
-//                Supplier supplier = session.advanced().loadStartingWith(Supplier.class, product1.getSupplier())[0];
-//
-//                assertThat(supplier)
-//                        .isNotNull();
-//                assertThat(supplier.getName())
-//                        .isEqualTo("Supplier1");
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isEqualTo(2);
-//                assertThat(session.advanced().isLoaded(supplier.getId()))
-//                        .isFalse();
-//
-//                Product product2 = session
-//                        .advanced()
-//                        .loadStartingWith(Product.class, "products/")[0];
-//
-//                assertThat(product1)
-//                        .isNotSameAs(product2);
-//            }
-//
-//            try (IDocumentSession session = store.openSession(noTrackingOptions)) {
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isEqualTo(0);
-//
-//                List<Product> products = session
-//                        .query(Product.class)
-//                        .include("supplier")
-//                        .toList();
-//
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isEqualTo(1);
-//                assertThat(products)
-//                        .hasSize(1);
-//
-//                Product product1 = products.get(0);
-//                assertThat(product1)
-//                        .isNotNull();
-//                assertThat(session.advanced().isLoaded(product1.getId()))
-//                        .isFalse();
-//                assertThat(session.advanced().isLoaded(product1.getSupplier()))
-//                        .isFalse();
-//
-//                Supplier supplier = session.load(Supplier.class, product1.getSupplier());
-//                assertThat(supplier)
-//                        .isNotNull();
-//                assertThat(supplier.getName())
-//                        .isEqualTo("Supplier1");
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isEqualTo(2);
-//                assertThat(session.advanced().isLoaded(supplier.getId()))
-//                        .isFalse();
-//
-//                products = session
-//                        .query(Product.class)
-//                        .include("supplier")
-//                        .toList();
-//
-//                assertThat(products)
-//                        .hasSize(1);
-//
-//                Product product2 = products.get(0);
-//                assertThat(product1)
-//                        .isNotSameAs(product2);
-//            }
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                session.countersFor("products/1-A").increment("c1");
-//                session.saveChanges();
-//            }
-//
-//            try (IDocumentSession session = store.openSession(noTrackingOptions)) {
-//                Product product1 = session.load(Product.class, "products/1-A");
-//                ISessionDocumentCounters counters = session.countersFor(product1.getId());
-//
-//                counters.get("c1");
-//
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isEqualTo(2);
-//
-//                counters.get("c1");
-//
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isEqualTo(3);
-//
-//                Map<String, Long> val1 = counters.getAll();
-//
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isEqualTo(4);
-//
-//                Map<String, Long> val2 = counters.getAll();
-//
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isEqualTo(5);
-//
-//                assertThat(val1)
-//                        .isNotSameAs(val2);
-//            }
-//
-//        }
-//    }
+//                !!! this wouldn't work, in PHP we will always get that this two arrays are same
+//                the only way to check that this to values have difference references is to follow next steps>
+//                  1. check they are same
+//                  2. add something to one array
+//                  3. check that arrays are not same
+
+                $this->assertSame($val1, $val2);
+                $val1[] = 'add something to that we do not expect to be added in second array';
+                $this->assertNotSame($val1, $val2);
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
 
     public function testSessionWideNoCachingShouldWork(): void
     {

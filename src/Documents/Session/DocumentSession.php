@@ -1056,7 +1056,7 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         return $this;
     }
 
-    public function rawQuery(string $className, string $query): RawDocumentQueryInterface
+    public function rawQuery(?string $className, string $query): RawDocumentQueryInterface
     {
         return new RawDocumentQuery($className, $this, $query);
     }

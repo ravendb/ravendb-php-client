@@ -3,104 +3,106 @@
 namespace tests\RavenDB\Test\Issues;
 
 use RavenDB\Documents\Commands\GetDocumentsCommand;
+use RavenDB\Documents\Operations\Counters\GetCountersOperation;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
 
 class RavenDB_14919Test extends RemoteTestBase
 {
-//    public function getCountersOperationShouldDiscardNullCounters(): void {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            String docId = "users/2";
-//
-//            String[] counterNames = new String[124];
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                session.store(new User(), docId);
-//
-//                ISessionDocumentCounters c = session.countersFor(docId);
-//                for (int i = 0; i < 100; i++) {
-//                    String name = "likes" + i;
-//                    counterNames[i] = name;
-//                    c.increment(name);
-//                }
-//
-//                session.saveChanges();
-//            }
-//
-//            CountersDetail vals = store.operations().send(new GetCountersOperation(docId, counterNames));
-//            assertThat(vals.getCounters())
-//                    .hasSize(101);
-//
-//            for (int i = 0; i < 100; i++) {
-//                assertThat(vals.getCounters().get(i).getTotalValue())
-//                        .isEqualTo(1);
-//            }
-//
-//            assertThat(vals.getCounters().get(vals.getCounters().size() - 1))
-//                    .isNull();
-//
-//            // test with returnFullResults = true
-//            vals = store.operations().send(new GetCountersOperation(docId, counterNames, true));
-//
-//            assertThat(vals.getCounters())
-//                    .hasSize(101);
-//
-//            for (int i = 0; i < 100; i++) {
-//                assertThat(vals.getCounters().get(i).getCounterValues())
-//                        .hasSize(1);
-//            }
-//
-//            assertThat(vals.getCounters().get(vals.getCounters().size() - 1))
-//                    .isNull();
-//        }
-//    }
-//
-//    @Test
-//    public function getCountersOperationShouldDiscardNullCounters_PostGet(): void {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            String docId = "users/2";
-//            String[] counterNames = new String[1024];
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                session.store(new User(), docId);
-//
-//                ISessionDocumentCounters c = session.countersFor(docId);
-//
-//                for (int i = 0; i < 1000; i++) {
-//                    String name = "likes" + i;
-//                    counterNames[i] = name;
-//                    c.increment(name, i);
-//                }
-//
-//                session.saveChanges();
-//            }
-//
-//            CountersDetail vals = store.operations().send(new GetCountersOperation(docId, counterNames));
-//            assertThat(vals.getCounters())
-//                    .hasSize(1001);
-//
-//            for (int i = 0; i < 1000; i++) {
-//                assertThat(vals.getCounters().get(i).getTotalValue())
-//                        .isEqualTo(i);
-//            }
-//
-//            assertThat(vals.getCounters().get(vals.getCounters().size() - 1))
-//                    .isNull();
-//
-//            // test with returnFullResults = true
-//            vals = store.operations().send(new GetCountersOperation(docId, counterNames, true));
-//            assertThat(vals.getCounters())
-//                    .hasSize(1001);
-//
-//            for (int i = 0; i < 1000; i++) {
-//                assertThat(vals.getCounters().get(i).getTotalValue())
-//                        .isEqualTo(i);
-//            }
-//
-//            assertThat(vals.getCounters().get(vals.getCounters().size() - 1))
-//                    .isNull();
-//        }
-//    }
+    public function testGetCountersOperationShouldDiscardNullCounters(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $docId = "users/2";
+
+            $counterNames = array_fill(0, 124, '');
+
+            $session = $store->openSession();
+            try {
+                $session->store(new User(), $docId);
+
+                $c = $session->countersFor($docId);
+                for ($i = 0; $i < 100; $i++) {
+                    $name = "likes" . $i;
+                    $counterNames[$i] = $name;
+                    $c->increment($name);
+                }
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $vals = $store->operations()->send(new GetCountersOperation($docId, $counterNames));
+            $this->assertCount(101, $vals->getCounters());
+
+            for ($i = 0; $i < 100; $i++) {
+                $this->assertEquals(1, $vals->getCounters()[$i]->getTotalValue());
+            }
+
+            $this->assertNull($vals->getCounters()[count($vals->getCounters()) - 1]);
+
+            // test with returnFullResults = true
+            $vals = $store->operations()->send(new GetCountersOperation($docId, $counterNames, true));
+
+            $this->assertCount(101, $vals->getCounters());
+
+            for ($i = 0; $i < 100; $i++) {
+                $this->assertCount(1, $vals->getCounters()[$i]->getCounterValues());
+            }
+
+            $this->assertNull($vals->getCounters()[count($vals->getCounters()) - 1]);
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testGetCountersOperationShouldDiscardNullCounters_PostGet(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $docId = "users/2";
+            $counterNames = array_fill(0, 1024, '');
+
+            $session = $store->openSession();
+            try {
+                $session->store(new User(), $docId);
+
+                $c = $session->countersFor($docId);
+
+                for ($i = 0; $i < 1000; $i++) {
+                    $name = "likes" . $i;
+                    $counterNames[$i] = $name;
+                    $c->increment($name, $i);
+                }
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $vals = $store->operations()->send(new GetCountersOperation($docId, $counterNames));
+            $this->assertCount(1001, $vals->getCounters());
+
+            for ($i = 0; $i < 1000; $i++) {
+                $this->assertEquals($i, $vals->getCounters()[$i]->getTotalValue());
+            }
+
+            $this->assertNull($vals->getCounters()[count($vals->getCounters()) - 1]);
+
+            // test with returnFullResults = true
+            $vals = $store->operations()->send(new GetCountersOperation($docId, $counterNames, true));
+            $this->assertCount(1001, $vals->getCounters());
+
+            for ($i = 0; $i < 1000; $i++) {
+                $this->assertEquals($i,$vals->getCounters()[$i]->getTotalValue());
+            }
+
+            $this->assertNull($vals->getCounters()[count($vals->getCounters()) - 1]);
+        } finally {
+            $store->close();
+        }
+    }
 
     public function testGetDocumentsCommandShouldDiscardNullIds(): void
     {

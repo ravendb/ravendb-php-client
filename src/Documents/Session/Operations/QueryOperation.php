@@ -187,9 +187,9 @@ class QueryOperation
         if (!$this->noTracking) {
             $this->session->registerMissingIncludes($queryResult->getResults(), $queryResult->getIncludes(), $queryResult->getIncludedPaths());
 
-//            if ($queryResult->getCounterIncludes() != null) {
-//                $this->session->registerCounters($queryResult->getCounterIncludes(), $queryResult->getIncludedCounterNames());
-//            }
+            if ($queryResult->getCounterIncludes() != null) {
+                $this->session->registerCountersFromQuery($queryResult->getCounterIncludes(), $queryResult->getIncludedCounterNames());
+            }
             if ($queryResult->getTimeSeriesIncludes() != null) {
                 $this->session->registerTimeSeries($queryResult->getTimeSeriesIncludes());
             }

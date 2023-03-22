@@ -17,27 +17,37 @@ class QueryIncludeBuilder extends IncludeBuilderBase implements QueryIncludeBuil
     }
 
     /**
-     * @param string|null $path
+     * @param string|null $pathOrName
      * @param string|null $name
      * @return QueryIncludeBuilder
      */
-    public function includeCounter(?string $path, ?string $name): QueryIncludeBuilder
+    public function includeCounter(?string $pathOrName, ?string $name = null): QueryIncludeBuilder
     {
-        $this->_includeCounterWithAlias($path, $name);
+        if ($name == null) {
+            $this->_includeCounter("", $pathOrName);
+        } else {
+            $this->_includeCounterWithAlias($pathOrName, $name);
+
+        }
+
         return $this;
     }
 
     /**
-     * @param string|null $pathOrNames
+     * @param StringArray|array|string|null $pathOrNames
      * @param null|string|StringArray|array $names
      * @return QueryIncludeBuilder
      */
-    public function includeCounters(?string $pathOrNames, $names = null): QueryIncludeBuilder
+    public function includeCounters(null|string|StringArray|array $pathOrNames, $names = null): QueryIncludeBuilder
     {
         if ($names != null) {
             $this->_includeCounterWithAlias($pathOrNames, $names);
         } else {
-            $this->_includeCounter("", $pathOrNames);
+            if (is_string($pathOrNames)) {
+                $this->_includeCounter("", $pathOrNames);
+            } else {
+                $this->_includeCounters("", $pathOrNames);
+            }
         }
         return $this;
     }

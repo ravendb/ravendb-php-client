@@ -60,7 +60,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //    protected final List<ILazyOperation> pendingLazyOperations = new ArrayList<>();
 //    protected final Map<ILazyOperation, Consumer<Object>> onEvaluateLazy = new HashMap<>();
 //
-    private static  ?AtomicInteger $instancesCounter = null;
+    private static ?AtomicInteger $instancesCounter = null;
 
     private int $hash = 0;
     protected bool $generateDocumentKeysOnStore = true;
@@ -149,35 +149,43 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $this->onBeforeConversionToDocument->removeValue($handler);
     }
 
-    public function addAfterConversionToDocumentListener(Closure $handler) {
+    public function addAfterConversionToDocumentListener(Closure $handler)
+    {
         $this->onAfterConversionToDocument->append($handler);
     }
 
-    public function removeAfterConversionToDocumentListener(Closure $handler) {
+    public function removeAfterConversionToDocumentListener(Closure $handler)
+    {
         $this->onAfterConversionToDocument->removeValue($handler);
     }
 
-    public function addBeforeConversionToEntityListener(Closure $handler) {
+    public function addBeforeConversionToEntityListener(Closure $handler)
+    {
         $this->onBeforeConversionToEntity->append($handler);
     }
 
-    public function removeBeforeConversionToEntityListener(Closure $handler) {
+    public function removeBeforeConversionToEntityListener(Closure $handler)
+    {
         $this->onBeforeConversionToEntity->removeValue($handler);
     }
 
-    public function addAfterConversionToEntityListener(Closure $handler) {
+    public function addAfterConversionToEntityListener(Closure $handler)
+    {
         $this->onAfterConversionToEntity->append($handler);
     }
 
-    public function removeAfterConversionToEntityListener(Closure $handler) {
+    public function removeAfterConversionToEntityListener(Closure $handler)
+    {
         $this->onAfterConversionToEntity->removeValue($handler);
     }
 
-    public function addOnSessionClosingListener(Closure $handler) {
+    public function addOnSessionClosingListener(Closure $handler)
+    {
         $this->onSessionClosing->append($handler);
     }
 
-    public function removeOnSessionClosingListener(Closure $handler) {
+    public function removeOnSessionClosingListener(Closure $handler)
+    {
         $this->onSessionClosing->removeValue($handler);
     }
 
@@ -502,11 +510,11 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     /**
      * Gets all counter names for the specified entity.
-    * @template T Class of instance
-    *
-    * @param T $instance The instance
-    * @return null|StringList List of all counter names
-*/
+     * @template T Class of instance
+     *
+     * @param T $instance The instance
+     * @return null|StringList List of all counter names
+     */
     public function getCountersFor(mixed $instance): ?StringList
     {
         if ($instance == null) {
@@ -674,7 +682,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         if ($this->numberOfRequests > $this->maxNumberOfRequestsPerSession) {
             throw new IllegalStateException(sprintf(
                 "The maximum number of requests (%d) allowed for this session has been reached. Raven limits " .
-                "the number of remote calls that a session is allowed to make as an early warning system.".
+                "the number of remote calls that a session is allowed to make as an early warning system." .
                 "Sessions are expected to be short lived, and Raven provides facilities like load(String[] keys) to " .
                 "load multiple documents at once and batch saves (call SaveChanges() only once)." .
                 "You can increase the limit by setting DocumentConvention.MaxNumberOfRequestsPerSession " .
@@ -700,12 +708,13 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
      * @throws ExceptionInterface
      */
     public function trackEntity(
-        ?string  $className,
+        ?string $className,
                 $idOrDocumentInfo,
         ?array  $document = null,
-        ? array $metadata = null,
+        ?array  $metadata = null,
         bool    $noTracking = false
-    ): ?object {
+    ): ?object
+    {
 
         if ($idOrDocumentInfo instanceof DocumentInfo) {
             return $this->trackEntityInternal(
@@ -756,10 +765,11 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     public function trackEntityInternal(
         ?string $entityType,
         ?string $id,
-        array $document,
-        array $metadata,
-        bool $noTracking
-    ): ?object {
+        array   $document,
+        array   $metadata,
+        bool    $noTracking
+    ): ?object
+    {
         // if noTracking is session-wide then we want to override the passed argument
         $noTracking = $this->noTracking || $noTracking;
 
@@ -878,8 +888,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $this->deletedEntities->add($entity);
         $this->includedDocumentsById->remove($value->getId());
         if ($this->countersByDocId !== null) {
-            if (($key = array_search($value->getId(), $this->countersByDocId)) !== false) {
-                unset($this->countersByDocId[$key]);
+            if (array_key_exists($value->getId(), $this->countersByDocId)) {
+                unset($this->countersByDocId[$id]);
             }
         }
         $this->knownMissingIds[] = $value->getId();
@@ -921,16 +931,16 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $this->knownMissingIds[] = $id;
         $changeVector = $this->isUseOptimisticConcurrency() ? $changeVector : null;
         if ($this->countersByDocId !== null) {
-            if (($key = array_search($id, $this->countersByDocId)) !== false) {
-                unset($this->countersByDocId[$key]);
+            if (array_key_exists($id, $this->countersByDocId)) {
+                unset($this->countersByDocId[$id]);
             }
         }
 
         $this->defer(new DeleteCommandData(
-                $id,
-                $expectedChangeVector ?? $changeVector,
-                $expectedChangeVector ?? ($documentInfo != null ? $documentInfo->getChangeVector() : null)
-            ));
+            $id,
+            $expectedChangeVector ?? $changeVector,
+            $expectedChangeVector ?? $documentInfo?->getChangeVector()
+        ));
     }
 
     /**
@@ -964,11 +974,12 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
      * @throws ExceptionInterface
      */
     private function storeInternal(
-        ?object $entity,
-        ?string $id,
-        ?string $changeVector,
+        ?object              $entity,
+        ?string              $id,
+        ?string              $changeVector,
         ConcurrencyCheckMode $forceConcurrencyCheck
-    ): void {
+    ): void
+    {
         if ($this->noTracking) {
             throw new IllegalStateException(
                 "Cannot store entity. Entity tracking is disabled in this session."
@@ -1050,12 +1061,13 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     }
 
     protected function storeEntityInUnitOfWork(
-        ?string $id,
-        ?object $entity,
-        ?string $changeVector,
-        array $metadata,
+        ?string              $id,
+        ?object              $entity,
+        ?string              $changeVector,
+        array                $metadata,
         ConcurrencyCheckMode $forceConcurrencyCheck
-    ): void {
+    ): void
+    {
         if ($id != null) {
             $this->removeIdFromKnownMissingIds($id);
         }
@@ -1108,7 +1120,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             // this allow OnBeforeStore to call Defer during the call to include
             // additional values during the same SaveChanges call
 
-            for ($i=$deferredCommandsCount; $i < count($this->deferredCommands); $i++) {
+            for ($i = $deferredCommandsCount; $i < count($this->deferredCommands); $i++) {
                 $result->addDeferredCommand($this->deferredCommands[$i]);
             }
 
@@ -1287,7 +1299,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             $shouldIgnoreEntityChanges = $this->getConventions()->getShouldIgnoreEntityChanges();
 
             /** @var DocumentsByEntityEnumeratorResult $entity */
-            foreach($this->documentsByEntity->getDocumentsByEntityEnumeratorResults() as $entity) {
+            foreach ($this->documentsByEntity->getDocumentsByEntityEnumeratorResults() as $entity) {
 
                 if ($entity->getValue()->isIgnoreChanges()) {
                     continue;
@@ -1420,9 +1432,9 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     }
 
     /**
+     * @throws IllegalArgumentException
      * @deprecated
      *
-     * @throws IllegalArgumentException
      */
     protected function entityChanged(array $newObject, DocumentInfo $documentInfo, array &$changes): bool
     {
@@ -1478,7 +1490,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         return !$this->deletedEntities->isEmpty();
     }
 
-  /**
+    /**
      * Determines whether the specified entity has changed.
      *
      * @param object $entity Entity to check
@@ -1665,7 +1677,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     /**
      * Defer commands to be executed on saveChanges()
      *
-     * @param CommandDataInterface $command  Command to defer
+     * @param CommandDataInterface $command Command to defer
      * @param ?array $commands More commands to defer
      */
     private function deferCommand(CommandDataInterface $command, array $commands = []): void
@@ -1805,10 +1817,6 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     public function registerMissingIncludes(array $results, array $includes, ?StringArray $includePaths): void
     {
-
-    }
-//    public void registerMissingIncludes(ArrayNode results, ObjectNode includes, String[] includePaths) {
-//
 //        if (noTracking) {
 //            return;
 //        }
@@ -1845,187 +1853,224 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //                });
 //            }
 //        }
-//    }
-
-    public function registerCounters(
-        array $resultCounters,
-        StringArray $ids,
-        StringArray $countersToInclude,
-        bool $gotAll
-    ): void {
-        // @todo: implement this
     }
 
-//    public void registerCounters(ObjectNode resultCounters, String[] ids, String[] countersToInclude, boolean gotAll) {
-//        if (noTracking) {
-//            return;
-//        }
-//
-//        if (resultCounters == null || resultCounters.size() == 0) {
-//            if (gotAll) {
-//                for (String id : ids) {
-//                    setGotAllCountersForDocument(id);
-//                }
-//
-//                return;
-//            }
-//        } else {
-//            registerCountersInternal(resultCounters, null, false, gotAll);
-//        }
-//
-//        registerMissingCounters(ids, countersToInclude);
-//    }
-//
-//    public void registerCounters(ObjectNode resultCounters, Map<String, String[]> countersToInclude) {
-//        if (noTracking) {
-//            return;
-//        }
-//
-//        if (resultCounters == null || resultCounters.size() == 0) {
-//            setGotAllInCacheIfNeeded(countersToInclude);
-//        } else {
-//            registerCountersInternal(resultCounters, countersToInclude, true, false);
-//        }
-//
-//        registerMissingCounters(countersToInclude);
-//    }
+    public function registerCounters(
+        array                  $resultCounters,
+        null|StringArray|array $ids = null,                 // String[]
+        null|StringArray|array $countersToInclude = null,   // String[]
+        bool                   $gotAll = false
+    ): void
+    {
+        if (is_array($ids)) {
+            $ids = StringArray::fromArray($ids);
+        }
+        if (is_array($countersToInclude)) {
+            $countersToInclude = StringArray::fromArray($countersToInclude);
+        }
+        if ($this->noTracking) {
+            return;
+        }
 
-//    private void registerCountersInternal(ObjectNode resultCounters, Map<String, String[]> countersToInclude, boolean fromQueryResult, boolean gotAll) {
-//
-//        Iterator<Map.Entry<String, JsonNode>> fieldsIterator = resultCounters.fields();
-//
-//        while (fieldsIterator.hasNext()) {
-//            Map.Entry<String, JsonNode> fieldAndValue = fieldsIterator.next();
-//
-//            if (fieldAndValue.getValue() == null || fieldAndValue.getValue().isNull()) {
-//                continue;
-//            }
-//
-//            String[] counters = new String[0];
-//
-//            if (fromQueryResult) {
-//                counters = countersToInclude.get(fieldAndValue.getKey());
-//                gotAll = counters != null && counters.length == 0;
-//            }
-//
-//            if (fieldAndValue.getValue().size() == 0 && !gotAll) {
-//                Tuple<Boolean, Map<String, Long>> cache =
-//                        _countersByDocId.get(fieldAndValue.getKey());
-//                if (cache == null) {
-//                    continue;
-//                }
-//
-//                for (String counter : counters) {
-//                    cache.second.remove(counter);
-//                }
-//
-//                _countersByDocId.put(fieldAndValue.getKey(), cache);
-//                continue;
-//            }
-//
-//            registerCountersForDocument(fieldAndValue.getKey(), gotAll, (ArrayNode) fieldAndValue.getValue(), countersToInclude);
-//        }
-//    }
+        if (empty($resultCounters)) {
+            if ($gotAll) {
+                foreach ($ids as $id) {
+                    $this->setGotAllCountersForDocument($id);
+                }
+                return;
+            }
+        } else {
+            $this->registerCountersInternal($resultCounters, null, false, $gotAll);
+        }
 
-//    private void registerCountersForDocument(String id, boolean gotAll, ArrayNode counters, Map<String, String[]> countersToInclude) {
-//        Tuple<Boolean, Map<String, Long>> cache = getCountersByDocId().get(id);
-//        if (cache == null) {
-//            cache = Tuple.create(gotAll, new TreeMap<>(String::compareToIgnoreCase));
-//        }
-//
-//        Set<String> deletedCounters = cache.second.isEmpty()
-//                ? new HashSet<>()
-//                : (countersToInclude.get(id).length == 0
-//                    ? new HashSet<>(cache.second.keySet())
-//                    : new HashSet<>(Arrays.asList(countersToInclude.get(id))));
-//
-//        for (JsonNode counterJson : counters) {
-//            JsonNode counterName = counterJson.get("CounterName");
-//            JsonNode totalValue = counterJson.get("TotalValue");
-//
-//            if (counterName != null && !counterName.isNull() && totalValue != null && !totalValue.isNull()) {
-//                cache.second.put(counterName.asText(), totalValue.longValue());
-//                deletedCounters.remove(counterName.asText());
-//            }
-//        }
-//
-//        if (!deletedCounters.isEmpty()) {
-//            for (String name : deletedCounters) {
-//                cache.second.remove(name);
-//            }
-//        }
-//
-//        cache.first = gotAll;
-//        getCountersByDocId().put(id, cache);
-//    }
-//
-//    private void setGotAllInCacheIfNeeded(Map<String, String[]> countersToInclude) {
-//        for (Map.Entry<String, String[]> kvp : countersToInclude.entrySet()) {
-//            if (kvp.getValue().length > 0) {
-//                continue;
-//            }
-//
-//            setGotAllCountersForDocument(kvp.getKey());
-//        }
-//    }
-//
-//    private void setGotAllCountersForDocument(String id) {
-//        Tuple<Boolean, Map<String, Long>> cache = getCountersByDocId().get(id);
-//
-//        if (cache == null) {
-//            cache = Tuple.create(false, new TreeMap<>(String::compareToIgnoreCase));
-//        }
-//
-//        cache.first = true;
-//        getCountersByDocId().put(id, cache);
-//    }
-//
-//    private void registerMissingCounters(Map<String, String[]> countersToInclude) {
-//        if (countersToInclude == null) {
-//            return;
-//        }
-//
-//        for (Map.Entry<String, String[]> kvp : countersToInclude.entrySet()) {
-//            Tuple<Boolean, Map<String, Long>> cache = getCountersByDocId().get(kvp.getKey());
-//            if (cache == null) {
-//                cache = Tuple.create(false, new TreeMap<>(String::compareToIgnoreCase));
-//                getCountersByDocId().put(kvp.getKey(), cache);
-//            }
-//
-//            for (String counter : kvp.getValue()) {
-//                if (cache.second.containsKey(counter)) {
-//                    continue;
-//                }
-//
-//                cache.second.put(counter, null);
-//            }
-//        }
-//    }
-//
-//    private void registerMissingCounters(String[] ids, String[] countersToInclude) {
-//        if (countersToInclude == null) {
-//            return;
-//        }
-//
-//        for (String counter : countersToInclude) {
-//            for (String id : ids) {
-//                Tuple<Boolean, Map<String, Long>> cache = getCountersByDocId().get(id);
-//                if (cache == null) {
-//                    cache = Tuple.create(false, new TreeMap<>(String::compareToIgnoreCase));
-//                    getCountersByDocId().put(id, cache);
-//                }
-//
-//                if (cache.second.containsKey(counter)) {
-//                    continue;
-//                }
-//
-//                cache.second.put(counter, null);
-//            }
-//        }
-//    }
+        $this->registerMissingCountersByIds($ids, $countersToInclude);
+    }
+
+    public function registerCountersFromQuery(
+        array $resultCounters,      // String[]
+        array $countersToInclude    // Map<String, String[]>
+    ): void
+    {
+        if ($this->noTracking) {
+            return;
+        }
+
+        if (count($resultCounters) == 0) {
+            $this->setGotAllInCacheIfNeeded($countersToInclude);
+        } else {
+            $this->registerCountersInternal($resultCounters, $countersToInclude, true, false);
+        }
+
+        $this->registerMissingCounters($countersToInclude);
+    }
+
+    private function registerCountersInternal(
+        array $resultCounters,
+        ?array $countersToInclude,   // Map<String, String[]>
+        bool  $fromQueryResult,
+        bool  $gotAll
+    ): void
+    {
+        foreach ($resultCounters as $field => $value) {
+
+            if (empty($value)) {
+                continue;
+            }
+
+            $counters = null;
+
+            if ($fromQueryResult) {
+                if (!empty($countersToInclude)) {
+                    $counters = array_key_exists($field, $countersToInclude) ? $countersToInclude[$field] : null;
+                }
+                $gotAll = $counters !== null && count($counters) == 0;
+            }
+
+            if (count($value) == 0 && !$gotAll) {
+                if (!array_key_exists($field, $this->getCountersByDocId())) {
+                    continue;
+                }
+
+                $cache = $this->getCountersByDocId()[$field];
+
+                foreach ($counters as $counter) {
+                    $index = array_search($counter, $cache[1]);
+                    if ($index) {
+                        unset($cache[1][$index]);
+                    }
+                }
+
+                $this->getCountersByDocId()[$field] = $cache;
+                continue;
+            }
+
+            $this->registerCountersForDocument($field, $gotAll, $value, $countersToInclude);
+        }
+    }
+
+    private function registerCountersForDocument(
+        ?string $id,
+        bool    $gotAll,
+        array   $counters,          // String[]
+        ?array   $countersToInclude  // Map<String, String[]>
+    ): void
+    {
+        if (array_key_exists($id, $this->getCountersByDocId())) {
+            $cache = $this->getCountersByDocId()[$id];
+        } else {
+            $array = new ExtendedArrayObject();
+            $array->setKeysCaseInsensitive(true);
+            $cache = [$gotAll, $array];
+        }
+
+        $emptyCache = $cache[1] == null || count($cache[1]) == 0;
+        $deletedCounters = $emptyCache
+                ? []
+                : ($countersToInclude === null || count($countersToInclude[$id]) == 0 ? array_keys($cache[1]->getArrayCopy()) : $countersToInclude[$id]);
+
+        foreach ($counters as $counterJson) {
+            $counterName = $counterJson !== null && array_key_exists('CounterName', $counterJson) ? $counterJson['CounterName'] : null;
+            $totalValue = $counterJson !== null && array_key_exists('TotalValue', $counterJson) ? $counterJson['TotalValue'] : null;
+
+            if ($counterName != null && $totalValue != null) {
+                $cache[1][strval($counterName)] = intval($totalValue);
+                if (($key = array_search($counterName, $deletedCounters)) !== false) {
+                    unset($deletedCounters[$key]);
+                }
+            }
+        }
+
+        if (!empty($deletedCounters)) {
+            foreach ($deletedCounters as $name) {
+                if ($cache[1]->offsetExists($name)) {
+                    unset($cache[1][$name]);
+                }
+            }
+        }
+
+        $cache[0] = $gotAll;
+        $this->getCountersByDocId()[$id] = $cache;
+    }
+
+    private function setGotAllInCacheIfNeeded(array $countersToInclude): void
+    {
+        foreach ($countersToInclude as $key => $value) {
+            if (count($value) > 0) {
+                continue;
+            }
+
+            $this->setGotAllCountersForDocument($key);
+        }
+    }
+
+    private
+    function setGotAllCountersForDocument(?string $id): void
+    {
+        if (array_key_exists($id, $this->getCountersByDocId())) {
+            $cache = $this->getCountersByDocId()[$id];
+        } else {
+            $array = new ExtendedArrayObject();
+            $array->setKeysCaseInsensitive(true);
+            $cache = [false, $array];
+        }
+
+        $cache[0] = true;
+        $this->getCountersByDocId()[$id] = $cache;
+    }
+
+    private function registerMissingCounters(array $countersToInclude): void
+    {
+        if ($countersToInclude == null) {
+            return;
+        }
+
+        foreach ($countersToInclude as $key => $counters) {
+            if (!array_key_exists($key, $this->getCountersByDocId())) {
+                $array = new ExtendedArrayObject();
+                $array->setKeysCaseInsensitive(true);
+                $cache = [false, $array];
+            } else {
+                $cache = $this->getCountersByDocId()[$key];
+            }
+
+            foreach ($counters as $counter) {
+                if ($cache[1]->offsetExists($counter)) {
+                    continue;
+                }
+                $cache[1][$counter] = null;
+            }
+            $this->getCountersByDocId()[$key] = $cache;
+        }
+    }
+
+    private function registerMissingCountersByIds(StringArray $ids, ?StringArray $countersToInclude): void
+    {
+        if ($countersToInclude == null) {
+            return;
+        }
+
+        foreach ($countersToInclude as $counter) {
+            foreach ($ids as $id) {
+                if (!array_key_exists($id, $this->getCountersByDocId())) {
+                    $array = new ExtendedArrayObject();
+                    $array->setKeysCaseInsensitive(true);
+                    $cache = [false, $array];
+                } else {
+                    $cache = $this->getCountersByDocId()[$id];
+                }
+
+                if (!$cache[1]->offsetExists($counter)) {
+                    $cache[1][$counter] = null;
+                }
+
+                $this->getCountersByDocId()[$id] = $cache;
+            }
+        }
+    }
 
 
-    public function registerTimeSeries(?array $resultTimeSeries): void
+    public
+    function registerTimeSeries(?array $resultTimeSeries): void
     {
         if ($this->noTracking || $resultTimeSeries == null) {
             return;
@@ -2044,7 +2089,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
                 $this->getTimeSeriesByDocId()[$id] = $a;
             }
 
-            $cache =  & $this->getTimeSeriesByDocId()[$id];
+            $cache =  &$this->getTimeSeriesByDocId()[$id];
 
             if (!is_array($value)) {
                 throw new IllegalStateException("Unable to read time series range results on document: '" . $id . "'.");
@@ -2068,10 +2113,11 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
     }
 
-    private static function addToCache(
-        ExtendedArrayObject & $cache, // Map<String, List<TimeSeriesRangeResult>>
+    private
+    static function addToCache(
+        ExtendedArrayObject    &$cache, // Map<String, List<TimeSeriesRangeResult>>
         ?TimeSeriesRangeResult $newRange,
-        ?string $name): void
+        ?string                $name): void
     {
         if (!$cache->offsetExists($name) || empty($cache[$name])) {
             // no local ranges in cache for this series
@@ -2085,7 +2131,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $localRanges = $cache[$name];
 
         if (DatesComparator::compare(DatesComparator::leftDate($localRanges[0]->getFrom()), DatesComparator::rightDate($newRange->getTo())) > 0
-                || DatesComparator::compare(DatesComparator::rightDate($localRanges[count($localRanges) - 1]->getTo()), DatesComparator::leftDate($newRange->getFrom())) < 0) {
+            || DatesComparator::compare(DatesComparator::rightDate($localRanges[count($localRanges) - 1]->getTo()), DatesComparator::leftDate($newRange->getFrom())) < 0) {
             // the entire range [from, to] is out of cache bounds
 
             $index = DatesComparator::compare(DatesComparator::leftDate($localRanges[0]->getFrom()), DatesComparator::rightDate($newRange->getTo())) > 0 ? 0 : count($localRanges);
@@ -2122,17 +2168,18 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
         $mergedValues = self::mergeRanges($fromRangeIndex, $toRangeIndex, $localRanges, $newRange);
         $localRangesSet = TimeSeriesRangeResultList::fromArray($localRanges);
-        self::addToCacheInternal($name,  $newRange->getFrom(), $newRange->getTo(), $fromRangeIndex, $toRangeIndex, $localRangesSet, $cache, $mergedValues);
+        self::addToCacheInternal($name, $newRange->getFrom(), $newRange->getTo(), $fromRangeIndex, $toRangeIndex, $localRangesSet, $cache, $mergedValues);
     }
 
-    public static function addToCacheInternal(?string $timeseries,
-                                              ?DateTimeInterface $from,
-                                              ?DateTimeInterface $to,
-                                              int $fromRangeIndex,
-                                              int $toRangeIndex,
-                                              TimeSeriesRangeResultList & $ranges,
-                                              ExtendedArrayObject & $cache, // Map<String, List<TimeSeriesRangeResult>>
-                                              TimeSeriesEntryArray $values): void
+    public
+    static function addToCacheInternal(?string                   $timeseries,
+                                       ?DateTimeInterface        $from,
+                                       ?DateTimeInterface        $to,
+                                       int                       $fromRangeIndex,
+                                       int                       $toRangeIndex,
+                                       TimeSeriesRangeResultList &$ranges,
+                                       ExtendedArrayObject       &$cache, // Map<String, List<TimeSeriesRangeResult>>
+                                       TimeSeriesEntryArray      $values): void
     {
         if ($fromRangeIndex == -1) {
             // didn't find a 'fromRange' => all ranges in cache start after 'from'
@@ -2326,12 +2373,14 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $cache[$timeseries] = $ranges->getArrayCopy();
     }
 
-    private static function parseTimeSeriesRangeResult(EntityMapper $mapper, $jsonRange, $id, $databaseName): TimeSeriesRangeResult
+    private
+    static function parseTimeSeriesRangeResult(EntityMapper $mapper, $jsonRange, $id, $databaseName): TimeSeriesRangeResult
     {
         return $mapper->denormalize($jsonRange, TimeSeriesRangeResult::class);
     }
 
-    private static function mergeRanges(int $fromRangeIndex, int $toRangeIndex, TimeSeriesRangeResultList|array $localRanges, TimeSeriesRangeResult $newRange): TimeSeriesEntryArray
+    private
+    static function mergeRanges(int $fromRangeIndex, int $toRangeIndex, TimeSeriesRangeResultList|array $localRanges, TimeSeriesRangeResult $newRange): TimeSeriesEntryArray
     {
         if (is_array($localRanges)) {
             $localRanges = TimeSeriesRangeResultList::fromArray($localRanges);
@@ -2352,7 +2401,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $mergedValues->appendArrayValues($newRange->getEntries()->getArrayCopy());
 
         if ($toRangeIndex < count($localRanges)
-                && DatesComparator::compare(DatesComparator::leftDate($localRanges[$toRangeIndex]->getFrom()), DatesComparator::rightDate($newRange->getTo())) <= 0) {
+            && DatesComparator::compare(DatesComparator::leftDate($localRanges[$toRangeIndex]->getFrom()), DatesComparator::rightDate($newRange->getTo())) <= 0) {
             /** @var TimeSeriesEntry $val */
             foreach ($localRanges[$toRangeIndex]->getEntries() as $val) {
                 if ($val->getTimestamp() <= $newRange->getTo()) {
@@ -2365,7 +2414,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         return $mergedValues;
     }
 
-    private static function updateExistingRange(TimeSeriesRangeResult & $localRange, TimeSeriesRangeResult $newRange): void
+    private
+    static function updateExistingRange(TimeSeriesRangeResult &$localRange, TimeSeriesRangeResult $newRange): void
     {
         $newValues = new TimeSeriesEntryArray();
         $index = 0;
@@ -2391,7 +2441,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     }
 
 
-    public function hashCode(): int
+    public
+    function hashCode(): int
     {
         return $this->hash;
     }
@@ -2399,14 +2450,15 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     /**
      * @throws ExceptionInterface
      */
-    private function deserializeFromTransformer(?string $entityType, ?string $id, array $document, bool $trackEntity)
+    private
+    function deserializeFromTransformer(?string $entityType, ?string $id, array $document, bool $trackEntity)
     {
         return $this->entityToJson->convertToEntity($entityType, $id, $document, $trackEntity);
     }
 
 
-
-    public function checkIfIdAlreadyIncluded(?StringArray $ids, ?StringArray $includes): bool
+    public
+    function checkIfIdAlreadyIncluded(?StringArray $ids, ?StringArray $includes): bool
     {
         foreach ($ids as $id) {
             if (in_array($id, $this->knownMissingIds)) {
@@ -2499,7 +2551,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
      *
      * @throws ExceptionInterface
      */
-    protected function refreshInternal($entity, RavenCommand $cmd, DocumentInfo $documentInfo): void
+    protected
+    function refreshInternal($entity, RavenCommand $cmd, DocumentInfo $documentInfo): void
     {
         /** @var GetDocumentsResult $result */
         $result = $cmd->getResult();
@@ -2554,27 +2607,34 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //        throw new IllegalStateException("Unable to cast " + result.getClass().getSimpleName() + " to " + clazz.getSimpleName());
 //    }
 
-    protected function updateSessionAfterSaveChanges(BatchCommandResult $result): void
+    protected
+    function updateSessionAfterSaveChanges(BatchCommandResult $result): void
     {
         $returnedTransactionIndex = $result->getTransactionIndex();
         $this->documentStore->setLastTransactionIndex($this->getDatabaseName(), $returnedTransactionIndex);
         $this->sessionInfo->setLastClusterTransactionIndex($returnedTransactionIndex);
     }
 
-    public function onAfterSaveChangesInvoke(AfterSaveChangesEventArgs $eventArgs): void
+    public
+    function onAfterSaveChangesInvoke(AfterSaveChangesEventArgs $eventArgs): void
     {
         EventHelper::invoke($this->onAfterSaveChanges, $this, $eventArgs);
     }
 
-    public function onBeforeDeleteInvoke(BeforeDeleteEventArgs $eventArgs): void {
+    public
+    function onBeforeDeleteInvoke(BeforeDeleteEventArgs $eventArgs): void
+    {
         EventHelper::invoke($this->onBeforeDelete, $this, $eventArgs);
     }
 
-    public function onBeforeQueryInvoke(BeforeQueryEventArgs $eventArgs): void {
+    public
+    function onBeforeQueryInvoke(BeforeQueryEventArgs $eventArgs): void
+    {
         EventHelper::invoke($this->onBeforeQuery, $this, $eventArgs);
     }
 
-    public function onBeforeConversionToDocumentInvoke(string $id, object $entity): void
+    public
+    function onBeforeConversionToDocumentInvoke(string $id, object $entity): void
     {
         EventHelper::invoke(
             $this->onBeforeConversionToDocument,
@@ -2583,7 +2643,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         );
     }
 
-    public function onAfterConversionToDocumentInvoke(string $id, object $entity, &$document): void
+    public
+    function onAfterConversionToDocumentInvoke(string $id, object $entity, &$document): void
     {
         if (!$this->onAfterConversionToDocument->isEmpty()) {
             $eventArgs = new AfterConversionToDocumentEventArgs($this, $id, $entity, $document);
@@ -2595,7 +2656,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
     }
 
-    public function onBeforeConversionToEntityInvoke(?string $id, string $className, array & $document): void
+    public
+    function onBeforeConversionToEntityInvoke(?string $id, string $className, array &$document): void
     {
         if (!$this->onBeforeConversionToEntity->isEmpty()) {
             $eventArgs = new BeforeConversionToEntityEventArgs($this, $id, $className, $document);
@@ -2607,13 +2669,15 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
     }
 
-    public function onAfterConversionToEntityInvoke(?string $id, array $document, object $entity): void
+    public
+    function onAfterConversionToEntityInvoke(?string $id, array $document, object $entity): void
     {
         $eventArgs = new AfterConversionToEntityEventArgs($this, $id, $entity, $document);
         EventHelper::invoke($this->onAfterConversionToEntity, $this, $eventArgs);
     }
 
-    protected function processQueryParameters(?string $className, ?string $indexName, ?string $collectionName, DocumentConventions $conventions): array
+    protected
+    function processQueryParameters(?string $className, ?string $indexName, ?string $collectionName, DocumentConventions $conventions): array
     {
         $isIndex = StringUtils::isNotBlank($indexName);
         $isCollection = StringUtils::isNotEmpty($collectionName);
@@ -2628,6 +2692,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
         return [$indexName, $collectionName];
     }
+
 //    protected Tuple<String, String> processQueryParameters(Class clazz, String indexName, String collectionName, DocumentConventions conventions) {
 //        boolean isIndex = StringUtils.isNotBlank(indexName);
 //        boolean isCollection = StringUtils.isNotEmpty(collectionName);
@@ -2775,12 +2840,14 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //        }
 //    }
 
-    public function getTransactionMode(): TransactionMode
+    public
+    function getTransactionMode(): TransactionMode
     {
         return $this->transactionMode;
     }
 
-    public function setTransactionMode(TransactionMode $transactionMode): void
+    public
+    function setTransactionMode(TransactionMode $transactionMode): void
     {
         $this->transactionMode = $transactionMode;
     }
@@ -3013,7 +3080,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //        }
 //    }
 
-    private function removeIdFromKnownMissingIds(string $id): void
+    private
+    function removeIdFromKnownMissingIds(string $id): void
     {
         if (($key = array_search($id, $this->knownMissingIds)) !== false) {
             unset($this->knownMissingIds[$key]);

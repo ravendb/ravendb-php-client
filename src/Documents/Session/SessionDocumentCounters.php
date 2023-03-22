@@ -6,6 +6,7 @@ use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Documents\Operations\Counters\CounterDetail;
 use RavenDB\Documents\Operations\Counters\CountersDetail;
 use RavenDB\Documents\Operations\Counters\GetCountersOperation;
+use RavenDB\Type\ExtendedArrayObject;
 use RavenDB\Type\StringList;
 
 class SessionDocumentCounters extends SessionCountersBase implements SessionDocumentCountersInterface
@@ -15,57 +16,63 @@ class SessionDocumentCounters extends SessionCountersBase implements SessionDocu
     }
 
 
-//    public Map<String, Long> getAll() {
-//        Tuple<Boolean, Map<String, Long>> cache = session.getCountersByDocId().get(docId);
-//
-//        if (cache == null) {
-//            cache = Tuple.create(false, new TreeMap<>(String::compareToIgnoreCase));
-//        }
-//
-//        boolean missingCounters = !cache.first;
-//
-//        DocumentInfo document = session.documentsById.getValue(docId);
-//        if (document != null) {
-//            JsonNode metadataCounters = document.getMetadata().get(Constants.Documents.Metadata.COUNTERS);
-//            if (metadataCounters == null || metadataCounters.isNull()) {
-//                missingCounters = false;
-//            } else if (cache.second.size() >= metadataCounters.size()) {
-//                missingCounters = false;
-//
-//                for (JsonNode c : metadataCounters) {
-//                    if (cache.second.containsKey(c.textValue())) {
-//                        continue;
-//                    }
-//                    missingCounters = true;
-//                    break;
-//                }
-//            }
-//        }
-//
-//        if (missingCounters) {
-//            // we either don't have the document in session and GotAll = false,
-//            // or we do and cache doesn't contain all metadata counters
-//
-//            session.incrementRequestCount();
-//
-//            CountersDetail details = session.getOperations().send(new GetCountersOperation(docId), session.sessionInfo);
-//            cache.second.clear();
-//
-//            for (CounterDetail counterDetail : details.getCounters()) {
-//                cache.second.put(counterDetail.getCounterName(), counterDetail.getTotalValue());
-//            }
-//        }
-//
-//        cache.first = true;
-//
-//        if (!session.noTracking) {
-//            session.getCountersByDocId().put(docId, cache);
-//        }
-//
-//        return cache.second;
-//    }
+    public function getAll(): array
+    {
+        if (array_key_exists($this->docId, $this->session->getCountersByDocId())) {
+            $cache = $this->session->getCountersByDocId()[$this->docId];
+        } else {
+            $array = new ExtendedArrayObject();
+            $array->setKeysCaseInsensitive(true);
+            $cache = [false, $array];
+        }
 
-    public function get(string|StringList|array $counters): int|array
+        $missingCounters = !$cache[0];
+
+        $document = $this->session->documentsById->getValue($this->docId);
+        if ($document != null) {
+            $metadataCounters = array_key_exists(DocumentsMetadata::COUNTERS, $document->getMetadata()) ? $document->getMetadata()[DocumentsMetadata::COUNTERS] : null;
+            if (empty($metadataCounters)) {
+                $missingCounters = false;
+            } else if (count($cache[1]) >= count($metadataCounters)) {
+                $missingCounters = false;
+
+                foreach ($metadataCounters as $c) {
+                    if ($cache[1]->offsetExists(strval($c))) {
+                        continue;
+                    }
+                    $missingCounters = true;
+                    break;
+                }
+            }
+        }
+
+        if ($missingCounters) {
+            // we either don't have the document in session and GotAll = false,
+            // or we do and cache doesn't contain all metadata counters
+
+            $this->session->incrementRequestCount();
+
+            $details = $this->session->getOperations()->send(new GetCountersOperation($this->docId), $this->session->getSessionInfo());
+            $array = new ExtendedArrayObject();
+            $array->setKeysCaseInsensitive(true);
+            $cache[1] = $array;
+
+            /** @var CounterDetail $counterDetail */
+            foreach ($details->getCounters() as $counterDetail) {
+                $cache[1][$counterDetail->getCounterName()] = $counterDetail->getTotalValue();
+            }
+        }
+
+        $cache[0] = true;
+
+        if (!$this->session->noTracking) {
+            $this->session->getCountersByDocId()[$this->docId] = $cache;
+        }
+
+        return $cache[1]->getArrayCopy();
+    }
+
+    public function get(string|StringList|array $counters): null|int|array
     {
         if (is_string($counters)) {
             return $this->getSingle($counters);
@@ -74,17 +81,19 @@ class SessionDocumentCounters extends SessionCountersBase implements SessionDocu
         return $this->getArray($counters);
     }
 
-    private function getSingle(string $counter): int
+    private function getSingle(string $counter): null|int
     {
         $value = null;
 
         if (array_key_exists($this->docId, $this->session->getCountersByDocId())) {
             $cache = $this->session->getCountersByDocId()[$this->docId];
-            if (array_key_exists($counter, $cache[1])) {
+            if ($cache[1]->offsetExists($counter)) {
                 return $cache[1][$counter];
             }
         } else {
-            $cache = [false, []];
+            $array = new ExtendedArrayObject();
+            $array->setKeysCaseInsensitive(true);
+            $cache = [false, $array];
         }
 
         $document = $this->session->documentsById->getValue($this->docId);
@@ -136,7 +145,9 @@ class SessionDocumentCounters extends SessionCountersBase implements SessionDocu
         if (array_key_exists($this->docId, $this->session->getCountersByDocId())) {
             $cache = $this->session->getCountersByDocId()[$this->docId];
         } else {
-            $cache = [false, []] ; //Tuple.create(false, new TreeMap<>(String::compareToIgnoreCase));
+            $array = new ExtendedArrayObject();
+            $array->setKeysCaseInsensitive(true);
+            $cache = [false, $array];
         }
 
         $metadataCounters = null;
@@ -150,7 +161,7 @@ class SessionDocumentCounters extends SessionCountersBase implements SessionDocu
         $result = [];
 
         foreach ($counters as $counter) {
-            if (array_key_exists($counter, $cache[1])) {
+            if ($cache[1]->offsetExists($counter)) {
                 $hasCounter = true;
                 $val = $cache[1][$counter];
             } else {
