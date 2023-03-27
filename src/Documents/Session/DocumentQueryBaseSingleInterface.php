@@ -23,14 +23,14 @@ interface DocumentQueryBaseSingleInterface
      *
      * @return mixed first result of default
      */
-    function firstOrDefault();
+    function firstOrDefault(): mixed;
 
     /**
      * Returns first element or throws if sequence is empty or contains more than one element.
      *
      * @return mixed single result or throws
      */
-    function single();
+    function single(): mixed;
 
     /**
      * Returns first element or default value for given type if sequence is empty. Throws if sequence contains more than
@@ -38,7 +38,7 @@ interface DocumentQueryBaseSingleInterface
      *
      * @return mixed single result, default or throws
      */
-    function singleOrDefault();
+    function singleOrDefault(): mixed;
 
 
 //    /**

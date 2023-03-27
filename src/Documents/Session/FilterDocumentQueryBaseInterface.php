@@ -2,7 +2,12 @@
 
 namespace RavenDB\Documents\Session;
 
+use Closure;
+use RavenDB\Constants\DocumentsIndexingSpatial;
+use RavenDB\Documents\Indexes\Spatial\SpatialRelation;
+use RavenDB\Documents\Indexes\Spatial\SpatialUnits;
 use RavenDB\Documents\Queries\SearchOperator;
+use RavenDB\Documents\Queries\Spatial\DynamicSpatialField;
 use RavenDB\Type\Collection;
 
 interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
@@ -248,96 +253,51 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
 
     /**
      * Checks value of a given field against supplied regular expression pattern
-     * @param ?string  $fieldName Field name
+     * @param ?string $fieldName Field name
      * @param ?string $pattern Regexp pattern
      * @return FilterDocumentQueryBaseInterface Query instance
      */
     function whereRegex(?string $fieldName, ?string $pattern): FilterDocumentQueryBaseInterface;
-//
-//    //TBD expr TSelf WithinRadiusOf<TValue>(Expression<Func<T, TValue>> propertySelector, double radius, double latitude, double longitude, SpatialUnits? radiusUnits = null, double distanceErrorPct = Constants.Documents.Indexing.Spatial.DefaultDistanceErrorPct);
-//
-//    /**
-//     * Filter matches to be inside the specified radius
-//     * @param fieldName Spatial field name.
-//     * @param radius Radius (measured in units passed to radiusUnits parameter) in which matches should be found.
-//     * @param latitude Latitude pointing to a circle center.
-//     * @param longitude Longitude pointing to a circle center.
-//     * @return Query instance
-//     */
-//    TSelf withinRadiusOf(String fieldName, double radius, double latitude, double longitude);
-//
-//    /**
-//     * Filter matches to be inside the specified radius
-//     * @param fieldName Spatial field name.
-//     * @param radius Radius (measured in units passed to radiusUnits parameter) in which matches should be found.
-//     * @param latitude Latitude pointing to a circle center.
-//     * @param longitude Longitude pointing to a circle center.
-//     * @param radiusUnits Units that will be used to measure distances (Kilometers, Miles).
-//     * @return Query instance
-//     */
-//    TSelf withinRadiusOf(String fieldName, double radius, double latitude, double longitude, SpatialUnits radiusUnits);
-//
-//    /**
-//     * Filter matches to be inside the specified radius
-//     * @param fieldName Spatial field name.
-//     * @param radius Radius (measured in units passed to radiusUnits parameter) in which matches should be found.
-//     * @param latitude Latitude pointing to a circle center.
-//     * @param longitude Longitude pointing to a circle center.
-//     * @param radiusUnits Units that will be used to measure distances (Kilometers, Miles).
-//     * @param distanceErrorPct Distance error percent
-//     * @return Query instance
-//     */
-//    TSelf withinRadiusOf(String fieldName, double radius, double latitude, double longitude, SpatialUnits radiusUnits, double distanceErrorPct);
-//
-//
-//    //TBD expr TSelf RelatesToShape<TValue>(Expression<Func<T, TValue>> propertySelector, string shapeWkt, SpatialRelation relation, double distanceErrorPct = Constants.Documents.Indexing.Spatial.DefaultDistanceErrorPct);
-//
-//    /**
-//     * Filter matches based on a given shape - only documents with the shape defined in fieldName that
-//     * have a relation rel with the given shapeWkt will be returned
-//     * @param fieldName Spatial field name.
-//     * @param shapeWkt WKT formatted shape
-//     * @param relation Spatial relation to check (Within, Contains, Disjoint, Intersects, Nearby)
-//     * @return Query instance
-//     */
-//    TSelf relatesToShape(String fieldName, String shapeWkt, SpatialRelation relation);
-//
-//    /**
-//     * Filter matches based on a given shape - only documents with the shape defined in fieldName that
-//     * have a relation rel with the given shapeWkt will be returned
-//     * @param fieldName Spatial field name.
-//     * @param shapeWkt WKT formatted shape
-//     * @param relation Spatial relation to check (Within, Contains, Disjoint, Intersects, Nearby)
-//     * @param distanceErrorPct The allowed error percentage. By default: 0.025
-//     * @return Query instance
-//     */
-//    TSelf relatesToShape(String fieldName, String shapeWkt, SpatialRelation relation, double distanceErrorPct);
-//
-//    /**
-//     * Filter matches based on a given shape - only documents with the shape defined in fieldName that
-//     * have a relation rel with the given shapeWkt will be returned
-//     * @param fieldName Spatial field name.
-//     * @param shapeWkt WKT formatted shape
-//     * @param relation Spatial relation to check (Within, Contains, Disjoint, Intersects, Nearby)
-//     * @param units SpatialUnits
-//     * @param distanceErrorPct The allowed error percentage. By default: 0.025
-//     * @return Query instance
-//     */
-//    TSelf relatesToShape(String fieldName, String shapeWkt, SpatialRelation relation, SpatialUnits units, double distanceErrorPct);
-//
-//    //TBD expr IDocumentQuery<T> Spatial(Expression<Func<T, object>> path, Func<SpatialCriteriaFactory, SpatialCriteria> clause);
-//
-//    /**
-//     * Ability to use one factory to determine spatial shape that will be used in query.
-//     * @param fieldName Field name
-//     * @param clause Spatial criteria factory
-//     * @return Query instance
-//     */
-//    IDocumentQuery<T> spatial(String fieldName, Function<SpatialCriteriaFactory, SpatialCriteria> clause);
-//
-//    IDocumentQuery<T> spatial(DynamicSpatialField field, Function<SpatialCriteriaFactory, SpatialCriteria> clause);
-//
-//    //TBD expr IDocumentQuery<T> spatial(Function<SpatialDynamicFieldFactory<T>, DynamicSpatialField> field, Function<SpatialCriteriaFactory, SpatialCriteria> clause);
-//
+
+    //TBD expr TSelf WithinRadiusOf<TValue>(Expression<Func<T, TValue>> propertySelector, double radius, double latitude, double longitude, SpatialUnits? radiusUnits = null, double distanceErrorPct = Constants.Documents.Indexing.Spatial.DefaultDistanceErrorPct);
+
+    /**
+     * Filter matches to be inside the specified radius
+     * @param string|null $fieldName
+     * @param float $radius
+     * @param float $latitude
+     * @param float $longitude
+     * @param SpatialUnits|null $radiusUnits
+     * @param float $distanceErrorPct
+     * @return DocumentQueryInterface instance
+     */
+    public function withinRadiusOf(?string $fieldName, float $radius, float $latitude, float $longitude, ?SpatialUnits $radiusUnits = null, float $distanceErrorPct = DocumentsIndexingSpatial::DEFAULT_DISTANCE_ERROR_PCT): DocumentQueryInterface;
+
+    //TBD expr TSelf RelatesToShape<TValue>(Expression<Func<T, TValue>> propertySelector, string shapeWkt, SpatialRelation relation, double distanceErrorPct = Constants.Documents.Indexing.Spatial.DefaultDistanceErrorPct);
+
+    /**
+     * Filter matches based on a given shape - only documents with the shape defined in fieldName that
+     * have a relation rel with the given shapeWkt will be returned
+     * @param string|null $fieldName
+     * @param string|null $shapeWkt
+     * @param SpatialRelation|null $relation
+     * @param SpatialUnits|null $units
+     * @param float $distanceErrorPct
+     * @return DocumentQueryInterface instance
+     */
+    function relatesToShape(?string $fieldName, ?string $shapeWkt, ?SpatialRelation $relation, ?SpatialUnits $units = null, float $distanceErrorPct = DocumentsIndexingSpatial::DEFAULT_DISTANCE_ERROR_PCT): DocumentQueryInterface;
+
+    //TBD expr IDocumentQuery<T> Spatial(Expression<Func<T, object>> path, Func<SpatialCriteriaFactory, SpatialCriteria> clause);
+
+    /**
+     * Ability to use one factory to determine spatial shape that will be used in query.
+     * @param string|DynamicSpatialField $field Spatial field
+     * @param Closure $clause Spatial criteria factory
+     * @return DocumentQueryInterface Query instance
+     */
+    public function spatial(string|DynamicSpatialField $field, Closure $clause): DocumentQueryInterface;
+
+    //TBD expr IDocumentQuery<T> spatial(Function<SpatialDynamicFieldFactory<T>, DynamicSpatialField> field, Function<SpatialCriteriaFactory, SpatialCriteria> clause);
+
 //    IDocumentQuery<T> moreLikeThis(MoreLikeThisBase moreLikeThis);
 }

@@ -137,9 +137,7 @@ class RavenDB_13682Test extends RemoteTestBase
         }
     }
 
-    // @todo: uncomment this test
-    // !spatials
-    public function atestCanGetDistanceFromSpatialQuery(): void
+    public function testCanGetDistanceFromSpatialQuery(): void
     {
         $store = $this->getDocumentStore();
         try {

@@ -6,6 +6,8 @@ use Closure;
 use RavenDB\Constants\DocumentsIndexingFields;
 use RavenDB\Constants\TimeSeries;
 use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Documents\Indexes\Spatial\SpatialRelation;
+use RavenDB\Documents\Indexes\Spatial\SpatialUnits;
 use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRange;
 use RavenDB\Documents\Queries\Explanation\ExplanationOptions;
 use RavenDB\Documents\Queries\Explanation\Explanations;
@@ -21,6 +23,8 @@ use RavenDB\Documents\Queries\QueryFieldUtil;
 use RavenDB\Documents\Queries\QueryOperator;
 use RavenDB\Documents\Queries\QueryResult;
 use RavenDB\Documents\Queries\SearchOperator;
+use RavenDB\Documents\Queries\Spatial\DynamicSpatialField;
+use RavenDB\Documents\Queries\Spatial\SpatialCriteria;
 use RavenDB\Documents\Queries\TimeSeries\TimeSeriesQueryBuilder;
 use RavenDB\Documents\Queries\Timings\QueryTimings;
 use RavenDB\Documents\Session\Loaders\IncludeBuilderBase;
@@ -54,6 +58,7 @@ use RavenDB\Documents\Session\Tokens\OrderByToken;
 use RavenDB\Documents\Session\Tokens\QueryOperatorToken;
 use RavenDB\Documents\Session\Tokens\QueryToken;
 use RavenDB\Documents\Session\Tokens\QueryTokenList;
+use RavenDB\Documents\Session\Tokens\ShapeToken;
 use RavenDB\Documents\Session\Tokens\TimeSeriesIncludesToken;
 use RavenDB\Documents\Session\Tokens\TimeSeriesIncludesTokenArray;
 use RavenDB\Documents\Session\Tokens\TimingsToken;
@@ -1230,7 +1235,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     private function buildPagination(StringBuilder $queryText): void
     {
-        if ($this->start > 0 || $this->pageSize != null) {
+        if ($this->start > 0 || $this->pageSize !== null) {
             $queryText
                 ->append(" limit $")
                 ->append($this->addQueryParameter($this->start))
@@ -1940,159 +1945,142 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->highlightingTokens->append(HighlightingToken::create($fieldName, $fragmentLength, $fragmentCount, $optionsParameterName));
     }
 
-//    protected void _withinRadiusOf(String fieldName, double radius, double latitude, double longitude, SpatialUnits radiusUnits, double distErrorPercent) {
-//        fieldName = ensureValidFieldName(fieldName, false);
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//        negateIfNeeded(tokens, fieldName);
-//
-//        WhereToken whereToken = WhereToken.create(WhereOperator.SPATIAL_WITHIN, fieldName, null, new WhereToken.WhereOptions(ShapeToken.circle(addQueryParameter(radius), addQueryParameter(latitude), addQueryParameter(longitude), radiusUnits), distErrorPercent));
-//        tokens.add(whereToken);
-//    }
-//
-//    protected void _spatial(String fieldName, String shapeWkt, SpatialRelation relation, SpatialUnits units, double distErrorPercent) {
-//        fieldName = ensureValidFieldName(fieldName, false);
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//        negateIfNeeded(tokens, fieldName);
-//
-//        ShapeToken wktToken = ShapeToken.wkt(addQueryParameter(shapeWkt), units);
-//
-//        WhereOperator whereOperator;
-//        switch (relation) {
-//            case WITHIN:
-//                whereOperator = WhereOperator.SPATIAL_WITHIN;
-//                break;
-//            case CONTAINS:
-//                whereOperator = WhereOperator.SPATIAL_CONTAINS;
-//                break;
-//            case DISJOINT:
-//                whereOperator = WhereOperator.SPATIAL_DISJOINT;
-//                break;
-//            case INTERSECTS:
-//                whereOperator = WhereOperator.SPATIAL_INTERSECTS;
-//                break;
-//            default:
-//                throw new IllegalArgumentException();
-//        }
-//
-//        tokens.add(WhereToken.create(whereOperator, fieldName, null, new WhereToken.WhereOptions(wktToken, distErrorPercent)));
-//    }
-//
-//    @Override
-//    public void _spatial(DynamicSpatialField dynamicField, SpatialCriteria criteria) {
-//        assertIsDynamicQuery(dynamicField, "spatial");
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//        negateIfNeeded(tokens, null);
-//
-//        tokens.add(criteria.toQueryToken(dynamicField.toField(this::ensureValidFieldName), this::addQueryParameter));
-//    }
-//
-//    @Override
-//    public void _spatial(String fieldName, SpatialCriteria criteria) {
-//        fieldName = ensureValidFieldName(fieldName, false);
-//
-//        List<QueryToken> tokens = getCurrentWhereTokens();
-//        appendOperatorIfNeeded(tokens);
-//        negateIfNeeded(tokens, fieldName);
-//
-//        tokens.add(criteria.toQueryToken(fieldName, this::addQueryParameter));
-//    }
-//
-//    @Override
-//    public void _orderByDistance(DynamicSpatialField field, double latitude, double longitude) {
-//        if (field == null) {
-//            throw new IllegalArgumentException("Field cannot be null");
-//        }
-//        assertIsDynamicQuery(field, "orderByDistance");
-//
-//        _orderByDistance("'" + field.toField(this::ensureValidFieldName) + "'", latitude, longitude, field.getRoundFactor());
-//    }
-//
-//    @Override
-//    public void _orderByDistance(String fieldName, double latitude, double longitude) {
-//        _orderByDistance(fieldName, latitude, longitude, 0);
-//    }
-//
-//    @Override
-//    public void _orderByDistance(String fieldName, double latitude, double longitude, double roundFactor) {
-//        String roundFactorParameterName = roundFactor == 0 ? null : addQueryParameter(roundFactor);
-//        orderByTokens.add(OrderByToken.createDistanceAscending(fieldName, addQueryParameter(latitude), addQueryParameter(longitude), roundFactorParameterName));
-//    }
-//
-//    @Override
-//    public void _orderByDistance(DynamicSpatialField field, String shapeWkt) {
-//        if (field == null) {
-//            throw new IllegalArgumentException("Field cannot be null");
-//        }
-//        assertIsDynamicQuery(field, "orderByDistance");
-//
-//        _orderByDistance("'" + field.toField(this::ensureValidFieldName) + "'", shapeWkt, field.getRoundFactor());
-//    }
-//
-//    @Override
-//    public void _orderByDistance(String fieldName, String shapeWkt) {
-//        _orderByDistance(fieldName, shapeWkt, 0);
-//    }
-//
-//    @Override
-//    public void _orderByDistance(String fieldName, String shapeWkt, double roundFactor) {
-//        String roundFactorParameterName = roundFactor == 0 ? null : addQueryParameter(roundFactor);
-//        orderByTokens.add(OrderByToken.createDistanceAscending(fieldName, addQueryParameter(shapeWkt), roundFactorParameterName));
-//    }
-//
-//    @Override
-//    public void _orderByDistanceDescending(DynamicSpatialField field, double latitude, double longitude) {
-//        if (field == null) {
-//            throw new IllegalArgumentException("Field cannot be null");
-//        }
-//        assertIsDynamicQuery(field, "orderByDistanceDescending");
-//        _orderByDistanceDescending("'" + field.toField(this::ensureValidFieldName) + "'", latitude, longitude, field.getRoundFactor());
-//    }
-//
-//    @Override
-//    public void _orderByDistanceDescending(String fieldName, double latitude, double longitude) {
-//        _orderByDistanceDescending(fieldName, latitude, longitude, 0);
-//    }
-//
-//    @Override
-//    public void _orderByDistanceDescending(String fieldName, double latitude, double longitude, double roundFactor) {
-//        String roundFactorParameterName = roundFactor == 0 ? null : addQueryParameter(roundFactor);
-//        orderByTokens.add(OrderByToken.createDistanceDescending(fieldName, addQueryParameter(latitude), addQueryParameter(longitude), roundFactorParameterName));
-//    }
-//
-//    @Override
-//    public void _orderByDistanceDescending(DynamicSpatialField field, String shapeWkt) {
-//        if (field == null) {
-//            throw new IllegalArgumentException("Field cannot be null");
-//        }
-//        assertIsDynamicQuery(field, "orderByDistanceDescending");
-//        _orderByDistanceDescending("'" + field.toField(this::ensureValidFieldName) + "'", shapeWkt, field.getRoundFactor());
-//    }
-//
-//    @Override
-//    public void _orderByDistanceDescending(String fieldName, String shapeWkt) {
-//        _orderByDistanceDescending(fieldName, shapeWkt, 0);
-//    }
-//
-//    @Override
-//    public void _orderByDistanceDescending(String fieldName, String shapeWkt, double roundFactor) {
-//        String factorParamName = roundFactor == 0 ? null : addQueryParameter(roundFactor);
-//        orderByTokens.add(OrderByToken.createDistanceDescending(fieldName, addQueryParameter(shapeWkt), factorParamName));
-//    }
-//
-//    private void assertIsDynamicQuery(DynamicSpatialField dynamicField, String methodName) {
-//        if (!fromToken.isDynamic()) {
-//            throw new IllegalStateException("Cannot execute query method '" + methodName + "'. Field '"
-//                    + dynamicField.toField(this::ensureValidFieldName) + "' cannot be used when static index '" + fromToken.getIndexName()
-//                    + "' is queried. Dynamic spatial fields can only be used with dynamic queries, " +
-//                    "for static index queries please use valid spatial fields defined in index definition.");
-//        }
-//    }
+    protected function _withinRadiusOf(?string $fieldName, float $radius, float $latitude, float $longitude, ?SpatialUnits $radiusUnits, float $distErrorPercent): void
+    {
+        $fieldName = $this->ensureValidFieldName($fieldName, false);
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+        $this->negateIfNeeded($tokens, $fieldName);
+
+        $whereToken = WhereToken::create(WhereOperator::spatialWithin(), $fieldName, null, new WhereOptions(ShapeToken::circle($this->addQueryParameter($radius), $this->addQueryParameter($latitude), $this->addQueryParameter($longitude), $radiusUnits), $distErrorPercent));
+        $tokens->append($whereToken);
+    }
+
+    protected function _spatialWithShape(?string $fieldName, ?string $shapeWkt, ?SpatialRelation $relation, ?SpatialUnits $units, float $distErrorPercent): void
+    {
+        $fieldName = $this->ensureValidFieldName($fieldName, false);
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+        $this->negateIfNeeded($tokens, $fieldName);
+
+        $wktToken = ShapeToken::wkt($this->addQueryParameter($shapeWkt), $units);
+
+        $whereOperator = null;
+        switch ($relation->getValue()) {
+            case SpatialRelation::WITHIN:
+                $whereOperator = WhereOperator::spatialWithin();
+                break;
+            case SpatialRelation::CONTAINS:
+                $whereOperator = WhereOperator::spatialContains();
+                break;
+            case SpatialRelation::DISJOINT:
+                $whereOperator = WhereOperator::spatialDisjoint();
+                break;
+            case SpatialRelation::INTERSECTS:
+                $whereOperator = WhereOperator::spatialIntersect();
+                break;
+            default:
+                throw new IllegalArgumentException();
+        }
+
+        $tokens->append(WhereToken::create($whereOperator, $fieldName, null, new WhereOptions($wktToken, $distErrorPercent)));
+    }
+
+    public function _spatialWithDynamicField(?DynamicSpatialField $dynamicField, ?SpatialCriteria $criteria): void
+    {
+        $this->assertIsDynamicQuery($dynamicField, "spatial");
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+        $this->negateIfNeeded($tokens, null);
+
+        $tokens->append($criteria->toQueryToken($dynamicField->toField(Closure::fromCallable([$this, 'ensureValidFieldName'])), Closure::fromCallable([$this, 'addQueryParameter'])));
+    }
+
+    public function _spatialWithFieldName(?string $fieldName, ?SpatialCriteria $criteria): void
+    {
+        $fieldName = $this->ensureValidFieldName($fieldName, false);
+
+        $tokens = $this->getCurrentWhereTokens();
+        $this->appendOperatorIfNeeded($tokens);
+        $this->negateIfNeeded($tokens, $fieldName);
+
+        $tokens->append($criteria->toQueryToken($fieldName, Closure::fromCallable([$this, 'addQueryParameter'])));
+    }
+
+    public function _orderByDistanceDSFFromPoint(?DynamicSpatialField $field, float $latitude, float $longitude): void
+    {
+        if ($field == null) {
+            throw new IllegalArgumentException("Field cannot be null");
+        }
+        $this->assertIsDynamicQuery($field, "orderByDistance");
+
+        $this->_orderByDistanceFromPoint("'" . $field->toField(Closure::fromCallable([$this, 'ensureValidFieldName'])) . "'", $latitude, $longitude, $field->getRoundFactor() ?? 0);
+    }
+
+    public function _orderByDistanceFromPoint(?string $fieldName, float $latitude, float $longitude, float $roundFactor = 0): void
+    {
+        $roundFactorParameterName = $roundFactor == 0 ? null : $this->addQueryParameter($roundFactor);
+        $this->orderByTokens->append(OrderByToken::createDistanceAscendingFromPoint($fieldName, $this->addQueryParameter($latitude), $this->addQueryParameter($longitude), $roundFactorParameterName));
+    }
+
+    public function _orderByDistanceDSFFromWkt(?DynamicSpatialField $field, string $shapeWkt): void
+    {
+        if ($field == null) {
+            throw new IllegalArgumentException("Field cannot be null");
+        }
+        $this->assertIsDynamicQuery($field, "orderByDistance");
+
+        $this->_orderByDistanceFromWkt("'" . $field->toField(Closure::fromCallable([$this, 'ensureValidFieldName'])) . "'", $shapeWkt, $field->getRoundFactor());
+    }
+
+    public function _orderByDistanceFromWkt(string $fieldName, string $shapeWkt, float $roundFactor = 0): void
+    {
+        $roundFactorParameterName = $roundFactor == 0 ? null : $this->addQueryParameter($roundFactor);
+        $this->orderByTokens->append(OrderByToken::createDistanceAscendingFromWkt($fieldName, $this->addQueryParameter($shapeWkt), $roundFactorParameterName));
+    }
+
+    public function _orderByDistanceDescendingDSFFromPoint(?DynamicSpatialField $field, float $latitude, float $longitude): void
+    {
+        if ($field == null) {
+            throw new IllegalArgumentException("Field cannot be null");
+        }
+        $this->assertIsDynamicQuery($field, "orderByDistanceDescending");
+        $this->_orderByDistanceDescendingFromPoint("'" . $field->toField(Closure::fromCallable([$this, 'ensureValidFieldName'])) . "'", $latitude, $longitude, $field->getRoundFactor() ?? 0);
+    }
+
+    public function _orderByDistanceDescendingFromPoint(string $fieldName, float $latitude, float $longitude, float $roundFactor = 0): void
+    {
+        $roundFactorParameterName = $roundFactor == 0 ? null : $this->addQueryParameter($roundFactor);
+        $this->orderByTokens->append(OrderByToken::createDistanceDescendingFromPoint($fieldName, $this->addQueryParameter($latitude), $this->addQueryParameter($longitude), $roundFactorParameterName));
+    }
+
+    public function _orderByDistanceDescendingDSFFromWkt(?DynamicSpatialField $field, string $shapeWkt): void
+    {
+        if ($field == null) {
+            throw new IllegalArgumentException("Field cannot be null");
+        }
+        $this->assertIsDynamicQuery($field, "orderByDistanceDescending");
+        $this->_orderByDistanceDescendingFromWkt("'" . $field->toField(Closure::fromCallable([$this, 'ensureValidFieldName'])) . "'", $shapeWkt, $field->getRoundFactor());
+    }
+
+    public function _orderByDistanceDescendingFromWkt(string $fieldName, string $shapeWkt, float $roundFactor = 0): void
+    {
+        $factorParamName = $roundFactor == 0 ? null : $this->addQueryParameter($roundFactor);
+        $this->orderByTokens->append(OrderByToken::createDistanceDescendingFromWkt($fieldName, $this->addQueryParameter($shapeWkt), $factorParamName));
+    }
+
+    private function assertIsDynamicQuery(?DynamicSpatialField $dynamicField, ?string $methodName): void
+    {
+        if (!$this->fromToken->isDynamic()) {
+            throw new IllegalStateException("Cannot execute query method '" . $methodName . "'. Field '"
+                    . $dynamicField->toField(Closure::fromCallable([$this, 'ensureValidFieldName'])) . "' cannot be used when static index '" . $this->fromToken->getIndexName()
+                    . "' is queried. Dynamic spatial fields can only be used with dynamic queries, " .
+                    "for static index queries please use valid spatial fields defined in index definition.");
+        }
+    }
 
     protected function initSync(): void
     {
@@ -2161,7 +2149,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     /**
      * @return mixed
      */
-    public function firstOrDefault()
+    public function firstOrDefault(): mixed
     {
         $result = $this->executeQueryOperation(1);
 
@@ -2177,7 +2165,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     /**
      * @return mixed
      */
-    public function single()
+    public function single(): mixed
     {
         $result = $this->executeQueryOperation(2);
         if (count($result) != 1) {
@@ -2189,7 +2177,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     /**
      * @return mixed
      */
-    public function singleOrDefault()
+    public function singleOrDefault(): mixed
     {
         $result = $this->executeQueryOperation(2);
         if (count($result) > 1) {

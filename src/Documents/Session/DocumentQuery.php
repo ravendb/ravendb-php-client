@@ -5,6 +5,9 @@ namespace RavenDB\Documents\Session;
 use Closure;
 use InvalidArgumentException;
 use RavenDB\Constants\DocumentsIndexingFields;
+use RavenDB\Constants\DocumentsIndexingSpatial;
+use RavenDB\Documents\Indexes\Spatial\SpatialRelation;
+use RavenDB\Documents\Indexes\Spatial\SpatialUnits;
 use RavenDB\Documents\Queries\Explanation\ExplanationOptions;
 use RavenDB\Documents\Queries\Explanation\Explanations;
 use RavenDB\Documents\Queries\Facets\AggregationDocumentQuery;
@@ -19,6 +22,8 @@ use RavenDB\Documents\Queries\ProjectionBehavior;
 use RavenDB\Documents\Queries\QueryData;
 use RavenDB\Documents\Queries\QueryOperator;
 use RavenDB\Documents\Queries\SearchOperator;
+use RavenDB\Documents\Queries\Spatial\DynamicSpatialField;
+use RavenDB\Documents\Queries\Spatial\SpatialCriteriaFactory;
 use RavenDB\Documents\Queries\Timings\QueryTimings;
 use RavenDB\Documents\Session\Loaders\QueryIncludeBuilder;
 use RavenDB\Documents\Session\Tokens\DeclareTokenArray;
@@ -718,97 +723,89 @@ class DocumentQuery extends AbstractDocumentQuery
     //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.Highlight(Expression<Func<T, object>> path, int fragmentLength, int fragmentCount, HighlightingOptions options, out Highlightings highlightings)
     //TBD expr public IDocumentQuery<T> Spatial(Expression<Func<T, object>> path, Func<SpatialCriteriaFactory, SpatialCriteria> clause)
 
-//    @Override
-//    public IDocumentQuery<T> spatial(String fieldName, Function<SpatialCriteriaFactory, SpatialCriteria> clause) {
-//        SpatialCriteria criteria = clause.apply(SpatialCriteriaFactory.INSTANCE);
-//        _spatial(fieldName, criteria);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> spatial(DynamicSpatialField field, Function<SpatialCriteriaFactory, SpatialCriteria> clause) {
-//        SpatialCriteria criteria = clause.apply(SpatialCriteriaFactory.INSTANCE);
-//        _spatial(field, criteria);
-//        return this;
-//    }
-//
-//    //TBD expr public IDocumentQuery<T> Spatial(Func<SpatialDynamicFieldFactory<T>, DynamicSpatialField> field, Func<SpatialCriteriaFactory, SpatialCriteria> clause)
-//    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.WithinRadiusOf<TValue>(Expression<Func<T, TValue>> propertySelector, double radius, double latitude, double longitude, SpatialUnits? radiusUnits, double distanceErrorPct)
-//
-//    @Override
-//    public IDocumentQuery<T> withinRadiusOf(String fieldName, double radius, double latitude, double longitude) {
-//        return withinRadiusOf(fieldName, radius, latitude, longitude, null, Constants.Documents.Indexing.Spatial.DEFAULT_DISTANCE_ERROR_PCT);
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> withinRadiusOf(String fieldName, double radius, double latitude, double longitude, SpatialUnits radiusUnits) {
-//        return withinRadiusOf(fieldName, radius, latitude, longitude, radiusUnits, Constants.Documents.Indexing.Spatial.DEFAULT_DISTANCE_ERROR_PCT);
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> withinRadiusOf(String fieldName, double radius, double latitude, double longitude, SpatialUnits radiusUnits, double distanceErrorPct) {
-//        _withinRadiusOf(fieldName, radius, latitude, longitude, radiusUnits, distanceErrorPct);
-//        return this;
-//    }
-//
-//    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.RelatesToShape<TValue>(Expression<Func<T, TValue>> propertySelector, string shapeWkt, SpatialRelation relation, double distanceErrorPct)
-//
-//    @Override
-//    public IDocumentQuery<T> relatesToShape(String fieldName, String shapeWkt, SpatialRelation relation) {
-//        return relatesToShape(fieldName, shapeWkt, relation, Constants.Documents.Indexing.Spatial.DEFAULT_DISTANCE_ERROR_PCT);
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> relatesToShape(String fieldName, String shapeWkt, SpatialRelation relation, double distanceErrorPct) {
-//        _spatial(fieldName, shapeWkt, relation, null, distanceErrorPct);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> relatesToShape(String fieldName, String shapeWkt, SpatialRelation relation, SpatialUnits units, double distanceErrorPct) {
-//        _spatial(fieldName, shapeWkt, relation, units, distanceErrorPct);
-//        return this;
-//    }
+    public function spatial(string|DynamicSpatialField $field, Closure $clause): DocumentQueryInterface
+    {
+        /** SpatialCriteria $criteria */
+        $criteria = $clause(SpatialCriteriaFactory::instance());
 
-//    public IDocumentQuery<T> orderByDistance(DynamicSpatialField field, double latitude, double longitude) {
-//        _orderByDistance(field, latitude, longitude);
-//        return this;
-//    }
-//
-//    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.OrderByDistance(Func<DynamicSpatialFieldFactory<T>, DynamicSpatialField> field, double latitude, double longitude)
-//
-//    @Override
-//    public IDocumentQuery<T> orderByDistance(DynamicSpatialField field, String shapeWkt) {
-//        _orderByDistance(field, shapeWkt);
-//        return this;
-//    }
-//
-//    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.OrderByDistance(Func<DynamicSpatialFieldFactory<T>, DynamicSpatialField> field, string shapeWkt)
-//
-//
-//    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.OrderByDistance<TValue>(Expression<Func<T, TValue>> propertySelector, double latitude, double longitude)
-//
-//    @Override
-//    public IDocumentQuery<T> orderByDistance(String fieldName, double latitude, double longitude) {
-//        orderByDistance(fieldName, latitude, longitude, 0);
-//        return this;
-//    }
-//
-//    @Override
-//    public IDocumentQuery<T> orderByDistance(String fieldName, double latitude, double longitude, double roundFactor) {
-//        _orderByDistance(fieldName, latitude, longitude, roundFactor);
-//        return this;
-//    }
-//
-//    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.OrderByDistance<TValue>(Expression<Func<T, TValue>> propertySelector, string shapeWkt)
-//
-//    @Override
-//    public IDocumentQuery<T> orderByDistance(String fieldName, String shapeWkt) {
-//        _orderByDistance(fieldName, shapeWkt);
-//        return this;
-//    }
-//
-//    @Override
+        if (is_string($field)) {
+            $this->_spatialWithFieldName($field, $criteria);
+        } else {
+            $this->_spatialWithDynamicField($field, $criteria);
+        }
+
+        return $this;
+    }
+
+    //TBD expr public IDocumentQuery<T> Spatial(Func<SpatialDynamicFieldFactory<T>, DynamicSpatialField> field, Func<SpatialCriteriaFactory, SpatialCriteria> clause)
+    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.WithinRadiusOf<TValue>(Expression<Func<T, TValue>> propertySelector, double radius, double latitude, double longitude, SpatialUnits? radiusUnits, double distanceErrorPct)
+
+    public function withinRadiusOf(?string $fieldName, float $radius, float $latitude, float $longitude, ?SpatialUnits $radiusUnits = null, float $distanceErrorPct = DocumentsIndexingSpatial::DEFAULT_DISTANCE_ERROR_PCT): DocumentQueryInterface
+    {
+        $this->_withinRadiusOf($fieldName, $radius, $latitude, $longitude, $radiusUnits, $distanceErrorPct);
+        return $this;
+    }
+
+    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.RelatesToShape<TValue>(Expression<Func<T, TValue>> propertySelector, string shapeWkt, SpatialRelation relation, double distanceErrorPct)
+
+    function relatesToShape(?string $fieldName, ?string $shapeWkt, ?SpatialRelation $relation, ?SpatialUnits $units = null, float $distanceErrorPct = DocumentsIndexingSpatial::DEFAULT_DISTANCE_ERROR_PCT): DocumentQueryInterface
+    {
+        $this->_spatialWithShape($fieldName, $shapeWkt, $relation, $units, $distanceErrorPct);
+        return $this;
+    }
+
+    function orderByDistance(DynamicSpatialField|string $field, float|string $latitudeOrShapeWkt, ?float $longitude = null, float $roundFactor = 0): DocumentQueryInterface
+    {
+        if (is_string($field)) {
+            if (is_string($latitudeOrShapeWkt)) {
+                $shapeWkt = $latitudeOrShapeWkt;
+                $this->_orderByDistanceFromWkt($field, $shapeWkt);
+            } else {
+                $latitude = $latitudeOrShapeWkt;
+                $this->_orderByDistanceFromPoint($field, $latitude, $longitude, $roundFactor);
+            }
+        } else {
+            if (is_string($latitudeOrShapeWkt)) {
+                $shapeWkt = $latitudeOrShapeWkt;
+                $this->_orderByDistanceDSFFromWkt($field, $shapeWkt);
+            } else {
+                $latitude = $latitudeOrShapeWkt;
+                $this->_orderByDistanceDSFFromPoint($field, $latitude, $longitude);
+            }
+        }
+        return $this;
+    }
+
+    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.OrderByDistance(Func<DynamicSpatialFieldFactory<T>, DynamicSpatialField> field, double latitude, double longitude)
+
+    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.OrderByDistance(Func<DynamicSpatialFieldFactory<T>, DynamicSpatialField> field, string shapeWkt)
+
+    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.OrderByDistance<TValue>(Expression<Func<T, TValue>> propertySelector, double latitude, double longitude)
+
+    //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.OrderByDistance<TValue>(Expression<Func<T, TValue>> propertySelector, string shapeWkt)
+
+    function orderByDistanceDescending(DynamicSpatialField|string $field, float|string $latitudeOrShapeWkt, ?float $longitude = null, float $roundFactor = 0): DocumentQueryInterface
+    {
+        if (is_string($field)) {
+            if (is_string($latitudeOrShapeWkt)) {
+                $shapeWkt = $latitudeOrShapeWkt;
+                $this->_orderByDistanceDescendingFromWkt($field, $shapeWkt);
+            } else {
+                $latitude = $latitudeOrShapeWkt;
+                $this->_orderByDistanceDescendingFromPoint($field, $latitude, $longitude, $roundFactor);
+            }
+        } else {
+            if (is_string($latitudeOrShapeWkt)) {
+                $shapeWkt = $latitudeOrShapeWkt;
+                $this->_orderByDistanceDescendingDSFFromWkt($field, $shapeWkt);
+            } else {
+                $latitude = $latitudeOrShapeWkt;
+                $this->_orderByDistanceDescendingDSFFromPoint($field, $latitude, $longitude);
+            }
+        }
+        return $this;
+    }
+
 //    public IDocumentQuery<T> orderByDistanceDescending(DynamicSpatialField field, double latitude, double longitude) {
 //        _orderByDistanceDescending(field, latitude, longitude);
 //        return this;

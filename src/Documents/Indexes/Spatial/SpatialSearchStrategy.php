@@ -7,9 +7,9 @@ use RavenDB\Type\ValueObjectInterface;
 // !status: DONE
 class SpatialSearchStrategy implements ValueObjectInterface
 {
-    private const GEOHASH_PREFIX_TREE = 'geohashPrefixTree';
-    private const QUAD_PREFIX_TREE = 'quadPrefixTree';
-    private const BOUNDING_BOX = 'boundingBox';
+    private const GEOHASH_PREFIX_TREE = 'GeohashPrefixTree';
+    private const QUAD_PREFIX_TREE = 'QuadPrefixTree';
+    private const BOUNDING_BOX = 'BoundingBox';
 
     private string $value;
 
