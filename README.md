@@ -7,7 +7,11 @@ You can install library to your project via [Composer](https://getcomposer.org/)
 $ composer require ravendb/ravendb-php-client
 ```
 
-## Releases and Changelog - [click here](https://github.com/ravendb/ravendb-php-client/releases)
+## Releases
+
+* All client versions 5.2.x are fully compatible with and support RavenDB server releases 5.4 and 6.0.
+
+* [Click here](https://github.com/ravendb/ravendb-php-client/releases) to view all Releases and Changelog.
 
 ## Documentation
 
