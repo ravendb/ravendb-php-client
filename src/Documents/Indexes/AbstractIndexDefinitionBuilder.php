@@ -279,9 +279,9 @@ abstract class AbstractIndexDefinitionBuilder
         return $this->additionalSources;
     }
 
-    public function setAdditionalSources(?StringArray $additionalSources): void
+    public function setAdditionalSources(null|AdditionalSourcesArray|array $additionalSources): void
     {
-        $this->additionalSources = $additionalSources;
+        $this->additionalSources = is_array($additionalSources) ? AdditionalSourcesArray::fromArray($additionalSources) : $additionalSources;
     }
 
     public function getAdditionalAssemblies(): ?AdditionalAssemblySet
