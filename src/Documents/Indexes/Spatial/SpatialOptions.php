@@ -3,6 +3,8 @@
 namespace RavenDB\Documents\Indexes\Spatial;
 
 // !status: DONE
+use Symfony\Component\Serializer\Annotation\SerializedName;
+
 class SpatialOptions
 {
     // about 4.78 meters at the equator, should be good enough (see: http://unterbahn.com/2009/11/metric-dimensions-of-geohash-partitions-at-the-equator/)
@@ -45,12 +47,19 @@ class SpatialOptions
         $this->units = $options->units;
     }
 
+    #[SerializedName("Type")]
     private SpatialFieldType $type;
+    #[SerializedName("Strategy")]
     private SpatialSearchStrategy $strategy;
+    #[SerializedName("MaxTreeLevel")]
     private int $maxTreeLevel;
+    #[SerializedName("MinX")]
     private float $minX;
+    #[SerializedName("MaxX")]
     private float $maxX;
+    #[SerializedName("MinY")]
     private float $minY;
+    #[SerializedName("MaxY")]
     private float $maxY;
 
     // Circle radius units, only used for geography  indexes

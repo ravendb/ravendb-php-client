@@ -7,10 +7,10 @@ use RavenDB\Type\ValueObjectInterface;
 // !status: DONE
 class SpatialRelation implements ValueObjectInterface
 {
-    private const WITHIN = 'within';
-    private const CONTAINS = 'contains';
-    private const DISJOINT = 'disjoint';
-    private const INTERSECTS = 'intersects';
+    public const WITHIN = 'within';
+    public const CONTAINS = 'contains';
+    public const DISJOINT = 'disjoint';
+    public const INTERSECTS = 'intersects';
 
     private string $value;
 

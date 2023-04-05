@@ -244,8 +244,11 @@ class IndexDefinition implements ResultInterface
         return $this->fields;
     }
 
-    public function setFields(?IndexFieldOptionsArray $fields): void
+    public function setFields(null|IndexFieldOptionsArray|array $fields): void
     {
+        if (is_array($fields)) {
+            $fields = IndexFieldOptionsArray::fromArray($fields);
+        }
         $this->fields = $fields;
     }
 

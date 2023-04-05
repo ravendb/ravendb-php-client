@@ -6,6 +6,7 @@ use RavenDB\Documents\Queries\Explanation\ExplanationOptions;
 use RavenDB\Documents\Queries\Explanation\Explanations;
 use RavenDB\Documents\Queries\Highlighting\HighlightingOptions;
 use RavenDB\Documents\Queries\Highlighting\Highlightings;
+use RavenDB\Documents\Queries\Spatial\DynamicSpatialField;
 
 interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQueryBaseInterface
 {
@@ -148,96 +149,39 @@ interface DocumentQueryBaseInterface extends QueryBaseInterface, FilterDocumentQ
 
     //TBD 4.1 TSelf customSortUsing(String typeName, boolean descending);
 
-//    /**
-//     * Sorts the query results by distance.
-//     * @param field Field to use in order by
-//     * @param latitude Latitude
-//     * @param longitude Longitude
-//     * @return Query instance
-//     */
-//    TSelf orderByDistance(DynamicSpatialField field, double latitude, double longitude);
-//
-//    //TBD expr TSelf OrderByDistance(Func<DynamicSpatialFieldFactory<T>, DynamicSpatialField> field, double latitude, double longitude);
-//
-//    TSelf orderByDistance(DynamicSpatialField field, String shapeWkt);
-//
-//    //TBD expr TSelf OrderByDistance(Func<DynamicSpatialFieldFactory<T>, DynamicSpatialField> field, string shapeWkt);
-//
-//    //TBD expr  TSelf OrderByDistance<TValue>(Expression<Func<T, TValue>> propertySelector, double latitude, double longitude);
-//
-//    /**
-//     * Sorts the query results by distance.
-//     * @param fieldName Field name to use in order by
-//     * @param latitude Latitude
-//     * @param longitude Longitude
-//     * @return Query instance
-//     */
-//    TSelf orderByDistance(String fieldName, double latitude, double longitude);
-//
-//    /**
-//     * Sorts the query results by distance.
-//     * @param fieldName Field name to use in order by
-//     * @param latitude Latitude
-//     * @param longitude Longitude
-//     * @param roundFactor Round factor
-//     * @return Query instance
-//     */
-//    TSelf orderByDistance(String fieldName, double latitude, double longitude, double roundFactor);
-//
-//
-//    //TBD expr TSelf OrderByDistance<TValue>(Expression<Func<T, TValue>> propertySelector, string shapeWkt);
-//
-//    /**
-//     * Sorts the query results by distance.
-//     * @param fieldName Field name to use in order by
-//     * @param shapeWkt WKT shape to use
-//     * @return Query instance
-//     */
-//    TSelf orderByDistance(String fieldName, String shapeWkt);
-//
-//    /**
-//     * Sorts the query results by distance.
-//     * @param field Field to use in order by
-//     * @param latitude Latitude
-//     * @param longitude Longitude
-//     * @return Query instance
-//     */
-//    TSelf orderByDistanceDescending(DynamicSpatialField field, double latitude, double longitude);
-//
-//    //TBD expr TSelf OrderByDistanceDescending(Func<DynamicSpatialFieldFactory<T>, DynamicSpatialField> field, double latitude, double longitude);
-//
-//    TSelf orderByDistanceDescending(DynamicSpatialField field, String shapeWkt);
-//
-//    //TBD expr TSelf OrderByDistanceDescending(Func<DynamicSpatialFieldFactory<T>, DynamicSpatialField> field, string shapeWkt);
-//
-//    //TBD expr TSelf OrderByDistanceDescending<TValue>(Expression<Func<T, TValue>> propertySelector, double latitude, double longitude);
-//
-//    /**
-//     * Sorts the query results by distance.
-//     * @param fieldName Field name to use in order by
-//     * @param latitude Latitude
-//     * @param longitude Longitude
-//     * @return Query instance
-//     */
-//    TSelf orderByDistanceDescending(String fieldName, double latitude, double longitude);
-//
-//    /**
-//     * Sorts the query results by distance.
-//     * @param fieldName Field name to use in order by
-//     * @param latitude Latitude
-//     * @param longitude Longitude
-//     * @param roundFactor Round factor
-//     * @return Query instance
-//     */
-//    TSelf orderByDistanceDescending(String fieldName, double latitude, double longitude, double roundFactor);
-//
-//    //TBD expr TSelf OrderByDistanceDescending<TValue>(Expression<Func<T, TValue>> propertySelector, string shapeWkt);
-//
-//    /**
-//     * Sorts the query results by distance.
-//     * @param fieldName Field name to use
-//     * @param shapeWkt WKT shape to use
-//     * @return Query instance
-//     */
-//    TSelf orderByDistanceDescending(String fieldName, String shapeWkt);
+    /**
+     * Sorts the query results by distance.
+     * @param DynamicSpatialField|string $field
+     * @param float|string $latitudeOrShapeWkt
+     * @param float|null $longitude
+     * @param float $roundFactor
+     * @return DocumentQueryInterface Query instance
+     */
+    function orderByDistance(DynamicSpatialField|string $field, float|string $latitudeOrShapeWkt, ?float $longitude = null, float $roundFactor = 0): DocumentQueryInterface;
+
+    //TBD expr TSelf OrderByDistance(Func<DynamicSpatialFieldFactory<T>, DynamicSpatialField> field, double latitude, double longitude);
+
+    //TBD expr TSelf OrderByDistance(Func<DynamicSpatialFieldFactory<T>, DynamicSpatialField> field, string shapeWkt);
+
+    //TBD expr  TSelf OrderByDistance<TValue>(Expression<Func<T, TValue>> propertySelector, double latitude, double longitude);
+
+    //TBD expr TSelf OrderByDistance<TValue>(Expression<Func<T, TValue>> propertySelector, string shapeWkt);
+
+    /**
+     * Sorts the query results by distance.
+     * @param DynamicSpatialField|string $field
+     * @param float|string $latitudeOrShapeWkt
+     * @param float|null $longitude
+     * @param float $roundFactor
+     * @return DocumentQueryInterface instance
+     */
+    function orderByDistanceDescending(DynamicSpatialField|string $field, float|string $latitudeOrShapeWkt, ?float $longitude = null, float $roundFactor = 0): DocumentQueryInterface;
+
+    //TBD expr TSelf OrderByDistanceDescending(Func<DynamicSpatialFieldFactory<T>, DynamicSpatialField> field, double latitude, double longitude);
+
+    //TBD expr TSelf OrderByDistanceDescending(Func<DynamicSpatialFieldFactory<T>, DynamicSpatialField> field, string shapeWkt);
+
+    //TBD expr TSelf OrderByDistanceDescending<TValue>(Expression<Func<T, TValue>> propertySelector, double latitude, double longitude);
+
+    //TBD expr TSelf OrderByDistanceDescending<TValue>(Expression<Func<T, TValue>> propertySelector, string shapeWkt);
 }
