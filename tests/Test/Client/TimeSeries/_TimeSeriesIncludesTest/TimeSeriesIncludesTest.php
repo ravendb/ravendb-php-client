@@ -733,8 +733,7 @@ class TimeSeriesIncludesTest extends RemoteTestBase
         }
     }
 
-    // ! not yet in todo list (contains counters)
-    public function atestIncludeTimeSeriesAndDocumentsAndCounters(): void
+    public function testIncludeTimeSeriesAndDocumentsAndCounters(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -764,70 +763,55 @@ class TimeSeriesIncludesTest extends RemoteTestBase
                     $tsf->append(DateUtils::addSeconds($baseLine, $i * 10), 67, "watches/fitbit");
                 }
 
-//                $session->countersFor("users/ayende").increment("likes", 100);
-//                $session->countersFor("users/ayende").increment("dislikes", 5);
+                $session->countersFor("users/ayende")->increment("likes", 100);
+                $session->countersFor("users/ayende")->increment("dislikes", 5);
 
-//                $session->saveChanges();
+                $session->saveChanges();
             } finally {
                 $session->close();
             }
 
             $session = $store->openSession();
             try {
-//                $user = $session->load(get_class($user), "users/ayende",
-//                        i -> i.includeDocuments("worksAt")
-//                                ->includeTimeSeries("Heartrate", $baseLine, DateUtils::addMinutes($baseLine, 30))
-//                                .includeCounter("likes")
-//                                .includeCounter("dislikes"));
-//
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isEqualTo(1);
-//
-//                assertThat($user->getName())
-//                        .isEqualTo("Oren");
-//
-//                // should not go to server
-//
-//                $company = $session->load(get_class($company), $user->getWorksAt());
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isEqualTo(1);
-//
-//                assertThat($company->getName())
-//                        .isEqualTo("HR");
-//
-//                // should not go to server
-//                $vals = $session->timeSeriesFor("users/ayende", "Heartrate")
-//                        ->get($baseLine, DateUtils::addMinutes($baseLine, 30)));
-//
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isEqualTo(1);
-//
-//                $this->assertCount(13, $vals);
-//                        .hasSize(181);
-//
-//                assertThat($vals[0]->getTimestamp())
-//                        .isEqualTo($baseLine);
-//                assertThat($vals[0].getTag())
-//                        .isEqualTo("watches/fitbit");
-//                assertThat($vals[0].getValues()[0])
-//                        .isEqualTo(67);
-//                assertThat($vals[180)->getTimestamp())
-//                        .isEqualTo(DateUtils::addMinutes($baseLine, 30));
-//
-//                // should not go to server
-//
-//                Map<String, Long> counters = $session->countersFor("users/ayende")
-//                        .getAll();
-//
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//                        .isEqualTo(1);
-//
-//                Long counter = counters.get("likes");
-//                assertThat(counter)
-//                        .isEqualTo(100);
-//                counter = counters.get("dislikes");
-//                assertThat(counter)
-//                        .isEqualTo(5);
+                $user = $session->load(User::class, "users/ayende",
+                        function($i) use ($baseLine) { return $i->includeDocuments("worksAt")
+                                ->includeTimeSeries("Heartrate", $baseLine, DateUtils::addMinutes($baseLine, 30))
+                                ->includeCounter("likes")
+                                ->includeCounter("dislikes");
+                });
+
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+
+                $this->assertEquals("Oren", $user->getName());
+
+                // should not go to server
+                $company = $session->load(get_class($company), $user->getWorksAt());
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+
+                $this->assertEquals("HR", $company->getName());
+
+                // should not go to server
+                $vals = $session->timeSeriesFor("users/ayende", "Heartrate")
+                        ->get($baseLine, DateUtils::addMinutes($baseLine, 30));
+
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+
+                $this->assertCount(181, $vals);
+
+                $this->assertEquals($baseLine, $vals[0]->getTimestamp());
+                $this->assertEquals("watches/fitbit", $vals[0]->getTag());
+                $this->assertEquals(67, $vals[0]->getValues()[0]);
+                $this->assertEquals(DateUtils::addMinutes($baseLine, 30), $vals[180]->getTimestamp());
+
+                // should not go to server
+                $counters = $session->countersFor("users/ayende")->getAll();
+
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+
+                $counter = $counters["likes"];
+                $this->assertEquals(100, $counter);
+                $counter = $counters["dislikes"];
+                $this->assertEquals(5, $counter);
             } finally {
                 $session->close();
             }

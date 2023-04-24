@@ -70,7 +70,7 @@ class HttpClient implements HttpClientInterface
 
             $json = JsonExtensions::getDefaultEntityMapper()->serialize($options['json'], 'json', [
                 "empty_array_as_object" => true,
-                "json_encode_options" => JSON_UNESCAPED_UNICODE
+                "json_encode_options" => JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
             ]);
 
             unset($options['json']);
