@@ -2,6 +2,7 @@
 
 namespace RavenDB\Utils;
 
+use Doctrine\Inflector\Inflector;
 use Doctrine\Inflector\InflectorFactory;
 
 class StringUtils
@@ -62,10 +63,15 @@ class StringUtils
         return $h;
     }
 
+    private static ?Inflector $inflector = null;
+
     public static function pluralize(string $string): string
     {
-        $inflector = InflectorFactory::create()->build();
-        return $inflector->pluralize($string);
+        if (self::$inflector == null) {
+            self::$inflector = InflectorFactory::create()->build();
+        }
+
+        return self::$inflector->pluralize($string);
     }
 
     public static function capitalize(string $propertyName): string

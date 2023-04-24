@@ -2,6 +2,9 @@
 
 namespace RavenDB\Documents\Session;
 
+use Closure;
+use RavenDB\Documents\Lazy;
+
 interface DocumentQueryBaseSingleInterface
 {
 //    /**
@@ -61,19 +64,12 @@ interface DocumentQueryBaseSingleInterface
      */
     function longCount(): int;
 
-//    /**
-//     * Register the query as a lazy query in the session and return a lazy
-//     * instance that will evaluate the query only when needed.
-//     * @return Lazy query result
-//     */
-//    Lazy<List<T>> lazily();
-//
-//    /**
-//     * Register the query as a lazy query in the session and return a lazy
-//     * instance that will evaluate the query only when needed.
-//     * Also provide a function to execute when the value is evaluated
-//     * @param onEval Action to be executed on evaluation.
-//     * @return Lazy query result
-//     */
-//    Lazy<List<T>> lazily(Consumer<List<T>> onEval);
+    /**
+     * Register the query as a lazy query in the session and return a lazy
+     * instance that will evaluate the query only when needed.
+     * Also provide a function to execute when the value is evaluated
+     * @param ?Closure $onEval Action to be executed on evaluation.
+     * @return Lazy query result
+     */
+    function lazily(?Closure $onEval = null): Lazy;
 }

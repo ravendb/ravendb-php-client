@@ -18,6 +18,10 @@ use RavenDB\Documents\Queries\Facets\FacetBuilder;
 use RavenDB\Documents\Queries\GroupBy;
 use RavenDB\Documents\Queries\Highlighting\HighlightingOptions;
 use RavenDB\Documents\Queries\Highlighting\Highlightings;
+use RavenDB\Documents\Queries\MoreLikeThis\MoreLikeThisBase;
+use RavenDB\Documents\Queries\MoreLikeThis\MoreLikeThisBuilder;
+use RavenDB\Documents\Queries\MoreLikeThis\MoreLikeThisUsingDocument;
+use RavenDB\Documents\Queries\MoreLikeThis\MoreLikeThisUsingDocumentForDocumentQuery;
 use RavenDB\Documents\Queries\ProjectionBehavior;
 use RavenDB\Documents\Queries\QueryData;
 use RavenDB\Documents\Queries\QueryOperator;
@@ -841,39 +845,57 @@ class DocumentQuery extends AbstractDocumentQuery
 //        _orderByDistanceDescending(fieldName, shapeWkt);
 //        return this;
 //    }
-//
-//    @Override
-//    public IDocumentQuery<T> moreLikeThis(MoreLikeThisBase moreLikeThis) {
-//        try (MoreLikeThisScope mlt = _moreLikeThis()) {
-//            mlt.withOptions(moreLikeThis.getOptions());
-//
-//            if (moreLikeThis instanceof MoreLikeThisUsingDocument) {
-//                mlt.withDocument(((MoreLikeThisUsingDocument) moreLikeThis).getDocumentJson());
-//            }
-//        }
-//
-//        return this;
-//    }
-//
-//    @SuppressWarnings("unchecked")
-//    @Override
-//    public IDocumentQuery<T> moreLikeThis(Consumer<IMoreLikeThisBuilderForDocumentQuery<T>> builder) {
-//        MoreLikeThisBuilder<T> f = new MoreLikeThisBuilder<>();
-//        builder.accept(f);
-//
-//        try (MoreLikeThisScope moreLikeThis = _moreLikeThis()) {
-//            moreLikeThis.withOptions(f.getMoreLikeThis().getOptions());
-//
-//            if (f.getMoreLikeThis() instanceof MoreLikeThisUsingDocument) {
-//                moreLikeThis.withDocument(((MoreLikeThisUsingDocument) f.getMoreLikeThis()).getDocumentJson());
-//            } else if (f.getMoreLikeThis() instanceof MoreLikeThisUsingDocumentForDocumentQuery) {
-//                ((MoreLikeThisUsingDocumentForDocumentQuery) f.getMoreLikeThis()).getForDocumentQuery().accept(this);
-//            }
-//        }
-//
-//        return this;
-//    }
-//
+
+    public function moreLikeThis(null|MoreLikeThisBase|Closure $moreLikeThisOrBuilder): DocumentQueryInterface
+    {
+        if (is_callable($moreLikeThisOrBuilder)) {
+            return $this->moreLikeThisByBuilder($moreLikeThisOrBuilder);
+        }
+        return $this->moreLikeThisByObject($moreLikeThisOrBuilder);
+    }
+
+    private function moreLikeThisByObject(?MoreLikeThisBase $moreLikeThis): DocumentQueryInterface
+    {
+        $mlt = $this->_moreLikeThis();
+        try {
+            $mlt->withOptions($moreLikeThis->getOptions());
+
+            if ($moreLikeThis instanceof MoreLikeThisUsingDocument) {
+                $mlt->withDocument($moreLikeThis->getDocumentJson());
+            }
+        } finally {
+            $mlt->close();
+        }
+
+        return $this;
+    }
+
+    public function moreLikeThisByBuilder(Closure $builder): DocumentQueryInterface
+    {
+        $f = new MoreLikeThisBuilder();
+        $builder($f);
+
+        $moreLikeThis = $this->_moreLikeThis();
+        try {
+            $moreLikeThis->withOptions($f->getMoreLikeThis()->getOptions());
+
+            if ($f->getMoreLikeThis() instanceof MoreLikeThisUsingDocument) {
+                /** @var MoreLikeThisUsingDocument $mlt */
+                $mlt = $f->getMoreLikeThis();
+                $moreLikeThis->withDocument($mlt->getDocumentJson());
+            } else if ($f->getMoreLikeThis() instanceof MoreLikeThisUsingDocumentForDocumentQuery) {
+                /** @var MoreLikeThisUsingDocumentForDocumentQuery $mlt */
+                $mlt = $f->getMoreLikeThis();
+                $closure = $mlt->getForDocumentQuery();
+                $closure($this);
+            }
+        } finally {
+            $moreLikeThis->close();
+        }
+
+        return $this;
+    }
+
 //    @Override
 //    public ISuggestionDocumentQuery<T> suggestUsing(SuggestionBase suggestion) {
 //        _suggestUsing(suggestion);

@@ -56,6 +56,11 @@ class Duration
         return $duration;
     }
 
+    public static function zero(): Duration
+    {
+        return Duration::ofMillis(0);
+    }
+
     public function format(): string
     {
         $hours = intval(floor($this->intervalInMilliSeconds / self::MILLISECONDS_IN_HOUR));

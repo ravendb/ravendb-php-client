@@ -8,6 +8,7 @@ use RavenDB\Constants\TimeSeries;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Indexes\Spatial\SpatialRelation;
 use RavenDB\Documents\Indexes\Spatial\SpatialUnits;
+use RavenDB\Documents\Lazy;
 use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRange;
 use RavenDB\Documents\Queries\Explanation\ExplanationOptions;
 use RavenDB\Documents\Queries\Explanation\Explanations;
@@ -17,6 +18,7 @@ use RavenDB\Documents\Queries\Highlighting\HighlightingOptions;
 use RavenDB\Documents\Queries\Highlighting\Highlightings;
 use RavenDB\Documents\Queries\Highlighting\QueryHighlightings;
 use RavenDB\Documents\Queries\IndexQuery;
+use RavenDB\Documents\Queries\MoreLikeThis\MoreLikeThisScope;
 use RavenDB\Documents\Queries\ProjectionBehavior;
 use RavenDB\Documents\Queries\QueryData;
 use RavenDB\Documents\Queries\QueryFieldUtil;
@@ -28,6 +30,7 @@ use RavenDB\Documents\Queries\Spatial\SpatialCriteria;
 use RavenDB\Documents\Queries\TimeSeries\TimeSeriesQueryBuilder;
 use RavenDB\Documents\Queries\Timings\QueryTimings;
 use RavenDB\Documents\Session\Loaders\IncludeBuilderBase;
+use RavenDB\Documents\Session\Operations\Lazy\LazyQueryOperation;
 use RavenDB\Documents\Session\Operations\QueryOperation;
 use RavenDB\Documents\Session\Tokens\CloseSubclauseToken;
 use RavenDB\Documents\Session\Tokens\CompareExchangeValueIncludesToken;
@@ -77,6 +80,7 @@ use RavenDB\Type\Collection;
 use RavenDB\Type\Duration;
 use RavenDB\Type\StringArray;
 use RavenDB\Type\StringSet;
+use RavenDB\Type\TypedList;
 use RavenDB\Utils\DefaultsUtils;
 use RavenDB\Utils\StringBuilder;
 use RavenDB\Utils\StringUtils;
@@ -315,13 +319,14 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->timeout = $waitTimeout ?? $this->getDefaultTimeout();
     }
 
-//    protected LazyQueryOperation<T> getLazyQueryOperation() {
-//        if (queryOperation == null) {
-//            queryOperation = initializeQueryOperation();
-//        }
-//
-//        return new LazyQueryOperation<>(clazz, theSession, queryOperation, afterQueryExecutedCallback);
-//    }
+    protected function getLazyQueryOperation(): LazyQueryOperation
+    {
+        if ($this->queryOperation == null) {
+            $this->queryOperation = $this->initializeQueryOperation();
+        }
+
+        return new LazyQueryOperation($this->className, $this->theSession, $this->queryOperation, $this->afterQueryExecutedCallback);
+    }
 
     public function initializeQueryOperation(): QueryOperation
     {
@@ -501,17 +506,18 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
         $tokens->append(TrueToken::instance());
     }
-//
-//
-//    public MoreLikeThisScope _moreLikeThis() {
-//        appendOperatorIfNeeded(whereTokens);
-//
-//        MoreLikeThisToken token = new MoreLikeThisToken();
-//        whereTokens.add(token);
-//
-//        _isInMoreLikeThis = true;
-//        return new MoreLikeThisScope(token, this::addQueryParameter, () -> _isInMoreLikeThis = false);
-//    }
+
+    public function _moreLikeThis(): MoreLikeThisScope
+    {
+        $this->appendOperatorIfNeeded($this->whereTokens);
+
+        $token = new MoreLikeThisToken();
+        $this->whereTokens->append($token);
+
+        $this->isInMoreLikeThis = true;
+        $isInMoreLikeThis = & $this->isInMoreLikeThis;
+        return new MoreLikeThisScope($token, Closure::fromCallable([$this, 'addQueryParameter']), function() use ($isInMoreLikeThis) { return $isInMoreLikeThis = false; } );
+    }
 
     /**
      * @param string|IncludeBuilderBase|null $includes
@@ -2256,17 +2262,13 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->selectTokens->append(FacetToken::create($facetSetupDocumentId));
     }
 
-//    public Lazy<List<T>> lazily() {
-//        return lazily(null);
-//    }
-//
-//    @SuppressWarnings("unchecked")
-//    public Lazy<List<T>> lazily(Consumer<List<T>> onEval) {
-//        LazyQueryOperation<T> lazyQueryOperation = getLazyQueryOperation();
-//
-//        return ((DocumentSession)theSession).addLazyOperation((Class<List<T>>) (Class< ? >)List.class, lazyQueryOperation, onEval);
-//    }
-//
+    function lazily(?Closure $onEval = null): Lazy
+    {
+        $lazyQueryOperation = $this->getLazyQueryOperation();
+
+        return $this->theSession->addLazyOperation(TypedList::class, $lazyQueryOperation, $onEval);
+    }
+
 //    public Lazy<Integer> countLazily() {
 //        if (queryOperation == null) {
 //            _take(0);

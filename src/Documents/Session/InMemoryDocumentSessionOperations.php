@@ -4,6 +4,7 @@ namespace RavenDB\Documents\Session;
 
 use Closure;
 use DateTimeInterface;
+use Ds\Map as DSMap;
 use InvalidArgumentException;
 use Ramsey\Uuid\UuidInterface;
 use RavenDB\Constants\DocumentsMetadata;
@@ -25,6 +26,7 @@ use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Documents\Identity\GenerateEntityIdOnTheClient;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeResult;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeResultList;
+use RavenDB\Documents\Session\Operations\Lazy\LazyOperationList;
 use RavenDB\Documents\Session\TimeSeries\TimeSeriesEntry;
 use RavenDB\Documents\Session\TimeSeries\TimeSeriesEntryArray;
 use RavenDB\Exceptions\Documents\Session\NonUniqueObjectException;
@@ -57,9 +59,9 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     private ?OperationExecutor $operationExecutor = null;
 
-//    protected final List<ILazyOperation> pendingLazyOperations = new ArrayList<>();
-//    protected final Map<ILazyOperation, Consumer<Object>> onEvaluateLazy = new HashMap<>();
-//
+    protected ?LazyOperationList $pendingLazyOperations = null;
+    protected ?DSMap $onEvaluateLazy = null;
+
     private static ?AtomicInteger $instancesCounter = null;
 
     private int $hash = 0;
@@ -427,6 +429,9 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             self::$instancesCounter = new AtomicInteger(0);
         }
         $this->hash = self::$instancesCounter->incrementAndGet();
+
+        $this->pendingLazyOperations = new LazyOperationList();
+        $this->onEvaluateLazy = new DSMap();
 
         $this->onBeforeStore = new ClosureArray();
         $this->onAfterSaveChanges = new ClosureArray();
@@ -1905,10 +1910,10 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     }
 
     private function registerCountersInternal(
-        array $resultCounters,
+        array  $resultCounters,
         ?array $countersToInclude,   // Map<String, String[]>
-        bool  $fromQueryResult,
-        bool  $gotAll
+        bool   $fromQueryResult,
+        bool   $gotAll
     ): void
     {
         foreach ($resultCounters as $field => $value) {
@@ -1952,7 +1957,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         ?string $id,
         bool    $gotAll,
         array   $counters,          // String[]
-        ?array   $countersToInclude  // Map<String, String[]>
+        ?array  $countersToInclude  // Map<String, String[]>
     ): void
     {
         if (array_key_exists($id, $this->getCountersByDocId())) {
@@ -1965,8 +1970,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
         $emptyCache = $cache[1] == null || count($cache[1]) == 0;
         $deletedCounters = $emptyCache
-                ? []
-                : ($countersToInclude === null || count($countersToInclude[$id]) == 0 ? array_keys($cache[1]->getArrayCopy()) : $countersToInclude[$id]);
+            ? []
+            : ($countersToInclude === null || count($countersToInclude[$id]) == 0 ? array_keys($cache[1]->getArrayCopy()) : $countersToInclude[$id]);
 
         foreach ($counters as $counterJson) {
             $counterName = $counterJson !== null && array_key_exists('CounterName', $counterJson) ? $counterJson['CounterName'] : null;
@@ -2585,12 +2590,13 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
     }
 
-//    @SuppressWarnings("unchecked")
-//    protected static <T> T getOperationResult(Class<T> clazz, Object result) {
-//        if (result == null) {
-//            return Defaults.defaultValue(clazz);
-//        }
-//
+    protected static function getOperationResult(?string $className, ?object $result): ?object
+    {
+        if ($result == null) {
+            return null;
+        }
+
+        //@todo: implement this
 //        if (clazz.isAssignableFrom(result.getClass())) {
 //            return (T) result;
 //        }
@@ -2603,9 +2609,9 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 //                return (T) map.values().iterator().next();
 //            }
 //        }
-//
-//        throw new IllegalStateException("Unable to cast " + result.getClass().getSimpleName() + " to " + clazz.getSimpleName());
-//    }
+
+        throw new IllegalStateException("Unable to cast " . get_class($result) . " to " . $className);
+    }
 
     protected
     function updateSessionAfterSaveChanges(BatchCommandResult $result): void
