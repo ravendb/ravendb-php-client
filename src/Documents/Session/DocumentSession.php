@@ -3,11 +3,18 @@
 namespace RavenDB\Documents\Session;
 
 use Closure;
+use RavenDB\Constants\Headers;
 use RavenDB\Constants\HttpStatusCode;
 use RavenDB\Documents\Commands\ConditionalGetDocumentsCommand;
+use RavenDB\Documents\Commands\MultiGet\GetRequestList;
+use RavenDB\Documents\Lazy;
 use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRange;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesConfiguration;
+use RavenDB\Documents\Session\Operations\Lazy\LazyOperationInterface;
+use RavenDB\Documents\Session\Operations\MultiGetOperation;
 use RavenDB\Documents\TimeSeries\TimeSeriesOperations;
+use RavenDB\Type\Duration;
+use RavenDB\Utils\Stopwatch;
 use ReflectionException;
 use InvalidArgumentException;
 use Ramsey\Uuid\UuidInterface;
@@ -219,89 +226,94 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         return $this->getConventions()->generateDocumentId($this->getDatabaseName(), $entity);
     }
 
-//
-//    public ResponseTimeInformation executeAllPendingLazyOperations() {
-//        ArrayList<GetRequest> requests = new ArrayList<>();
-//        for (int i = 0; i < pendingLazyOperations.size(); i++) {
-//            GetRequest req = pendingLazyOperations.get(i).createRequest();
-//            if (req == null) {
-//                pendingLazyOperations.remove(i);
-//                i--; // so we'll recheck this index
-//                continue;
-//            }
-//            requests.add(req);
-//        }
-//
-//        if (requests.isEmpty()) {
-//            return new ResponseTimeInformation();
-//        }
-//
-//        try  {
-//            Stopwatch sw = Stopwatch.createStarted();
-//
-//            ResponseTimeInformation responseTimeDuration = new ResponseTimeInformation();
-//
-//            while (executeLazyOperationsSingleStep(responseTimeDuration, requests, sw)) {
-//                Thread.sleep(100);
-//            }
-//
-//            responseTimeDuration.computeServerTotal();
-//
-//            for (ILazyOperation pendingLazyOperation : pendingLazyOperations) {
-//                Consumer<Object> value = onEvaluateLazy.get(pendingLazyOperation);
-//                if (value != null) {
-//                    value.accept(pendingLazyOperation.getResult());
-//                }
-//            }
-//
-//            sw.stop();
-//            responseTimeDuration.setTotalClientDuration(Duration.ofMillis(sw.elapsed(TimeUnit.MILLISECONDS)));
-//            return responseTimeDuration;
-//        } catch (InterruptedException e) {
-//            throw new RuntimeException("Unable to execute pending operations: "  + e.getMessage(), e);
-//        } finally {
-//            pendingLazyOperations.clear();
-//        }
-//    }
-//
-//    private boolean executeLazyOperationsSingleStep(ResponseTimeInformation responseTimeInformation, List<GetRequest> requests, Stopwatch sw) {
-//        MultiGetOperation multiGetOperation = new MultiGetOperation(this);
-//        try (MultiGetCommand multiGetCommand = multiGetOperation.createRequest(requests)) {
-//            getRequestExecutor().execute(multiGetCommand, sessionInfo);
-//
-//            List<GetResponse> responses = multiGetCommand.getResult();
-//
-//            if (!multiGetCommand.aggressivelyCached) {
-//                incrementRequestCount();
-//            }
-//
-//            for (int i = 0; i < pendingLazyOperations.size(); i++) {
-//                long totalTime;
-//                String tempReqTime;
-//                GetResponse response = responses.get(i);
-//
-//                tempReqTime = response.getHeaders().get(Constants.Headers.REQUEST_TIME);
-//                response.setElapsed(sw.elapsed());
-//                totalTime = tempReqTime != null ? Long.parseLong(tempReqTime) : 0;
-//
-//                ResponseTimeInformation.ResponseTimeItem timeItem = new ResponseTimeInformation.ResponseTimeItem();
-//                timeItem.setUrl(requests.get(i).getUrlAndQuery());
-//                timeItem.setDuration(Duration.ofMillis(totalTime));
-//
-//                responseTimeInformation.getDurationBreakdown().add(timeItem);
-//
-//                if (response.requestHasErrors()) {
-//                    throw new IllegalStateException("Got an error from server, status code: " + response.getStatusCode() + System.lineSeparator() + response.getResult());
-//                }
-//
-//                pendingLazyOperations.get(i).handleResponse(response);
-//                if (pendingLazyOperations.get(i).isRequiresRetry()) {
-//                    return true;
-//                }
-//            }
-//            return false;
-//        }
-//    }
+    public function executeAllPendingLazyOperations(): ResponseTimeInformation
+    {
+        $requests = new GetRequestList();
+        for ($i = 0; $i < count($this->pendingLazyOperations); $i++) {
+            $req = $this->pendingLazyOperations[$i]->createRequest();
+            if ($req == null) {
+                $this->pendingLazyOperations->removeValues($i, 1);
+                $i--; // so we'll recheck this index
+                continue;
+            }
+            $requests->append($req);
+        }
+
+        if (empty($requests)) {
+            return new ResponseTimeInformation();
+        }
+
+        try  {
+            $sw = Stopwatch::createStarted();
+
+            $responseTimeDuration = new ResponseTimeInformation();
+
+            while ($this->executeLazyOperationsSingleStep($responseTimeDuration, $requests, $sw)) {
+                usleep(100000); // 100 millis
+            }
+
+            $responseTimeDuration->computeServerTotal();
+
+            foreach ($this->pendingLazyOperations as $pendingLazyOperation) {
+                $value = $this->onEvaluateLazy->get($pendingLazyOperation);
+                if ($value != null) {
+                    $value($pendingLazyOperation->getResult());
+                }
+            }
+
+            $sw->stop();
+            $responseTimeDuration->setTotalClientDuration(Duration::ofMillis($sw->elapsedInMillis()));
+            return $responseTimeDuration;
+        } catch (Throwable $e) {
+            throw new RuntimeException("Unable to execute pending operations: "  . $e->getMessage(), $e->getCode());
+        } finally {
+            $this->pendingLazyOperations->clear();
+        }
+    }
+
+    private function executeLazyOperationsSingleStep(?ResponseTimeInformation $responseTimeInformation, GetRequestList $requests, Stopwatch $sw): bool
+    {
+        $multiGetOperation = new MultiGetOperation($this);
+
+        $multiGetCommand = $multiGetOperation->createRequest($requests);
+        try {
+            $this->getRequestExecutor()->execute($multiGetCommand, $this->sessionInfo);
+
+            $responses = $multiGetCommand->getResult();
+
+            if (!$multiGetCommand->aggressivelyCached) {
+                $this->incrementRequestCount();
+            }
+
+            for ($i = 0; $i < count($this->pendingLazyOperations); $i++) {
+                $totalTime = 0;
+                $tempReqTime = '';
+                $response = $responses[$i];
+
+                $tempReqTime = array_key_exists(Headers::REQUEST_TIME, $response->getHeaders()) ? $response->getHeaders()[Headers::REQUEST_TIME] : null;
+                $response->setElapsed($sw->elapsed());
+                $totalTime = $tempReqTime != null ? intval($tempReqTime) : 0;
+
+                $timeItem = new ResponseTimeItem();
+                $timeItem->setUrl($requests[$i]->getUrlAndQuery());
+                $timeItem->setDuration(Duration::ofMillis($totalTime));
+
+                $responseTimeInformation->getDurationBreakdown()->append($timeItem);
+
+                if ($response->requestHasErrors()) {
+                    throw new IllegalStateException("Got an error from server, status code: " . $response->getStatusCode() . PHP_EOL . $response->getResult());
+                }
+
+                $this->pendingLazyOperations[$i]->handleResponse($response);
+                if ($this->pendingLazyOperations[$i]->isRequiresRetry()) {
+                    return true;
+                }
+            }
+            return false;
+        } finally {
+            $multiGetCommand->close();
+        }
+    }
 
     /**
      * Begin a load while including the specified path
@@ -311,20 +323,21 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         return (new MultiLoaderWithInclude($this))->include($path);
     }
 
-//    public <T> Lazy<T> addLazyOperation(Class<T> clazz, ILazyOperation operation, Consumer<T> onEval) {
-//        pendingLazyOperations.add(operation);
-//        Lazy<T> lazyValue = new Lazy<>(() -> {
-//            executeAllPendingLazyOperations();
-//            return getOperationResult(clazz, operation.getResult());
-//        });
-//
-//        if (onEval != null) {
-//            onEvaluateLazy.put(operation, theResult -> onEval.accept(getOperationResult(clazz, theResult)));
-//        }
-//
-//        return lazyValue;
-//    }
-//
+    public function addLazyOperation(?string $className, LazyOperationInterface $operation, ?Closure $onEval = null): Lazy
+    {
+        $this->pendingLazyOperations->append($operation);
+        $lazyValue = new Lazy(function() use ($className, $operation) {
+            $this->executeAllPendingLazyOperations();
+            return self::getOperationResult($className, $operation->getResult());
+        });
+
+        if ($onEval != null) {
+            $this->onEvaluateLazy->put($operation,  function($theResult) use ($className, $onEval) { return $onEval(self::getOperationResult($className, $theResult)); });
+        }
+
+        return $lazyValue;
+    }
+
 //    protected Lazy<Integer> addLazyCountOperation(ILazyOperation operation) {
 //        pendingLazyOperations.add(operation);
 //

@@ -298,6 +298,4 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
     public function spatial(string|DynamicSpatialField $field, Closure $clause): DocumentQueryInterface;
 
     //TBD expr IDocumentQuery<T> spatial(Function<SpatialDynamicFieldFactory<T>, DynamicSpatialField> field, Function<SpatialCriteriaFactory, SpatialCriteria> clause);
-
-//    IDocumentQuery<T> moreLikeThis(MoreLikeThisBase moreLikeThis);
 }

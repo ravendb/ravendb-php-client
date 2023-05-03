@@ -10,6 +10,7 @@ use RavenDB\Documents\Queries\Facets\FacetBase;
 use RavenDB\Documents\Queries\GroupBy;
 use RavenDB\Documents\Queries\Highlighting\HighlightingOptions;
 use RavenDB\Documents\Queries\Highlighting\Highlightings;
+use RavenDB\Documents\Queries\MoreLikeThis\MoreLikeThisBase;
 use RavenDB\Documents\Queries\QueryOperator;
 use RavenDB\Documents\Queries\QueryResult;
 use RavenDB\Documents\Queries\SearchOperator;
@@ -77,7 +78,7 @@ interface DocumentQueryInterface
      */
     public function groupBy($fieldName, ...$fieldNames): GroupByDocumentQueryInterface;
 
-//    IDocumentQuery<T> moreLikeThis(Consumer<IMoreLikeThisBuilderForDocumentQuery<T>> builder);
+    public function moreLikeThis(null|MoreLikeThisBase|Closure $moreLikeThisOrBuilder): DocumentQueryInterface;
 
     /**
      * @param Callable|FacetBase $builderOrFacets

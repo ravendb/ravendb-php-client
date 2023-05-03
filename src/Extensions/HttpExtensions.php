@@ -49,13 +49,14 @@ class HttpExtensions
         return $responseHeader;
     }
 
-//    public static String getEtagHeader(Map<String, String> headers) {
-//        if (headers.containsKey(Constants.Headers.ETAG)) {
-//            return etagHeaderToChangeVector(headers.get(Constants.Headers.ETAG));
-//        } else {
-//            return null;
-//        }
-//    }
+    public static function getEtagHeaderFromArray(array $headers): ?string
+    {
+        if (array_key_exists(Headers::ETAG, $headers)) {
+            return self::etagHeaderToChangeVector($headers[Headers::ETAG]);
+        } else {
+            return null;
+        }
+    }
 
     public static function getBooleanHeader(?HttpResponse $response, ?string $header): ?bool
     {

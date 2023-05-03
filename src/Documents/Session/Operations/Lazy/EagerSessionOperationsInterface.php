@@ -2,17 +2,16 @@
 
 namespace RavenDB\Documents\Session\Operations\Lazy;
 
+use RavenDB\Documents\Session\ResponseTimeInformation;
+
 /**
  * Allow to perform eager operations on the session
  */
 interface EagerSessionOperationsInterface
 {
-    // @todo: implement this interface
-
-//    /**
-//     * Execute all the lazy requests pending within this session
-//     * @return Information about response times
-//     */
-//    @SuppressWarnings("UnusedReturnValue")
-//    ResponseTimeInformation executeAllPendingLazyOperations();
+    /**
+     * Execute all the lazy requests pending within this session
+     * @return ResponseTimeInformation Information about response times
+     */
+    function executeAllPendingLazyOperations(): ResponseTimeInformation;
 }

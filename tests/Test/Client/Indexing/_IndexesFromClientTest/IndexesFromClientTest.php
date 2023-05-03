@@ -27,8 +27,10 @@ use RavenDB\Documents\Operations\Indexes\StartIndexingOperation;
 use RavenDB\Documents\Operations\Indexes\StopIndexingOperation;
 use RavenDB\Documents\Operations\Indexes\StopIndexOperation;
 use RavenDB\Documents\Queries\IndexQuery;
+use RavenDB\Documents\Queries\MoreLikeThis\MoreLikeThisOptions;
 use RavenDB\Documents\Session\QueryStatistics;
 use RavenDB\Type\StringArray;
+use tests\RavenDB\Infrastructure\Entity\Post;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
 
@@ -408,74 +410,80 @@ class IndexesFromClientTest extends RemoteTestBase
         }
     }
 
-//    @Test
-//    public void moreLikeThis() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            try (IDocumentSession session = store.openSession()) {
-//                Post post1 = new Post();
-//                post1.setId("posts/1");
-//                post1.setTitle("doduck");
-//                post1.setDesc("prototype");
-//                session.store(post1);
-//
-//                Post post2 = new Post();
-//                post2.setId("posts/2");
-//                post2.setTitle("doduck");
-//                post2.setDesc("prototype your idea");
-//                session.store(post2);
-//
-//                Post post3 = new Post();
-//                post3.setId("posts/3");
-//                post3.setTitle("doduck");
-//                post3.setDesc("love programming");
-//                session.store(post3);
-//
-//                Post post4 = new Post();
-//                post4.setId("posts/4");
-//                post4.setTitle("We do");
-//                post4.setDesc("prototype");
-//                session.store(post4);
-//
-//                Post post5 = new Post();
-//                post5.setId("posts/5");
-//                post5.setTitle("We love");
-//                post5.setDesc("challange");
-//                session.store(post5);
-//
-//                session.saveChanges();
-//            }
-//
-//            new Posts_ByTitleAndDesc().execute(store);
-//            waitForIndexing(store);
-//
-//            try (IDocumentSession session = store.openSession()) {
-//
-//                MoreLikeThisOptions options = new MoreLikeThisOptions();
-//                options.setMinimumDocumentFrequency(1);
-//                options.setMinimumTermFrequency(0);
-//
-//                List<Post> list = session.query(Post.class, Posts_ByTitleAndDesc.class)
-//                        .moreLikeThis(f -> f.usingDocument(x -> x.whereEquals("id()", "posts/1")).withOptions(options))
-//                        .toList();
-//
-//                assertThat(list)
-//                        .hasSize(3);
-//
-//                assertThat(list.get(0).getTitle())
-//                        .isEqualTo("doduck");
-//                assertThat(list.get(0).getDesc())
-//                        .isEqualTo("prototype your idea");
-//
-//                assertThat(list.get(1).getTitle())
-//                        .isEqualTo("doduck");
-//                assertThat(list.get(1).getDesc())
-//                        .isEqualTo("love programming");
-//
-//                assertThat(list.get(2).getTitle())
-//                        .isEqualTo("We do");
-//                assertThat(list.get(2).getDesc())
-//                        .isEqualTo("prototype");
-//            }
-//        }
-//    }
+    public function testMoreLikeThis(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $session = $store->openSession();
+            try {
+                $post1 = new Post();
+                $post1->setId("posts/1");
+                $post1->setTitle("doduck");
+                $post1->setDesc("prototype");
+                $session->store($post1);
+
+                $post2 = new Post();
+                $post2->setId("posts/2");
+                $post2->setTitle("doduck");
+                $post2->setDesc("prototype your idea");
+                $session->store($post2);
+
+                $post3 = new Post();
+                $post3->setId("posts/3");
+                $post3->setTitle("doduck");
+                $post3->setDesc("love programming");
+                $session->store($post3);
+
+                $post4 = new Post();
+                $post4->setId("posts/4");
+                $post4->setTitle("We do");
+                $post4->setDesc("prototype");
+                $session->store($post4);
+
+                $post5 = new Post();
+                $post5->setId("posts/5");
+                $post5->setTitle("We love");
+                $post5->setDesc("challange");
+                $session->store($post5);
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            (new Posts_ByTitleAndDesc())->execute($store);
+            $this->waitForIndexing($store);
+
+            $session = $store->openSession();
+            try {
+                $options = new MoreLikeThisOptions();
+                $options->setMinimumDocumentFrequency(1);
+                $options->setMinimumTermFrequency(0);
+
+                $list = $session->query(Post::class, Posts_ByTitleAndDesc::class)
+                        ->moreLikeThis(
+                            function($f) use ($options) {
+                                return $f->usingDocument(
+                                    function($x) { return $x->whereEquals("id()", "posts/1"); })
+                                    ->withOptions($options);
+                            })
+                        ->toList();
+
+                $this->assertCount(3, $list);
+
+                $this->assertEquals("doduck", $list[0]->getTitle());
+                $this->assertEquals("prototype your idea", $list[0]->getDesc());
+
+                $this->assertEquals("doduck", $list[1]->getTitle());
+                $this->assertEquals("love programming", $list[1]->getDesc());
+
+                $this->assertEquals("We do", $list[2]->getTitle());
+                $this->assertEquals("prototype", $list[2]->getDesc());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
 }
