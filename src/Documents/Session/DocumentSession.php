@@ -10,9 +10,14 @@ use RavenDB\Documents\Commands\MultiGet\GetRequestList;
 use RavenDB\Documents\Lazy;
 use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRange;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesConfiguration;
+use RavenDB\Documents\Session\Operations\Lazy\EagerSessionOperationsInterface;
+use RavenDB\Documents\Session\Operations\Lazy\LazyLoadOperation;
 use RavenDB\Documents\Session\Operations\Lazy\LazyOperationInterface;
+use RavenDB\Documents\Session\Operations\Lazy\LazySessionOperations;
+use RavenDB\Documents\Session\Operations\Lazy\LazySessionOperationsInterface;
 use RavenDB\Documents\Session\Operations\MultiGetOperation;
 use RavenDB\Documents\TimeSeries\TimeSeriesOperations;
+use RavenDB\Exceptions\RavenException;
 use RavenDB\Type\Duration;
 use RavenDB\Utils\Stopwatch;
 use ReflectionException;
@@ -48,6 +53,7 @@ use RavenDB\Type\StringArray;
 use RavenDB\Utils\StringUtils;
 use RuntimeException;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
+use Throwable;
 
 class DocumentSession extends InMemoryDocumentSessionOperations implements
     AdvancedSessionOperationsInterface,
@@ -65,13 +71,15 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         return $this;
     }
 
-//    public ILazySessionOperations lazily() {
-//        return new LazySessionOperations(this);
-//    }
-//
-//    public IEagerSessionOperations eagerly() {
-//        return this;
-//    }
+    public function lazily(): LazySessionOperationsInterface
+    {
+        return new LazySessionOperations($this);
+    }
+
+    public function eagerly(): EagerSessionOperationsInterface
+    {
+        return $this;
+    }
 
     private ?AttachmentsSessionOperationsInterface $attachments = null;
 
@@ -229,6 +237,7 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
     public function executeAllPendingLazyOperations(): ResponseTimeInformation
     {
         $requests = new GetRequestList();
+
         for ($i = 0; $i < count($this->pendingLazyOperations); $i++) {
             $req = $this->pendingLazyOperations[$i]->createRequest();
             if ($req == null) {
@@ -239,7 +248,7 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
             $requests->append($req);
         }
 
-        if (empty($requests)) {
+        if (count($requests) == 0) {
             return new ResponseTimeInformation();
         }
 
@@ -255,7 +264,7 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
             $responseTimeDuration->computeServerTotal();
 
             foreach ($this->pendingLazyOperations as $pendingLazyOperation) {
-                $value = $this->onEvaluateLazy->get($pendingLazyOperation);
+                $value = $this->onEvaluateLazy->get($pendingLazyOperation, null);
                 if ($value != null) {
                     $value($pendingLazyOperation->getResult());
                 }
@@ -265,6 +274,9 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
             $responseTimeDuration->setTotalClientDuration(Duration::ofMillis($sw->elapsedInMillis()));
             return $responseTimeDuration;
         } catch (Throwable $e) {
+            if ($e instanceof RavenException) {
+                throw $e;
+            }
             throw new RuntimeException("Unable to execute pending operations: "  . $e->getMessage(), $e->getCode());
         } finally {
             $this->pendingLazyOperations->clear();
@@ -290,8 +302,9 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
                 $tempReqTime = '';
                 $response = $responses[$i];
 
-                $tempReqTime = array_key_exists(Headers::REQUEST_TIME, $response->getHeaders()) ? $response->getHeaders()[Headers::REQUEST_TIME] : null;
-                $response->setElapsed($sw->elapsed());
+
+                $tempReqTime = $response->getHeaders()->offsetExists(Headers::REQUEST_TIME) ? $response->getHeaders()[Headers::REQUEST_TIME] : null;
+                $response->setElapsed(Duration::ofMillis($sw->elapsedInMillis()));
                 $totalTime = $tempReqTime != null ? intval($tempReqTime) : 0;
 
                 $timeItem = new ResponseTimeItem();
@@ -338,31 +351,41 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         return $lazyValue;
     }
 
-//    protected Lazy<Integer> addLazyCountOperation(ILazyOperation operation) {
-//        pendingLazyOperations.add(operation);
-//
-//        return new Lazy<>(() -> {
-//            executeAllPendingLazyOperations();
-//            return operation.getQueryResult().getTotalResults();
-//        });
-//    }
-//
-//    @SuppressWarnings("unchecked")
-//    @Override
-//    public <T> Lazy<Map<String, T>> lazyLoadInternal(Class<T> clazz, String[] ids, String[] includes, Consumer<Map<String, T>> onEval) {
-//        if (checkIfIdAlreadyIncluded(ids, Arrays.asList(includes))) {
-//            return new Lazy<>(() -> load(clazz, ids));
-//        }
-//
-//        LoadOperation loadOperation = new LoadOperation(this)
-//                .byIds(ids)
-//                .withIncludes(includes);
-//
-//        LazyLoadOperation<T> lazyOp = new LazyLoadOperation<>(clazz, this, loadOperation)
-//                .byIds(ids).withIncludes(includes);
-//
-//        return addLazyOperation((Class<Map<String, T>>)(Class< ? >)Map.class, lazyOp, onEval);
-//    }
+    public function addLazyCountOperation(LazyOperationInterface $operation): Lazy
+    {
+        $this->pendingLazyOperations->append($operation);
+
+        $session = $this;
+        return new Lazy(function() use ($session, $operation) {
+            $session->executeAllPendingLazyOperations();
+            return $operation->getQueryResult()->getTotalResults();
+        });
+    }
+
+    public function lazyLoadInternal(?string $className, array|StringArray $ids, array|StringArray $includes, ?Closure $onEval): Lazy
+    {
+        if (is_array($ids)) {
+            $ids = StringArray::fromArray($ids);
+        }
+        if (is_array($includes)) {
+            $includes = StringArray::fromArray($includes);
+        }
+
+        if ($this->checkIfIdAlreadyIncluded($ids, $includes)) {
+            $session = $this;
+            return new Lazy(function() use ($session, $className, $ids) { return $session->load($className, $ids); });
+        }
+
+        $loadOperation = (new LoadOperation($this))
+                ->byIds($ids)
+                ->withIncludes($includes);
+
+        $lazyOp = (new LazyLoadOperation($className, $this, $loadOperation))
+                ->byIds($ids)
+                ->withIncludes($includes);
+
+        return $this->addLazyOperation(null, $lazyOp, $onEval);
+    }
 
     /**
      * Loads the specified entity with the specified id.

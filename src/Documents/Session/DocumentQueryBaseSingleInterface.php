@@ -7,12 +7,12 @@ use RavenDB\Documents\Lazy;
 
 interface DocumentQueryBaseSingleInterface
 {
-//    /**
-//     * Register the query as a lazy-count query in the session and return a lazy
-//     * instance that will evaluate the query only when needed.
-//     * @return Lazy count for query
-//     */
-//    Lazy<Integer> countLazily();
+    /**
+     * Register the query as a lazy-count query in the session and return a lazy
+     * instance that will evaluate the query only when needed.
+     * @return Lazy count for query
+     */
+    function countLazily(): Lazy;
 
     /**
      * Returns first element or throws if sequence is empty.

@@ -91,40 +91,46 @@ class CachingOfDocumentIncludeTest extends RemoteTestBase
         }
     }
 
-//    @Test
-//    public void can_avoid_using_server_for_load_with_include_if_everything_is_in_session_cacheLazy() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            try (IDocumentSession session = store.openSession()) {
-//                User user = new User();
-//                user.setName("Ayende");
-//                session.store(user);
-//
-//                User partner = new User();
-//                partner.setPartnerId("users/1-A");
-//                session.store(partner);
-//
-//                session.saveChanges();
-//            }
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                session.advanced().lazily().load(User.class, "users/2-A");
-//                session.advanced().lazily().load(User.class, "users/1-A");
-//                session.advanced().eagerly().executeAllPendingLazyOperations();
-//
-//                int old = session.advanced().getNumberOfRequests();
-//
-//                Lazy<User> result1 = session.advanced().lazily()
-//                        .include("partnerId")
-//                        .load(User.class, "users/2-A");
-//
-//                assertThat(result1.getValue())
-//                        .isNotNull();
-//
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isEqualTo(old);
-//            }
-//        }
-//    }
+    public function test_can_avoid_using_server_for_load_with_include_if_everything_is_in_session_cacheLazy(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $session = $store->openSession();
+            try {
+                $user = new User();
+                $user->setName("Ayende");
+                $session->store($user);
+
+                $partner = new User();
+                $partner->setPartnerId("users/1-A");
+                $session->store($partner);
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                $session->advanced()->lazily()->load(User::class, "users/2-A");
+                $session->advanced()->lazily()->load(User::class, "users/1-A");
+                $session->advanced()->eagerly()->executeAllPendingLazyOperations();
+
+                $old = $session->advanced()->getNumberOfRequests();
+
+                $result1 = $session->advanced()->lazily()
+                        ->include("partnerId")
+                        ->load(User::class, "users/2-A");
+
+                $this->assertNotNull($result1->getValue());
+                $this->assertEquals($old, $session->advanced()->getNumberOfRequests());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
 
     public function test_can_avoid_using_server_for_load_with_include_if_everything_is_in_session_cache(): void
     {

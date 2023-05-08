@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Operations\CompareExchange;
 
+use RavenDB\Exceptions\InvalidResultAssignedToCommandException;
 use RavenDB\Utils\UrlUtils;
 use RavenDB\Http\ServerNode;
 use RavenDB\Http\HttpRequest;
@@ -9,6 +10,7 @@ use RavenDB\Http\RavenCommand;
 use RavenDB\Utils\StringUtils;
 use RavenDB\Http\HttpRequestInterface;
 use RavenDB\Documents\Conventions\DocumentConventions;
+use ReflectionException;
 
 class GetCompareExchangeValuesCommand extends RavenCommand
 {
@@ -61,12 +63,13 @@ class GetCompareExchangeValuesCommand extends RavenCommand
     }
 
     /**
-     * @throws \ReflectionException
-     * @throws \RavenDB\Exceptions\InvalidResultAssignedToCommandException
+     * @throws ReflectionException
+     * @throws InvalidResultAssignedToCommandException
      */
     public function setResponse(?string $response, bool $fromCache): void
     {
-        $result = CompareExchangeValueResultParser::getValues($this->operation->getClassName(), $response, $this->materializeMetadata, $this->conventions);
+        $responseArray = $response != null ? json_decode($response, true) : null;
+        $result = CompareExchangeValueResultParser::getValues($this->operation->getClassName(), $responseArray, $this->materializeMetadata, $this->conventions);
         $this->setResult($result);
     }
 

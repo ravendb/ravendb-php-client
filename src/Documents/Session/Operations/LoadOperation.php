@@ -137,8 +137,12 @@ class LoadOperation
         return $this;
     }
 
-    public function byIds(?StringArray $ids): LoadOperation
+    public function byIds(null|array|StringArray $ids): LoadOperation
     {
+        if (is_array($ids)) {
+            $ids = StringArray::fromArray($ids);
+        }
+
         $distinct = new StringArray();
 
         foreach($ids as $id) {

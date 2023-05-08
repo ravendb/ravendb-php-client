@@ -2,10 +2,13 @@
 
 namespace RavenDB\Documents\Queries\Facets;
 
+use Closure;
 use RavenDB\Documents\Commands\QueryCommand;
+use RavenDB\Documents\Lazy;
 use RavenDB\Documents\Queries\IndexQuery;
 use RavenDB\Documents\Queries\QueryResult;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
+use RavenDB\Documents\Session\Operations\Lazy\LazyAggregationQueryOperation;
 use RavenDB\Documents\Session\Operations\QueryOperation;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Utils\Stopwatch;
@@ -34,18 +37,13 @@ abstract class AggregationQueryBase
         return $this->processResults($queryResult);
     }
 
-    // @todo: implement this lazy execute call
-//    public function executeLazy(): FacetResultArray
-//    {
-//        return $this->executeLazy(null);
-//    }
-//
-//    public function executeLazy(/*Consumer<Map<String, FacetResult>> onEval*/): FacetResultArray
-//    {
-//        $this->query = $this->getIndexQuery();
-//        return ((DocumentSession)_session).addLazyOperation((Class<Map<String, FacetResult>>)(Class< ? >)Map.class,
-//                new LazyAggregationQueryOperation(_session, _query, result -> invokeAfterQueryExecuted(result), this::processResults), onEval);
-//    }
+    public function executeLazy(?Closure $onEval = null): Lazy
+    {
+        $this->query = $this->getIndexQuery();
+        $t = $this;
+        return $this->session->addLazyOperation(null,
+            new LazyAggregationQueryOperation($this->session, $this->query, function($result) use ($t) { $t->invokeAfterQueryExecuted($result); }, Closure::fromCallable([$this, 'processResults'])), $onEval);
+    }
 
     protected abstract function getIndexQuery(bool $updateAfterQueryExecuted = true): IndexQuery;
 

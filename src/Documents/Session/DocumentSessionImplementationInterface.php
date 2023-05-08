@@ -2,7 +2,9 @@
 
 namespace RavenDB\Documents\Session;
 
+use Closure;
 use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Documents\Lazy;
 use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRangeSet;
 use RavenDB\Documents\Session\Operations\Lazy\EagerSessionOperationsInterface;
 use RavenDB\Type\ObjectArray;
@@ -22,6 +24,6 @@ interface DocumentSessionImplementationInterface extends DocumentSessionInterfac
         ?StringArray                $compareExchangeValueIncludes = null
     ): ObjectArray;
 
-    // @todo: uncomment this for lazy loading
-//    <T> Lazy<Map<String, T>> lazyLoadInternal(Class<T> clazz, String[] ids, String[] includes, Consumer<Map<String, T>> onEval);
+
+    public function lazyLoadInternal(?string $className, array|StringArray $ids, array|StringArray $includes, ?Closure $onEval): Lazy;
 }

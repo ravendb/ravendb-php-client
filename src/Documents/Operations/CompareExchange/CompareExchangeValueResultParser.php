@@ -11,17 +11,17 @@ class CompareExchangeValueResultParser
 {
     public static function getValues(
         ?string              $className,
-        ?string              $response,
+        ?array               $response,
         bool                 $materializeMetadata,
         ?DocumentConventions $conventions
     ): ?CompareExchangeValueArray
     {
         $results = new CompareExchangeValueArray();
-        if ($response == null) { // 404
+        if (empty($response)) { // 404
             return $results;
         }
 
-        $jsonResponse = json_decode($response, true);
+        $jsonResponse = $response; //json_decode($response, true);
 
         if (!array_key_exists('Results', $jsonResponse) || empty($jsonResponse['Results'])) {
             throw new IllegalStateException('Response is invalid. Results is missing.');
@@ -42,14 +42,15 @@ class CompareExchangeValueResultParser
 
     public static function getValue(
         ?string              $className,
-        ?string              $response,
+        ?array              $response,
         bool                 $materializeMetadata,
         ?DocumentConventions $conventions
     ): ?CompareExchangeValue
     {
-        if ($response == null) {
+        if (empty($response)) {
             return null;
         }
+
         $values = self::getValues($className, $response, $materializeMetadata, $conventions);
         if (empty($values)) {
             return null;
@@ -78,7 +79,7 @@ class CompareExchangeValueResultParser
         }
         $indexNode = $item["Index"];
 
-        if (!array_key_exists('Value', $item) || $item['Value'] == null) {
+        if (!array_key_exists('Value', $item)) {
             throw new IllegalStateException("Response is invalid. Value is missing.");
         }
         $rawJsonNode = $item["Value"];

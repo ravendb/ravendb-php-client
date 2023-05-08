@@ -2266,20 +2266,21 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     {
         $lazyQueryOperation = $this->getLazyQueryOperation();
 
-        return $this->theSession->addLazyOperation(TypedList::class, $lazyQueryOperation, $onEval);
+        return $this->theSession->addLazyOperation(null, $lazyQueryOperation, $onEval);
     }
 
-//    public Lazy<Integer> countLazily() {
-//        if (queryOperation == null) {
-//            _take(0);
-//            queryOperation = initializeQueryOperation();
-//        }
-//
-//        LazyQueryOperation<T> lazyQueryOperation = new LazyQueryOperation<>(clazz, theSession, queryOperation, afterQueryExecutedCallback);
-//        return ((DocumentSession)theSession).addLazyCountOperation(lazyQueryOperation);
-//    }
-//
-//    @Override
+    public function countLazily(): Lazy
+    {
+        if ($this->queryOperation == null) {
+            $this->_take(0);
+            $this->queryOperation = $this->initializeQueryOperation();
+        }
+
+        $lazyQueryOperation = new LazyQueryOperation($this->className, $this->theSession, $this->queryOperation, $this->afterQueryExecutedCallback);
+        return $this->theSession->addLazyCountOperation($lazyQueryOperation);
+    }
+
+
 //    public void _suggestUsing(SuggestionBase suggestion) {
 //        if (suggestion == null) {
 //            throw new IllegalArgumentException("suggestion cannot be null");

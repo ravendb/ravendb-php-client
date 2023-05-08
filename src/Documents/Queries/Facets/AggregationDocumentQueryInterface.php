@@ -3,8 +3,8 @@
 namespace RavenDB\Documents\Queries\Facets;
 
 use Closure;
+use RavenDB\Documents\Lazy;
 
-//    @todo: implement this
 interface AggregationDocumentQueryInterface
 {
     /**
@@ -15,7 +15,5 @@ interface AggregationDocumentQueryInterface
 
     public function execute(): FacetResultArray;
 
-//    Lazy<Map<String, FacetResult>> executeLazy();
-
-//    Lazy<Map<String, FacetResult>> executeLazy(Consumer<Map<String, FacetResult>> onEval);
+    function executeLazy(?Closure $onEval = null): Lazy;
 }

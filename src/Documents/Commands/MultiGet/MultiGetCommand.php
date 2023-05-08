@@ -196,19 +196,15 @@ class MultiGetCommand extends RavenCommand implements CleanCloseable
 //    public void setResponseRaw(CloseableHttpResponse response, InputStream stream) {
     public function setResponseRaw(HttpResponseInterface $response): void
     {
-        print_r($response->getContent());
         $deserializedResponse = json_decode($response->getContent(), true); //$this->getMapper()->deserialize($response->getContent(), null, 'json');
 
         if (array_key_first($deserializedResponse) !== 'Results') {
             $this->throwInvalidResponse();
         }
 
-        print_r($deserializedResponse);
-        return;
         $results = $this->getMapper()->denormalize($deserializedResponse['Results'], GetResponseList::class);
 
         try {
-
             $i = 0;
             $this->result = new GetResponseList();
             foreach ($results as $getResponse) {
@@ -229,50 +225,6 @@ class MultiGetCommand extends RavenCommand implements CleanCloseable
         } finally {
             $this->cached?->close();
         }
-
-//        try (JsonParser parser = mapper.getFactory().createParser(stream)) {
-//            try {
-//                if (parser.nextToken() != JsonToken.START_OBJECT) {
-//                    throwInvalidResponse();
-//                }
-//
-//                String property = parser.nextFieldName();
-//                if (!"Results".equals(property)) {
-//                    throwInvalidResponse();
-//                }
-//
-//                int i = 0;
-//                result = new ArrayList<>(_commands.size());
-//
-//                for (GetResponse getResponse : readResponses(mapper, parser)) {
-//                    GetRequest command = _commands.get(i);
-//                    maybeSetCache(getResponse, command);
-//
-//                    if (_cached != null && getResponse.getStatusCode() == HttpStatus.SC_NOT_MODIFIED) {
-//                        GetResponse clonedResponse = new GetResponse();
-//                        clonedResponse.setResult(_cached.values[i].second);
-//                        clonedResponse.setStatusCode(HttpStatus.SC_NOT_MODIFIED);
-//                        result.add(clonedResponse);
-//                    } else {
-//                        result.add(getResponse);
-//                    }
-//
-//                    i++;
-//                }
-//
-//                if (parser.nextToken() != JsonToken.END_OBJECT) {
-//                    throwInvalidResponse();
-//                }
-//
-//            } finally {
-//                if (_cached != null) {
-//                    _cached.close();
-//                }
-//            }
-//
-//        } catch (Exception e) {
-//            throwInvalidResponse(e);
-//        }
     }
 
 //    private static List<GetResponse> readResponses(ObjectMapper mapper, JsonParser parser) throws IOException {

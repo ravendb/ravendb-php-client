@@ -50,5 +50,4 @@ class Stopwatch
         return intval(1000*round($this->elapsed(), 6));
     }
 
-
 }

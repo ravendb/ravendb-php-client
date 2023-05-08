@@ -178,9 +178,10 @@ class ExtendedArrayObject extends \ArrayObject implements \JsonSerializable
 
     public function clear(): void
     {
-        foreach ($this as $key => $value) {
+        foreach ($this->getArrayCopy() as $key => $value) {
             $this->offsetUnset($key);
         }
+        $this->exchangeArray(array_values($this->getArrayCopy()));
     }
 
     public function isEmpty(): bool
