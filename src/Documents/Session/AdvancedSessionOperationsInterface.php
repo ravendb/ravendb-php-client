@@ -3,6 +3,8 @@
 namespace RavenDB\Documents\Session;
 
 use Closure;
+use RavenDB\Documents\Session\Operations\Lazy\EagerSessionOperationsInterface;
+use RavenDB\Documents\Session\Operations\Lazy\LazySessionOperationsInterface;
 use ReflectionException;
 use RavenDB\Documents\Indexes\AbstractCommonApiForIndexes;
 use RavenDB\Type\ObjectArray;
@@ -11,17 +13,17 @@ interface AdvancedSessionOperationsInterface extends
     AdvancedDocumentSessionOperationsInterface,
     DocumentQueryBuilderInterface
 {
-//    /**
-//     * Access the eager operations
-//     * @return Eager session operations
-//     */
-//    IEagerSessionOperations eagerly();
-//
-//    /**
-//     * Access the lazy operations
-//     * @return Lazy session operations
-//     */
-//    ILazySessionOperations lazily();
+    /**
+     * Access the eager operations
+     * @return EagerSessionOperationsInterface Eager session operations
+     */
+    function eagerly(): EagerSessionOperationsInterface;
+
+    /**
+     * Access the lazy operations
+     * @return LazySessionOperationsInterface Lazy session operations
+     */
+    function lazily(): LazySessionOperationsInterface;
 
     /**
      * @return AttachmentsSessionOperationsInterface Access the attachments operations
@@ -39,12 +41,11 @@ interface AdvancedSessionOperationsInterface extends
     function clusterTransaction(): ClusterTransactionOperationsInterface;
 
     /**
-     * Updates entity with latest changes from server
+     * Updates entity with the latest changes from server
      *
-     * @template T extends object
-     * @param T $entity
+     * @param object $entity
      */
-    public function refresh($entity): void;
+    public function refresh(object $entity): void;
 
     /**
      * Query the specified index using provided raw query

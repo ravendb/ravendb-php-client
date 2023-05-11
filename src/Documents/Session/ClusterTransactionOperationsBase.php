@@ -2,7 +2,6 @@
 
 namespace RavenDB\Documents\Session;
 
-//    @todo implement this class
 use RavenDB\Type\StringSet;
 use RavenDB\Type\StringArray;
 use RavenDB\Exceptions\IllegalArgumentException;
@@ -18,7 +17,7 @@ use RavenDB\Documents\Operations\CompareExchange\GetCompareExchangeValuesOperati
 class ClusterTransactionOperationsBase
 {
     protected ?DocumentSession $session = null;
-    private $state = [];
+    private array $state = [];
 
     public function __construct(?DocumentSession $session)
     {
@@ -135,13 +134,13 @@ class ClusterTransactionOperationsBase
 
     /**
      * @param string                   $className
-     * @param string|StringArray|array $keysOrStartsWith
+     * @param array|string|StringArray $keysOrStartsWith
      * @param int                      $start
      * @param int                      $pageSize
      *
      * @return CompareExchangeValueMap
      */
-    public function getCompareExchangeValuesInternal(string $className, $keysOrStartsWith, int $start = 0, int $pageSize = 25): CompareExchangeValueMap
+    public function getCompareExchangeValuesInternal(string $className, array|string|StringArray $keysOrStartsWith, int $start = 0, int $pageSize = 25): CompareExchangeValueMap
     {
         if (!is_string($keysOrStartsWith)) {
             return $this->getCompareExchangeValuesInternalByKeys($className, $keysOrStartsWith);

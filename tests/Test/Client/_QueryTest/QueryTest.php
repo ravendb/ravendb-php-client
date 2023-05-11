@@ -167,37 +167,43 @@ class QueryTest extends RemoteTestBase
             $store->close();
         }
     }
-//  public function queryLazily(): void {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            try (IDocumentSession session = store.openSession()) {
-//
-//                User user1 = new User();
-//                user1.setName("John");
-//
-//                User user2 = new User();
-//                user2.setName("Jane");
-//
-//                User user3 = new User();
-//                user3.setName("Tarzan");
-//
-//                $session->store(user1, "users/1");
-//                $session->store(user2, "users/2");
-//                $session->store(user3, "users/3");
-//                $session->saveChanges();
-//
-//                Lazy<List<User>> lazyQuery = $session->query(User.class)
-//                        .lazily();
-//
-//                List<User> queryResult = lazyQuery.getValue();
-//
-//                assertThat(queryResult)
-//                        .hasSize(3);
-//
-//                assertThat(queryResult.get(0).getName())
-//                        .isEqualTo("John");
-//            }
-//        }
-//    }
+
+    public function testQueryLazily(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $session = $store->openSession();
+            try {
+
+                $user1 = new User();
+                $user1->setName("John");
+
+                $user2 = new User();
+                $user2->setName("Jane");
+
+                $user3 = new User();
+                $user3->setName("Tarzan");
+
+                $session->store($user1, "users/1");
+                $session->store($user2, "users/2");
+                $session->store($user3, "users/3");
+                $session->saveChanges();
+
+                $lazyQuery = $session->query(User::class)
+                        ->lazily();
+
+                $queryResult = $lazyQuery->getValue();
+
+                $this->assertCount(3, $queryResult);
+
+                $this->assertEquals("John", $queryResult[0]->getName());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
 
     public function testCollectionsStats(): void
     {

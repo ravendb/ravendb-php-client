@@ -15,7 +15,11 @@ class ResponseTimeInformation
     {
         $this->totalServerDuration = Duration::ofMillis(
             array_reduce(
-                array_map(function($x) { return $x->getDuration()->toMillies(); }, $this->durationBreakdown->getArrayCopy()),
+                array_map(function($x) {
+                        return $x->getDuration()->toMillis();
+                    },
+                    $this->durationBreakdown->getArrayCopy()
+                ),
                 function($carry, $durationInMillis) {
                     return $carry  + $durationInMillis;
                 },

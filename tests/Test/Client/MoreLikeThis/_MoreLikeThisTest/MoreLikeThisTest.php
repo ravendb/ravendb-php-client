@@ -65,7 +65,7 @@ class MoreLikeThisTest extends RemoteTestBase
         }
     }
 
-    public function atestCanGetResultsUsingTermVectorsLazy(): void
+    public function testCanGetResultsUsingTermVectorsLazy(): void
     {
         $store = $this->getDocumentStore();
         try {

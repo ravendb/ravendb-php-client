@@ -47,10 +47,13 @@ use RavenDB\Primitives\DatesComparator;
 use RavenDB\Primitives\EventHelper;
 use RavenDB\Type\DeferredCommandsMap;
 use RavenDB\Type\ExtendedArrayObject;
+use RavenDB\Type\ObjectArray;
 use RavenDB\Type\StringArray;
 use RavenDB\Type\StringList;
 use RavenDB\Utils\AtomicInteger;
 use RavenDB\Utils\StringUtils;
+use ReflectionClass;
+use ReflectionObject;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 
 abstract class InMemoryDocumentSessionOperations implements CleanCloseable
@@ -2590,45 +2593,49 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         }
     }
 
-    protected static function getOperationResult(?string $className, ?object $result): ?object
+    protected static function getOperationResult(?string $className, mixed $result): mixed
     {
         if ($result == null) {
             return null;
         }
 
-        //@todo: implement this
-//        if (clazz.isAssignableFrom(result.getClass())) {
-//            return (T) result;
-//        }
-//
-//        if (result instanceof Map) {
-//            Map map = (Map) result;
-//            if (map.isEmpty()) {
-//                return null;
-//            } else {
-//                return (T) map.values().iterator().next();
-//            }
-//        }
+        if ($className == null) {
+            return $result;
+        }
+
+        if (is_array($result)) {
+            $reflect = new ReflectionClass($className);
+            if ($reflect->isSubclassOf(ExtendedArrayObject::class)) {
+                return ($className)::fromArray($result);
+            } else {
+                return JsonExtensions::getDefaultMapper()->denormalize($result, $className);
+            }
+        }
+
+        if ($result instanceof $className) {
+            return $result;
+        };
+
+        if ($result instanceof ObjectArray) {
+            return $result->first();
+        };
 
         throw new IllegalStateException("Unable to cast " . get_class($result) . " to " . $className);
     }
 
-    protected
-    function updateSessionAfterSaveChanges(BatchCommandResult $result): void
+    protected function updateSessionAfterSaveChanges(BatchCommandResult $result): void
     {
         $returnedTransactionIndex = $result->getTransactionIndex();
         $this->documentStore->setLastTransactionIndex($this->getDatabaseName(), $returnedTransactionIndex);
         $this->sessionInfo->setLastClusterTransactionIndex($returnedTransactionIndex);
     }
 
-    public
-    function onAfterSaveChangesInvoke(AfterSaveChangesEventArgs $eventArgs): void
+    public function onAfterSaveChangesInvoke(AfterSaveChangesEventArgs $eventArgs): void
     {
         EventHelper::invoke($this->onAfterSaveChanges, $this, $eventArgs);
     }
 
-    public
-    function onBeforeDeleteInvoke(BeforeDeleteEventArgs $eventArgs): void
+    public function onBeforeDeleteInvoke(BeforeDeleteEventArgs $eventArgs): void
     {
         EventHelper::invoke($this->onBeforeDelete, $this, $eventArgs);
     }

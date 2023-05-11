@@ -9,7 +9,7 @@ use RavenDB\Type\ExtendedArrayObject;
 class GetResponse
 {
     private ?Duration $elapsed = null;
-    private ?string $result = null;
+    private ?array $result = null;
     private ?ExtendedArrayObject $headers = null;
     private ?int $statusCode = null;
     private bool $forceRetry = false;
@@ -30,12 +30,12 @@ class GetResponse
         $this->elapsed = $elapsed;
     }
 
-    public function getResult(): ?string
+    public function getResult(): ?array
     {
         return $this->result;
     }
 
-    public function setResult(?string $result): void
+    public function setResult(?array $result): void
     {
         $this->result = $result;
     }

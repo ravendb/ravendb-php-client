@@ -74,67 +74,75 @@ class RavenDB_12902Test extends RemoteTestBase
 //            }
 //        }
 //    }
-//
-//    @Test
-//    public function afterLazyQueryExecutedShouldBeExecutedOnlyOnce(): void {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            try (IDocumentSession session = store.openSession()) {
-//                AtomicInteger counter = new AtomicInteger();
-//
-//                Reference<QueryStatistics> stats = new Reference<>();
-//
-//                List<User> results = session.query(User.class)
-//                        .addAfterQueryExecutedListener(x -> {
-//                            counter.incrementAndGet();
-//                        })
-//                        .statistics(stats)
-//                        .whereEquals("name", "Doe")
-//                        .lazily()
-//                        .getValue();
-//
-//                assertThat(results)
-//                        .isEmpty();
-//                assertThat(stats.value)
-//                        .isNotNull();
-//                assertThat(counter.get())
-//                        .isOne();
-//            }
-//        }
-//    }
-//
-//    @Test
-//    public function afterLazyAggregationQueryExecutedShouldBeExecutedOnlyOnce(): void {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            store.executeIndex(new UsersByName());
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                AtomicInteger counter = new AtomicInteger();
-//
-//                Reference<QueryStatistics> stats = new Reference<>();
-//
-//                Map<String, FacetResult> results = session.query(User.class, UsersByName.class)
-//                        .statistics(stats)
-//                        .addAfterQueryExecutedListener(x -> {
-//                            counter.incrementAndGet();
-//                        })
-//                        .whereEquals("name", "Doe")
-//                        .aggregateBy(x -> x.byField("name").sumOn("count"))
-//                        .executeLazy()
-//                        .getValue();
-//
-//                assertThat(results)
-//                        .hasSize(1);
-//                assertThat(results.get("name").getValues().size())
-//                        .isZero();
-//                assertThat(stats.value)
-//                        .isNotNull();
-//                assertThat(counter.get())
-//                        .isOne();
-//            }
-//        }
-//    }
-//
-//    @Test
+
+    public function testAfterLazyQueryExecutedShouldBeExecutedOnlyOnce(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $session = $store->openSession();
+            try {
+                $counter = new AtomicInteger();
+
+                $stats = new QueryStatistics();
+
+                $results = $session->query(User::class)
+                        ->addAfterQueryExecutedListener(function($x) use ($counter) {
+                            $counter->incrementAndGet();
+                        })
+                        ->statistics($stats)
+                        ->whereEquals("name", "Doe")
+                        ->lazily()
+                        ->getValue();
+
+                $this->assertEmpty($results);
+
+                $this->assertNotNull($stats);
+
+                $this->assertEquals(1, $counter->get());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testAfterLazyAggregationQueryExecutedShouldBeExecutedOnlyOnce(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+
+            $store->executeIndex(new UsersByName());
+
+            $session = $store->openSession();
+            try {
+                $counter = new AtomicInteger();
+
+                $stats = new QueryStatistics();
+
+                $results = $session->query(User::class, UsersByName::class)
+                        ->statistics($stats)
+                        ->addAfterQueryExecutedListener(function($x) use ($counter) {
+                            $counter->incrementAndGet();
+                        })
+                        ->whereEquals("name", "Doe")
+                        ->aggregateBy(function($x) { return $x->byField("name")->sumOn("count"); })
+                        ->executeLazy()
+                        ->getValue();
+
+                $this->assertCount(1, $results);
+
+                $this->assertCount(0, $results["name"]->getValues());
+                $this->assertNotNull($stats);
+                $this->assertEquals(1, $counter->get());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
 //    public function afterLazySuggestionQueryExecutedShouldBeExecutedOnlyOnce(): void {
 //        try (IDocumentStore store = getDocumentStore()) {
 //            store.executeIndex(new UsersByName());

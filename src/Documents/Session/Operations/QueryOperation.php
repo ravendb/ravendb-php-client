@@ -152,7 +152,6 @@ class QueryOperation
         $resultItems = [];
 
         try {
-
             foreach ($queryResult->getResults() as $document) {
 
                 $metadata = array_key_exists(DocumentsMetadata::KEY, $document) ? $document[DocumentsMetadata::KEY] : null;

@@ -85,8 +85,7 @@ class PatchTest extends RemoteTestBase
         }
     }
 
-    // @todo: implement this test
-    public function canPatchManyDocuments(): void
+    public function testCanPatchManyDocuments(): void
     {
         $store = $this->getDocumentStore();
         try {
@@ -99,23 +98,22 @@ class PatchTest extends RemoteTestBase
                 $session->store($user, "users/1");
                 $session->saveChanges();
 
-//                $this->assertEquals(1, $session->query(User::class)->countLazily()->getValue());
+                $this->assertEquals(1, $session->query(User::class)->countLazily()->getValue());
             } finally {
                 $session->close();
             }
 
-//            $operation = new PatchByQueryOperation("from Users update {  this.name= \"Patched\"  }");
-//
-//            Operation op = store.operations().sendAsync(operation);
-//
-//            op.waitForCompletion();
+            $operation = new PatchByQueryOperation("from Users update {  this.name= \"Patched\"  }");
+
+            $op = $store->operations()->sendAsync($operation);
+
+            $op->waitForCompletion();
 
             $session = $store->openSession();
             try {
-//                User loadedUser = session.load(User.class, "users/1");
-//
-//                assertThat(loadedUser.getName())
-//                        .isEqualTo("Patched");
+                $loadedUser = $session->load(User::class, "users/1");
+
+                $this->assertEquals("Patched", $loadedUser->getName());
             } finally {
                 $session->close();
             }

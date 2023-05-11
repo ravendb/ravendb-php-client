@@ -11,6 +11,7 @@ use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Primitives\ClosureArray;
 use RavenDB\Primitives\EventHelper;
 use RavenDB\Type\Duration;
+use RavenDB\Type\ObjectArray;
 use RuntimeException;
 use Throwable;
 
@@ -40,16 +41,16 @@ class LazyQueryOperation implements LazyOperationInterface
         return $request;
     }
 
-    private ?Object $result = null;
+    private ?ObjectArray $result = null;
     private ?QueryResult $queryResult = null;
     private bool $requiresRetry = false;
 
-    public function getResult(): ?object
+    public function getResult(): ?ObjectArray
     {
         return $this->result;
     }
 
-    public function setResult(?object $result): void
+    public function setResult(?ObjectArray $result): void
     {
         $this->result = $result;
     }
@@ -87,7 +88,7 @@ class LazyQueryOperation implements LazyOperationInterface
 
         if ($response->getResult() != null) {
             try {
-                $queryResult = JsonExtensions::getDefaultMapper()->deserialize($response->getResult(), QueryResult::class, 'json');
+                $queryResult = JsonExtensions::getDefaultMapper()->denormalize($response->getResult(), QueryResult::class);
             } catch (Throwable $e) {
                 throw new RuntimeException($e->getMessage(), $e->getCode(), $e);
             }
@@ -101,7 +102,7 @@ class LazyQueryOperation implements LazyOperationInterface
         $this->queryOperation->ensureIsAcceptableAndSaveResult($queryResult, $duration);
 
         EventHelper::invoke($this->afterQueryExecuted, $queryResult);
-        $result = $this->queryOperation->complete($this->className);
+        $this->result = ObjectArray::fromArray($this->queryOperation->complete($this->className));
         $this->queryResult = $queryResult;
     }
 }
