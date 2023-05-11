@@ -71,7 +71,7 @@ class IndexDefinition implements ResultInterface
 
     /**
      * This is the means by which the outside world refers to this index definition
-     * @return string index name
+     * @return ?string index name
      */
     public function getName(): ?string
     {
@@ -129,7 +129,7 @@ class IndexDefinition implements ResultInterface
      * - Unlock - all index definition changes acceptable
      * - LockedIgnore - all index definition changes will be ignored, only log entry will be created
      * - LockedError - all index definition changes will raise exception
-     * @return IndexLockMode index lock mode
+     * @return ?IndexLockMode index lock mode
      */
     public function getLockMode(): ?IndexLockMode
     {
@@ -150,7 +150,7 @@ class IndexDefinition implements ResultInterface
 
     /**
      * Additional code files to be compiled with this index.
-     * @return AdditionalSourcesArray additional sources
+     * @return ?AdditionalSourcesArray additional sources
      */
 
     public function getAdditionalSources(): ?AdditionalSourcesArray
@@ -325,7 +325,7 @@ class IndexDefinition implements ResultInterface
 
     /**
      * If not null than each reduce result will be created as a document in the specified collection name.
-     * @return string true if index outputs should be saved to collection
+     * @return ?string true if index outputs should be saved to collection
      */
     public function getOutputReduceToCollection(): ?string {
         return $this->outputReduceToCollection;

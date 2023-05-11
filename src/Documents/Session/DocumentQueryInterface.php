@@ -14,6 +14,8 @@ use RavenDB\Documents\Queries\MoreLikeThis\MoreLikeThisBase;
 use RavenDB\Documents\Queries\QueryOperator;
 use RavenDB\Documents\Queries\QueryResult;
 use RavenDB\Documents\Queries\SearchOperator;
+use RavenDB\Documents\Queries\Suggestions\SuggestionBase;
+use RavenDB\Documents\Queries\Suggestions\SuggestionDocumentQueryInterface;
 use RavenDB\Documents\Queries\Timings\QueryTimings;
 use RavenDB\Type\Collection;
 use RavenDB\Type\Duration;
@@ -89,10 +91,7 @@ interface DocumentQueryInterface
 
     public function aggregateUsing(?string $facetSetupDocumentId): AggregationDocumentQueryInterface;
 
-//    ISuggestionDocumentQuery<T> suggestUsing(SuggestionBase suggestion);
-//
-//    ISuggestionDocumentQuery<T> suggestUsing(Consumer<ISuggestionBuilder<T>> builder);
-
+    public function suggestUsing(null|SuggestionBase|Closure $suggestionOrBuilder): SuggestionDocumentQueryInterface;
 
     public function toString(bool $compatibilityMode = false): string;
 

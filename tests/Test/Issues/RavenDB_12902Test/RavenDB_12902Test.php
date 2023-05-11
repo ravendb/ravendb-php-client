@@ -24,13 +24,15 @@ class RavenDB_12902Test extends RemoteTestBase
 
                 /** @var array<FacetResult> $results */
                 $results = $session->query(User::class, UsersByName::class)
-                        ->statistics($stats)
-                        ->addAfterQueryExecutedListener(function($x) use ($counter) {
-                            $counter->incrementAndGet();
-                        })
-                        ->whereEquals("name", "Doe")
-                        ->aggregateBy(function($x) { return $x->byField("name")->sumOn("count"); } )
-                        ->execute();
+                    ->statistics($stats)
+                    ->addAfterQueryExecutedListener(function ($x) use ($counter) {
+                        $counter->incrementAndGet();
+                    })
+                    ->whereEquals("name", "Doe")
+                    ->aggregateBy(function ($x) {
+                        return $x->byField("name")->sumOn("count");
+                    })
+                    ->execute();
 
                 $this->assertCount(1, $results);
 
@@ -46,34 +48,37 @@ class RavenDB_12902Test extends RemoteTestBase
         }
     }
 
-//    public function afterSuggestionQueryExecutedShouldBeExecutedOnlyOnce(): void {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            store.executeIndex(new UsersByName());
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                AtomicInteger counter = new AtomicInteger();
-//
-//                Reference<QueryStatistics> stats = new Reference<>();
-//
-//                Map<String, SuggestionResult> results = session.query(User.class, UsersByName.class)
-//                        .statistics(stats)
-//                        .addAfterQueryExecutedListener(x -> {
-//                            counter.incrementAndGet();
-//                        })
-//                        .suggestUsing(x -> x.byField("name", "Orin"))
-//                        .execute();
-//
-//                assertThat(results)
-//                        .hasSize(1);
-//                assertThat(results.get("name").getSuggestions().size())
-//                        .isZero();
-//                assertThat(stats.value)
-//                        .isNotNull();
-//                assertThat(counter.get())
-//                        .isOne();
-//            }
-//        }
-//    }
+    public function testAfterSuggestionQueryExecutedShouldBeExecutedOnlyOnce(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $store->executeIndex(new UsersByName());
+            $session = $store->openSession();
+
+            try {
+                $counter = new AtomicInteger();
+
+                $stats = new QueryStatistics();
+
+                $results = $session->query(User::class, UsersByName::class)
+                        ->statistics($stats)
+                        ->addAfterQueryExecutedListener(function($x) use ($counter) {
+                            $counter->incrementAndGet();
+                        })
+                        ->suggestUsing(function($x) { return $x->byField("name", "Orin"); })
+                        ->execute();
+
+                $this->assertCount(1, $results);
+                $this->assertCount(0, $results["name"]->getSuggestions());
+                $this->assertNotNull($stats);
+                $this->assertEquals(1, $counter->get());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
 
     public function testAfterLazyQueryExecutedShouldBeExecutedOnlyOnce(): void
     {
@@ -86,13 +91,13 @@ class RavenDB_12902Test extends RemoteTestBase
                 $stats = new QueryStatistics();
 
                 $results = $session->query(User::class)
-                        ->addAfterQueryExecutedListener(function($x) use ($counter) {
-                            $counter->incrementAndGet();
-                        })
-                        ->statistics($stats)
-                        ->whereEquals("name", "Doe")
-                        ->lazily()
-                        ->getValue();
+                    ->addAfterQueryExecutedListener(function ($x) use ($counter) {
+                        $counter->incrementAndGet();
+                    })
+                    ->statistics($stats)
+                    ->whereEquals("name", "Doe")
+                    ->lazily()
+                    ->getValue();
 
                 $this->assertEmpty($results);
 
@@ -121,14 +126,16 @@ class RavenDB_12902Test extends RemoteTestBase
                 $stats = new QueryStatistics();
 
                 $results = $session->query(User::class, UsersByName::class)
-                        ->statistics($stats)
-                        ->addAfterQueryExecutedListener(function($x) use ($counter) {
-                            $counter->incrementAndGet();
-                        })
-                        ->whereEquals("name", "Doe")
-                        ->aggregateBy(function($x) { return $x->byField("name")->sumOn("count"); })
-                        ->executeLazy()
-                        ->getValue();
+                    ->statistics($stats)
+                    ->addAfterQueryExecutedListener(function ($x) use ($counter) {
+                        $counter->incrementAndGet();
+                    })
+                    ->whereEquals("name", "Doe")
+                    ->aggregateBy(function ($x) {
+                        return $x->byField("name")->sumOn("count");
+                    })
+                    ->executeLazy()
+                    ->getValue();
 
                 $this->assertCount(1, $results);
 
@@ -184,10 +191,12 @@ class RavenDB_12902Test extends RemoteTestBase
             try {
                 $stats = new QueryStatistics();
                 $session->query(User::class, UsersByName::class)
-                        ->statistics($stats)
-                        ->whereEquals("name", "Doe")
-                        ->aggregateBy(function($x) { return $x->byField("name")->sumOn("count");})
-                        ->execute();
+                    ->statistics($stats)
+                    ->whereEquals("name", "Doe")
+                    ->aggregateBy(function ($x) {
+                        return $x->byField("name")->sumOn("count");
+                    })
+                    ->execute();
 
                 $this->assertNotNull($stats->getIndexName());
             } finally {
@@ -198,21 +207,29 @@ class RavenDB_12902Test extends RemoteTestBase
         }
     }
 
-//    public function canGetValidStatisticsInSuggestionQuery(): void {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            store.executeIndex(new UsersByName());
-//
-//            try (IDocumentSession session = store.openSession()) {
-//                Reference<QueryStatistics> stats = new Reference<>();
-//                session
-//                        .query(User.class, UsersByName.class)
-//                        .statistics(stats)
-//                        .suggestUsing(x -> x.byField("name", "Orin"))
-//                        .execute();
-//
-//                assertThat(stats.value.getIndexName())
-//                        .isNotNull();
-//            }
-//        }
-//    }
+    public function testCanGetValidStatisticsInSuggestionQuery(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $store->executeIndex(new UsersByName());
+
+            $session = $store->openSession();
+            try {
+                $stats = new QueryStatistics();
+                $session
+                    ->query(User::class, UsersByName::class)
+                    ->statistics($stats)
+                    ->suggestUsing(function ($x) {
+                        return $x->byField("name", "Orin");
+                    })
+                    ->execute();
+
+                $this->assertNotNull($stats->getIndexName());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
 }
