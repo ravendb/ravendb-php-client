@@ -40,7 +40,7 @@ class SuggestToken extends QueryToken
         return $this->fieldName;
     }
 
-    public function writeTo(StringBuilder $writer): void
+    public function writeTo(StringBuilder & $writer): void
     {
         $writer
             ->append("suggest(")

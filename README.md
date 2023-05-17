@@ -28,8 +28,8 @@ This readme provides short examples for the following:
   [Changes API](#changes-api),  
   [Streaming](#streaming),  
   [Revisions](#revisions),  
-  [Suggestions](#suggestions),
 -->  
+  [Suggestions](#suggestions),  
   [Patching](#advanced-patching),<!--
   [Subscriptions](#subscriptions),  
   [Using object literals](#using-object-literals-for-entities),
@@ -1083,11 +1083,13 @@ const revisions = await session.advanced.revisions.getFor("users/1");
 > <small>[can handle revisions](https://github.com/ravendb/ravendb-nodejs-client/blob/5c14565d0c307d22e134530c8d63b09dfddcfb5b/test/Ported/RevisionsTest.ts#L35) </small>  
 > <small>[canGetRevisionsByChangeVectors](https://github.com/ravendb/ravendb-nodejs-client/blob/5c14565d0c307d22e134530c8d63b09dfddcfb5b/test/Ported/RevisionsTest.ts#L149) </small>
 
+--> 
+
 ## Suggestions
 
 Suggest options for similar/misspelled terms
 
-```javascript
+```php
 // Some documents in users collection with misspelled name term
 // [ User {
 //     name: 'Johne',
@@ -1108,32 +1110,31 @@ Suggest options for similar/misspelled terms
 
 // Static index definition
 class UsersIndex extends AbstractJavaScriptIndexCreationTask {
-    constructor() {
-        super();
-        this.map(User, doc => {
-            return {
-                name: doc.name
-            }
-        });
+    public function __construct() {
+        parent::__construct();
+                
+        $this->map = "from user in docs.users select new { user.name }";
         
         // Enable the suggestion feature on index-field 'name'
-        this.suggestion("name"); 
+        $this->suggestion("name"); 
     }
 }
 
 // ...
-const session = store.openSession();
+$session = $store->openSession();
 
 // Query for similar terms to 'John'
 // Note: the term 'John' itself will Not be part of the results
 
-const suggestedNameTerms = await session.query(User, UsersIndex)
-    .suggestUsing(x => x.byField("name", "John")) 
-    .execute();
+$suggestedNameTerms = $session->query(User::class, UsersIndex::class)
+    ->suggestUsing(function($x) { return $x->byField("name", "John"); }) 
+    ->execute();
 
 // Sample results:
 // { name: { name: 'name', suggestions: [ 'johne', 'johm', 'jon' ] } }
 ```
+
+<!--  
 
 >##### Related tests:
 > <small>[can suggest](https://github.com/ravendb/ravendb-nodejs-client/blob/5c14565d0c307d22e134530c8d63b09dfddcfb5b/test/Documents/ReadmeSamples.ts#L581) </small>  

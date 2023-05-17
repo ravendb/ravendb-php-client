@@ -28,6 +28,10 @@ use RavenDB\Documents\Queries\QueryOperator;
 use RavenDB\Documents\Queries\SearchOperator;
 use RavenDB\Documents\Queries\Spatial\DynamicSpatialField;
 use RavenDB\Documents\Queries\Spatial\SpatialCriteriaFactory;
+use RavenDB\Documents\Queries\Suggestions\SuggestionBase;
+use RavenDB\Documents\Queries\Suggestions\SuggestionBuilder;
+use RavenDB\Documents\Queries\Suggestions\SuggestionDocumentQuery;
+use RavenDB\Documents\Queries\Suggestions\SuggestionDocumentQueryInterface;
 use RavenDB\Documents\Queries\Timings\QueryTimings;
 use RavenDB\Documents\Session\Loaders\QueryIncludeBuilder;
 use RavenDB\Documents\Session\Tokens\DeclareTokenArray;
@@ -896,18 +900,27 @@ class DocumentQuery extends AbstractDocumentQuery
         return $this;
     }
 
-//    @Override
-//    public ISuggestionDocumentQuery<T> suggestUsing(SuggestionBase suggestion) {
-//        _suggestUsing(suggestion);
-//        return new SuggestionDocumentQuery<>(this);
-//    }
-//
-//    @Override
-//    public ISuggestionDocumentQuery<T> suggestUsing(Consumer<ISuggestionBuilder<T>> builder) {
-//        SuggestionBuilder<T> f = new SuggestionBuilder<>();
-//        builder.accept(f);
-//
-//        suggestUsing(f.getSuggestion());
-//        return new SuggestionDocumentQuery<>(this);
-//    }
+    public function suggestUsing(null|SuggestionBase|Closure $suggestionOrBuilder): SuggestionDocumentQueryInterface
+    {
+        if (is_callable($suggestionOrBuilder)) {
+            return $this->suggestUsingWithBuilder($suggestionOrBuilder);
+        }
+
+        return $this->suggestUsingWithSuggestion($suggestionOrBuilder);
+    }
+
+    private function suggestUsingWithSuggestion(SuggestionBase $suggestion): SuggestionDocumentQueryInterface
+    {
+        $this->_suggestUsing($suggestion);
+        return new SuggestionDocumentQuery($this);
+    }
+
+
+    private function suggestUsingWithBuilder(Closure $builder): SuggestionDocumentQueryInterface
+    {
+        $f = new SuggestionBuilder();
+        $builder($f);
+
+        return $this->suggestUsing($f->getSuggestion());
+    }
 }

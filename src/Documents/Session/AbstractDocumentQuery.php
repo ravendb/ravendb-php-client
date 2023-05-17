@@ -27,6 +27,10 @@ use RavenDB\Documents\Queries\QueryResult;
 use RavenDB\Documents\Queries\SearchOperator;
 use RavenDB\Documents\Queries\Spatial\DynamicSpatialField;
 use RavenDB\Documents\Queries\Spatial\SpatialCriteria;
+use RavenDB\Documents\Queries\Suggestions\SuggestionBase;
+use RavenDB\Documents\Queries\Suggestions\SuggestionOptions;
+use RavenDB\Documents\Queries\Suggestions\SuggestionWithTerm;
+use RavenDB\Documents\Queries\Suggestions\SuggestionWithTerms;
 use RavenDB\Documents\Queries\TimeSeries\TimeSeriesQueryBuilder;
 use RavenDB\Documents\Queries\Timings\QueryTimings;
 use RavenDB\Documents\Session\Loaders\IncludeBuilderBase;
@@ -62,6 +66,7 @@ use RavenDB\Documents\Session\Tokens\QueryOperatorToken;
 use RavenDB\Documents\Session\Tokens\QueryToken;
 use RavenDB\Documents\Session\Tokens\QueryTokenList;
 use RavenDB\Documents\Session\Tokens\ShapeToken;
+use RavenDB\Documents\Session\Tokens\SuggestToken;
 use RavenDB\Documents\Session\Tokens\TimeSeriesIncludesToken;
 use RavenDB\Documents\Session\Tokens\TimeSeriesIncludesTokenArray;
 use RavenDB\Documents\Session\Tokens\TimingsToken;
@@ -71,6 +76,7 @@ use RavenDB\Documents\Session\Tokens\WhereOptions;
 use RavenDB\Documents\Session\Tokens\WhereToken;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Exceptions\UnsupportedOperationException;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Parameters;
 use RavenDB\Primitives\CleanCloseable;
@@ -2281,58 +2287,63 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     }
 
 
-//    public void _suggestUsing(SuggestionBase suggestion) {
-//        if (suggestion == null) {
-//            throw new IllegalArgumentException("suggestion cannot be null");
-//        }
-//
-//        assertCanSuggest(suggestion);
-//
-//        SuggestToken token;
-//
-//        if (suggestion instanceof SuggestionWithTerm) {
-//            SuggestionWithTerm term = (SuggestionWithTerm) suggestion;
-//            token = SuggestToken.create(term.getField(), term.getDisplayField(), addQueryParameter(term.getTerm()), getOptionsParameterName(term.getOptions()));
-//        } else if (suggestion instanceof SuggestionWithTerms) {
-//            SuggestionWithTerms terms = (SuggestionWithTerms) suggestion;
-//            token = SuggestToken.create(terms.getField(), terms.getDisplayField(), addQueryParameter(terms.getTerms()), getOptionsParameterName(terms.getOptions()));
-//        } else {
-//            throw new UnsupportedOperationException("Unknown type of suggestion: " + suggestion.getClass());
-//        }
-//
-//        selectTokens.add(token);
-//    }
-//
-//    private String getOptionsParameterName(SuggestionOptions options) {
-//        String optionsParameterName = null;
-//        if (options != null && options != SuggestionOptions.defaultOptions) {
-//            optionsParameterName = addQueryParameter(options);
-//        }
-//
-//        return optionsParameterName;
-//    }
-//
-//    private void assertCanSuggest(SuggestionBase suggestion) {
-//        if (!whereTokens.isEmpty()) {
-//            throw new IllegalStateException("Cannot add suggest when WHERE statements are present.");
-//        }
-//
-//        if (!selectTokens.isEmpty()) {
-//            QueryToken lastToken = selectTokens.get(selectTokens.size() - 1);
-//            if (lastToken instanceof SuggestToken) {
-//                SuggestToken st = (SuggestToken) lastToken;
-//                if (st.getFieldName().equals(suggestion.getField())) {
-//                    throw new IllegalStateException("Cannot add suggest for the same field again.");
-//                }
-//            } else {
-//                throw new IllegalStateException("Cannot add suggest when SELECT statements are present.");
-//            }
-//        }
-//
-//        if (!orderByTokens.isEmpty()) {
-//            throw new IllegalStateException("Cannot add suggest when ORDER BY statements are present.");
-//        }
-//    }
+    public function _suggestUsing(?SuggestionBase $suggestion): void
+    {
+        if ($suggestion == null) {
+            throw new IllegalArgumentException("suggestion cannot be null");
+        }
+
+        $this->assertCanSuggest($suggestion);
+
+        $token = null;
+
+        if ($suggestion instanceof SuggestionWithTerm) {
+            /** @var SuggestionWithTerm $term */
+            $term = $suggestion;
+            $token = SuggestToken::create($term->getField(), $term->getDisplayField(), $this->addQueryParameter($term->getTerm()), $this->getOptionsParameterName($term->getOptions()));
+        } else if ($suggestion instanceof SuggestionWithTerms) {
+            /** @var SuggestionWithTerms $terms */
+            $terms = $suggestion;
+            $token = SuggestToken::create($terms->getField(), $terms->getDisplayField(), $this->addQueryParameter($terms->getTerms()), $this->getOptionsParameterName($terms->getOptions()));
+        } else {
+            throw new UnsupportedOperationException("Unknown type of suggestion: " . get_class($suggestion));
+        }
+
+        $this->selectTokens->append($token);
+    }
+
+    private function getOptionsParameterName(?SuggestionOptions $options): ?string
+    {
+        $optionsParameterName = null;
+        if ($options != null && $options !== SuggestionOptions::defaultOptions()) {
+            $optionsParameterName = $this->addQueryParameter($options);
+        }
+
+        return $optionsParameterName;
+    }
+
+    private function assertCanSuggest(?SuggestionBase $suggestion): void
+    {
+        if (!$this->whereTokens->isEmpty()) {
+            throw new IllegalStateException("Cannot add suggest when WHERE statements are present.");
+        }
+
+        if (!$this->selectTokens->isEmpty()) {
+            $lastToken = $this->selectTokens->last();
+            if ($lastToken instanceof SuggestToken) {
+                $st = $lastToken;
+                if ($st->getFieldName() == $suggestion->getField()) {
+                    throw new IllegalStateException("Cannot add suggest for the same field again.");
+                }
+            } else {
+                throw new IllegalStateException("Cannot add suggest when SELECT statements are present.");
+            }
+        }
+
+        if (!$this->orderByTokens->isEmpty()) {
+            throw new IllegalStateException("Cannot add suggest when ORDER BY statements are present.");
+        }
+    }
 
     protected ?Explanations $explanations = null;
 
