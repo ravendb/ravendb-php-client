@@ -397,9 +397,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
     public bool $noTracking;
 
-    // @todo: update type here to ForceRevisionStrategyArray
-//    public Map<String, ForceRevisionStrategy> idsForCreatingForcedRevisions = new TreeMap<>(String::compareToIgnoreCase);
-    public array $idsForCreatingForcedRevisions = [];
+    public ?ForceRevisionStrategyArray $idsForCreatingForcedRevisions = null;
 
     public function getDeferredCommandsCount(): int
     {
@@ -461,6 +459,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
         $this->mapper = JsonExtensions::getDefaultMapper();
 
+        $this->idsForCreatingForcedRevisions = new ForceRevisionStrategyArray();
         //-- Init
 
         $this->id = $id;
@@ -1227,11 +1226,11 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     {
         // Note: here there is no point checking 'Before' or 'After' because if there were changes then forced revision is done from the PUT command....
 
-        foreach (array_keys($this->idsForCreatingForcedRevisions) as $idEntry) {
+        foreach (array_keys($this->idsForCreatingForcedRevisions->getArrayCopy()) as $idEntry) {
             $result->addSessionCommand(new ForceRevisionCommandData($idEntry));
         }
 
-        $this->idsForCreatingForcedRevisions = [];
+        $this->idsForCreatingForcedRevisions->clear();
     }
 
 
@@ -1381,7 +1380,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
                 $forceRevisionCreationStrategy = ForceRevisionStrategy::none();
 
                 if ($entity->getValue()->getId() != null) {
-                    if (array_key_exists($entity->getValue()->getId(), $this->idsForCreatingForcedRevisions)) {
+                    if ($this->idsForCreatingForcedRevisions->offsetExists($entity->getValue()->getId())) {
                         // Check if user wants to Force a Revision
                         $creationStrategy = $this->idsForCreatingForcedRevisions[$entity->getValue()->getId()];
                         if ($creationStrategy != null) {

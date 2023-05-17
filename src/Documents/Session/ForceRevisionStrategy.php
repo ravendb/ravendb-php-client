@@ -6,14 +6,19 @@ class ForceRevisionStrategy
 {
     const NAME = 'ForceRevisionStrategy';
 
-    const NONE = 'none';
-    const BEFORE = 'before';
+    const NONE = 'None';
+    const BEFORE = 'Before';
 
     private string $value;
 
     public function __construct(string $value)
     {
         $this->setValue($value);
+    }
+
+    public function __toString(): string
+    {
+        return $this->value;
     }
 
     public function setValue(string $value): void

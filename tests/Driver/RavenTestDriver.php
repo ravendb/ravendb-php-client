@@ -14,6 +14,10 @@ use RavenDB\Documents\Operations\DatabaseStatistics;
 use RavenDB\Documents\Operations\GetStatisticsOperation;
 use RavenDB\Documents\Operations\IndexInformation;
 use RavenDB\Documents\Operations\MaintenanceOperationExecutor;
+use RavenDB\Documents\Operations\Revisions\ConfigureRevisionsOperation;
+use RavenDB\Documents\Operations\Revisions\ConfigureRevisionsOperationResult;
+use RavenDB\Documents\Operations\Revisions\RevisionsCollectionConfiguration;
+use RavenDB\Documents\Operations\Revisions\RevisionsConfiguration;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Exceptions\TimeoutException;
 use RavenDB\Http\Adapter\HttpClient;
@@ -389,20 +393,20 @@ abstract class RavenTestDriver extends TestCase
 //            }
 //        }
 //    }
-//
-//    @SuppressWarnings("UnusedReturnValue")
-//    protected static ConfigureRevisionsOperation.ConfigureRevisionsOperationResult setupRevisions(IDocumentStore store, boolean purgeOnDelete, long minimumRevisionsToKeep) {
-//        RevisionsConfiguration revisionsConfiguration = new RevisionsConfiguration();
-//        RevisionsCollectionConfiguration defaultCollection = new RevisionsCollectionConfiguration();
-//        defaultCollection.setPurgeOnDelete(purgeOnDelete);
-//        defaultCollection.setMinimumRevisionsToKeep(minimumRevisionsToKeep);
-//
-//        revisionsConfiguration.setDefaultConfig(defaultCollection);
-//        ConfigureRevisionsOperation operation = new ConfigureRevisionsOperation(revisionsConfiguration);
-//
-//        return store.maintenance().send(operation);
-//    }
-//
+
+    protected static function setupRevisions(DocumentStoreInterface $store, bool $purgeOnDelete, int $minimumRevisionsToKeep): ConfigureRevisionsOperationResult
+    {
+        $revisionsConfiguration = new RevisionsConfiguration();
+        $defaultCollection = new RevisionsCollectionConfiguration();
+        $defaultCollection->setPurgeOnDelete($purgeOnDelete);
+        $defaultCollection->setMinimumRevisionsToKeep($minimumRevisionsToKeep);
+
+        $revisionsConfiguration->setDefaultConfig($defaultCollection);
+        $operation = new ConfigureRevisionsOperation($revisionsConfiguration);
+
+        return $store->maintenance()->send($operation);
+    }
+
 //    protected static void createSimpleData(IDocumentStore store) {
 //        try (IDocumentSession session = store.openSession()) {
 //            Entity entityA = new Entity();

@@ -30,10 +30,10 @@ interface AdvancedSessionOperationsInterface extends
      */
     function attachments(): AttachmentsSessionOperationsInterface;
 
-//    /**
-//     * @return Access the revisions operations
-//     */
-//    IRevisionsSessionOperations revisions();
+    /**
+     * @return RevisionsSessionOperationsInterface Access the revisions operations
+     */
+    function revisions(): RevisionsSessionOperationsInterface;
 
     /**
      * @return ClusterTransactionOperationsInterface Access cluster transaction operations

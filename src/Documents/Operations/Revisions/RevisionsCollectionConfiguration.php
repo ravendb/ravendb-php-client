@@ -2,33 +2,42 @@
 
 namespace RavenDB\Documents\Operations\Revisions;
 
-// !status: DONE
+use RavenDB\Type\Duration;
+use Symfony\Component\Serializer\Annotation\SerializedName;
+
 class RevisionsCollectionConfiguration
 {
-    private int $minimumRevisionsToKeep = 0;
+    #[SerializedName('MinimumRevisionsToKeep')]
+    private ?int $minimumRevisionsToKeep = null;
 
-    private \DateInterval $minimumRevisionAgeToKeep;
+    #[SerializedName('MinimumRevisionAgeToKeep')]
+    private ?Duration $minimumRevisionAgeToKeep = null;
 
+    #[SerializedName('Disabled')]
     private bool $disabled = false;
 
+    #[SerializedName('PurgeOnDelete')]
     private bool $purgeOnDelete = false;
 
-    public function getMinimumRevisionsToKeep(): int
+    #[SerializedName('MaximumRevisionsToDeleteUponDocumentUpdate')]
+    private ?int $maximumRevisionsToDeleteUponDocumentUpdate = null;
+
+    public function getMinimumRevisionsToKeep(): ?int
     {
         return $this->minimumRevisionsToKeep;
     }
 
-    public function setMinimumRevisionsToKeep(int $minimumRevisionsToKeep): void
+    public function setMinimumRevisionsToKeep(?int $minimumRevisionsToKeep): void
     {
         $this->minimumRevisionsToKeep = $minimumRevisionsToKeep;
     }
 
-    public function getMinimumRevisionAgeToKeep(): \DateInterval
+    public function getMinimumRevisionAgeToKeep(): ?Duration
     {
         return $this->minimumRevisionAgeToKeep;
     }
 
-    public function setMinimumRevisionAgeToKeep(\DateInterval $minimumRevisionAgeToKeep): void
+    public function setMinimumRevisionAgeToKeep(?Duration $minimumRevisionAgeToKeep): void
     {
         $this->minimumRevisionAgeToKeep = $minimumRevisionAgeToKeep;
     }
@@ -51,5 +60,15 @@ class RevisionsCollectionConfiguration
     public function setPurgeOnDelete(bool $purgeOnDelete): void
     {
         $this->purgeOnDelete = $purgeOnDelete;
+    }
+
+    public function getMaximumRevisionsToDeleteUponDocumentUpdate(): ?int
+    {
+        return $this->maximumRevisionsToDeleteUponDocumentUpdate;
+    }
+
+    public function setMaximumRevisionsToDeleteUponDocumentUpdate(?int $maximumRevisionsToDeleteUponDocumentUpdate): void
+    {
+        $this->maximumRevisionsToDeleteUponDocumentUpdate = $maximumRevisionsToDeleteUponDocumentUpdate;
     }
 }

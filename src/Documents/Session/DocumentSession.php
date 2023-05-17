@@ -91,16 +91,16 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         return $this->attachments;
     }
 
-//    private IRevisionsSessionOperations _revisions;
-//
-//    @Override
-//    public IRevisionsSessionOperations revisions() {
-//        if (_revisions == null) {
-//            _revisions = new DocumentSessionRevisions(this);
-//        }
-//        return _revisions;
-//    }
-//
+    private ?RevisionsSessionOperationsInterface $revisions = null;
+
+    public function revisions(): RevisionsSessionOperationsInterface
+    {
+        if ($this->revisions == null) {
+            $this->revisions = new DocumentSessionRevisions($this);
+        }
+        return $this->revisions;
+    }
+
     private ?ClusterTransactionOperationsInterface $clusterTransaction = null;
 
     public function clusterTransaction(): ClusterTransactionOperationsInterface
