@@ -261,13 +261,13 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
         return StringSet::fromArray(array_keys($this->metadata));
     }
 
-//    @Override
-//    public String getString(String key) {
-//        Object obj = get(key);
-//        return obj != null ? obj.toString() : null;
-//    }
-//
-//    @Override
+    public function getString(?string $key): ?string
+    {
+        $obj = $this->get($key);
+        return $obj != null ? strval($obj) : null;
+    }
+
+
 //    public long getLong(String key) {
 //        Object obj = get(key);
 //        if (obj == null) {

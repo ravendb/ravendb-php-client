@@ -2,30 +2,33 @@
 
 namespace RavenDB\Documents\Operations\Revisions;
 
-// !status: DONE
+use Symfony\Component\Serializer\Annotation\SerializedName;
+
 class RevisionsConfiguration
 {
-    private RevisionsCollectionConfiguration $defaultConfig;
+    #[SerializedName('Default')]
+    private ?RevisionsCollectionConfiguration $defaultConfig = null;
 
-    private RevisionsCollectionConfigurationArray $collections;
+    #[SerializedName('Collections')]
+    private ?RevisionsCollectionConfigurationArray $collections = null;
 
-    public function getDefaultConfig(): RevisionsCollectionConfiguration
+    public function getDefaultConfig(): ?RevisionsCollectionConfiguration
     {
         return $this->defaultConfig;
     }
 
-    public function setDefaultConfig(RevisionsCollectionConfiguration $defaultConfig): void
+    public function setDefaultConfig(?RevisionsCollectionConfiguration $defaultConfig): void
     {
         $this->defaultConfig = $defaultConfig;
     }
 
-    public function getCollections(): RevisionsCollectionConfigurationArray
+    public function getCollections(): ?RevisionsCollectionConfigurationArray
     {
         return $this->collections;
     }
 
-    public function setCollections(RevisionsCollectionConfigurationArray $collections): void
+    public function setCollections(null|RevisionsCollectionConfigurationArray|array $collections): void
     {
-        $this->collections = $collections;
+        $this->collections = is_array($collections) ? RevisionsCollectionConfigurationArray::fromArray($collections) : $collections;
     }
 }

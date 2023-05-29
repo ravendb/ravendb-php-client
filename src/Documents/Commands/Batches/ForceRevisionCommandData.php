@@ -8,11 +8,11 @@ use RavenDB\Exceptions\IllegalArgumentException;
 
 class ForceRevisionCommandData implements CommandDataInterface
 {
-    private string $id;
-    private string $name = "";
-    private string $changeVector = "";
+    private ?string $id = null;
+    private ?string $name = null;
+    private ?string $changeVector = null;
 
-    public function __constructor(string $id)
+    public function __construct(string $id)
     {
         if (empty($id)) {
             throw new IllegalArgumentException('Id cannot be null');
@@ -40,9 +40,12 @@ class ForceRevisionCommandData implements CommandDataInterface
         return CommandType::forceRevisionCreation();
     }
 
-    public function serialize(?DocumentConventions $conventions): void
+    public function serialize(?DocumentConventions $conventions): array
     {
-        // TODO: Implement serialize() method.
+        return [
+            "Id" => $this->id,
+            "Type" => $this->getType()->getValue()
+        ];
     }
 
     public function onBeforeSaveChanges(?InMemoryDocumentSessionOperations $session): void
