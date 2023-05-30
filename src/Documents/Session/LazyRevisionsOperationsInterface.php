@@ -2,87 +2,60 @@
 
 namespace RavenDB\Documents\Session;
 
+use DateTime;
+use RavenDB\Documents\Lazy;
+use RavenDB\Type\StringArray;
+
 interface LazyRevisionsOperationsInterface
 {
-//    /**
-//     * Returns all previous document revisions for specified document ordered by most recent revision first.
-//     * @param clazz entity class
-//     * @param id Identifier of a entity
-//     * @param <T> entity class
-//     * @return Lazy revisions list
-//     */
-//    <T> Lazy<List<T>> getFor(Class<T> clazz, String id);
-//
-//    /**
-//     * Returns all previous document revisions for specified document (with paging) ordered by most recent revision first.
-//     * @param clazz entity class
-//     * @param id Identifier of a entity
-//     * @param start start
-//     * @param <T> entity class
-//     * @return Lazy revisions list
-//     */
-//    <T> Lazy<List<T>> getFor(Class<T> clazz, String id, int start);
-//
-//    /**
-//     * Returns all previous document revisions for specified document (with paging) ordered by most recent revision first.
-//     * @param clazz entity class
-//     * @param id Identifier of a entity
-//     * @param start start
-//     * @param pageSize page size
-//     * @param <T> entity class
-//     * @return Lazy revisions list
-//     */
-//    <T> Lazy<List<T>> getFor(Class<T> clazz, String id, int start, int pageSize);
-//
-//    /**
-//     * Returns all previous document revisions metadata for specified document (with paging).
-//     * @param id Identifier of a entity
-//     * @return list of revisions metadata
-//     */
-//    Lazy<List<MetadataAsDictionary>> getMetadataFor(String id);
-//
-//    /**
-//     * Returns all previous document revisions metadata for specified document (with paging).
-//     * @param id Identifier of a entity
-//     * @param start start
-//     * @return list of revisions metadata
-//     */
-//    Lazy<List<MetadataAsDictionary>> getMetadataFor(String id, int start);
-//
-//    /**
-//     * Returns all previous document revisions metadata for specified document (with paging).
-//     * @param id Identifier of a entity
-//     * @param start start
-//     * @param pageSize page size
-//     * @return list of revisions metadata
-//     */
-//    Lazy<List<MetadataAsDictionary>> getMetadataFor(String id, int start, int pageSize);
-//
-//    /**
-//     * Returns a document revision by change vector.
-//     * @param clazz entity class
-//     * @param changeVector Change vector
-//     * @param <T> entity class
-//     * @return list of revisions metadata
-//     */
-//    <T> Lazy<T> get(Class<T> clazz, String changeVector);
-//
-//    /**
-//     * Returns document revisions by change vectors.
-//     * @param clazz entity class
-//     * @param changeVectors Change vectors to load
-//     * @param <T> entity class
-//     * @return Lazy map of revisions
-//     */
-//    <T> Lazy<Map<String, T>> get(Class<T> clazz, String[] changeVectors);
-//
-//    /**
-//     * Returns the first revision for this document that happens before or at the specified date.
-//     * @param clazz entity class
-//     * @param <T> entity class
-//     * @param id Identifier of a entity that will be loaded.
-//     * @param date Date to load
-//     * @return Lazy revision
-//     */
-//    <T> Lazy<T> get(Class<T> clazz, String id, Date date);
+    /**
+     * Returns all previous document revisions for specified document (with paging) ordered by most recent revision first.
+     *
+     * @param string|null $className
+     * @param string|null $id
+     * @param int $start
+     * @param int $pageSize
+     * @return Lazy revisions list
+     */
+    public function getFor(?string $className, ?string $id, int $start = 0, int $pageSize = 25): Lazy;
+
+    /**
+     * Returns all previous document revisions metadata for specified document (with paging).
+     * @param string|null $id
+     * @param int $start
+     * @param int $pageSize
+     * @return Lazy of revisions metadata
+     */
+    public function getMetadataFor(?string $id, int $start = 0, int $pageSize = 25): Lazy;
+
+    public function get(?string $className, null|string|array|StringArray $changeVectors): mixed;
+
+    /**
+     * Returns a document revision by change vector.
+     *
+     * @param string|null $classname
+     * @param string|null $changeVector
+     * @return Lazy with given change vector
+     */
+    function getSingle(?string $classname, ?string $changeVector): Lazy;
+
+    /**
+     * Returns document revisions by change vectors.
+     *
+     * @param string|null $className
+     * @param StringArray|array $changeVectors
+     * @return Lazy with array matching given change vectors
+     */
+    function getMultiple(?string $className, StringArray|array $changeVectors): Lazy;
+
+    /**
+     * Returns the first revision for this document that happens before or at the specified date time.
+     *
+     * @param string|null $className
+     * @param string|null $id
+     * @param DateTime|null $date
+     *
+     * @return Lazy with revision
+     */
+    function getBeforeDate(?string $className, ?string $id, ?DateTime $date): Lazy;
 }

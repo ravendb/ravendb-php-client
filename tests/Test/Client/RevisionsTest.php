@@ -2,10 +2,12 @@
 
 namespace tests\RavenDB\Test\Client;
 
+use DateTime;
 use Exception;
 use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Constants\PhpClient;
 use RavenDB\Documents\Commands\GetRevisionsBinEntryCommand;
+use RavenDB\Documents\Operations\GetStatisticsOperation;
 use RavenDB\Documents\Operations\Revisions\ConfigureRevisionsOperation;
 use RavenDB\Documents\Operations\Revisions\GetRevisionsOperation;
 use RavenDB\Documents\Operations\Revisions\GetRevisionsOperationParameters;
@@ -304,321 +306,328 @@ class RevisionsTest extends RemoteTestBase
         }
     }
 
-//    public function testCanGetNonExistingRevisionsByChangeVectorAsyncLazily(): void
-//    {
-//        $store = $this->getDocumentStore();
-//        try {
-//            $session = $store->openSession();
-//            try {
-//                $lazy = $session->advanced()->revisions()->lazily()->get(User::class, "dummy");
-//                $user = $lazy->getValue();
+    public function testCanGetNonExistingRevisionsByChangeVectorAsyncLazily(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $session = $store->openSession();
+            try {
+                $lazy = $session->advanced()->revisions()->lazily()->get(User::class, "dummy");
+                $user = $lazy->getValue();
 
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isEqualTo(1);
-//                assertThat(user)
-//                        .isNull();
-//            } finally {
-//                $session->close();
-//            }
-//        } finally {
-//            $store->close();
-//        }
-//    }
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+                $this->assertNull($user);
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
 
-//    public function testCanGetRevisionsByChangeVectorsLazily(): void {
-//        $store = $this->getDocumentStore();
-//        try {
-//            $id = "users/1";
-//            $this->setupRevisions($store, false, 123);
-//            $session = $store->openSession();
-//            try {
-//                $user = new User();
-//                $user->setName("Omer");
-//                $session->store($user, id);
-//                $session->saveChanges();
-//            } finally {
-//                $session->close();
-//            }
-//
-//            for ($i = 0; $i < 10; $i++) {
-//                $session = $store->openSession();
-//                try {
-//                    $user = $session->load(Company::class, id);
-//                    $user->setName("Omer" + i);
-//                    $session->saveChanges();
-//                } finally {
-//                    $session->close();
-//                }
-//            }
-//
-//            $session = $store->openSession();
-//            try {
-//                $revisionsMetadata = $session->advanced()->revisions()->getMetadataFor(id);
-//                assertThat($revisionsMetadata)
-//                        .hasSize(11);
-//
-//                String[] changeVectors = revisionsMetadata
-//                        .stream()
-//                        .map(x -> x.getString(Constants.Documents.Metadata.CHANGE_VECTOR))
-//                        .toArray(String[]::new);
-//                String[] changeVectors2 = revisionsMetadata
-//                        .stream()
-//                        .map(x -> x.getString(Constants.Documents.Metadata.CHANGE_VECTOR))
-//                        .toArray(String[]::new);
-//
-//                Lazy<Map<String, User>> revisionsLazy = $session->advanced()->revisions().lazily().get(User::class, changeVectors);
-//                Lazy<Map<String, User>> revisionsLazy2 = $session->advanced()->revisions().lazily().get(User::class, changeVectors2);
-//
-//                Map<String, User> lazyResult = revisionsLazy.getValue();
-//                Map<String, User> revisions = $session->advanced()->revisions().get(User::class, changeVectors);
-//
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isEqualTo(3);
-//                assertThat(lazyResult.keySet())
-//                        .isEqualTo(revisions.keySet());
-//            } finally {
-//                $session->close();
-//            }
-//        } finally {
-//            $store->close();
-//        }
-//    }
-//
-//    @Test
-//    public function testCanGetForLazily(): void {
-//        $store = $this->getDocumentStore();
-//        try {
-//            $id = "users/1";
-//            $id2 = "users/2";
-//
-//            $this->setupRevisions($store, false, 123);
-//
-//            $session = $store->openSession();
-//            try {
-//                $user1 = new User();
-//                user1->setName("Omer");
-//                $session->store($user1, id);
-//
-//                $user2 = new User();
-//                user2->setName("Rhinos");
-//                $session->store($user2, id2);
-//
-//                $session->saveChanges();
-//            } finally {
-//                $session->close();
-//            }
-//
-//            for ($i = 0; $i < 10; $i++) {
-//                $session = $store->openSession();
-//                try {
-//                    $user = $session->load(Company::class, id);
-//                    $user->setName("Omer" + i);
-//                    $session->saveChanges();
-//                } finally {
-//                    $session->close();
-//                }
-//            }
-//
-//            $session = $store->openSession();
-//            try {
-//                List<User> revision = $session->advanced()->revisions()->getFor(User::class, "users/1");
-//                Lazy<List<User>> revisionsLazily = $session->advanced()->revisions().lazily()->getFor(User::class, "users/1");
-//                $session->advanced()->revisions().lazily()->getFor(User::class, "users/2");
-//
-//                List<User> revisionsLazilyResult = revisionsLazily.getValue();
-//
-//                assertThat(revision.stream().map(User::getName).collect(Collectors.joining(",")))
-//                        .isEqualTo(revisionsLazilyResult.stream().map(User::getName).collect(Collectors.joining(",")));
-//                assertThat(revision.stream().map(User::getId).collect(Collectors.joining(",")))
-//                        .isEqualTo(revisionsLazilyResult.stream().map(User::getId).collect(Collectors.joining(",")));
-//
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isEqualTo(2);
-//            } finally {
-//                $session->close();
-//            }
-//        } finally {
-//            $store->close();
-//        }
-//    }
-//
-//    @Test
-//    public function testCanGetRevisionsByIdAndTimeLazily(): void {
-//        $store = $this->getDocumentStore();
-//        try {
-//            $id = "users/1";
-//            $id2 = "users/2";
-//
-//            $this->setupRevisions($store, false, 123);
-//
-//            $session = $store->openSession();
-//            try {
-//                $user1 = new User();
-//                user1->setName("Omer");
-//                $session->store($user1, id);
-//
-//                $user2 = new User();
-//                user2->setName("Rhinos");
-//                $session->store($user2, id2);
-//
-//                $session->saveChanges();
-//            } finally {
-//                $session->close();
-//            }
-//
-//            for ($i = 0; $i < 10; $i++) {
-//                $session = $store->openSession();
-//                try {
-//                    $user = $session->load(Company::class, id);
-//                    $user->setName("Omer" + i);
-//                    $session->saveChanges();
-//                } finally {
-//                    $session->close();
-//                }
-//            }
-//
-//            $session = $store->openSession();
-//            try {
-//                User revision = $session->advanced()->revisions().get(User::class, "users/1", new Date());
-//
-//                Lazy<User> revisionLazily = $session->advanced()->revisions().lazily().get(User::class, "users/1", new Date());
-//                $session->advanced()->revisions().lazily().get(User::class, "users/2", new Date());
-//
-//                User revisionLazilyResult = revisionLazily.getValue();
-//
-//                assertThat(revision.getId())
-//                        .isEqualTo(revisionLazilyResult.getId());
-//                assertThat(revisionLazilyResult.getName())
-//                        .isEqualTo(revisionLazilyResult.getName());
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isEqualTo(2);
-//            } finally {
-//                $session->close();
-//            }
-//        } finally {
-//            $store->close();
-//        }
-//    }
-//
-//    @Test
-//    public function testCanGetMetadataForLazily(): void {
-//        $store = $this->getDocumentStore();
-//        try {
-//            $id = "users/1";
-//            $id2 = "users/2";
-//
-//            $this->setupRevisions($store, false, 123);
-//
-//            $session = $store->openSession();
-//            try {
-//                $user1 = new User();
-//                user1->setName("Omer");
-//                $session->store($user1, id);
-//
-//                $user2 = new User();
-//                user2->setName("Rhinos");
-//                $session->store($user2, id2);
-//
-//                $session->saveChanges();
-//            } finally {
-//                $session->close();
-//            }
-//
-//            for ($i = 0; $i < 10; $i++) {
-//                $session = $store->openSession();
-//                try {
-//                    $user = $session->load(Company::class, id);
-//                    $user->setName("Omer" + i);
-//                    $session->saveChanges();
-//                } finally {
-//                    $session->close();
-//                }
-//            }
-//
-//            $session = $store->openSession();
-//            try {
-//                $revisionsMetadata = $session->advanced()->revisions()->getMetadataFor(id);
-//                Lazy<List<MetadataAsDictionary>> revisionsMetaDataLazily = $session->advanced()->revisions().lazily()->getMetadataFor(id);
-//                Lazy<List<MetadataAsDictionary>> revisionsMetaDataLazily2 = $session->advanced()->revisions().lazily()->getMetadataFor(id2);
-//                List<MetadataAsDictionary> revisionsMetaDataLazilyResult = revisionsMetaDataLazily.getValue();
-//
-//                assertThat(revisionsMetadata.stream().map(x -> x.getString("@id")).collect(Collectors.joining(",")))
-//                        .isEqualTo(revisionsMetaDataLazilyResult.stream().map(x -> x.getString("@id")).collect(Collectors.joining(",")));
-//
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isEqualTo(2);
-//            } finally {
-//                $session->close();
-//            }
-//        } finally {
-//            $store->close();
-//        }
-//    }
-//
-//    @Test
-//    public function testCanGetRevisionsByChangeVectorLazily(): void {
-//        $store = $this->getDocumentStore();
-//        try {
-//
-//
-//            $id = "users/1";
-//            $id2 = "users/2";
-//
-//            $this->setupRevisions($store, false, 123);
-//
-//            $session = $store->openSession();
-//            try {
-//                $user1 = new User();
-//                user1->setName("Omer");
-//                $session->store($user1, id);
-//
-//                $user2 = new User();
-//                user2->setName("Rhinos");
-//                $session->store($user2, id2);
-//
-//                $session->saveChanges();
-//            } finally {
-//                $session->close();
-//            }
-//
-//            for ($i = 0; $i < 10; $i++) {
-//                $session = $store->openSession();
-//                try {
-//                    $user = $session->load(Company::class, id);
-//                    $user->setName("Omer" + i);
-//                    $session->saveChanges();
-//                } finally {
-//                    $session->close();
-//                }
-//            }
-//
-//            DatabaseStatistics stats = $store->maintenance()->send(new GetStatisticsOperation());
-//            String dbId = stats.getDatabaseId();
-//
-//            String cv = "A:23-" + dbId;
-//            String cv2 = "A:3-" + dbId;
-//
-//            $session = $store->openSession();
-//            try {
-//                User revisions = $session->advanced()->revisions().get(User::class, cv);
-//                Lazy<User> revisionsLazily = $session->advanced()->revisions().lazily().get(User::class, cv);
-//                Lazy<User> revisionsLazily1 = $session->advanced()->revisions().lazily().get(User::class, cv2);
-//
-//                User revisionsLazilyValue = revisionsLazily.getValue();
-//
-//                assertThat(session.advanced().getNumberOfRequests())
-//                        .isEqualTo(2);
-//                assertThat(revisionsLazilyValue.getId())
-//                        .isEqualTo(revisions.getId());
-//                assertThat(revisionsLazilyValue.getName())
-//                        .isEqualTo(revisions.getName());
-//            } finally {
-//                $session->close();
-//            }
-//        } finally {
-//            $store->close();
-//        }
-//    }
+    public function testCanGetRevisionsByChangeVectorsLazily(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $id = "users/1";
+            $this->setupRevisions($store, false, 123);
+            $session = $store->openSession();
+            try {
+                $user = new User();
+                $user->setName("Omer");
+                $session->store($user, $id);
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            for ($i = 0; $i < 10; $i++) {
+                $session = $store->openSession();
+                try {
+                    $user = $session->load(Company::class, $id);
+                    $user->setName("Omer" . $i);
+                    $session->saveChanges();
+                } finally {
+                    $session->close();
+                }
+            }
+
+            $session = $store->openSession();
+            try {
+                $revisionsMetadata = $session->advanced()->revisions()->getMetadataFor($id);
+                $this->assertCount(11, $revisionsMetadata);
+
+                $changeVectors = array_map(function ($x) {
+                    return $x->getString(DocumentsMetadata::CHANGE_VECTOR);
+                }, $revisionsMetadata);
+
+                $changeVectors2 = array_map(function ($x) {
+                    return $x->getString(DocumentsMetadata::CHANGE_VECTOR);
+                }, $revisionsMetadata);
+
+                $revisionsLazy = $session->advanced()->revisions()->lazily()->get(User::class, $changeVectors);
+                $revisionsLazy2 = $session->advanced()->revisions()->lazily()->get(User::class, $changeVectors2);
+
+                $lazyResult = $revisionsLazy->getValue();
+                $revisions = $session->advanced()->revisions()->get(User::class, $changeVectors);
+
+                $this->assertEquals(3, $session->advanced()->getNumberOfRequests());
+                $this->assertEquals(array_keys($revisions), array_keys($lazyResult));
+
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCanGetForLazily(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $id = "users/1";
+            $id2 = "users/2";
+
+            $this->setupRevisions($store, false, 123);
+
+            $session = $store->openSession();
+            try {
+                $user1 = new User();
+                $user1->setName("Omer");
+                $session->store($user1, $id);
+
+                $user2 = new User();
+                $user2->setName("Rhinos");
+                $session->store($user2, $id2);
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            for ($i = 0; $i < 10; $i++) {
+                $session = $store->openSession();
+                try {
+                    $user = $session->load(Company::class, $id);
+                    $user->setName("Omer" . $i);
+                    $session->saveChanges();
+                } finally {
+                    $session->close();
+                }
+            }
+
+            $session = $store->openSession();
+            try {
+                $revision = $session->advanced()->revisions()->getFor(User::class, "users/1");
+                $revisionsLazily = $session->advanced()->revisions()->lazily()->getFor(User::class, "users/1");
+                $session->advanced()->revisions()->lazily()->getFor(User::class, "users/2");
+
+                $revisionsLazilyResult = $revisionsLazily->getValue();
+
+                $this->assertEquals(
+                    implode(',', array_map(function ($x) {
+                        return $x->getName();
+                    }, $revision)),
+                    implode(',', array_map(function ($x) {
+                        return $x->getName();
+                    }, $revisionsLazilyResult))
+                );
+
+                $this->assertEquals(
+                    implode(',', array_map(function ($x) {
+                        return $x->getId();
+                    }, $revision)),
+                    implode(',', array_map(function ($x) {
+                        return $x->getId();
+                    }, $revisionsLazilyResult))
+                );
+
+                $this->assertEquals(2, $session->advanced()->getNumberOfRequests());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCanGetRevisionsByIdAndTimeLazily(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $id = "users/1";
+            $id2 = "users/2";
+
+            $this->setupRevisions($store, false, 123);
+
+            $session = $store->openSession();
+            try {
+                $user1 = new User();
+                $user1->setName("Omer");
+                $session->store($user1, $id);
+
+                $user2 = new User();
+                $user2->setName("Rhinos");
+                $session->store($user2, $id2);
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            for ($i = 0; $i < 10; $i++) {
+                $session = $store->openSession();
+                try {
+                    $user = $session->load(Company::class, $id);
+                    $user->setName("Omer" . $i);
+                    $session->saveChanges();
+                } finally {
+                    $session->close();
+                }
+            }
+
+            $session = $store->openSession();
+            try {
+                $revision = $session->advanced()->revisions()->getBeforeDate(User::class, "users/1", new DateTime());
+
+                $revisionLazily = $session->advanced()->revisions()->lazily()->getBeforeDate(User::class, "users/1", new DateTime());
+                $session->advanced()->revisions()->lazily()->getBeforeDate(User::class, "users/2", new DateTime());
+
+                $revisionLazilyResult = $revisionLazily->getValue();
+
+                $this->assertEquals($revisionLazilyResult->getId(), $revision->getId());
+                $this->assertEquals($revisionLazilyResult->getName(), $revisionLazilyResult->getName());
+                $this->assertEquals(2, $session->advanced()->getNumberOfRequests());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCanGetMetadataForLazily(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $id = "users/1";
+            $id2 = "users/2";
+
+            $this->setupRevisions($store, false, 123);
+
+            $session = $store->openSession();
+            try {
+                $user1 = new User();
+                $user1->setName("Omer");
+                $session->store($user1, $id);
+
+                $user2 = new User();
+                $user2->setName("Rhinos");
+                $session->store($user2, $id2);
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            for ($i = 0; $i < 10; $i++) {
+                $session = $store->openSession();
+                try {
+                    $user = $session->load(Company::class, $id);
+                    $user->setName("Omer" . $i);
+                    $session->saveChanges();
+                } finally {
+                    $session->close();
+                }
+            }
+
+            $session = $store->openSession();
+            try {
+                $revisionsMetadata = $session->advanced()->revisions()->getMetadataFor($id);
+                $revisionsMetaDataLazily = $session->advanced()->revisions()->lazily()->getMetadataFor($id);
+                $revisionsMetaDataLazily2 = $session->advanced()->revisions()->lazily()->getMetadataFor($id2);
+                $revisionsMetaDataLazilyResult = $revisionsMetaDataLazily->getValue();
+
+
+                $this->assertEquals(
+                    implode(',', array_map(function ($x) use ($id) {
+                        return $x->getString($id);
+                    }, $revisionsMetadata)),
+                    implode(',', array_map(function ($x) use ($id) {
+                        return $x->getString($id);
+                    }, $revisionsMetaDataLazilyResult))
+                );
+
+                $this->assertEquals(2, $session->advanced()->getNumberOfRequests());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCanGetRevisionsByChangeVectorLazily(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+
+            $id = "users/1";
+            $id2 = "users/2";
+
+            $this->setupRevisions($store, false, 123);
+
+            $session = $store->openSession();
+            try {
+                $user1 = new User();
+                $user1->setName("Omer");
+                $session->store($user1, $id);
+
+                $user2 = new User();
+                $user2->setName("Rhinos");
+                $session->store($user2, $id2);
+
+                $session->saveChanges();
+            } finally {
+                $session->close();
+            }
+
+            for ($i = 0; $i < 10; $i++) {
+                $session = $store->openSession();
+                try {
+                    $user = $session->load(Company::class, $id);
+                    $user->setName("Omer" . $i);
+                    $session->saveChanges();
+                } finally {
+                    $session->close();
+                }
+            }
+
+            $stats = $store->maintenance()->send(new GetStatisticsOperation());
+            $dbId = $stats->getDatabaseId();
+
+            $cv = "A:23-" . $dbId;
+            $cv2 = "A:3-" . $dbId;
+
+            $session = $store->openSession();
+            try {
+                $revisions = $session->advanced()->revisions()->get(User::class, $cv);
+                $revisionsLazily = $session->advanced()->revisions()->lazily()->get(User::class, $cv);
+                $revisionsLazily1 = $session->advanced()->revisions()->lazily()->get(User::class, $cv2);
+
+                $revisionsLazilyValue = $revisionsLazily->getValue();
+
+                $this->assertEquals(2, $session->advanced()->getNumberOfRequests());
+                $this->assertEquals($revisions->getId(), $revisionsLazilyValue->getId());
+                $this->assertEquals($revisions->getName(), $revisionsLazilyValue->getName());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
 
     public function testCanGetAllRevisionsForDocument_UsingStoreOperation(): void
     {

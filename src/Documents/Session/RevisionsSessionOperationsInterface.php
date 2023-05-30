@@ -28,20 +28,32 @@ interface RevisionsSessionOperationsInterface
      */
     public function getMetadataFor(?string $id, int $start = 0, int $pageSize = 25): array;
 
+    /**
+     * Returns a document revision(s) by change vector(s).
+     *
+     * @param string|null $className
+     * @param string|array|StringArray|null $changeVectors Change vector or change vectors
+     *
+     * @return mixed
+     */
     public function get(?string $className, null|string|array|StringArray $changeVectors): mixed;
 
     /**
      * Returns a document revision by change vector.
+     *
      * @param string|null $classname
      * @param string|null $changeVector
+     *
      * @return object|null with given change vector
      */
     function getSingle(?string $classname, ?string $changeVector): ?object;
 
     /**
      * Returns document revisions by change vectors.
+     *
      * @param string|null $className
      * @param StringArray|array $changeVectors
+     *
      * @return array matching given change vectors
      */
     function getMultiple(?string $className, StringArray|array $changeVectors): array;

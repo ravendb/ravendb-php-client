@@ -28,7 +28,7 @@ abstract class RavenCommand
     protected ?string $resultClass = null;
 
     /** @var ResultInterface|mixed|null  */
-    protected $result = null;
+    protected mixed $result = null;
 
     protected int $statusCode = 0;
     protected ?RavenCommandResponseType $responseType = null;

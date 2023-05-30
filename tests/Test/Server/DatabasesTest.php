@@ -2,60 +2,71 @@
 
 namespace tests\RavenDB\Test\Server;
 
+use Exception;
 use RavenDB\Documents\Indexes\AutoIndexDefinition;
 use RavenDB\Documents\Indexes\AutoIndexFieldOptions;
+use RavenDB\Documents\Operations\ToggleDatabasesStateOperation;
+use RavenDB\ServerWide\DatabaseRecord;
 use RavenDB\ServerWide\DatabaseRecordWithEtag;
 use RavenDB\ServerWide\GetDatabaseRecordOperation;
+use RavenDB\ServerWide\Operations\AddDatabaseNodeOperation;
+use RavenDB\ServerWide\Operations\CreateDatabaseOperation;
 use tests\RavenDB\Infrastructure\Graph\Genre;
 use tests\RavenDB\RemoteTestBase;
+use Throwable;
 
 class DatabasesTest extends RemoteTestBase
 {
-//    public void canDisableAndEnableDatabase() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            DatabaseRecord dbRecord = new DatabaseRecord("enableDisable");
-//            CreateDatabaseOperation databaseOperation = new CreateDatabaseOperation(dbRecord);
-//            store.maintenance().server().send(databaseOperation);
-//
-//            DisableDatabaseToggleResult toggleResult = store.maintenance().server().send(
-//                    new ToggleDatabasesStateOperation("enableDisable", true));
-//
-//            assertThat(toggleResult)
-//                    .isNotNull();
-//            assertThat(toggleResult.getName())
-//                    .isNotNull();
-//
-//            DatabaseRecordWithEtag disabledDatabaseRecord = store.maintenance().server().send(new GetDatabaseRecordOperation("enableDisable"));
-//
-//            assertThat(disabledDatabaseRecord.isDisabled())
-//                    .isTrue();
-//
-//            // now enable database
-//
-//            toggleResult = store.maintenance().server().send(
-//                    new ToggleDatabasesStateOperation("enableDisable", false));
-//            assertThat(toggleResult)
-//                    .isNotNull();
-//            assertThat(toggleResult.getName())
-//                    .isNotNull();
-//
-//            DatabaseRecordWithEtag enabledDatabaseRecord = store.maintenance().server().send(new GetDatabaseRecordOperation("enableDisable"));
-//
-//            assertThat(enabledDatabaseRecord.isDisabled())
-//                    .isFalse();
-//        }
-//    }
-//
-//    @Test
-//    public void canAddNode() throws Exception {
-//        try (IDocumentStore store = getDocumentStore()) {
-//            assertThatThrownBy(() -> {
-//                // we assert this by throwing - we are running single node cluster
-//                DatabasePutResult send = store.maintenance().server().send(new AddDatabaseNodeOperation(store.getDatabase()));
-//            }).hasMessageContaining("Can't add node");
-//        }
-//    }
-//
+    public function testCanDisableAndEnableDatabase(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $dbRecord = new DatabaseRecord("enableDisable");
+            $databaseOperation = new CreateDatabaseOperation($dbRecord);
+            $store->maintenance()->server()->send($databaseOperation);
+
+            $toggleResult = $store->maintenance()->server()->send(
+                    new ToggleDatabasesStateOperation("enableDisable", true));
+
+            $this->assertNotNull($toggleResult);
+
+            $this->assertNotNull($toggleResult->getName());
+
+            $disabledDatabaseRecord = $store->maintenance()->server()->send(new GetDatabaseRecordOperation("enableDisable"));
+
+            $this->assertTrue($disabledDatabaseRecord->isDisabled());
+
+            // now enable database
+
+            $toggleResult = $store->maintenance()->server()->send(
+                    new ToggleDatabasesStateOperation("enableDisable", false));
+            $this->assertNotNull($toggleResult);
+
+            $this->assertNotNull($toggleResult->getName());
+
+            $enabledDatabaseRecord = $store->maintenance()->server()->send(new GetDatabaseRecordOperation("enableDisable"));
+
+            $this->assertFalse($enabledDatabaseRecord->isDisabled());
+        } finally {
+            $store->close();
+        }
+    }
+
+    public function testCanAddNode(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            try {
+                $send = $store->maintenance()->server()->send(new AddDatabaseNodeOperation($store->getDatabase()));
+
+                throw new Exception('It should throw exception before reaching this code');
+            } catch (Throwable $exception) {
+                $this->assertStringContainsString("Can't add node", $exception->getMessage());
+            }
+        } finally {
+            $store->close();
+        }
+    }
 
     public function testCanGetInfoAutoIndexInfo(): void
     {
