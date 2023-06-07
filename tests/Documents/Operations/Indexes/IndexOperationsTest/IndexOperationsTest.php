@@ -282,7 +282,7 @@ class IndexOperationsTest extends RemoteTestBase
             }, 1);
 
             $this->waitForValue(function () use ($store, $indexDef) {
-                return count($store->maintenance()->send(new GetIndexErrorsOperation($indexDef->getName()))[0]);
+                return count($store->maintenance()->send(new GetIndexErrorsOperation([$indexDef->getName()]))[0]->getErrors());
             }, 1);
 
             /** @var IndexErrorsArray $indexErrors */
