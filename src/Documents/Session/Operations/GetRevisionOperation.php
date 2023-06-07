@@ -8,6 +8,7 @@ use RavenDB\Documents\Commands\GetRevisionsCommand;
 use RavenDB\Documents\Session\DocumentInfo;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Exceptions\IllegalArgumentException;
+use RavenDB\Json\JsonArrayResult;
 use RavenDB\Json\MetadataAsDictionary;
 use RavenDB\Type\ExtendedArrayObject;
 use RavenDB\Type\StringArray;
@@ -16,7 +17,7 @@ class GetRevisionOperation
 {
     private ?InMemoryDocumentSessionOperations $session = null;
 
-    private ?array $result = null;
+    private ?JsonArrayResult $result = null;
     private ?GetRevisionsCommand $command = null;
 
     protected function __construct(?InMemoryDocumentSessionOperations $session)
@@ -67,8 +68,14 @@ class GetRevisionOperation
         return $this->command;
     }
 
-    public function setResult(?array $result)
+    public function setResult(null|array|JsonArrayResult $result)
     {
+        if (is_array($result)) {
+            $this->result = new JsonArrayResult();
+            $this->result->setResults($result['Results']);
+            return;
+        }
+
         $this->result = $result;
     }
 
@@ -83,15 +90,11 @@ class GetRevisionOperation
             return null;
         }
 
-        if (!array_key_exists('Results', $this->result)) {
+        if (count($this->result->getResults()) == 0) {
             return null;
         }
 
-        if (count($this->result['Results']) == 0) {
-            return null;
-        }
-
-        return $this->getRevision($className, $this->result['Results'][0]);
+        return $this->getRevision($className, $this->result->getResults()[0]);
     }
 
     public function getRevision(?string $className, ?array $document = null): ?object
@@ -132,10 +135,10 @@ class GetRevisionOperation
 
     public function getRevisionsFor(?string $className): array
     {
-        $resultsCount = count($this->result['Results']);
+        $resultsCount = count($this->result->getResults());
         $results = [];
         for ($i = 0; $i < $resultsCount; $i++) {
-            $document = $this->result['Results'][$i];
+            $document = $this->result->getResults()[$i];
             $results[] = $this->getRevision($className, $document);
         }
 
@@ -144,10 +147,10 @@ class GetRevisionOperation
 
     public function getRevisionsMetadataFor(): array
     {
-        $resultsCount = count($this->result['Results']);
+        $resultsCount = count($this->result->getResults());
         $results = [];
         for ($i = 0; $i < $resultsCount; $i++) {
-            $document = $this->result['Results'][$i];
+            $document = $this->result->getResults()[$i];
 
             $metadata = null;
             if (array_key_exists(DocumentsMetadata::KEY, $document)) {
@@ -171,7 +174,7 @@ class GetRevisionOperation
                 $i++;
                 continue;
             }
-            $jsonNode = $this->result['Results'][$i];
+            $jsonNode = $this->result->getResults()[$i];
             $objectNode = empty($jsonNode) ? null : $jsonNode;
             $results[$changeVector] = $this->getRevision($className, $objectNode);
             $i++;
