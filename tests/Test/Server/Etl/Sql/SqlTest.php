@@ -15,11 +15,19 @@ use RavenDB\Documents\Operations\Etl\UpdateEtlOperation;
 use RavenDB\Documents\Operations\GetOngoingTaskInfoOperation;
 use RavenDB\Documents\Operations\OngoingTasks\OngoingTaskState;
 use RavenDB\Documents\Operations\OngoingTasks\OngoingTaskType;
+use tests\RavenDB\Infrastructure\DisableOnPullRequestCondition;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\ReplicationTestBase;
 
 class SqlTest extends ReplicationTestBase
 {
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        DisableOnPullRequestCondition::evaluateExecutionCondition($this);
+    }
+
     public function testCanAddEtl(): void
     {
         $src = $this->getDocumentStore();
