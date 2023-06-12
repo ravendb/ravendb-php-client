@@ -11,6 +11,7 @@ use RavenDB\ServerWide\DatabaseRecordWithEtag;
 use RavenDB\ServerWide\GetDatabaseRecordOperation;
 use RavenDB\ServerWide\Operations\AddDatabaseNodeOperation;
 use RavenDB\ServerWide\Operations\CreateDatabaseOperation;
+use RavenDB\ServerWide\Operations\DeleteDatabasesOperation;
 use tests\RavenDB\Infrastructure\Graph\Genre;
 use tests\RavenDB\RemoteTestBase;
 use Throwable;
@@ -48,6 +49,9 @@ class DatabasesTest extends RemoteTestBase
 
             $this->assertFalse($enabledDatabaseRecord->isDisabled());
         } finally {
+            $deleteDatabase = new DeleteDatabasesOperation("enableDisable");
+            $store->maintenance()->server()->send($deleteDatabase);
+
             $store->close();
         }
     }

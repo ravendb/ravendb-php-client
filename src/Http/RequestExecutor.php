@@ -13,6 +13,7 @@ use RavenDB\Constants\HttpStatusCode;
 use RavenDB\Exceptions\ExecutionException;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\MalformedURLException;
+use RavenDB\Exceptions\TimeoutException;
 use RavenDB\Extensions\HttpExtensions;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Session\BeforeRequestEventArgs;
@@ -38,9 +39,11 @@ use RavenDB\Type\UrlArray;
 use RavenDB\Utils\AtomicInteger;
 use RavenDB\Utils\DateUtils;
 use RavenDB\Utils\StringUtils;
+use RavenDB\Utils\TimeUtils;
 use RavenDB\Utils\UrlUtils;
 use RavenDB\Documents\Operations\Configuration\GetClientConfigurationResult;
 use RavenDB\Documents\Operations\Configuration\GetClientConfigurationCommand;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Throwable;
 
 // !status: IN PROGRESS
@@ -1151,12 +1154,7 @@ class RequestExecutor implements CleanCloseable
 
             $timeout = $command->getTimeout() ?? $this->defaultTimeout;
 
-            if ($timeout != null) {
-                // @todo implement timeout strategy call
-                // this call is just here to execute something for now, when implementing timout strategy we should remove it
-                return $this->send($chosenNode, $command, $sessionInfo, $request);
-
-
+            if ($timeout != null && $timeout->toMillis() > 0) {
 //                AggressiveCacheOptions callingTheadAggressiveCaching = aggressiveCaching.get();
 //
 //                CompletableFuture<CloseableHttpResponse> sendTask = CompletableFuture.supplyAsync(() -> {
@@ -1172,28 +1170,38 @@ class RequestExecutor implements CleanCloseable
 //                    }
 //                }, _executorService);
 //
-//                try {
-//                    return sendTask.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+                try {
+//                    return sendTask . get(timeout . toMillis(), TimeUnit . MILLISECONDS);
+                    $options = $request->getOptions();
+                    if (!array_key_exists('timeout', $options) && $timeout->getSeconds()) {
+                        $options['timeout'] = $timeout->getSeconds();
+                        $request->setOptions($options);
+                    }
+                    return $this->send($chosenNode, $command, $sessionInfo, $request);
 //                } catch (InterruptedException e) {
 //                    throw ExceptionsUtils.unwrapException(e);
+//                }
+                } catch (Throwable $e) {
 //                } catch (TimeoutException e) {
 //                    request.abort();
-//
-//                    net.ravendb.client.exceptions.TimeoutException timeoutException = new net.ravendb.client.exceptions.TimeoutException("The request for " + request.getURI() + " failed with timeout after " + TimeUtils.durationToTimeSpan(timeout), e);
-//                    if (!shouldRetry) {
-//                        if (command.getFailedNodes() == null) {
-//                            command.setFailedNodes(new HashMap<>());
-//                        }
-//
-//                        command.getFailedNodes().put(chosenNode, timeoutException);
-//                        throw timeoutException;
-//                    }
-//
-//                    if (!handleServerDown(url, chosenNode, nodeIndex, command, request, null, timeoutException, sessionInfo, shouldRetry)) {
-//                        throwFailedToContactAllNodes(command, request);
-//                    }
-//
-//                    return null;
+
+                    $timeoutException = new TimeoutException("The request for " . $request->getUrl() . " failed with timeout after " . TimeUtils::durationToTimeSpan($timeout), $e);
+                    if (!$shouldRetry) {
+                        $failedNodes = $command->getFailedNodes();
+                        if ($failedNodes == null) {
+                            $failedNodes = new DSMap();
+                        }
+                        $failedNodes->put($chosenNode,  $timeoutException);
+                        $command->setFailedNodes($failedNodes);
+
+                        throw $timeoutException;
+                    }
+
+                    if (!$this->handleServerDown($request->getUrl(), $chosenNode, $nodeIndex, $command, $request, null, $timeoutException, $sessionInfo, $shouldRetry)) {
+                        $this->throwFailedToContactAllNodes($command, $request);
+                    }
+
+                    return null;
 //                } catch (ExecutionException e) {
 //                    Throwable rootCause = ExceptionUtils.getRootCause(e);
 //                    if (rootCause instanceof IOException) {
@@ -1201,7 +1209,7 @@ class RequestExecutor implements CleanCloseable
 //                    }
 //
 //                    throw ExceptionsUtils.unwrapException(e);
-//                }
+                }
             } else {
                 return $this->send($chosenNode, $command, $sessionInfo, $request);
             }
@@ -1758,7 +1766,11 @@ class RequestExecutor implements CleanCloseable
             $failedNodes = new DSMap();
         }
 
-        $failedNodes->put($chosenNode, self::readExceptionFromServer($request, $response, $e));
+        $exception = self::readExceptionFromServer($request, $response, $e);
+
+        // @todo: check if exception is instance of RavenTimeoutException here (check with java code)
+
+        $failedNodes->put($chosenNode, $exception);
         $command->setFailedNodes($failedNodes);
 
         if ($nodeIndex === null) {
@@ -2110,10 +2122,18 @@ class RequestExecutor implements CleanCloseable
         $exceptionScheme = new ExceptionSchema();
         $exceptionScheme->setUrl($request->getUrl());
         $exceptionScheme->setMessage($e->getMessage());
-        $exceptionScheme->setError("An exception occurred while contacting " . $request->getUrl() . "." . PHP_EOL . $e->getTraceAsString());
+//        $exceptionScheme->setError("An exception occurred while contacting " . $request->getUrl() . "." . PHP_EOL . $e->getTraceAsString());
+        $exceptionScheme->setError("An exception occurred while contacting " . $request->getUrl() . "." . PHP_EOL . self::exceptionToString($e));
         $exceptionScheme->setType(get_class($e));
 
         return ExceptionDispatcher::get($exceptionScheme, HttpStatusCode::SERVICE_UNAVAILABLE, $e);
+    }
+
+    private static function exceptionToString(Exception $e): string
+    {
+        $s = get_class($e);
+        $message = $e->getMessage();
+        return !empty($message) ? $s . ': ' . $message : $s;
     }
 
 //    protected CompletableFuture<Void> _firstTopologyUpdate;

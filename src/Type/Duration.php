@@ -63,16 +63,22 @@ class Duration
 
     public function format(): string
     {
-        $hours = intval(floor($this->intervalInMilliSeconds / self::MILLISECONDS_IN_HOUR));
+        $days = intval(floor($this->intervalInMilliSeconds / self::MILLISECONDS_IN_DAY));
+        $hours = intval(floor(($this->intervalInMilliSeconds % self::MILLISECONDS_IN_DAY) / self::MILLISECONDS_IN_HOUR));
         $minutes = intval(floor(($this->intervalInMilliSeconds % self::MILLISECONDS_IN_HOUR) / self::MILLISECONDS_IN_MINUTE));
         $seconds = intval(floor(($this->intervalInMilliSeconds % self::MILLISECONDS_IN_MINUTE) / self::MILLISECONDS_IN_SECOND));
 
-        $duration = sprintf("%02d:%02d:%02d", $hours,$minutes,$seconds);
+        $duration = '';
+        if ($days > 0) {
+            $duration = $days . '.';
+        }
+
+        $duration .= sprintf("%02d:%02d:%02d", $hours,$minutes,$seconds);
 
         $f = intval(floor($this->intervalInMilliSeconds % self::MILLISECONDS_IN_SECOND));
 
         if ($f) {
-            $duration .= '.' . $f;
+            $duration .= '.' . sprintf("%03d", $f) . '0000';
         }
 
         return $duration;
@@ -81,6 +87,35 @@ class Duration
     public function toString(): string
     {
         return $this->format();
+    }
+
+    public static function fromString(string $duration): Duration
+    {
+        // Duration format is: days.hours:minutes:seconds.millis0000
+        // and days and millis are optional
+
+        $data = explode(':', $duration);
+
+        $millis = 0;
+        if (strpos($data[0], '.')) { // we have days value before hours
+            $dh = explode('.', $data[0]);
+            $millis += intval($dh[0]) * self::MILLISECONDS_IN_DAY;
+            $millis += intval($dh[1]) * self::MILLISECONDS_IN_HOUR;
+        } else {
+            $millis += intval($data[0]) * self::MILLISECONDS_IN_HOUR;
+        }
+
+        $millis += intval($data[1]) * self::MILLISECONDS_IN_MINUTE;
+
+        if (strpos($data[2], '.')) {
+            $sm = explode('.', $data[2]);
+            $millis += intval($sm[0]) * self::MILLISECONDS_IN_SECOND;
+            $millis += intval(($sm[1] / 10000) * 1000); // cut the last four digits (zeros)
+        } else {
+            $millis += intval($data[2]) * self::MILLISECONDS_IN_SECOND;
+        }
+
+        return Duration::ofMillis($millis);
     }
 
     public function hashCode(): int

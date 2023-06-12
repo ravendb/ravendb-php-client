@@ -6,57 +6,60 @@ use tests\RavenDB\RemoteTestBase;
 
 class RavenDB_9889Test extends RemoteTestBase
 {
-//    public function testCanUseToDocumentConversionEvents(): void
-//    {
-//        $store = $this->getDocumentStore();
-//        try {
-//            $store->addBeforeConversionToDocumentListener(function ($sender, $event) {
-//                if ($event->getEntity() instanceof Item) {
-//                    /** @var Item $item */
-//                    $item = $event->getEntity();
-//                    $item->setBefore(true);
-//                }
-//            });
-//
-//            $store->addAfterConversionToDocumentListener(function($sender, $event) {
-//                if ($event->getEntity() instanceof Item) {
-//                    /** @var Item $item */
-//                    $item = $event->getEntity();
-//                    $event->getDocument()["after"] = true;
-//                    $item->setAfter(true);
-//                }
-//            });
-//
-//            $session = $store->openSession();
-//            try {
-//                $session->store(new Item(), "items/1");
-//                $session->saveChanges();
-//
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//
-//                $session->saveChanges();
-//
-//                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
-//            } finally {
-//                $session->close();
-//            }
-//
-//            $session = $store->openSession();
-//            try {
-//                /** @var Item $item */
-//                $item = $session->load(Item::class, "items/1");
-//
-//                $this->assertNotNull($item);
-//
-//                $this->assertTrue($item->isBefore());
-//                $this->assertTrue($item->isAfter());
-//            } finally {
-//                $session->close();
-//            }
-//        } finally {
-//            $store->close();
-//        }
-//    }
+    public function testCanUseToDocumentConversionEvents(): void
+    {
+        $store = $this->getDocumentStore();
+        try {
+            $store->addBeforeConversionToDocumentListener(function ($sender, $event) {
+                if ($event->getEntity() instanceof Item) {
+                    /** @var Item $item */
+                    $item = $event->getEntity();
+                    $item->setBefore(true);
+                }
+            });
+
+            $store->addAfterConversionToDocumentListener(function($sender, $event) {
+                if ($event->getEntity() instanceof Item) {
+                    /** @var Item $item */
+                    $item = $event->getEntity();
+                    $document = $event->getDocument();
+                    $document["after"] = true;
+                    $event->setDocument($document);
+
+                    $item->setAfter(true);
+                }
+            });
+
+            $session = $store->openSession();
+            try {
+                $session->store(new Item(), "items/1");
+                $session->saveChanges();
+
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+
+                $session->saveChanges();
+
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+            } finally {
+                $session->close();
+            }
+
+            $session = $store->openSession();
+            try {
+                /** @var Item $item */
+                $item = $session->load(Item::class, "items/1");
+
+                $this->assertNotNull($item);
+
+                $this->assertTrue($item->isBefore());
+                $this->assertTrue($item->isAfter());
+            } finally {
+                $session->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
 
     public function testCanUseToEntityConversionEvents(): void
     {

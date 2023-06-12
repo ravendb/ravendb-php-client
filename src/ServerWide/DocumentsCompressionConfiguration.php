@@ -3,12 +3,17 @@
 namespace RavenDB\ServerWide;
 
 use RavenDB\Type\StringArray;
+use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status = DONE
 class DocumentsCompressionConfiguration
 {
+    #[SerializedName("Collections")]
     private ?StringArray $collections = null;
+
+    #[SerializedName("CompressAllCollections")]
     private bool $compressAllCollections = false;
+
+    #[SerializedName("CompressRevisions")]
     private bool $compressRevisions = false;
 
     public function __construct(bool $compressRevisions = false, bool $compressAllCollections = false, ?StringArray $collections = null)

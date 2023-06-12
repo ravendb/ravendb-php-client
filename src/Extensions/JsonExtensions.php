@@ -128,7 +128,7 @@ class JsonExtensions
             $data["SkipDuplicateChecking"] = $query->isSkipDuplicateChecking();
         }
 
-        $data["QueryParameters"] = null;
+        $data["QueryParameters"] = [];
         if ($query->getQueryParameters() != null) {
             if ($query->getQueryParameters()->isNotEmpty()) {
                 $data["QueryParameters"] = EntityToJson::convertEntityToJsonStatic($query->getQueryParameters(), $conventions, null);

@@ -13,6 +13,8 @@ use RavenDB\Documents\Session\BeforeConversionToEntityEventArgs;
 use RavenDB\Documents\Session\DocumentSessionInterface;
 use RavenDB\Documents\Session\SessionOptions;
 use RavenDB\Documents\TimeSeries\TimeSeriesOperations;
+use RavenDB\Primitives\CleanCloseable;
+use RavenDB\Type\Duration;
 use RavenDB\Type\UrlArray;
 use RavenDB\Http\RequestExecutor;
 use RavenDB\Documents\Conventions\DocumentConventions;
@@ -93,11 +95,11 @@ interface DocumentStoreInterface
     /**
      * Opens the session for a particular database
      *
-     * @param string|SessionOptions $dbNameOrOptions Database to use
+     * @param null|string|SessionOptions $dbNameOrOptions Database to use
      *
      * @return DocumentSessionInterface Document session
      */
-    public function openSession($dbNameOrOptions = ''): DocumentSessionInterface;
+    public function openSession(null|string|SessionOptions $dbNameOrOptions = null): DocumentSessionInterface;
 
     /**
      * Executes the index creation
@@ -143,10 +145,8 @@ interface DocumentStoreInterface
     public function operations(): OperationExecutor;
 
 //    DatabaseSmuggler smuggler();
-//
-//    CleanCloseable setRequestTimeout(Duration timeout);
-//
-//    CleanCloseable setRequestTimeout(Duration timeout, String database);
+
+    public function setRequestTimeout(?Duration $timeout, ?string $database = null): CleanCloseable;
 
     public function close(): void;
 }

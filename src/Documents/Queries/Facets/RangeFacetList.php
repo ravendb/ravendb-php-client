@@ -8,6 +8,6 @@ class RangeFacetList extends TypedList
 {
     public function __construct()
     {
-        parent::__construct(RangeFacetList::class);
+        parent::__construct(RangeFacet::class);
     }
 }
