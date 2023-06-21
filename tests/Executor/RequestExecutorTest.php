@@ -8,9 +8,12 @@ use RavenDB\Documents\Commands\GetNextOperationIdCommand;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Exceptions\Database\DatabaseDoesNotExistException;
 use RavenDB\Http\RequestExecutor;
+use RavenDB\Http\ServerNode;
+use RavenDB\Http\UpdateTopologyParameters;
 use RavenDB\ServerWide\Operations\GetDatabaseNamesOperation;
 use RuntimeException;
 use tests\RavenDB\RemoteTestBase;
+use Throwable;
 
 class RequestExecutorTest extends RemoteTestBase
 {
@@ -78,28 +81,36 @@ class RequestExecutorTest extends RemoteTestBase
 //            }
 //        }
 //    }
-//
-//    @Test
-//    public function throwsWhenUpdatingTopologyOfNotExistingDb(): void {
-//        DocumentConventions conventions = new DocumentConventions();
-//
-//        try (DocumentStore store = getDocumentStore()) {
-//            try (RequestExecutor executor = RequestExecutor.create(store.getUrls(), "no_such_db", null, null,null, store.getExecutorService(), conventions)) {
-//
-//                ServerNode serverNode = new ServerNode();
-//                serverNode.setUrl(store.getUrls()[0]);
-//                serverNode.setDatabase("no_such");
-//
-//                UpdateTopologyParameters updateTopologyParameters = new UpdateTopologyParameters(serverNode);
-//                updateTopologyParameters.setTimeoutInMs(5000);
-//
-//                assertThatThrownBy(() ->
-//                        ExceptionsUtils.accept(() ->
-//                                executor.updateTopologyAsync(updateTopologyParameters).get()))
-//                        .isExactlyInstanceOf(DatabaseDoesNotExistException.class);
-//            }
-//        }
-//    }
+
+    public function testThrowsWhenUpdatingTopologyOfNotExistingDb(): void
+    {
+        $conventions = new DocumentConventions();
+
+        $store = $this->getDocumentStore();
+        try {
+            $executor = RequestExecutor::create($store->getUrls(), "no_such_db", null, $conventions);
+            try {
+                $serverNode = new ServerNode();
+                $serverNode->setUrl($store->getUrls()[0]);
+                $serverNode->setDatabase("no_such");
+
+                $updateTopologyParameters = new UpdateTopologyParameters($serverNode);
+                $updateTopologyParameters->setTimeoutInMs(5000);
+
+                try {
+                    $executor->updateTopologyAsync($updateTopologyParameters);
+
+                    throw new Exception('It should throw exception before reaching this code');
+                } catch (Throwable $exception) {
+                    $this->assertInstanceOf(DatabaseDoesNotExistException::class, $exception);
+                }
+            } finally {
+                $executor->close();
+            }
+        } finally {
+            $store->close();
+        }
+    }
 
     public function testThrowsWhenDatabaseDoesNotExist(): void
     {

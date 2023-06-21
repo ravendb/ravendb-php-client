@@ -16,10 +16,13 @@ use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Http\RequestExecutor;
 use RavenDB\Http\RequestExecutorMap;
+use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Primitives\ClosureArray;
 use RavenDB\Primitives\EventArgs;
 use RavenDB\Primitives\EventHelper;
 use RavenDB\Primitives\ExceptionsUtils;
+use RavenDB\Primitives\SimpleClosable;
+use RavenDB\Type\Duration;
 use RavenDB\Type\Url;
 use RavenDB\Type\UrlArray;
 
@@ -136,13 +139,13 @@ class DocumentStore extends DocumentStoreBase
     /**
      * Opens the session for a particular database
      *
-     * @param string|SessionOptions $dbNameOrOptions Database to use
+     * @param null|string|SessionOptions $dbNameOrOptions Database to use
      *
      * @return DocumentSessionInterface Document session
      */
-    public function openSession($dbNameOrOptions = ''): DocumentSessionInterface
+    public function openSession(null|string|SessionOptions $dbNameOrOptions = null): DocumentSessionInterface
     {
-        if (is_string($dbNameOrOptions)) {
+        if (is_string($dbNameOrOptions) || is_null($dbNameOrOptions)) {
             return $this->openSessionWithDatabase($dbNameOrOptions);
         }
 
@@ -157,12 +160,13 @@ class DocumentStore extends DocumentStoreBase
      * @throws IllegalStateException
      * @throws InvalidArgumentException
      */
-    private function openSessionWithDatabase(string $database = ''): DocumentSessionInterface
+    private function openSessionWithDatabase(?string $database = null): DocumentSessionInterface
     {
         $sessionOptions = new SessionOptions();
         $sessionOptions->setDisableAtomicDocumentWritesInClusterWideTransaction(
             $this->getConventions()->getDisableAtomicDocumentWritesInClusterWideTransaction()
         );
+
         if ($database) {
             $sessionOptions->setDatabase($database);
         }
@@ -226,23 +230,22 @@ class DocumentStore extends DocumentStoreBase
         return $executor;
     }
 
+    public function setRequestTimeout(?Duration $timeout, ?string $database = null): CleanCloseable
+    {
+        $this->assertInitialized();
 
-//    public CleanCloseable setRequestTimeout(Duration timeout) {
-//        return setRequestTimeout(timeout, null);
-//    }
-//
-//    @Override
-//    public CleanCloseable setRequestTimeout(Duration timeout, String database) {
-//        assertInitialized();
-//
-//        database = this.getEffectiveDatabase(database);
-//
-//        RequestExecutor requestExecutor = getRequestExecutor(database);
-//        Duration oldTimeout = requestExecutor.getDefaultTimeout();
-//        requestExecutor.setDefaultTimeout(timeout);
-//
-//        return () -> requestExecutor.setDefaultTimeout(oldTimeout);
-//    }
+        $database = $this->getEffectiveDatabase($database);
+
+        $requestExecutor = $this->getRequestExecutor($database);
+        $oldTimeout = $requestExecutor->getDefaultTimeout();
+        $requestExecutor->setDefaultTimeout($timeout);
+
+        $closable = new SimpleClosable();
+        $closable->setCloseMethod(function() use ($requestExecutor, $oldTimeout) : void {
+            $requestExecutor->setDefaultTimeout($oldTimeout);
+        });
+        return $closable;
+    }
 
 
     /**

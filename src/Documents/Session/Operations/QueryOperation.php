@@ -151,12 +151,12 @@ class QueryOperation
 
         $resultItems = [];
 
-        try {
+//        try {
             foreach ($queryResult->getResults() as $document) {
 
                 $metadata = array_key_exists(DocumentsMetadata::KEY, $document) ? $document[DocumentsMetadata::KEY] : null;
                 try {
-                    $idNode = array_key_exists(DocumentsMetadata::ID, $metadata) ? $metadata[DocumentsMetadata::ID] : NULL;
+                    $idNode = array_key_exists(DocumentsMetadata::ID, $metadata) ? $metadata[DocumentsMetadata::ID] : null;
 
                     $id = null;
                     if ($idNode != null && is_string($idNode)) {
@@ -179,9 +179,9 @@ class QueryOperation
                     throw new IllegalArgumentException("Raw query with aggregation by facet should be called by executeAggregation method." . $e->getMessage());
                 }
             }
-        } catch (Throwable $e) {
-            throw new RuntimeException("Unable to read json: " . $e->getMessage(), 0, $e);
-        }
+//        } catch (Throwable $e) { // we don't need this because in PHP implementation json is already deserialized when arrives to this method
+//            throw new RuntimeException("Unable to read json: " . $e->getMessage(), 0, $e);
+//        }
 
         if (!$this->noTracking) {
             $this->session->registerMissingIncludes($queryResult->getResults(), $queryResult->getIncludes(), $queryResult->getIncludedPaths());

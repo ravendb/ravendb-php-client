@@ -35,6 +35,11 @@ class AfterConversionToDocumentEventArgs extends EventArgs
         return $this->document;
     }
 
+    public function setDocument(array $document): void
+    {
+        $this->document = $document;
+    }
+
     public function getSession(): InMemoryDocumentSessionOperations
     {
         return $this->session;

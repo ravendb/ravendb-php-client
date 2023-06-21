@@ -55,7 +55,7 @@ class DocumentConventions
 //
 
 //    private static final Map<Class, String> _cachedDefaultTypeCollectionNames = new HashMap<>();
-    protected array $cachedDefaultTypeCollectionNames = []; // @todo: check if this is ok
+    protected static array $cachedDefaultTypeCollectionNames = [];
 
 //    private final List<Tuple<Class, IValueForQueryConverter<Object>>> _listOfQueryValueToObjectConverters = new ArrayList<>();
 
@@ -734,11 +734,11 @@ class DocumentConventions
      *
      * @throws IllegalStateException|ReflectionException
      */
-    private function defaultGetCollectionName(string $className): string
+    public static function defaultGetCollectionName(string $className): string
     {
         $result = null;
-        if (array_key_exists($className, $this->cachedDefaultTypeCollectionNames)) {
-            $result = $this->cachedDefaultTypeCollectionNames[$className];
+        if (array_key_exists($className, self::$cachedDefaultTypeCollectionNames)) {
+            $result = self::$cachedDefaultTypeCollectionNames[$className];
 
             if ($result != null) {
                 return $result;
@@ -767,7 +767,7 @@ class DocumentConventions
 
         $result = StringUtils::pluralize(ClassUtils::getSimpleClassName($className));
 
-        $this->cachedDefaultTypeCollectionNames[$className] = $result;
+        self::$cachedDefaultTypeCollectionNames[$className] = $result;
 
         return $result;
     }
