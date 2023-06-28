@@ -37,22 +37,22 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
     /**
      * Performs a query matching ALL of the provided values against the given field (AND)
      * @param ?string $fieldName Field name
-     * @param Collection $values values to match
+     * @param Collection|array $values values to match
      *
      * @return FilterDocumentQueryBaseInterface
      */
-    function containsAll(?string $fieldName, Collection $values): FilterDocumentQueryBaseInterface;
+    function containsAll(?string $fieldName, Collection|array $values): FilterDocumentQueryBaseInterface;
 
     //TBD expr TSelf ContainsAll<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values);
 
     /**
      * Performs a query matching ANY of the provided values against the given field (OR)
      * @param ?string $fieldName Field name
-     * @param Collection $values values to match
+     * @param Collection|array $values values to match
      *
      * @return FilterDocumentQueryBaseInterface
      */
-    function containsAny(?string $fieldName, Collection $values): FilterDocumentQueryBaseInterface;
+    function containsAny(?string $fieldName, Collection|array $values): FilterDocumentQueryBaseInterface;
 
     //TBD expr TSelf ContainsAny<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values);
 
@@ -194,12 +194,12 @@ interface FilterDocumentQueryBaseInterface extends QueryBaseInterface
     /**
      * Check that the field has one of the specified values
      * @param string $fieldName Field name
-     * @param Collection $values Values to use
+     * @param Collection|array $values Values to use
      * @param bool $exact Use exact matcher
      *
      * @return FilterDocumentQueryBaseInterface
      */
-    function whereIn(string $fieldName, Collection $values, bool $exact = false): FilterDocumentQueryBaseInterface;
+    function whereIn(string $fieldName, Collection|array $values, bool $exact = false): FilterDocumentQueryBaseInterface;
 
     //TBD expr TSelf WhereIn<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values, bool exact = false);
 

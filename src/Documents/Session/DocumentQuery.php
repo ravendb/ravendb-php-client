@@ -269,16 +269,22 @@ class DocumentQuery extends AbstractDocumentQuery
         return $this;
     }
 
-    public function containsAny(?string $fieldName, Collection $values): DocumentQueryInterface
+    public function containsAny(?string $fieldName, Collection|array $values): DocumentQueryInterface
     {
+        if (is_array($values)) {
+            $values = Collection::fromArray($values);
+        }
         $this->_containsAny($fieldName, $values);
         return $this;
     }
 
     //TBD expr public IDocumentQuery<T> ContainsAny<TValue>(Expression<Func<T, TValue>> propertySelector, IEnumerable<TValue> values)
 
-    public function containsAll(?string $fieldName, Collection $values): DocumentQueryInterface
+    public function containsAll(?string $fieldName, Collection|array $values): DocumentQueryInterface
     {
+        if (is_array($values)) {
+            $values = Collection::fromArray($values);
+        }
         $this->_containsAll($fieldName, $values);
         return $this;
     }
@@ -417,8 +423,12 @@ class DocumentQuery extends AbstractDocumentQuery
     //TBD expr IDocumentQuery<T> IDocumentQueryBase<T, IDocumentQuery<T>>.WhereNotEquals<TValue>(Expression<Func<T, TValue>> propertySelector, TValue value, bool exact)
     //TBD expr IDocumentQuery<T> IFilterDocumentQueryBase<T, IDocumentQuery<T>>.WhereNotEquals<TValue>(Expression<Func<T, TValue>> propertySelector, MethodCall value, bool exact)
 
-    public function whereIn(string $fieldName, Collection $values, bool $exact = false): DocumentQueryInterface
+    public function whereIn(string $fieldName, Collection|array $values, bool $exact = false): DocumentQueryInterface
     {
+        if (is_array($values)) {
+            $values = Collection::fromArray($values);
+        }
+
         $this->_whereIn($fieldName, $values, $exact);
         return $this;
     }
