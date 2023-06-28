@@ -26,9 +26,9 @@ This readme provides short examples for the following:
   [Time series](#timeseries),<!--  
   [Bulk insert](#bulk-insert),
   [Changes API](#changes-api),  
-  [Streaming](#streaming),  
-  [Revisions](#revisions),  
+  [Streaming](#streaming),
 -->  
+  [Revisions](#revisions),  
   [Suggestions](#suggestions),  
   [Patching](#advanced-patching),<!--
   [Subscriptions](#subscriptions),  
@@ -1039,30 +1039,31 @@ queryStream.on("error", err => {
 > <small>[can stream query results](https://github.com/ravendb/ravendb-nodejs-client/blob/5c14565d0c307d22e134530c8d63b09dfddcfb5b/test/Ported/Core/Streaming/QueryStreaming.ts#L76) </small>  
 > <small>[can stream query results with query statistics](https://github.com/ravendb/ravendb-nodejs-client/blob/5c14565d0c307d22e134530c8d63b09dfddcfb5b/test/Ported/Core/Streaming/QueryStreaming.ts#L140) </small>  
 > <small>[can stream raw query results](https://github.com/ravendb/ravendb-nodejs-client/blob/5c14565d0c307d22e134530c8d63b09dfddcfb5b/test/Ported/Core/Streaming/QueryStreaming.ts#L192) </small>
+-->
 
 ## Revisions
 
 NOTE: Please make sure revisions are enabled before trying the below.
 
-```javascript
-const session = store.openSession();
-const user = {
-    name: "Marcin",
-    age: 30,
-    pet: "Cat"
-};
+```php
+$user = new User();
+$user->setName("Marcin");
+$user->setAge(30);
+$user->setPet("Cat");
+
+$session = $store->openSession();
 
 // Store a document
-await session.store(user, "users/1");
-await session.saveChanges();
+$session->store($user, "users/1");
+$session->saveChanges();
 
 // Modify the document to create a new revision
-user.name = "Roman";
-user.age = 40;
-await session.saveChanges();
+$user->setName("Roman");
+$user->setAge(40);
+$session->saveChanges();
 
 // Get revisions
-const revisions = await session.advanced.revisions.getFor("users/1");
+$revisions = $session->advanced()->revisions()->getFor("users/1");
 
 // Sample results:
 // [ { name: 'Roman',
@@ -1074,8 +1075,10 @@ const revisions = await session.advanced.revisions.getFor("users/1");
 //     age: 30,
 //     pet: 'Cat',
 //     '@metadata': [Object],
-//     id: 'users/1' } ]
+//     id: 'users/1' }
+// ]
 ```
+<!--  
 
 >##### Related tests:
 > <small>[can get revisions](https://github.com/ravendb/ravendb-nodejs-client/blob/5c14565d0c307d22e134530c8d63b09dfddcfb5b/test/Documents/ReadmeSamples.ts#L737) </small>  
@@ -1083,7 +1086,7 @@ const revisions = await session.advanced.revisions.getFor("users/1");
 > <small>[can handle revisions](https://github.com/ravendb/ravendb-nodejs-client/blob/5c14565d0c307d22e134530c8d63b09dfddcfb5b/test/Ported/RevisionsTest.ts#L35) </small>  
 > <small>[canGetRevisionsByChangeVectors](https://github.com/ravendb/ravendb-nodejs-client/blob/5c14565d0c307d22e134530c8d63b09dfddcfb5b/test/Ported/RevisionsTest.ts#L149) </small>
 
---> 
+-->
 
 ## Suggestions
 
