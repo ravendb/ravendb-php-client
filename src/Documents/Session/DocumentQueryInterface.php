@@ -117,8 +117,8 @@ interface DocumentQueryInterface
     function not(): DocumentQueryInterface;
     public function andAlso(bool $wrapPreviousQueryClauses = false): DocumentQueryInterface;
     function closeSubclause(): DocumentQueryInterface;
-    function containsAll(?string $fieldName, Collection $values): DocumentQueryInterface;
-    function containsAny(?string $fieldName, Collection $values): DocumentQueryInterface;
+    function containsAll(?string $fieldName, Collection|array $values): DocumentQueryInterface;
+    function containsAny(?string $fieldName, Collection|array $values): DocumentQueryInterface;
     function negateNext(): DocumentQueryInterface;
     function openSubclause(): DocumentQueryInterface;
     public function orElse(): DocumentQueryInterface;
@@ -132,7 +132,7 @@ interface DocumentQueryInterface
     function whereNotEqualsWithParams(WhereParams $whereParams): DocumentQueryInterface;
     function whereGreaterThan(string $fieldName, $value, bool $exact = false): DocumentQueryInterface;
     function whereGreaterThanOrEqual(string $fieldName, $value, bool $exact = false): DocumentQueryInterface;
-    function whereIn(string $fieldName, Collection $values, bool $exact = false): DocumentQueryInterface;
+    function whereIn(string $fieldName, Collection|array $values, bool $exact = false): DocumentQueryInterface;
     function whereLessThan(string $fieldName, $value, bool $exact = false): DocumentQueryInterface;
     function whereLessThanOrEqual(string $fieldName, $value, bool $exact = false): DocumentQueryInterface;
     function whereStartsWith(string $fieldName, $value, bool $exact = false): DocumentQueryInterface;

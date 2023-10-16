@@ -43,8 +43,11 @@ abstract class AbstractCommonApiForIndexes
         return $this->additionalSources;
     }
 
-    public function setAdditionalSources(?AdditionalSourcesArray $additionalSources): void
+    public function setAdditionalSources(null|AdditionalSourcesArray|array $additionalSources): void
     {
+        if (is_array($additionalSources)) {
+            $additionalSources = AdditionalSourcesArray::fromArray($additionalSources);
+        }
         $this->additionalSources = $additionalSources;
     }
 

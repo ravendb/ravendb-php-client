@@ -1,6 +1,28 @@
 RavenDB PHP Client - Release notes
 ==================================
 
+## 5.2.5
+
+Added support for :
+- spatial
+- counter indexes
+- session
+- more like this
+- lazy loading
+- revisions
+- suggestions
+
+## 5.2.4
+
+Changes:
+- added support for counters
+
+## 5.2.3
+
+Changes:
+- Added support for TimeSeries
+- Read me file update
+
 ## 5.2.2
 
 Removed:
