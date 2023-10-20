@@ -7,8 +7,8 @@ use RavenDB\Type\ValueObjectInterface;
 // !status: DONE
 class SpatialUnits implements ValueObjectInterface
 {
-    private const KILOMETERS = 'kilometers';
-    private const MILES = 'miles';
+    private const KILOMETERS = 'Kilometers';
+    private const MILES = 'Miles';
 
     private string $value;
 
