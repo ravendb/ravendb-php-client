@@ -7,12 +7,12 @@ use RavenDB\Utils\StringBuilder;
 // !status: DONE
 class HighlightingToken extends QueryToken
 {
-    private string $fieldName;
+    private ?string $fieldName = null;
     private int $fragmentLength;
     private int $fragmentCount;
-    private string $optionsParameterName;
+    private ?string $optionsParameterName = null;
 
-    private function __construct(string $fieldName, int $fragmentLength, int $fragmentCount, string $operationsParameterName)
+    private function __construct(string $fieldName, int $fragmentLength, int $fragmentCount, ?string $operationsParameterName)
     {
         $this->fieldName = $fieldName;
         $this->fragmentLength = $fragmentLength;
@@ -20,7 +20,7 @@ class HighlightingToken extends QueryToken
         $this->optionsParameterName = $operationsParameterName;
     }
 
-    public static function create(string $fieldName, int $fragmentLength, int $fragmentCount, string $optionsParameterName): HighlightingToken
+    public static function create(string $fieldName, int $fragmentLength, int $fragmentCount, ?string $optionsParameterName): HighlightingToken
     {
         return new HighlightingToken($fieldName, $fragmentLength, $fragmentCount, $optionsParameterName);
     }

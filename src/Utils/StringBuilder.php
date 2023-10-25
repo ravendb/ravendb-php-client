@@ -19,6 +19,16 @@ class StringBuilder
         return $this;
     }
 
+    public function insert(int $offset, ?string $value): StringBuilder
+    {
+        if ($value != null) {
+            $oldString = $this->s;
+            $this->s = substr($oldString, 0, $offset) . $value . substr($oldString, $offset);
+        }
+
+        return $this;
+    }
+
     public function appendLine(?string $value): StringBuilder
     {
         $this->s .= PHP_EOL;

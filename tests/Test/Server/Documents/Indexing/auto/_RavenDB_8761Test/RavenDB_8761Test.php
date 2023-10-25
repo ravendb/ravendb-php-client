@@ -175,7 +175,7 @@ class RavenDB_8761Test extends RemoteTestBase
                 /** @var array<ProductCount> $productCounts2 */
                 $productCounts2 = $session->advanced()
                     ->documentQuery(Order::class)
-                    ->groupBy("array(lines[].product)")
+                    ->groupBy(GroupBy::array("lines[].product"))
                     ->selectKey(null, "products")
                     ->selectCount()
                     ->orderBy("count")
@@ -211,7 +211,7 @@ class RavenDB_8761Test extends RemoteTestBase
                 $productCounts2 = $session
                     ->advanced()
                     ->documentQuery(Order::class)
-                    ->groupBy("array(lines[].product)", GroupBy::field("shipTo.country"))
+                    ->groupBy(GroupBy::array("lines[].product"), GroupBy::field("shipTo.country"))
                     ->selectKey("lines[].product", "products")
                     ->selectCount()
                     ->orderBy("count")
@@ -247,7 +247,7 @@ class RavenDB_8761Test extends RemoteTestBase
                 $productCounts2 = $session
                     ->advanced()
                         ->documentQuery(Order::class)
-                        ->groupBy("array(lines[].product)", "array(lines[].quantity)")
+                        ->groupBy(GroupBy::array("lines[].product"), GroupBy::array("lines[].quantity"))
                         ->selectKey("lines[].product", "products")
                         ->selectKey("lines[].quantity", "quantities")
                         ->selectCount()
