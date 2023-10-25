@@ -704,6 +704,10 @@ class DocumentQuery extends AbstractDocumentQuery
             return $this->aggregateByBuilder($builderOrFacets[0]);
         }
 
+        if (is_array($builderOrFacets[0])) {
+            return $this->aggregateByFacets(FacetBaseArray::fromArray($builderOrFacets[0]));
+        }
+
         return $this->aggregateByFacets(FacetBaseArray::fromArray($builderOrFacets));
     }
 
