@@ -6,7 +6,6 @@ use RavenDB\Documents\Indexes\IndexPriority;
 use RavenDB\Type\StringArray;
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
 class IndexPriorityParameters
 {
     /** @SerializedName ("IndexNames") */

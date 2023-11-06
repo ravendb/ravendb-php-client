@@ -6,7 +6,6 @@ use Brick\Math\Exception\NumberFormatException;
 use RavenDB\Type\Url;
 use RavenDB\Utils\StringUtils;
 
-// !status: DONE
 class ServerNode
 {
     private ?Url $url = null;
@@ -126,6 +125,30 @@ class ServerNode
     {
         $this->lastServerVersion = '';
         $this->lastServerVersionCheck = 0;
+    }
+
+    public static function createFrom(?ClusterTopology $topology = null): ServerNodeList
+    {
+        $nodes = new ServerNodeList();
+        if ($topology == null) {
+            return $nodes;
+        }
+
+        foreach ($topology->getMembers() as $key => $value) {
+            $serverNode = new ServerNode();
+            $serverNode->setUrl($value);
+            $serverNode->setClusterTag($key);
+            $nodes->append($serverNode);
+        }
+
+        foreach ($topology->getWatchers() as $key => $value) {
+            $serverNode = new ServerNode();
+            $serverNode->setUrl($value);
+            $serverNode->setClusterTag($key);
+            $nodes->append($serverNode);
+        }
+
+        return $nodes;
     }
 
     private bool $supportsAtomicClusterWrites = false;

@@ -10,7 +10,6 @@ use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ServerNode;
 use RavenDB\Type\StringArray;
 
-// !status: DONE
 class GetIndexErrorsCommand extends RavenCommand
 {
     private ?StringArray $indexNames = null;

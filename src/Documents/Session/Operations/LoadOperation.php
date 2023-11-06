@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Session\Operations;
 
+use DateTime;
 use InvalidArgumentException;
 use RavenDB\Documents\Commands\GetDocumentsCommand;
 use RavenDB\Documents\Commands\GetDocumentsResult;
@@ -16,7 +17,6 @@ use RavenDB\Utils\LoggerFactory;
 use RavenDB\Utils\StringUtils;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 
-// !status: DONE
 class LoadOperation
 {
     private InMemoryDocumentSessionOperations $session;
@@ -26,6 +26,9 @@ class LoadOperation
     private ?StringArray $ids = null;
     private ?StringArray $includes = null;
     private ?StringArray $countersToInclude = null;
+    private ?StringArray $revisionsToIncludeByChangeVector = null;
+    private ?DateTime $revisionsToIncludeByDateTimeBefore = null;
+
     private ?StringArray $compareExchangeValuesToInclude = null;
 
     private bool  $includeAllCounters = false;
@@ -82,6 +85,8 @@ class LoadOperation
             $this->ids,
             $this->includes,
             $this->countersToInclude,
+            $this->revisionsToIncludeByChangeVector,
+            $this->revisionsToIncludeByDateTimeBefore,
             $this->timeSeriesToInclude,
             $this->compareExchangeValuesToInclude,
             false
@@ -126,6 +131,24 @@ class LoadOperation
     public function withAllCounters(): LoadOperation
     {
         $this->includeAllCounters = true;
+        return $this;
+    }
+
+    public function withRevisionsByChangeVector(?StringArray $revisionsByChangeVector): LoadOperation
+    {
+        if ($revisionsByChangeVector != null && !$revisionsByChangeVector->isEmpty()) {
+            $this->revisionsToIncludeByChangeVector = $revisionsByChangeVector;
+        }
+
+        return $this;
+    }
+
+    public function withRevisionsByDateTimeBefore(?DateTime $revisionsByDateTimeBefore): LoadOperation
+    {
+        if ($revisionsByDateTimeBefore != null) {
+            $this->revisionsToIncludeByDateTimeBefore = $revisionsByDateTimeBefore;
+        }
+
         return $this;
     }
 
@@ -292,6 +315,10 @@ class LoadOperation
 
         if ($this->timeSeriesToInclude != null) {
             $this->session->registerTimeSeries($result->getTimeSeriesIncludes());
+        }
+
+        if ($this->revisionsToIncludeByChangeVector !== null || $this->revisionsToIncludeByDateTimeBefore !== null) {
+            $this->session->registerRevisionsIncludes($result->getRevisionIncludes());
         }
 
         if ($this->compareExchangeValuesToInclude != null) {

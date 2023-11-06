@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Session;
 
 use RavenDB\Http\RequestExecutor;
 
-// !status: DONE
 class SessionOptions
 {
     private ?string $database = null;

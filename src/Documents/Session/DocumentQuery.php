@@ -667,6 +667,7 @@ class DocumentQuery extends AbstractDocumentQuery
         $query->documentIncludes = new StringSet($this->documentIncludes);
         $query->counterIncludesTokens = $this->counterIncludesTokens;
         $query->timeSeriesIncludesTokens = $this->timeSeriesIncludesTokens;
+        $query->revisionsIncludesTokens = $this->revisionsIncludesTokens;
         $query->compareExchangeValueIncludesTokens = $this->compareExchangeValueIncludesTokens;
         $query->rootTypes = StringSet::fromArray([$this->className]);
         $query->beforeQueryExecutedCallback = $this->beforeQueryExecutedCallback;

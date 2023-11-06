@@ -15,7 +15,6 @@ use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ServerNode;
 use RavenDB\Utils\RaftIdGenerator;
 
-// !status: DONE
 class PutIndexesCommand extends RavenCommand implements RaftCommandInterface
 {
     private array $indexToAdd;

@@ -10,22 +10,14 @@ use RavenDB\Type\StringSet;
 
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
-class IndexDefinition implements ResultInterface
+class IndexDefinition extends IndexDefinitionBase implements ResultInterface
 {
     public function __constructor()
     {
+        parent::__construct();
+
         $this->configuration = new IndexConfiguration();
     }
-
-    /** @SerializedName ("Name") */
-    private ?string $name = null;
-
-    /** @SerializedName ("Priority") */
-    private ?IndexPriority $priority = null;
-
-    /** @SerializedName ("State") */
-    private ?IndexState $state = null;
 
     /** @SerializedName ("LockMode") */
     private ?IndexLockMode $lockMode = null;
@@ -68,61 +60,6 @@ class IndexDefinition implements ResultInterface
 
     /** @SerializedName ("DeploymentMode") */
     private ?IndexDeploymentMode $deploymentMode = null;
-
-    /**
-     * This is the means by which the outside world refers to this index definition
-     * @return ?string index name
-     */
-    public function getName(): ?string
-    {
-        return $this->name;
-    }
-
-    /**
-     * This is the means by which the outside world refers to this index definition
-     * @param string|null $name
-     */
-    public function setName(?string $name): void
-    {
-        $this->name = $name;
-    }
-
-    /**
-     * Priority of an index
-     * @return ?IndexPriority index priority
-     */
-    public function getPriority(): ?IndexPriority
-    {
-        return $this->priority;
-    }
-
-    /**
-     * Priority of an index
-     * @param ?IndexPriority $priority Sets the value
-     */
-    public function setPriority(?IndexPriority $priority): void
-    {
-        $this->priority = $priority;
-    }
-    /**
-     * State of an index
-     * @return ?IndexState index state
-     */
-
-    public function getState(): ?IndexState
-    {
-        return $this->state;
-    }
-
-    /**
-     * State of an index
-     * @param ?IndexState $state index state
-     */
-
-    public function setState(?IndexState $state): void
-    {
-        $this->state = $state;
-    }
 
     /**
      * Index lock mode:
@@ -233,7 +170,7 @@ class IndexDefinition implements ResultInterface
 
     public function toString(): string
     {
-        return $this->name;
+        return $this->getName();
     }
 
     public function getFields(): ?IndexFieldOptionsArray

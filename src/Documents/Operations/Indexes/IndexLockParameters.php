@@ -6,7 +6,6 @@ use RavenDB\Documents\Indexes\IndexLockMode;
 use RavenDB\Type\StringArray;
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
 class IndexLockParameters
 {
     /** @SerializedName ("IndexNames") */

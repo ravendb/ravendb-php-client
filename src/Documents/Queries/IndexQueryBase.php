@@ -6,7 +6,6 @@ use RavenDB\Parameters;
 use RavenDB\Type\Duration;
 use RavenDB\Utils\HashUtils;
 
-// !status: DONE
 class IndexQueryBase implements IndexQueryInterface
 {
     private int $pageSize = PHP_INT_MAX;

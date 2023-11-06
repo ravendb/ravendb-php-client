@@ -11,7 +11,6 @@ use RavenDB\Http\RavenCommand;
 use RavenDB\Http\RequestExecutor;
 use RavenDB\Primitives\OperationCancelledException;
 
-// !status: DONE
 class Operation
 {
     private RequestExecutor $requestExecutor;

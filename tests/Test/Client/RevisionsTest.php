@@ -476,15 +476,13 @@ class RevisionsTest extends RemoteTestBase
                 $session->close();
             }
 
-            for ($i = 0; $i < 10; $i++) {
-                $session = $store->openSession();
-                try {
-                    $user = $session->load(Company::class, $id);
-                    $user->setName("Omer" . $i);
-                    $session->saveChanges();
-                } finally {
-                    $session->close();
-                }
+            $session = $store->openSession();
+            try {
+                $revision = $session->advanced()->lazily()->load(User::class, 'users/1');
+                $doc = $revision->getValue();
+                $this->assertEquals(1, $session->advanced()->getNumberOfRequests());
+            } finally {
+                $session->close();
             }
 
             $session = $store->openSession();
@@ -624,6 +622,20 @@ class RevisionsTest extends RemoteTestBase
             } finally {
                 $session->close();
             }
+
+            $session = $store->openSession();
+            try {
+                $revisions = $session->advanced()->revisions()->get(User::class, $cv);
+                $revisionsLazily = $session->advanced()->revisions()->lazily()->get(User::class, $cv);
+                $revisionsLazilyValue = $revisionsLazily->getValue();
+
+                $this->assertEquals(2, $session->advanced()->getNumberOfRequests());
+                $this->assertEquals($revisions->getId(), $revisionsLazilyValue->getId());
+                $this->assertEquals($revisions->getName(), $revisionsLazilyValue->getName());
+            } finally {
+                $session->close();
+            }
+
         } finally {
             $store->close();
         }

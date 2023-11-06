@@ -10,7 +10,6 @@ use RavenDB\Http\Topology;
 use RavenDB\Type\Duration;
 use RavenDB\Utils\UrlUtils;
 
-// !status: DONE
 class GetDatabaseTopologyCommand extends RavenCommand
 {
     private ?string $applicationIdentifier = null;

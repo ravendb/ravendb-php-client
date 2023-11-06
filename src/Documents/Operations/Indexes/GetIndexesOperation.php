@@ -6,7 +6,6 @@ use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Operations\MaintenanceOperationInterface;
 use RavenDB\Http\RavenCommand;
 
-// !status: DONE
 class GetIndexesOperation implements MaintenanceOperationInterface
 {
     private ?int $start = null;

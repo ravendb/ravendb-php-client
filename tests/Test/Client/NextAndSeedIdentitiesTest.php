@@ -8,7 +8,6 @@ use RavenDB\Documents\Operations\Identities\SeedIdentityForOperation;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
 
-// !status: DONE
 class NextAndSeedIdentitiesTest extends RemoteTestBase
 {
     public function testNextIdentityFor(): void

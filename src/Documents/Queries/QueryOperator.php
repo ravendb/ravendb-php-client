@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Queries;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class QueryOperator implements ValueObjectInterface
 {
     private const AND = 'and';

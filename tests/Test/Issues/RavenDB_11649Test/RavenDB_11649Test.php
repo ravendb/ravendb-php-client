@@ -4,7 +4,6 @@ namespace tests\RavenDB\Test\Issues\RavenDB_11649Test;
 
 use tests\RavenDB\RemoteTestBase;
 
-// !status: DONE
 class RavenDB_11649Test extends RemoteTestBase
 {
     public function test_whatChanged_WhenInnerPropertyChanged_ShouldReturnThePropertyNamePlusPath(): void

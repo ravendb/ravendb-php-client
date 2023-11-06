@@ -14,7 +14,6 @@ use RavenDB\Http\VoidRavenCommand;
 use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Utils\StringUtils;
 
-// !status: DONE
 class ServerOperationExecutor implements CleanCloseable
 {
     private ?ServerOperationExecutorArray $cache;

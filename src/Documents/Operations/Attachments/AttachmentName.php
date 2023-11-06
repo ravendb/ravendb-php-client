@@ -2,7 +2,6 @@
 
 namespace RavenDB\Documents\Operations\Attachments;
 
-// !status: DONE
 class AttachmentName
 {
     private ?string $name = null;

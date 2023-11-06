@@ -44,6 +44,7 @@ class SqlTest extends ReplicationTestBase
             $transformation = new Transformation();
             $transformation->setApplyToAllDocuments(true);
             $transformation->setName("Script #1");
+            $transformation->setScript("loadToUsers(this)");
 
             $table1 = new SqlEtlTable();
             $table1->setDocumentIdColumn("Id");
@@ -191,6 +192,7 @@ class SqlTest extends ReplicationTestBase
             $transformation = new Transformation();
             $transformation->setApplyToAllDocuments(true);
             $transformation->setName("Script Q&A");
+            $transformation->setScript("loadToUsers(this)");
 
             $table1 = new SqlEtlTable();
             $table1->setDocumentIdColumn("Id");

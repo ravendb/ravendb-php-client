@@ -4,7 +4,6 @@ namespace tests\RavenDB\Infrastructure\Entity;
 
 use DateTimeInterface;
 
-// !status: DONE
 class Order
 {
     private ?string $id = null;

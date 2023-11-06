@@ -2,7 +2,7 @@
 
 namespace RavenDB\Documents\Session;
 
-// !status: DONE
+
 use PHPUnit\Framework\MockObject\Rule\MethodName;
 
 class WhereParams

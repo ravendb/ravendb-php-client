@@ -9,7 +9,6 @@ use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Utils\StringUtils;
 
-// !status: DONE
 class NextIdentityForOperation implements MaintenanceOperationInterface
 {
     private ?string $identityName = null;

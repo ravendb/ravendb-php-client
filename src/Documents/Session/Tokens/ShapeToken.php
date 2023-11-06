@@ -5,7 +5,6 @@ namespace RavenDB\Documents\Session\Tokens;
 use RavenDB\Documents\Indexes\Spatial\SpatialUnits;
 use RavenDB\Utils\StringBuilder;
 
-// !status: DONE
 class ShapeToken extends QueryToken
 {
     private string $shape;

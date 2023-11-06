@@ -17,7 +17,7 @@ class OngoingTaskSubscription extends OngoingTask
     private ?int $subscriptionId = null;
 
     #[SerializedName("ChangeVectorForNextBatchStartingPoint")]
-    private ?string $ChangeVectorForNextBatchStartingPoint = null;
+    private ?string $changeVectorForNextBatchStartingPoint = null;
 
     #[SerializedName("LastBatchAckTime")]
     private ?DateTime $lastBatchAckTime = null;
@@ -65,12 +65,12 @@ class OngoingTaskSubscription extends OngoingTask
 
     public function getChangeVectorForNextBatchStartingPoint(): ?string
     {
-        return $this->ChangeVectorForNextBatchStartingPoint;
+        return $this->changeVectorForNextBatchStartingPoint;
     }
 
-    public function setChangeVectorForNextBatchStartingPoint(?string $ChangeVectorForNextBatchStartingPoint): void
+    public function setChangeVectorForNextBatchStartingPoint(?string $changeVectorForNextBatchStartingPoint): void
     {
-        $this->ChangeVectorForNextBatchStartingPoint = $ChangeVectorForNextBatchStartingPoint;
+        $this->changeVectorForNextBatchStartingPoint = $changeVectorForNextBatchStartingPoint;
     }
 
     public function getLastBatchAckTime(): ?DateTime

@@ -10,7 +10,7 @@ use RavenDB\Utils\StringUtils;
 /**
  *  Generate a hilo ID for each given type
  */
-// !status: DONE
+
 class MultiTypeHiLoIdGenerator
 {
     private ?Collection $idGeneratorsByTag = null;
@@ -74,6 +74,23 @@ class MultiTypeHiLoIdGenerator
                 // ignored
             }
         }
+    }
+
+    public function generateNextIdFor(?string $collectionName): int
+    {
+        $value = null;
+        if ($this->idGeneratorsByTag->containsValue($collectionName)) {
+            $value = $this->idGeneratorsByTag[$collectionName];
+        }
+
+        if ($value != null) {
+            return $value->nextId();
+        }
+
+        $value = $this->createGeneratorFor($collectionName);
+        $this->idGeneratorsByTag->offsetSet($collectionName, $value);
+
+        return $value->nextId();
     }
 
     protected function createGeneratorFor(string $tag): HiLoIdGenerator

@@ -2,10 +2,11 @@
 
 namespace RavenDB\Documents\Indexes;
 
-// !status: DONE
 class RollingIndex
 {
     private RollingIndexDeploymentArray $activeDeployments;
+
+    private ?int $raftCommandIndex = null;
 
     public function __construct()
     {
@@ -20,5 +21,15 @@ class RollingIndex
     public function setActiveDeployments(RollingIndexDeploymentArray $activeDeployments): void
     {
         $this->activeDeployments = $activeDeployments;
+    }
+
+    public function getRaftCommandIndex(): ?int
+    {
+        return $this->raftCommandIndex;
+    }
+
+    public function setRaftCommandIndex(?int $raftCommandIndex): void
+    {
+        $this->raftCommandIndex = $raftCommandIndex;
     }
 }

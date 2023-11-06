@@ -12,7 +12,6 @@ use RavenDB\Primitives\NetISO8601Utils;
 use RavenDB\Utils\StringBuilder;
 use RavenDB\Utils\StringUtils;
 
-// !status: DONE
 class TimeSeriesIncludesToken extends QueryToken
 {
     private ?string $sourcePath = null;

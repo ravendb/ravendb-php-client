@@ -8,7 +8,6 @@ use RavenDB\Http\ServerNode;
 use RavenDB\Http\VoidRavenCommand;
 use RavenDB\Type\StringArray;
 
-// !status: DONE
 class DeleteIndexErrorsCommand extends VoidRavenCommand
 {
     private ?StringArray $indexNames = null;

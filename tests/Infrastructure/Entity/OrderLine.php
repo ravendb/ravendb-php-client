@@ -2,7 +2,6 @@
 
 namespace tests\RavenDB\Infrastructure\Entity;
 
-// !status: DONE
 class OrderLine
 {
     private ?string $product = null;

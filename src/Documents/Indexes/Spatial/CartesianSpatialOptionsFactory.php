@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Indexes\Spatial;
 
 use RavenDB\Exceptions\IllegalArgumentException;
 
-// !status: DONE
 class CartesianSpatialOptionsFactory
 {
     public function boundingBoxIndex(): SpatialOptions

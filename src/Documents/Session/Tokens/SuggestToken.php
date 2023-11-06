@@ -6,7 +6,6 @@ use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Utils\StringBuilder;
 use RavenDB\Utils\StringUtils;
 
-// !status: DONE
 class SuggestToken extends QueryToken
 {
     private ?string $fieldName;

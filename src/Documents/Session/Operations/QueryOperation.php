@@ -195,6 +195,9 @@ class QueryOperation
             if ($queryResult->getCompareExchangeValueIncludes() != null) {
                 $this->session->getClusterSession()->registerCompareExchangeValues($queryResult->getCompareExchangeValueIncludes());
             }
+            if ($queryResult->getRevisionIncludes() != null) {
+                $this->session->registerRevisionIncludes($queryResult->getRevisionIncludes());
+            }
         }
 
         return $resultItems;

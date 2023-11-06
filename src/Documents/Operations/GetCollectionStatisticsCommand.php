@@ -7,7 +7,6 @@ use RavenDB\Http\HttpRequestInterface;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ServerNode;
 
-// !status: DONE
 class GetCollectionStatisticsCommand extends RavenCommand
 {
     public function __construct(?string $resultClass = null)

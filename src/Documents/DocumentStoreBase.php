@@ -6,6 +6,7 @@ use Closure;
 use InvalidArgumentException;
 use RavenDB\Auth\AuthOptions;
 use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Documents\Identity\HiLoIdGeneratorInterface;
 use RavenDB\Documents\Indexes\AbstractIndexCreationTaskArray;
 use RavenDB\Documents\Indexes\AbstractIndexCreationTaskInterface;
 use RavenDB\Documents\Indexes\IndexCreation;
@@ -109,7 +110,9 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //
 //    @Override
 //    public abstract CleanCloseable disableAggressiveCaching(String database);
-//
+
+    public abstract function getHiLoIdGenerator(): ?HiLoIdGeneratorInterface;
+
     public abstract function getIdentifier(): ?string;
 //
 //    public abstract void setIdentifier(String identifier);
@@ -274,7 +277,7 @@ abstract class DocumentStoreBase implements DocumentStoreInterface
 //
 //    public abstract BulkInsertOperation bulkInsert();
 //
-//    public abstract BulkInsertOperation bulkInsert(String database);
+//    public abstract BulkInsertOperation bulkInsert(String database = '', ?BulkInsertOptions $options = null);
 //
 //    private final DocumentSubscriptions _subscriptions;
 //

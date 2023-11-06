@@ -6,7 +6,6 @@ use RavenDB\Http\ResultInterface;
 
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
 class ExplainQueryResponse
 {
     /** @SerializedName ("IndexName") */

@@ -6,7 +6,6 @@ use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Type\StringArray;
 use RavenDB\Utils\StringBuilder;
 
-// !status: DONE
 class FieldsToFetchToken extends QueryToken
 {
     public StringArray $fieldsToFetch;

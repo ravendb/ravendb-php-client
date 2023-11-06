@@ -5,7 +5,6 @@ namespace RavenDB\ServerWide\Operations;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\ServerWide\DatabaseRecord;
 
-// !status: DONE
 class CreateDatabaseOperation implements ServerOperationInterface
 {
     private DatabaseRecord $databaseRecord;

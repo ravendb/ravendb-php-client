@@ -8,7 +8,6 @@ use RavenDB\Http\HttpRequestInterface;
 use RavenDB\Http\ServerNode;
 use RavenDB\Http\VoidRavenCommand;
 
-// !status: DONE
 class DeleteDocumentCommand extends VoidRavenCommand
 {
     private ?string $id = null;

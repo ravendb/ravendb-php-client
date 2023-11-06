@@ -10,7 +10,6 @@ use RavenDB\Http\ServerNode;
 use RavenDB\Http\VoidRavenCommand;
 use RavenDB\Utils\RaftIdGenerator;
 
-// !status: DONE
 class SetIndexPriorityCommand extends VoidRavenCommand
 {
     private array $parameters = [];

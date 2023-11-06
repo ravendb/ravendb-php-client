@@ -8,7 +8,6 @@ use RavenDB\Documents\Smuggler\DatabaseItemType;
 use RavenDB\Documents\Smuggler\DatabaseItemTypeSet;
 use RavenDB\Http\VoidRavenCommand;
 
-// !status: DONE
 class CreateSampleDataOperation implements VoidMaintenanceOperationInterface
 {
     private ?DatabaseItemTypeSet $operateOnTypes = null;

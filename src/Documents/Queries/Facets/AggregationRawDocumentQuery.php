@@ -8,7 +8,6 @@ use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Documents\Session\RawDocumentQueryInterface;
 use RavenDB\Exceptions\IllegalArgumentException;
 
-// !status: DONE
 class AggregationRawDocumentQuery extends AggregationQueryBase
 {
     private ?RawDocumentQueryInterface $source = null;

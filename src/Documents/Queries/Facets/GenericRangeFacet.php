@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Queries\Facets;
 
 use RavenDB\Documents\Session\Tokens\FacetToken;
 
-// !status: DONE
 class GenericRangeFacet extends FacetBase
 {
       private ?FacetBase $parent = null;

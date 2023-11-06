@@ -4,7 +4,7 @@ namespace RavenDB\Documents\Session\Tokens;
 
 use RavenDB\Utils\StringBuilder;
 
-// !status: DONE
+
 abstract class QueryToken
 {
     public abstract function writeTo(StringBuilder &$writer): void;
@@ -19,9 +19,9 @@ abstract class QueryToken
         "include"
     ];
 
-    protected function writeField(StringBuilder &$writer, string $field): void
+    public static function writeField(StringBuilder &$writer, string $field): void
     {
-        $keyWord = in_array($field, self::$RQL_KEYWORDS);
+        $keyWord = self::isKeyword($field);
 
         if ($keyWord) {
             $writer->append("'" . $field . "'");
@@ -29,5 +29,10 @@ abstract class QueryToken
         }
 
         $writer->append($field);
+    }
+
+    public static function isKeyword(string $field): bool
+    {
+        return in_array($field, self::$RQL_KEYWORDS);
     }
 }

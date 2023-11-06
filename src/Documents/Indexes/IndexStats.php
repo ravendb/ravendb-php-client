@@ -7,7 +7,6 @@ use DateTimeInterface;
 use RavenDB\Http\ResultInterface;
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
 class IndexStats implements ResultInterface
 {
     /** @SerializedName ("Name") */

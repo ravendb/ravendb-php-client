@@ -8,7 +8,6 @@ use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Documents\Operations\OperationInterface;
 use RavenDB\Documents\Conventions\DocumentConventions;
 
-// !status: DONE
 class DeleteCompareExchangeValueOperation implements OperationInterface
 {
     private ?string $className = null;

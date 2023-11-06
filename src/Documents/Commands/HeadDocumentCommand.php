@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Commands;
 
+use RavenDB\Constants\Headers;
 use RavenDB\Constants\HttpStatusCode;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Extensions\HttpExtensions;
@@ -15,7 +16,6 @@ use RavenDB\Http\ServerNode;
 use RavenDB\Type\StringResult;
 use RavenDB\Utils\UrlUtils;
 
-// !status: DONE
 class HeadDocumentCommand extends RavenCommand
 {
     private ?string $id = null;
@@ -48,7 +48,7 @@ class HeadDocumentCommand extends RavenCommand
         $request =  new HttpRequest($this->createUrl($serverNode), HttpRequest::HEAD);
 
         if ($this->changeVector != null) {
-            $request->addHeader("If-None-Match", $this->changeVector);
+            $request->addHeader(Headers::IF_NONE_MATCH, $this->changeVector);
         }
 
         return $request;

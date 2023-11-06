@@ -5,7 +5,6 @@ namespace RavenDB\Http;
 use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Utils\AtomicInteger;
 
-// !status: DONE
 class HttpCache implements CleanCloseable
 {
     public const NOT_FOUND_RESPONSE = "404 Response";

@@ -10,7 +10,6 @@ use RavenDB\Http\VoidRavenCommand;
 use RavenDB\Utils\RaftIdGenerator;
 use RavenDB\Utils\UrlUtils;
 
-// !status: DONE
 class DeleteIndexCommand extends VoidRavenCommand
 {
     private ?string $indexName = null;

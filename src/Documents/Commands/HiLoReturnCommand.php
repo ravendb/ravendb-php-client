@@ -8,7 +8,6 @@ use RavenDB\Http\HttpRequestInterface;
 use RavenDB\Http\ServerNode;
 use RavenDB\Http\VoidRavenCommand;
 
-// !status: DONE
 class HiLoReturnCommand extends VoidRavenCommand
 {
     private ?string $tag = null;

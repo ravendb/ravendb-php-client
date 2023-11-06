@@ -7,7 +7,6 @@ use RavenDB\Documents\Queries\Facets\FacetResultArray;
 use RavenDB\Documents\Queries\ProjectionBehavior;
 use RavenDB\Type\Duration;
 
-// !status: DONE
 interface RawDocumentQueryInterface
     extends QueryBaseInterface, DocumentQueryBaseSingleInterface, EnumerableQueryInterface
 {

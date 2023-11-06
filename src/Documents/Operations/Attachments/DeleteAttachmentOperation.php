@@ -8,7 +8,6 @@ use RavenDB\Documents\Operations\VoidOperationInterface;
 use RavenDB\Http\HttpCache;
 use RavenDB\Http\VoidRavenCommand;
 
-// !status: DONE
 class DeleteAttachmentOperation implements VoidOperationInterface
 {
     private ?string $documentId = null;

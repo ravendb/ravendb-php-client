@@ -32,7 +32,6 @@ use RavenDB\Type\StringSet;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
 
-// !status: DONE
 class IndexOperationsTest extends RemoteTestBase
 {
     public function testCanDeleteIndex(): void

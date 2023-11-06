@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Operations\Refresh;
 
 use RavenDB\Http\ResultInterface;
 
-// !status: DONE
 class ConfigureRefreshOperationResult implements ResultInterface
 {
     private ?int $raftCommandIndex = null;

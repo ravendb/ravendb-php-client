@@ -7,7 +7,6 @@ use RavenDB\Documents\Operations\VoidMaintenanceOperationInterface;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Http\VoidRavenCommand;
 
-// !status: DONE
 class DeleteIndexOperation implements VoidMaintenanceOperationInterface
 {
     private ?string $indexName = null;

@@ -4,7 +4,6 @@ namespace RavenDB\ServerWide;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class DatabaseLockMode implements ValueObjectInterface
 {
     public const UNLOCK = 'Unlock';

@@ -7,7 +7,6 @@ use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Operations\VoidMaintenanceOperationInterface;
 
-// !status: DONE
 class PutClientConfigurationOperation implements VoidMaintenanceOperationInterface
 {
     private ?ClientConfiguration $configuration = null;

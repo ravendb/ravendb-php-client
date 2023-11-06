@@ -6,7 +6,6 @@ use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Extensions\StringExtensions;
 use RavenDB\Utils\StringBuilder;
 
-// !status: DONE
 class FromToken extends QueryToken
 {
     private ?string $collectionName;

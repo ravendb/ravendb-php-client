@@ -7,7 +7,6 @@ use RavenDB\Documents\Operations\VoidMaintenanceOperationInterface;
 use RavenDB\Http\VoidRavenCommand;
 use RavenDB\Type\StringArray;
 
-// !status: DONE
 class DeleteIndexErrorsOperation implements VoidMaintenanceOperationInterface
 {
     private ?StringArray $indexNames = null;

@@ -2,7 +2,7 @@
 
 namespace RavenDB\Http;
 
-// !status: DONE
+
 abstract class VoidRavenCommand extends RavenCommand
 {
     public function __construct()

@@ -6,7 +6,6 @@ use RavenDB\Documents\Indexes\IndexDefinitionArray;
 
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
 class GetIndexesResponse
 {
     /** @SerializedName ("Results") */

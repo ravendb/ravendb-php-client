@@ -4,7 +4,7 @@ namespace RavenDB\Documents\Queries\Facets;
 
 use RavenDB\Exceptions\IllegalStateException;
 
-// !status: DONE
+
 
 /**
  * @template T

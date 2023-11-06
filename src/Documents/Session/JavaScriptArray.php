@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Session;
 
 use RavenDB\Type\ObjectMap;
 
-// !status: DONE
 class JavaScriptArray
 {
     private ?int $suffix = null;

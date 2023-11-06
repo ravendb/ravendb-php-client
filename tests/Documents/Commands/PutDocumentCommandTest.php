@@ -11,7 +11,6 @@ use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
 
-// !status: DONE
 class PutDocumentCommandTest extends RemoteTestBase
 {
     /**

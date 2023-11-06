@@ -134,7 +134,7 @@ class RequestExecutor implements CleanCloseable
     }
 
 
-    public function getTopologyNodes(): ?ServerNodeArray
+    public function getTopologyNodes(): ?ServerNodeList
     {
         if ($this->getTopology()) {
             return $this->getTopology()->getNodes();
@@ -281,8 +281,13 @@ class RequestExecutor implements CleanCloseable
 //    }
 //
 //    private void onFailedRequestInvoke(String url, Exception e) {
-//        EventHelper.invoke(_onFailedRequest, this, new FailedRequestEventArgs(_databaseName, url, e));
+//        onFailedRequestInvoke(url, e, null, null);
 //    }
+//
+//    private void onFailedRequestInvoke(String url, Exception e, HttpRequest request, HttpResponse response) {
+//        EventHelper.invoke(_onFailedRequest, this, new FailedRequestEventArgs(_databaseName, url, e, request, response));
+//    }
+
 
     private function createHttpClient(): HttpClientInterface
     {
@@ -1106,35 +1111,29 @@ class RequestExecutor implements CleanCloseable
 //        }
 //    }
 
-    private function refreshIfNeeded(?ServerNode $chosenNode, ?HttpResponse $response): RefreshTask
+    private function refreshIfNeeded(?ServerNode $chosenNode, ?HttpResponse $response): CompletableFuture
     {
-        $refreshTask = RefreshTask::create();
+        $refreshTask = CompletableFuture::create();
+        $refreshClientConfigurationTask = CompletableFuture::create();
 
         $refreshTopology = HttpExtensions::getBooleanHeader($response, Headers::REFRESH_TOPOLOGY) ?? false;
         $refreshClientConfiguration = HttpExtensions::getBooleanHeader($response, Headers::REFRESH_CLIENT_CONFIGURATION) ?? false;
 
-        if ($refreshTopology || $refreshClientConfiguration) {
-            $serverNode = new ServerNode();
-            $serverNode->setUrl($chosenNode->getUrl());
-            $serverNode->setDatabase($this->databaseName);
-
-            $updateParameters = new UpdateTopologyParameters($serverNode);
+        if ($refreshTopology) {
+            $updateParameters = new UpdateTopologyParameters($chosenNode);
             $updateParameters->setTimeoutInMs(0);
             $updateParameters->setDebugTag("refresh-topology-header");
+                $refreshTask->add([$this, 'updateTopologyAsync'], $updateParameters);
+        }
 
-//            if ($refreshTopology) {
-//                $refreshTask->add($this->updateTopologyAsync($updateParameters));
-//            }
-
-            if ($refreshClientConfiguration) {
-                $updateClientConfigurationAsync = $this->updateClientConfigurationAsync($serverNode);
-                if ($updateClientConfigurationAsync != null) {
-                    $refreshTask->add($updateClientConfigurationAsync);
-                }
+        if ($refreshClientConfiguration) {
+            $updateClientConfigurationAsync = $this->updateClientConfigurationAsync($chosenNode);
+            if ($updateClientConfigurationAsync != null) {
+                $refreshClientConfigurationTask->add($updateClientConfigurationAsync);
             }
         }
 
-        return $refreshTask;
+        return CompletableFuture::allOf($refreshTask, $refreshClientConfigurationTask);
     }
 
     /**
@@ -1350,7 +1349,7 @@ class RequestExecutor implements CleanCloseable
     private function setRequestHeaders(?SessionInfo $sessionInfo, ?string $cachedChangeVector, HttpRequest &$request): void
     {
         if ($cachedChangeVector != null) {
-            $request->addHeader("If-None-Match", strval($cachedChangeVector));
+            $request->addHeader(Headers::IF_NONE_MATCH, strval($cachedChangeVector));
         }
 
         if (!$this->disableClientConfigurationUpdates) {
@@ -1810,7 +1809,7 @@ class RequestExecutor implements CleanCloseable
             return false;
         }
 
-//        onFailedRequestInvoke(url, e);
+//        onFailedRequestInvoke(url, e, $request, $response);
 
         $executeOptions = new ExecuteOptions();
         $executeOptions->setNodeIndex($indexAndNodeAndEtag->currentIndex);
@@ -2014,7 +2013,7 @@ class RequestExecutor implements CleanCloseable
 //    }
 //
 //    private void spawnHealthChecks(ServerNode chosenNode, int nodeIndex) {
-//        if (_nodeSelector != null && _nodeSelector.getTopology().getNodes().size() < 1) {
+//        if (_nodeSelector != null && _nodeSelector.getTopology().getNodes().size() < 2) {
 //            return;
 //        }
 //

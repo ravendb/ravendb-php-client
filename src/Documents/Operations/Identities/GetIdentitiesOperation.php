@@ -6,7 +6,6 @@ use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Operations\MaintenanceOperationInterface;
 use RavenDB\Http\RavenCommand;
 
-// !status: DONE
 class GetIdentitiesOperation implements MaintenanceOperationInterface
 {
     public function getCommand(DocumentConventions $conventions): RavenCommand

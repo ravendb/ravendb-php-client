@@ -6,7 +6,6 @@ use RavenDB\Documents\Session\Tokens\DeclareTokenArray;
 use RavenDB\Documents\Session\Tokens\LoadTokenList;
 use RavenDB\Type\StringArray;
 
-// !status: DONE
 class QueryData
 {
     private ?StringArray $fields = null;

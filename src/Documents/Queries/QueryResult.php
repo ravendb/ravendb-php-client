@@ -30,6 +30,7 @@ class QueryResult extends GenericQueryResult implements ResultInterface
         $queryResult->setResultEtag($this->getResultEtag());
         $queryResult->setNodeTag($this->getNodeTag());
         $queryResult->setCounterIncludes($this->getCounterIncludes());
+        $queryResult->setRevisionIncludes($this->getRevisionIncludes());
         $queryResult->setIncludedCounterNames($this->getIncludedCounterNames());
         $queryResult->setTimeSeriesIncludes($this->getTimeSeriesIncludes());
         $queryResult->setCompareExchangeValueIncludes($this->getCompareExchangeValueIncludes());

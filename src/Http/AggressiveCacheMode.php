@@ -4,7 +4,6 @@ namespace RavenDB\Http;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class AggressiveCacheMode implements ValueObjectInterface
 {
     public const TRACK_CHANGES = 'TRACK_CHANGES';

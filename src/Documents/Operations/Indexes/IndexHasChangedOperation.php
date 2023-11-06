@@ -8,7 +8,6 @@ use RavenDB\Documents\Operations\MaintenanceOperationInterface;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Http\RavenCommand;
 
-// !status: DONE
 class IndexHasChangedOperation implements MaintenanceOperationInterface
 {
     private ?IndexDefinition $definition = null;

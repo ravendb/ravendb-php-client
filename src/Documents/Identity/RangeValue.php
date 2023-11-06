@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Identity;
 
 use RavenDB\Utils\AtomicInteger;
 
-// !status: DONE
 class RangeValue
 {
     public int $Min;

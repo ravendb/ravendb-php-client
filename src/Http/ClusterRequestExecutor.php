@@ -118,7 +118,7 @@ class ClusterRequestExecutor extends RequestExecutor
         $topology = new Topology();
         $topology->setEtag(-1);
 
-        $nodes = new ServerNodeArray();
+        $nodes = new ServerNodeList();
         $nodes->append($serverNode);
         $topology->setNodes($nodes);
 
@@ -167,18 +167,7 @@ class ClusterRequestExecutor extends RequestExecutor
 //                execute(parameters.getNode(), null, command, false, null);
 //
 //                ClusterTopologyResponse results = command.getResult();
-//                List<ServerNode> nodes = results
-//                        .getTopology()
-//                        .getMembers()
-//                        .entrySet()
-//                        .stream()
-//                        .map(kvp -> {
-//                            ServerNode serverNode = new ServerNode();
-//                            serverNode.setUrl(kvp.getValue());
-//                            serverNode.setClusterTag(kvp.getKey());
-//                            return serverNode;
-//                        })
-//                        .collect(Collectors.toList());
+//                List<ServerNode> nodes = ServerNode.createFrom(results.getTopology());
 //
 //                Topology newTopology = new Topology();
 //                newTopology.setNodes(nodes);

@@ -7,7 +7,7 @@ use RavenDB\Utils\AtomicInteger;
 class NodeSelectorState
 {
     public Topology $topology;
-    public ServerNodeArray $nodes;
+    public ServerNodeList $nodes;
     public array $failures;
     public array $fastestRecords = [];
     public int $fastest;

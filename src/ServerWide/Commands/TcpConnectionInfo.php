@@ -4,7 +4,6 @@ namespace RavenDB\ServerWide\Commands;
 
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
 class TcpConnectionInfo
 {
     /** @SerializedName ("Port")  */
@@ -17,6 +16,9 @@ class TcpConnectionInfo
     private ?array $urls = null;
     /** @SerializedName ("NodeTag")  */
     private ?string $nodeTag = null;
+    /** @SerializedName ("ServerId")  */
+    private ?string $serverId = null;
+
 
     public function getPort(): ?int
     {
@@ -66,5 +68,15 @@ class TcpConnectionInfo
     public function setNodeTag(?string $nodeTag): void
     {
         $this->nodeTag = $nodeTag;
+    }
+
+    public function getServerId(): ?string
+    {
+        return $this->serverId;
+    }
+
+    public function setServerId(?string $serverId): void
+    {
+        $this->serverId = $serverId;
     }
 }

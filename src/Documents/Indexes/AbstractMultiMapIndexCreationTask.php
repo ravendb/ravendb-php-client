@@ -6,7 +6,6 @@ use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Type\StringSet;
 
-// !status: DONE
 class AbstractMultiMapIndexCreationTask extends AbstractGenericIndexCreationTask
 {
     private StringSet $maps;

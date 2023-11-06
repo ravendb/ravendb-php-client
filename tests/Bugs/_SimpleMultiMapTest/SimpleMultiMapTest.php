@@ -7,7 +7,6 @@ use RavenDB\Documents\Operations\Indexes\GetIndexOperation;
 use RavenDB\Type\Duration;
 use tests\RavenDB\RemoteTestBase;
 
-// !status: DONE
 class SimpleMultiMapTest extends RemoteTestBase
 {
     public function testCanCreateMultiMapIndex(): void

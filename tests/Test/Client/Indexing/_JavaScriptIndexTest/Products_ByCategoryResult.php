@@ -2,7 +2,6 @@
 
 namespace tests\RavenDB\Test\Client\Indexing\_JavaScriptIndexTest;
 
-// !status: DONE
 class Products_ByCategoryResult
 {
     private ?string $category = null;

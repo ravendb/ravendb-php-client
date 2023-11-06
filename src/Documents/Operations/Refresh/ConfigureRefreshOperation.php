@@ -7,7 +7,6 @@ use RavenDB\Documents\Operations\MaintenanceOperationInterface;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Http\RavenCommand;
 
-// !status: DONE
 class ConfigureRefreshOperation implements MaintenanceOperationInterface
 {
     private ?RefreshConfiguration $configuration = null;

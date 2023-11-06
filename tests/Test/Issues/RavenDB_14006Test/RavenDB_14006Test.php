@@ -10,7 +10,6 @@ use tests\RavenDB\Infrastructure\Orders\Company;
 use tests\RavenDB\Infrastructure\Orders\Address;
 use tests\RavenDB\Infrastructure\Orders\Employee;
 
-// !status: DONE
 class RavenDB_14006Test extends RemoteTestBase
 {
     public function testCompareExchangeValueTrackingInSession(): void

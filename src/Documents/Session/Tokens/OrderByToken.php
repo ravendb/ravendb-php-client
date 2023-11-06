@@ -6,7 +6,6 @@ use RavenDB\Documents\Session\OrderingType;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Utils\StringBuilder;
 
-// !status: DONE
 class OrderByToken extends QueryToken
 {
     private ?string $fieldName = null;

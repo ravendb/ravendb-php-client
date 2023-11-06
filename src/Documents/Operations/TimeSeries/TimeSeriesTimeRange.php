@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Operations\TimeSeries;
 
 use RavenDB\Primitives\TimeValue;
 
-// !status: DONE
 class TimeSeriesTimeRange extends AbstractTimeSeriesRange
 {
     private TimeValue $time;

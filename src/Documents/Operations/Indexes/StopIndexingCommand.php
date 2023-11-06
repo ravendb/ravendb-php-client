@@ -7,7 +7,6 @@ use RavenDB\Http\HttpRequestInterface;
 use RavenDB\Http\ServerNode;
 use RavenDB\Http\VoidRavenCommand;
 
-// !status: DONE
 class StopIndexingCommand extends VoidRavenCommand
 {
     public function createUrl(ServerNode $serverNode): string

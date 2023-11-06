@@ -16,7 +16,6 @@ use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Utils\StringUtils;
 use Symfony\Component\Mime\Part\DataPart;
 
-// !status: DONE
 class DocumentSessionAttachmentsBase extends AdvancedSessionExtensionBase
 {
     protected function __construct(?InMemoryDocumentSessionOperations $session)

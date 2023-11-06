@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Indexes;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class IndexRunningStatus implements ValueObjectInterface
 {
     private const RUNNING = 'Running';

@@ -4,7 +4,6 @@ namespace RavenDB\Http;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class ItemFlags implements ValueObjectInterface
 {
     public const NONE = 'NONE';

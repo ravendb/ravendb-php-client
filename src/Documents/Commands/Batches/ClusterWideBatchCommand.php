@@ -6,8 +6,6 @@ use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Session\TransactionMode;
 use RavenDB\Http\RaftCommandInterface;
 use RavenDB\Utils\RaftIdGenerator;
-
-// !status: DONE
 class ClusterWideBatchCommand extends SingleNodeBatchCommand implements RaftCommandInterface
 {
     private ?bool $disableAtomicDocumentWrites = null;

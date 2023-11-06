@@ -9,7 +9,6 @@ use RavenDB\Http\HttpRequestInterface;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ServerNode;
 
-// !status: DONE
 class GetIndexesCommand extends RavenCommand
 {
     private ?int $start = null;

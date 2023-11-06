@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Session;
 
 use RavenDB\Exceptions\IllegalArgumentException;
 
-// !status: DONE
 class GroupByDocumentQuery implements GroupByDocumentQueryInterface
 {
     private DocumentQuery $query;

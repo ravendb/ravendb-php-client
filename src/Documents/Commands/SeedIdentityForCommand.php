@@ -10,7 +10,6 @@ use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ServerNode;
 use RavenDB\Utils\RaftIdGenerator;
 
-// !status: DONE
 class SeedIdentityForCommand extends RavenCommand implements RaftCommandInterface
 {
     private string $id;

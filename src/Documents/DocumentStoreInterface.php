@@ -4,6 +4,7 @@ namespace RavenDB\Documents;
 
 use Closure;
 use RavenDB\Auth\AuthOptions;
+use RavenDB\Documents\Identity\HiLoIdGeneratorInterface;
 use RavenDB\Documents\Operations\OperationExecutor;
 use RavenDB\Documents\Indexes\AbstractIndexCreationTaskArray;
 use RavenDB\Documents\Indexes\AbstractIndexCreationTaskInterface;
@@ -24,6 +25,8 @@ interface DocumentStoreInterface
 {
     public function getAuthOptions(): ?AuthOptions;
 //  KeyStore getCertificate();
+
+    function getHiLoIdGenerator(): ?HiLoIdGeneratorInterface;
 
     function addBeforeStoreListener(Closure $handler);
     function removeBeforeStoreListener(Closure $handler);
@@ -64,6 +67,12 @@ interface DocumentStoreInterface
      * @param Closure $handler with args: AfterConversionToEntityEventArgs
      */
     function removeAfterConversionToEntityListener(Closure $handler): void;
+
+//    void addOnBeforeRequestListener(EventHandler<BeforeRequestEventArgs> handler);
+//    void removeOnBeforeRequestListener(EventHandler<BeforeRequestEventArgs> handler);
+
+//    void addOnSucceedRequestListener(EventHandler<SucceedRequestEventArgs> handler);
+//    void removeOnSucceedRequestListener(EventHandler<SucceedRequestEventArgs> handler);
 
 //    void addOnFailedRequestListener(EventHandler<FailedRequestEventArgs> handler);
 //    void removeOnFailedRequestListener(EventHandler<FailedRequestEventArgs> handler);
@@ -132,7 +141,7 @@ interface DocumentStoreInterface
 
 //    BulkInsertOperation bulkInsert();
 //
-//    BulkInsertOperation bulkInsert(String database);
+//    BulkInsertOperation bulkInsert(?string $database = '', ?BulkInsertOption $options);
 //
 //    DocumentSubscriptions subscriptions();
 

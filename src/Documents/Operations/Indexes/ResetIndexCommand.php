@@ -9,7 +9,6 @@ use RavenDB\Http\ServerNode;
 use RavenDB\Http\VoidRavenCommand;
 use RavenDB\Utils\UrlUtils;
 
-// !status: DONE
 class ResetIndexCommand extends VoidRavenCommand
 {
     private ?string $indexName = null;

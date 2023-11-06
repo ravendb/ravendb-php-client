@@ -2,7 +2,6 @@
 
 namespace RavenDB\ServerWide;
 
-// !status: DONE
 class ConflictSolver
 {
     private ?ScriptResolverArray $resolveByCollection = null;

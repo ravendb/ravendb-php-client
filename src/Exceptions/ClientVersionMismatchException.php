@@ -2,7 +2,6 @@
 
 namespace RavenDB\Exceptions;
 
-// !status: DONE
 class ClientVersionMismatchException extends RavenException
 {
     public function __construct(string $message = '', ?\Throwable $cause = null)

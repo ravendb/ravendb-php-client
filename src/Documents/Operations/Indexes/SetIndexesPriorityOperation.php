@@ -9,7 +9,6 @@ use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Http\VoidRavenCommand;
 use RavenDB\Type\StringArray;
 
-// !status: DONE
 class SetIndexesPriorityOperation implements VoidMaintenanceOperationInterface
 {
     private IndexPriorityParameters $parameters;

@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Commands;
 
+use DateTime;
 use InvalidArgumentException;
 use RavenDB\Constants\Counters;
 use RavenDB\Documents\Operations\TimeSeries\AbstractTimeSeriesRangeSet;
@@ -18,7 +19,6 @@ use RavenDB\Primitives\NetISO8601Utils;
 use RavenDB\Type\StringArray;
 use RavenDB\Utils\UrlUtils;
 
-// !status: DONE
 class GetDocumentsCommand extends RavenCommand
 {
     private string $id = '';
@@ -29,6 +29,8 @@ class GetDocumentsCommand extends RavenCommand
     private bool $includeAllCounters = false;
 
     private ?AbstractTimeSeriesRangeSet $timeSeriesIncludes = null;
+    private ?StringArray $revisionsIncludeByChangeVector = null;
+    private ?DateTime $revisionsIncludeByDateTime = null;
     private ?StringArray $compareExchangeValueIncludes = null;
 
     private bool $metadataOnly = false;
@@ -45,34 +47,32 @@ class GetDocumentsCommand extends RavenCommand
         parent::__construct(GetDocumentsResult::class);
     }
 
-    /**
-     * @param StringArray|array|null $ids
-     */
-    protected function setIds($ids): void
+    protected function setIds(StringArray|array|null $ids): void
     {
         $this->ids = is_array($ids) ? StringArray::fromArray($ids, true) : $ids;
     }
 
-    /**
-     * @param StringArray|array|null $includes
-     */
-    protected function setIncludes($includes): void
+    protected function setIncludes(StringArray|array|null $includes): void
     {
         $this->includes = is_array($includes) ? StringArray::fromArray($includes) : $includes;
     }
 
-    /**
-     * @param StringArray|array|null $counters
-     */
-    protected function setCounters($counters)
+    protected function setCounters(StringArray|array|null $counters)
     {
         $this->counters = is_array($counters) ? StringArray::fromArray($counters) : $counters;
     }
 
-    /**
-     * @param StringArray|array|null $compareExchangeValueIncludes
-     */
-    protected function setCompareExchangeValueIncludes($compareExchangeValueIncludes)
+    public function setRevisionsIncludeByChangeVector(StringArray|array|null $revisionsIncludeByChangeVector): void
+    {
+        $this->revisionsIncludeByChangeVector = is_array($revisionsIncludeByChangeVector) ? StringArray::fromArray($revisionsIncludeByChangeVector) : $revisionsIncludeByChangeVector;
+    }
+
+    public function setRevisionsIncludeByDateTime(?DateTime $revisionsIncludeByDateTime): void
+    {
+        $this->revisionsIncludeByDateTime = $revisionsIncludeByDateTime;
+    }
+
+    protected function setCompareExchangeValueIncludes(StringArray|array|null $compareExchangeValueIncludes)
     {
         $this->compareExchangeValueIncludes = is_array($compareExchangeValueIncludes) ? StringArray::fromArray($compareExchangeValueIncludes) : $compareExchangeValueIncludes;
     }
@@ -83,7 +83,7 @@ class GetDocumentsCommand extends RavenCommand
      * @param bool $metadataOnly
      * @return GetDocumentsCommand
      */
-    public static function forMultipleDocuments($ids, $includes, bool $metadataOnly = false): GetDocumentsCommand
+    public static function forMultipleDocuments(StringArray|array|null $ids, StringArray|array|null $includes, bool $metadataOnly = false): GetDocumentsCommand
     {
         if (empty($ids)) {
             throw new InvalidArgumentException("Please supply at least one id");
@@ -103,7 +103,7 @@ class GetDocumentsCommand extends RavenCommand
      * @param bool $metadataOnly
      * @return GetDocumentsCommand
      */
-    public static function forSingleDocument(string $id, $includes = null, bool $metadataOnly = false): GetDocumentsCommand
+    public static function forSingleDocument(string $id, StringArray|array|null $includes = null, bool $metadataOnly = false): GetDocumentsCommand
     {
         if (empty($id)) {
             throw new IllegalArgumentException("id cannot be null");
@@ -137,16 +137,20 @@ class GetDocumentsCommand extends RavenCommand
      * @return GetDocumentsCommand
      */
     public static function withCounters(
-                                    $ids,
-                                    $includes,
-                                    $counterIncludes,
+        StringArray|array|null      $ids,
+        StringArray|array|null      $includes,
+        StringArray|array|null      $counterIncludes,
+        StringArray|array|null      $revisionsIncludeByChangeVector,
+        DateTime|null               $revisionsIncludeByDateTime,
         ?AbstractTimeSeriesRangeSet $timeSeriesIncludes,
-                                    $compareExchangeValueIncludes,
+        StringArray|array|null      $compareExchangeValueIncludes,
         bool                        $metadata
     ): GetDocumentsCommand {
         $command = GetDocumentsCommand::forMultipleDocuments($ids, $includes, $metadata);
 
         $command->setCounters($counterIncludes);
+        $command->setRevisionsIncludeByChangeVector($revisionsIncludeByChangeVector);
+        $command->setRevisionsIncludeByDateTime($revisionsIncludeByDateTime);
         $command->timeSeriesIncludes = $timeSeriesIncludes;
         $command->setCompareExchangeValueIncludes($compareExchangeValueIncludes);
 
@@ -163,16 +167,46 @@ class GetDocumentsCommand extends RavenCommand
      * @return GetDocumentsCommand
      */
     public static function withAllCounters(
-        $ids,
-        $includes,
+        StringArray|array|null $ids,
+        StringArray|array|null $includes,
         bool $includeAllCounters,
         AbstractTimeSeriesRangeSet $timeSeriesIncludes,
-        $compareExchangeValueIncludes,
+        StringArray|array|null $compareExchangeValueIncludes,
         bool $metadataOnly
     ): GetDocumentsCommand {
         $command = GetDocumentsCommand::forMultipleDocuments($ids, $includes, $metadataOnly);
 
         $command->includeAllCounters = $includeAllCounters;
+        $command->timeSeriesIncludes = $timeSeriesIncludes;
+        $command->setCompareExchangeValueIncludes($compareExchangeValueIncludes);
+
+        return $command;
+    }
+
+    /**
+     * @param StringArray|array|null $ids
+     * @param StringArray|array|null $includes
+     * @param StringArray|array|null $counterIncludes
+     * @param AbstractTimeSeriesRangeSet $timeSeriesIncludes
+     * @param StringArray|array|null $compareExchangeValueIncludes
+     * @param bool $metadataOnly
+     * @return GetDocumentsCommand
+     */
+    public static function withRevisions(
+        StringArray|array|null $ids,
+        StringArray|array|null $includes,
+        StringArray|array|null $counterIncludes,
+        StringArray|array|null $revisionsIncludesByChangeVector,
+        ?DateTime              $revisionIncludeByDateTimeBefore,
+        AbstractTimeSeriesRangeSet $timeSeriesIncludes,
+        StringArray|array|null $compareExchangeValueIncludes,
+        bool $metadataOnly
+    ): GetDocumentsCommand {
+        $command = GetDocumentsCommand::forMultipleDocuments($ids, $includes, $metadataOnly);
+
+        $command->setCounters($counterIncludes);
+        $command->setRevisionsIncludeByChangeVector($revisionsIncludesByChangeVector);
+        $command->setRevisionsIncludeByDateTime($revisionIncludeByDateTimeBefore);
         $command->timeSeriesIncludes = $timeSeriesIncludes;
         $command->setCompareExchangeValueIncludes($compareExchangeValueIncludes);
 
@@ -279,6 +313,17 @@ class GetDocumentsCommand extends RavenCommand
                 }
             }
         }
+
+        if (($this->revisionsIncludeByChangeVector !== null) && count($this->revisionsIncludeByChangeVector)) {
+            foreach ($this->revisionsIncludeByChangeVector as $changeVector) {
+                $path .= "&revisions=" . UrlUtils::escapeDataString($changeVector);
+            }
+        }
+
+        if ($this->revisionsIncludeByDateTime !== null) {
+            $path .= "&revisionsBefore=" . UrlUtils::escapeDataString(NetISO8601Utils::format($this->revisionsIncludeByDateTime, true));
+        }
+
 
         if (($this->compareExchangeValueIncludes !== null) && count($this->compareExchangeValueIncludes)) {
             foreach ($this->compareExchangeValueIncludes as $compareExchangeValue) {

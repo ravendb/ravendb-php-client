@@ -6,7 +6,7 @@ use Closure;
 use RavenDB\Documents\Session\Tokens\FacetToken;
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
+
 abstract class FacetBase
 {
     /** @SerializedName("DisplayFieldName") */

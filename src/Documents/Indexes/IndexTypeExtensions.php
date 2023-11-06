@@ -2,7 +2,6 @@
 
 namespace RavenDB\Documents\Indexes;
 
-// !status: DONE
 class IndexTypeExtensions
 {
     private function __construct() {}
@@ -22,9 +21,14 @@ class IndexTypeExtensions
         return $type->isAutoMap() || $type->isAutoMapReduce();
     }
 
-    public static function isStale(IndexType $type): bool
+    public static function isStatic(IndexType $type): bool
     {
         return $type->isMap() || $type->isMapReduce() || $type->isJavaScriptMap() || $type->isJavaScriptMapReduce();
+    }
+
+    public static function isStale(IndexType $type): bool
+    {
+        return self::isStatic($type);
     }
 
     public static function isJavaScript(IndexType $type): bool

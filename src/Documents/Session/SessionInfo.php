@@ -44,6 +44,11 @@ class SessionInfo
         $this->noCaching = $options->isNoCaching();
     }
 
+    public function incrementRequestCount()
+    {
+        $this->session->incrementRequestCount();
+    }
+
     //    public void setContext(String sessionKey) {
 //        if (StringUtils.isBlank(sessionKey)) {
 //            throw new InvalidArgumentException("Session key cannot be null or whitespace.");
@@ -150,6 +155,4 @@ class SessionInfo
     {
         $this->noCaching = $noCaching;
     }
-
-
 }

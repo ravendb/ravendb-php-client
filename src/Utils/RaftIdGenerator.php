@@ -4,7 +4,6 @@ namespace RavenDB\Utils;
 
 use Ramsey\Uuid\Uuid;
 
-// !status: DONE
 class RaftIdGenerator
 {
     private function __constructor() {

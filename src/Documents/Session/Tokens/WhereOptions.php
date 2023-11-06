@@ -5,7 +5,6 @@ namespace RavenDB\Documents\Session\Tokens;
 use RavenDB\Documents\Queries\SearchOperator;
 use RavenDB\Type\StringArray;
 
-// !status: DONE
 class WhereOptions
 {
     private ?SearchOperator $searchOperator = null;

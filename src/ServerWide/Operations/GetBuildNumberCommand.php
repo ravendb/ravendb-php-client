@@ -7,7 +7,6 @@ use RavenDB\Http\HttpRequestInterface;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ServerNode;
 
-// !status: DONE
 class GetBuildNumberCommand extends RavenCommand
 {
     public function __construct()

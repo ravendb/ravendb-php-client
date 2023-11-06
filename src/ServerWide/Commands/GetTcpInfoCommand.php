@@ -9,7 +9,6 @@ use RavenDB\Http\ServerNode;
 use RavenDB\Type\Duration;
 use RavenDB\Utils\StringUtils;
 
-// !status: DONE
 class GetTcpInfoCommand extends RavenCommand
 {
     private ?string $tag = null;

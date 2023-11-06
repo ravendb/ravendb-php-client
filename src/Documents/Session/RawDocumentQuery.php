@@ -10,7 +10,6 @@ use RavenDB\Documents\Queries\QueryOperator;
 use RavenDB\Documents\Queries\Timings\QueryTimings;
 use RavenDB\Type\Duration;
 
-// !status: DONE
 class RawDocumentQuery extends AbstractDocumentQuery implements RawDocumentQueryInterface
 {
     public function __construct(?string $className, InMemoryDocumentSessionOperations $session, string $rawQuery)

@@ -15,7 +15,6 @@ use RavenDB\Exceptions\NotImplementedException;
 use RavenDB\Type\StringArray;
 use RavenDB\Utils\StringBuilder;
 
-// !status: DONE
 class FacetToken extends QueryToken
 {
     private ?string $facetSetupDocumentId = null;

@@ -2,7 +2,6 @@
 
 namespace RavenDB\Documents\Session;
 
-// !status: DONE
 class GroupByField
 {
     private ?string $fieldName = null;

@@ -5,7 +5,6 @@ namespace tests\RavenDB\Test\Client;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
 
-// !status: DONE
 class ExistsTest extends RemoteTestBase
 {
     public function testCheckIfDocumentExists(): void

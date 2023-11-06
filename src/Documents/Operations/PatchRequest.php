@@ -8,7 +8,7 @@ use RavenDB\Type\ObjectMap;
 /**
  * An advanced patch request for a specified document (using JavaScript)
  */
-// !status: DONE
+
 class PatchRequest
 {
     /** @SerializedName ("Script") */

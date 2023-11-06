@@ -8,7 +8,6 @@ use RavenDB\Utils\StringUtils;
 
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
 class AdditionalAssembly
 {
     /** @SerializedName ("AssemblyName")  */

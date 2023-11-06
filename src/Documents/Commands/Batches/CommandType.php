@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Commands\Batches;
 
 use RavenDB\Exceptions\IllegalArgumentException;
 
-// !status: DONE
 class CommandType
 {
     const NONE = 'None';

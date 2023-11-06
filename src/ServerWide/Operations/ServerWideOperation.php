@@ -8,7 +8,6 @@ use RavenDB\Documents\Operations\Operation;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Http\RequestExecutor;
 
-// !status: DONE
 class ServerWideOperation extends Operation
 {
     public function __construct(RequestExecutor $requestExecutor, DocumentConventions $conventions, int $id, ?string $nodeTag = null)

@@ -7,7 +7,6 @@ use RavenDB\Exceptions\ConcurrencyException;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
 
-// !status: DONE
 class DeleteDocumentCommandTest  extends RemoteTestBase
 {
     public function testCanDeleteDocument(): void

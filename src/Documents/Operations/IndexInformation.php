@@ -10,7 +10,6 @@ use RavenDB\Documents\Indexes\IndexType;
 
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
 class IndexInformation
 {
     /** @SerializedName("Name") */

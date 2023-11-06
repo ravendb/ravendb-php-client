@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Indexes\Spatial;
 
 use RavenDB\Type\StringArray;
 
-// !status: DONE
 class AutoSpatialOptions extends SpatialOptions
 {
     private ?AutoSpatialMethodType $methodType = null;

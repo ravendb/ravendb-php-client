@@ -4,7 +4,7 @@ namespace RavenDB\Documents\Session;
 
 use RavenDB\Documents\Indexes\AbstractCommonApiForIndexes;
 
-// !status: DONE
+
 interface DocumentQueryBuilderInterface
 {
     /**

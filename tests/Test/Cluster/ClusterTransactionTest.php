@@ -11,7 +11,6 @@ use RavenDB\Documents\Session\SessionOptions;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Documents\Session\TransactionMode;
 
-// !status: DONE
 class ClusterTransactionTest extends RemoteTestBase
 {
     public function testCanCreateClusterTransactionRequest(): void

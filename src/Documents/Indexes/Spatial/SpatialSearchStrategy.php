@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Indexes\Spatial;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class SpatialSearchStrategy implements ValueObjectInterface
 {
     private const GEOHASH_PREFIX_TREE = 'GeohashPrefixTree';

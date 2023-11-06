@@ -9,7 +9,6 @@ use RavenDB\Documents\Indexes\IndexErrorsArray;
 use RavenDB\Documents\Operations\Indexes\GetIndexErrorsOperation;
 use RavenDB\Utils\DateUtils;
 
-// !status: DONE
 class RavenTestHelper
 {
     public static function utcToday(): DateTime

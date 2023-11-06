@@ -11,7 +11,6 @@ use RavenDB\Http\HttpRequestInterface;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Documents\Conventions\DocumentConventions;
 
-// !status: DONE
 class PutClientConfigurationCommand extends VoidRavenCommand implements RaftCommandInterface
 {
     private ?ClientConfiguration $configuration = null;

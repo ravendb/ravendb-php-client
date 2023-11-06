@@ -9,7 +9,6 @@ use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
 use Throwable;
 
-// !status: DONE
 class TrackEntityTest extends RemoteTestBase
 {
     public function testDeletingEntityThatIsNotTrackedShouldThrow(): void

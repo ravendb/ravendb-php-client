@@ -5,7 +5,6 @@ namespace RavenDB\Documents\Operations\TimeSeries;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Primitives\TimeValue;
 
-// !status: DONE
 class RawTimeSeriesPolicy extends TimeSeriesPolicy
 {
     public const POLICY_STRING = "rawpolicy"; // must be lower case

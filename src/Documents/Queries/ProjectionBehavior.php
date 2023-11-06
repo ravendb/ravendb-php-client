@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Queries;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class ProjectionBehavior implements ValueObjectInterface
 {
     /**

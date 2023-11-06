@@ -5,8 +5,7 @@ namespace RavenDB\Documents\Identity;
 use RavenDB\Documents\DocumentStore;
 use RavenDB\Type\ExtendedArrayObject;
 
-// !status: DONE
-class MultiDatabaseHiLoIdGenerator
+class MultiDatabaseHiLoIdGenerator implements HiLoIdGeneratorInterface
 {
     protected ?DocumentStore $store = null;
 
@@ -37,5 +36,20 @@ class MultiDatabaseHiLoIdGenerator
         foreach ($this->generators as $generator) {
             $generator->returnUnusedRange();
         }
+    }
+
+    public function generateNextIdFor(?string $database, null|string|object $collectionNameOrEntity): int
+    {
+        $collectionName = $this->store->getConventions()->getCollectionName($collectionNameOrEntity);;
+
+        $database = $this->store->getEffectiveDatabase($database);
+        if (!$this->generators->offsetExists($database)) {
+            $this->generators->offsetSet($database, $this->generateMultiTypeHiLoFunc($database));
+        }
+
+        /** @var MultiTypeHiLoIdGenerator $generator */
+        $generator = $this->generators->offsetGet($database);
+
+        return $generator->generateNextIdFor($collectionName);
     }
 }

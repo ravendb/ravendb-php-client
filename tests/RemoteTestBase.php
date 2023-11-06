@@ -15,6 +15,7 @@ use RavenDB\ServerWide\DatabaseRecord;
 use RavenDB\ServerWide\Operations\CreateDatabaseOperation;
 use RavenDB\ServerWide\Operations\DeleteDatabasesOperation;
 
+use RavenDB\Type\Duration;
 use RavenDB\Utils\AtomicInteger;
 use RuntimeException;
 use tests\RavenDB\Driver\RavenServerLocator;
@@ -23,6 +24,10 @@ use tests\RavenDB\Driver\RavenTestDriver;
 // !class - IN PROGRESS
 class RemoteTestBase extends RavenTestDriver implements CleanCloseable
 {
+    public ?SamplesTestBase $samples = null;
+    public ?IndexesTestBase $indexes = null;
+    public ?ReplicationTestBase2 $replication = null;
+
     private RavenServerLocator $locator;
     private RavenServerLocator $securedLocator;
 
@@ -32,7 +37,7 @@ class RemoteTestBase extends RavenTestDriver implements CleanCloseable
     private static ?DocumentStoreInterface $globalSecureServer = null;
 //    private static Process globalSecuredServerProcess;
 
-    private DocumentStoreArray $documentStores;
+    private ?DocumentStoreArray $documentStores = null;
 
     private static ?AtomicInteger $index = null;
 
@@ -44,6 +49,10 @@ class RemoteTestBase extends RavenTestDriver implements CleanCloseable
         $this->securedLocator = new TestSecuredServiceLocator();
 
         $this->documentStores = new DocumentStoreArray();
+
+        $this->samples = new SamplesTestBase($this);
+        $this->indexes = new IndexesTestBase($this);
+        $this->replication = new ReplicationTestBase2($this);
 
         if (self::$index == null) {
             self::$index = new AtomicInteger();
@@ -181,7 +190,7 @@ class RemoteTestBase extends RavenTestDriver implements CleanCloseable
     /**
      * @throws IllegalStateException
      */
-    public function getDocumentStore(?string $database = null, bool $secured = false, ?DateInterval $waitForIndexingTimeout = null ): DocumentStoreInterface
+    public function getDocumentStore(?string $database = null, bool $secured = false, ?Duration $waitForIndexingTimeout = null ): DocumentStoreInterface
     {
         if ($database == null) {
             $database = 'test_db';

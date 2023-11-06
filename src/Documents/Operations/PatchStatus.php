@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Operations;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class PatchStatus implements ValueObjectInterface
 {
     public const DOCUMENT_DOES_NOT_EXIST = 'DocumentDoesNotExist';

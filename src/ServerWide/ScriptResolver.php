@@ -4,7 +4,6 @@ namespace RavenDB\ServerWide;
 
 use DateTimeInterface;
 
-// !status: DONE
 class ScriptResolver
 {
     private string $script;

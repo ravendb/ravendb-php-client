@@ -4,7 +4,6 @@ namespace tests\RavenDB\Infrastructure\Entity\faceted;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class Currency implements ValueObjectInterface
 {
     private const USD = 'USD';
