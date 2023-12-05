@@ -45,7 +45,7 @@ class ServerOperationExecutor implements CleanCloseable
         $this->cache = $cache;
         $this->nodeTag = $nodeTag;
 
-//        $$this->store->registerEvents($this->requestExecutor);
+//        $this->store->registerEvents($this->requestExecutor);
 
         if ($this->nodeTag == null) {
             $this->store->addAfterCloseListener(function($sender, $event) {

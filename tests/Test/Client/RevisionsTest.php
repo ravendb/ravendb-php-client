@@ -112,7 +112,7 @@ class RevisionsTest extends RemoteTestBase
                 $session->close();
             }
 
-            $revisionsBinEntryCommand = new GetRevisionsBinEntryCommand(0, 20);
+            $revisionsBinEntryCommand = new GetRevisionsBinEntryCommand(PHP_INT_MAX, 20);
             $store->getRequestExecutor()->execute($revisionsBinEntryCommand);
 
             $result = $revisionsBinEntryCommand->getResult();

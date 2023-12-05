@@ -19,10 +19,9 @@ class GetDatabaseTopologyCommand extends RavenCommand
     {
         parent::__construct(Topology::class);
         $this->debugTag = $debugTag;
-        $timeout = Duration::ofSeconds(15);
         $this->applicationIdentifier = $applicationIdentifier;
 
-        $timeout = Duration::ofSeconds(15);
+        $this->timeout = Duration::ofSeconds(15);
     }
 
     public function createUrl(ServerNode $serverNode): string

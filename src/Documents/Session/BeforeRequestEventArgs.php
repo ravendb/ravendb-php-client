@@ -12,7 +12,7 @@ class BeforeRequestEventArgs extends EventArgs
     private ?HttpRequest $request = null;
     private ?int $attemptNumber = null;
 
-    public function __constructor(?string $database, ?string $url, ?HttpRequest $request, ?int $attemptNumber)
+    public function __construct(?string $database, ?string $url, ?HttpRequest $request, ?int $attemptNumber)
     {
         $this->database = $database;
         $this->url = $url;

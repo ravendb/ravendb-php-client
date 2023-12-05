@@ -14,12 +14,12 @@ class NodeSelector implements CleanCloseable
     private ?Timer $updateFastestNodeTimer = null;
     private NodeSelectorState $state;
 
-    public function getTopology(): Topology
+    public function getTopology(): ?Topology
     {
         return $this->state->topology;
     }
 
-    public function __construct(Topology $topology)
+    public function __construct(?Topology $topology)
     {
         $this->state = new NodeSelectorState($topology);
     }

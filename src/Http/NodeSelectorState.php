@@ -6,14 +6,14 @@ use RavenDB\Utils\AtomicInteger;
 
 class NodeSelectorState
 {
-    public Topology $topology;
+    public ?Topology $topology = null;
     public ServerNodeList $nodes;
     public array $failures;
     public array $fastestRecords = [];
     public int $fastest;
     public AtomicInteger $speedTestMode;
 
-    public function __construct(Topology $topology)
+    public function __construct(?Topology $topology)
     {
         $this->speedTestMode = new AtomicInteger(0);
         $this->topology = $topology;

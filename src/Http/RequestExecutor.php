@@ -145,7 +145,7 @@ class RequestExecutor implements CleanCloseable
 
 //    private volatile Timer _updateTopologyTimer;
 
-    private ?NodeSelector $nodeSelector = null;
+    protected ?NodeSelector $nodeSelector = null;
 
     public function getNodeSelector(): ?NodeSelector
     {
@@ -516,7 +516,7 @@ class RequestExecutor implements CleanCloseable
                     $this->getConventions()->isSendApplicationIdentifier() ? $parameters->getApplicationIdentifier() : null
                 );
                 $options = new ExecuteOptions();
-                $options->setNodeIndex(-1);
+                $options->setNodeIndex(null);
                 $options->setChosenNode($parameters->getNode());
                 $options->setShouldRetry(false);
 
@@ -563,6 +563,12 @@ class RequestExecutor implements CleanCloseable
         if ($options) {
             $this->executeOnSpecificNode($command, $sessionInfo, $options);
             return;
+        }
+
+        if ($this->_firstTopologyUpdate !== null && !$this->disableTopologyUpdates) {
+            $topologyUpdate = $this->_firstTopologyUpdate;
+            $topologyUpdate();
+            $this->_firstTopologyUpdate = null;
         }
 
         $currentIndexAndNode = $this->chooseNodeForRequest($command, $sessionInfo);
@@ -613,6 +619,15 @@ class RequestExecutor implements CleanCloseable
         ?SessionInfo $sessionInfo,
         ExecuteOptions $options
     ): void {
+        if ($command->failoverTopologyEtag == self::$INITIAL_TOPOLOGY_ETAG) {
+            $command->failoverTopologyEtag = self::$INITIAL_TOPOLOGY_ETAG;
+            if ($this->nodeSelector != null && $this->nodeSelector->getTopology() != null) {
+                $topology = $this->nodeSelector->getTopology();
+                if ($topology->getEtag() != null) {
+                    $command->failoverTopologyEtag = $topology->getEtag();
+                }
+            }
+        }
 
         $request = $this->createRequest($options->getChosenNode(), $command);
 
@@ -805,8 +820,9 @@ class RequestExecutor implements CleanCloseable
 //        CurrentIndexAndNode currentIndexAndNode = chooseNodeForRequest(command, sessionInfo);
 //        execute(currentIndexAndNode.currentNode, currentIndexAndNode.currentIndex, command, true, sessionInfo);
 //    }
-//
-//    private void waitForTopologyUpdate(CompletableFuture<Void> topologyUpdate) {
+
+    private function waitForTopologyUpdate(?Closure $topologyUpdate = null): void
+    {
 //        try {
 //            if (topologyUpdate == null || topologyUpdate.isCompletedExceptionally()) {
 //                synchronized (this) {
@@ -832,8 +848,8 @@ class RequestExecutor implements CleanCloseable
 //
 //            throw ExceptionsUtils.unwrapException(e);
 //        }
-//    }
-//
+    }
+
 //    private void updateTopologyCallback() {
 //        Date time = new Date();
 //        if (time.getTime() - _lastReturnedResponse.getTime() <= Duration.ofMinutes(5).toMillis()) {
@@ -1141,7 +1157,7 @@ class RequestExecutor implements CleanCloseable
      */
     private function sendRequestToServer(
         ServerNode $chosenNode,
-        int $nodeIndex,
+        ?int $nodeIndex,
         RavenCommand $command,
         bool $shouldRetry,
         ?SessionInfo $sessionInfo,
@@ -2135,7 +2151,7 @@ class RequestExecutor implements CleanCloseable
         return !empty($message) ? $s . ': ' . $message : $s;
     }
 
-//    protected CompletableFuture<Void> _firstTopologyUpdate;
+    protected ?Closure $_firstTopologyUpdate = null;
     protected ?UrlArray $lastKnownUrls = null;
     protected bool $disposed = false;
 

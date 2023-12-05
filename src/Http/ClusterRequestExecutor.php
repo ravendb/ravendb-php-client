@@ -4,10 +4,13 @@ namespace RavenDB\Http;
 
 use RavenDB\Auth\AuthOptions;
 use RavenDB\Documents\Conventions\DocumentConventions;
+use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Exceptions\UnsupportedOperationException;
+use RavenDB\ServerWide\Commands\GetClusterTopologyCommand;
 use RavenDB\Type\Url;
 use RavenDB\Type\UrlArray;
+use Throwable;
 
 // !status: IN PROGRESS
 class ClusterRequestExecutor extends RequestExecutor
@@ -53,20 +56,9 @@ class ClusterRequestExecutor extends RequestExecutor
         );
 
         $executor->disableClientConfigurationUpdates = true;
-//        $executor->firstTopologyUpdate = $executor->firstTopologyUpdate($initialUrls, null);
-
-
-        // @todo: remove following lines
-        $serverNode = new ServerNode();
-        $serverNode->setDatabase($databaseName);
-        $serverNode->setUrl($initialUrls[0]);
-
-        $topology = new Topology();
-        $topology->setEtag(-1);
-        $topology->getNodes()->append($serverNode);
-
-        $executor->setNodeSelector(new NodeSelector($topology));
-        //-- until here
+        $executor->_firstTopologyUpdate = function() use ($executor, $initialUrls) {
+            $executor->firstTopologyUpdate($initialUrls, null);
+        };
 
         return $executor;
     }
@@ -137,18 +129,17 @@ class ClusterRequestExecutor extends RequestExecutor
 //    protected void performHealthCheck(ServerNode serverNode, int nodeIndex) {
 //        execute(serverNode, nodeIndex, new GetTcpInfoCommand("health-check"), false, null);
 //    }
-//
-//    @Override
-//    public CompletableFuture<Boolean> updateTopologyAsync(UpdateTopologyParameters parameters) {
-//        if (parameters == null) {
-//            throw new IllegalArgumentException("Parameters cannot be null");
-//        }
-//
-//        if (_disposed) {
-//            return CompletableFuture.completedFuture(false);
-//        }
-//
-//        return CompletableFuture.supplyAsync(() -> {
+
+    public function updateTopologyAsync(?UpdateTopologyParameters $parameters = null): bool
+    {
+        if ($parameters == null) {
+            throw new IllegalArgumentException("Parameters cannot be null");
+        }
+
+        if ($this->disposed) {
+            return false;
+        }
+
 //            try {
 //                boolean lockTaken = clusterTopologySemaphore.tryAcquire(parameters.getTimeoutInMs(), TimeUnit.MILLISECONDS);
 //                if (!lockTaken) {
@@ -158,51 +149,56 @@ class ClusterRequestExecutor extends RequestExecutor
 //                throw new RuntimeException(e);
 //            }
 //
-//            try {
+            try {
 //                if (_disposed) {
 //                    return false;
 //                }
-//
-//                GetClusterTopologyCommand command = new GetClusterTopologyCommand(parameters.getDebugTag());
-//                execute(parameters.getNode(), null, command, false, null);
-//
-//                ClusterTopologyResponse results = command.getResult();
-//                List<ServerNode> nodes = ServerNode.createFrom(results.getTopology());
-//
-//                Topology newTopology = new Topology();
-//                newTopology.setNodes(nodes);
-//                newTopology.setEtag(results.getEtag());
-//
-//                topologyEtag = results.getEtag();
-//
-//                if (_nodeSelector == null) {
-//                    _nodeSelector = new NodeSelector(newTopology, _executorService);
-//
-//                    if (getConventions().getReadBalanceBehavior() == ReadBalanceBehavior.FASTEST_NODE) {
-//                        _nodeSelector.scheduleSpeedTest();
-//                    }
-//                } else if (_nodeSelector.onUpdateTopology(newTopology, parameters.isForceUpdate())) {
+
+                $command = new GetClusterTopologyCommand($parameters->getDebugTag());
+
+                $options = new ExecuteOptions();
+                $options->setNodeIndex(null);
+                $options->setChosenNode($parameters->getNode());
+                $options->setShouldRetry(false);
+
+                $this->execute($command, null, $options);
+
+                /** @var ClusterTopologyResponse $results */
+                $results = $command->getResult();
+
+                $nodes = ServerNode::createFrom($results->getTopology());
+
+                $newTopology = new Topology();
+                $newTopology->setNodes($nodes);
+                $newTopology->setEtag($results->getEtag());
+
+                $topologyEtag = $results->getEtag();
+
+                if ($this->nodeSelector == null) {
+                    $this->nodeSelector = new NodeSelector($newTopology);
+
+                    if ($this->getConventions()->getReadBalanceBehavior()->isFastestNode()) {
+                        $this->nodeSelector->scheduleSpeedTest();
+                    }
+                } else if ($this->nodeSelector->onUpdateTopology($newTopology, $parameters->isForceUpdate())) {
 //                    disposeAllFailedNodesTimers();
-//
-//                    if (getConventions().getReadBalanceBehavior() == ReadBalanceBehavior.FASTEST_NODE) {
-//                        _nodeSelector.scheduleSpeedTest();
-//                    }
-//                }
-//
-//                onTopologyUpdatedInvoke(newTopology);
-//            } catch (Exception e) {
-//                if (!_disposed) {
-//                    throw e;
-//                }
-//            } finally {
+                    if ($this->getConventions()->getReadBalanceBehavior()->isFastestNode()) {
+                        $this->nodeSelector->scheduleSpeedTest();
+                    }
+                }
+
+                $this->onTopologyUpdatedInvoke($newTopology);
+            } catch (Throwable $e) {
+                if (!$this->disposed) {
+                    throw $e;
+                }
+            } finally {
 //                clusterTopologySemaphore.release();
-//            }
-//
-//            return true;
-//        }, _executorService);
-//    }
-//
-//    @Override
+            }
+
+            return true;
+    }
+
 //    protected CompletableFuture<Void> updateClientConfigurationAsync(ServerNode serverNode) {
 //        return CompletableFuture.completedFuture(null);
 //    }
