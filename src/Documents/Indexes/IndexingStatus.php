@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Indexes;
 
 use RavenDB\Http\ResultInterface;
 
-// !status: DONE
 class IndexingStatus implements ResultInterface
 {
     private ?IndexRunningStatus $status = null;

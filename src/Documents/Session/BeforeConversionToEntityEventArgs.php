@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Session;
 
 use RavenDB\Primitives\EventArgs;
 
-// !status: DONE
 class BeforeConversionToEntityEventArgs extends EventArgs
 {
     private ?InMemoryDocumentSessionOperations $session = null;

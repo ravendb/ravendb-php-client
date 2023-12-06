@@ -2,7 +2,6 @@
 
 namespace RavenDB\Documents\Queries;
 
-// !status: DONE
 class GroupBy
 {
     private string $field;

@@ -18,7 +18,7 @@ use RavenDB\Primitives\TimeValue;
 use RavenDB\Type\Duration;
 use RavenDB\Type\ExtendedArrayObject;
 use RavenDB\Utils\DateUtils;
-use tests\RavenDB\Infrastructure\DisableOnPullRequestCondition;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
 use tests\RavenDB\Test\Client\TimeSeries\_TimeSeriesTypedSessionTest\StockPrice;
@@ -28,7 +28,7 @@ class RavenDB_16060Test extends RemoteTestBase
     public function setUp(): void
     {
         parent::setUp();
-        DisableOnPullRequestCondition::evaluateExecutionCondition($this);
+        TestRunGuard::disableTestIfLicenseNotAvailable($this);
     }
 
     public function testCanIncludeTypedTimeSeries(): void

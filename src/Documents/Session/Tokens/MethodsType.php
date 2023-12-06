@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Session\Tokens;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class MethodsType implements ValueObjectInterface
 {
     public const CMP_X_CHG = 'cmp x chg';

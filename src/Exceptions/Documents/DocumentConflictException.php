@@ -6,7 +6,6 @@ use RavenDB\Exceptions\BadResponseException;
 use RavenDB\Exceptions\ConflictException;
 use RavenDB\Extensions\JsonExtensions;
 
-// !status: DONE
 class DocumentConflictException extends ConflictException
 {
     private ?string $docId;
@@ -25,20 +24,13 @@ class DocumentConflictException extends ConflictException
         return new DocumentConflictException($message, null, 0);
     }
 
-    public static function fromJson(string $json): DocumentConflictException
+    public static function fromJson(?array $json): DocumentConflictException
     {
-        try {
-            $jsonNode = JsonExtensions::getDefaultMapper()->denormalize($json, \ArrayObject::class);
+        $docId = $json['DocId'];
+        $message = $json['Message'];
+        $largestETag = $json['LargestEtag'];
 
-            $docId = $jsonNode['DocId'];
-            $message = $jsonNode['Message'];
-            $largestETag = $jsonNode['LargestEtag'];
-
-            return new DocumentConflictException($message, $docId, $largestETag);
-
-        } catch (\Throwable $exception) {
-            throw new BadResponseException('Unable to parse server response');
-        }
+        return new DocumentConflictException($message, $docId, $largestETag);
     }
 
     public function getDocId(): ?string

@@ -7,7 +7,6 @@ use RavenDB\Documents\Session\BeforeDeleteEventArgs;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Exceptions\IllegalArgumentException;
 
-// !status: DONE
 class DeleteCommandData implements CommandDataInterface
 {
     private string $id;

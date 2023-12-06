@@ -7,7 +7,6 @@ use RavenDB\Documents\Commands\HiLoReturnCommand;
 use RavenDB\Documents\Commands\NextHiLoCommand;
 use RavenDB\Documents\DocumentStoreInterface;
 
-// !status: DONE
 class HiLoIdGenerator
 {
     private ?DocumentStoreInterface $store = null;
@@ -60,7 +59,7 @@ class HiLoIdGenerator
             // local range is not exhausted yet
             $range = $this->range;
 
-            $id = $this->range->Current->incrementAndGet();
+            $id = $range->Current->incrementAndGet();
             if ($id <= $range->Max) {
                 return $id;
             }

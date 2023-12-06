@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Operations\CompareExchange;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class CompareExchangeValueState implements ValueObjectInterface
 {
     public const NONE = 'None';

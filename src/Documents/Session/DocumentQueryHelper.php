@@ -8,7 +8,6 @@ use RavenDB\Documents\Session\Tokens\OpenSubclauseToken;
 use RavenDB\Documents\Session\Tokens\QueryToken;
 use RavenDB\Utils\StringBuilder;
 
-// !status: DONE
 class DocumentQueryHelper
 {
     public static function addSpaceIfNeeded(

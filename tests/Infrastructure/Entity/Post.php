@@ -2,7 +2,7 @@
 
 namespace tests\RavenDB\Infrastructure\Entity;
 
-// !status: DONE
+
 use DateTimeInterface;
 
 class Post

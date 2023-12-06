@@ -76,7 +76,7 @@ class DatabasesTest extends RemoteTestBase
     {
         $store = $this->getDocumentStore();
         try {
-            $this->createMoviesData($store);
+            $this->samples->createMoviesData($store);
 
             $session = $store->openSession();
             try {

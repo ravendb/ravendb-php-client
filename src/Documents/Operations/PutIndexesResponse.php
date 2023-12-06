@@ -5,7 +5,6 @@ namespace RavenDB\Documents\Operations;
 use RavenDB\Documents\Indexes\PutIndexResultArray;
 use RavenDB\Http\ResultInterface;
 
-// !status: DONE
 class PutIndexesResponse implements ResultInterface
 {
     private ?PutIndexResultArray $results = null;

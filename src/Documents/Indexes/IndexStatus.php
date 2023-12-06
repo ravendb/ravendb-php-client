@@ -2,7 +2,6 @@
 
 namespace RavenDB\Documents\Indexes;
 
-// !status: DONE
 class IndexStatus
 {
     private ?string $name = null;

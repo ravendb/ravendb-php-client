@@ -2,7 +2,6 @@
 
 namespace RavenDB\Http;
 
-// !status: DONE
 class CurrentIndexAndNodeAndEtag
 {
     public int $currentIndex;

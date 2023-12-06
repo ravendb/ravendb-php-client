@@ -9,7 +9,6 @@ use RavenDB\Documents\Operations\MaintenanceOperationInterface;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Http\RavenCommand;
 
-// !status: DONE
 class PutIndexesOperation implements MaintenanceOperationInterface
 {
     private ?IndexDefinitionArray $indexToAdd = null;

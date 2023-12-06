@@ -8,7 +8,6 @@ use RavenDB\Http\ResultInterface;
 /**
  * The result of a NextHiLo operation
  */
-// !status: DONE
 class HiLoResult implements ResultInterface
 {
     private ?string $prefix = null;

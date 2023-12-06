@@ -15,7 +15,7 @@ use RavenDB\Documents\Operations\GetOngoingTaskInfoOperation;
 use RavenDB\Documents\Operations\OngoingTasks\DeleteOngoingTaskOperation;
 use RavenDB\Documents\Operations\OngoingTasks\OngoingTaskState;
 use RavenDB\Documents\Operations\OngoingTasks\OngoingTaskType;
-use tests\RavenDB\Infrastructure\DisableOnPullRequestCondition;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\ReplicationTestBase;
 
@@ -25,7 +25,7 @@ class EtlTest extends ReplicationTestBase
     {
         parent::setUp();
 
-        DisableOnPullRequestCondition::evaluateExecutionCondition($this);
+        TestRunGuard::disableTestIfLicenseNotAvailable($this);
     }
 
     public function testCanAddEtl(): void

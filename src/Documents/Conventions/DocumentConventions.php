@@ -781,7 +781,7 @@ class DocumentConventions
      *
      * @throws ReflectionException
      */
-    public function getCollectionName($entity): ?string
+    public function getCollectionName(string|object|null $entity): ?string
     {
         if (empty($entity)) {
             return null;
@@ -922,6 +922,7 @@ class DocumentConventions
      */
     public function setDisableAtomicDocumentWritesInClusterWideTransaction(bool $value): void
     {
+        $this->assertNotFrozen();
         $this->disableAtomicDocumentWritesInClusterWideTransaction = $value;
     }
 

@@ -9,7 +9,6 @@ use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Http\HttpResponse;
 use Throwable;
 
-// !status: DONE
 class ExceptionDispatcher
 {
     public static function get(ExceptionSchema $schema, int $code, ?Throwable $inner = null): RavenException
@@ -52,9 +51,10 @@ class ExceptionDispatcher
         }
 
         try {
-            $json = $response->getContent();
+            $jsonText = $response->getContent();
+            $json = JsonExtensions::getDefaultMapper()->decode($jsonText, 'json');
             /** @var ExceptionSchema $schema */
-            $schema = JsonExtensions::getDefaultMapper()->deserialize($json, ExceptionSchema::class, 'json');
+            $schema = JsonExtensions::getDefaultMapper()->deserialize($jsonText, ExceptionSchema::class, 'json');
 
             if ($response->getStatusCode() == HttpStatusCode::CONFLICT) {
                 self::throwConflict($schema, $json);
@@ -62,7 +62,7 @@ class ExceptionDispatcher
 
             $type = self::getType($schema->getType());
             if ($type == null) {
-                throw RavenException::generic($schema->getError(), $json);
+                throw RavenException::generic($schema->getError(), $jsonText);
             }
 
             $exception = new RavenException();
@@ -70,7 +70,7 @@ class ExceptionDispatcher
             try {
                 $exception = new $type($schema->getError());
             } catch (Throwable $e) {
-                throw RavenException::generic($schema->getError(), $json);
+                throw RavenException::generic($schema->getError(), $jsonText);
             }
             if (!($exception instanceof RavenException)) {
                 throw new RavenException($schema->getError(), $exception);
@@ -79,13 +79,12 @@ class ExceptionDispatcher
             if ($exception instanceof IndexCompilationException) {
                 /** @var IndexCompilationException $indexCompilationException */
                 $indexCompilationException = $exception;
-                $jsonNode = JsonExtensions::getDefaultMapper()->decode($json, 'json');
-                $indexDefinitionProperty = array_key_exists('TransformerDefinitionProperty', $jsonNode) ?  $jsonNode['TransformerDefinitionProperty'] : null;
+                $indexDefinitionProperty = array_key_exists('TransformerDefinitionProperty', $json) ?  $json['TransformerDefinitionProperty'] : null;
                 if ($indexDefinitionProperty != null) {
                     $indexCompilationException->setIndexDefinitionProperty($indexDefinitionProperty);
                 }
 
-                $problematicText = array_key_exists('ProblematicText', $jsonNode) ?  $jsonNode['ProblematicText'] : null;
+                $problematicText = array_key_exists('ProblematicText', $json) ?  $json['ProblematicText'] : null;
                 if ($problematicText != null) {
                     $indexCompilationException->setProblematicText($problematicText);
                 }
@@ -110,13 +109,98 @@ class ExceptionDispatcher
      * @throws ConcurrencyException
      * @throws DocumentConflictException
      */
-    private static function throwConflict(ExceptionSchema $schema, string $json): void
+    private static function throwConflict(ExceptionSchema $schema, ?array $json): void
     {
-        if (strpos($schema->getType(), 'DocumentConflictException') !== false) {
+        if (str_contains($schema->getType(), 'DocumentConflictException')) {
             throw DocumentConflictException::fromJson($json);
         }
 
-        throw new ConcurrencyException($schema->getError());
+        if (str_contains($schema->getType(),'ClusterTransactionConcurrencyException')) {
+            $ctxConcurrencyException = new ClusterTransactionConcurrencyException($schema->getMessage());
+
+            $idNode = array_key_exists('Id', $json) ? strval($json['Id']) : null;
+            if ($idNode != null && !empty($idNode)) {
+                $ctxConcurrencyException->setId($idNode);
+            }
+
+            $expectedChangeVectorNode = array_key_exists('ExpectedChangeVector', $json) ? strval($json['ExpectedChangeVector']) : null;
+            if ($expectedChangeVectorNode != null && !empty($expectedChangeVectorNode)) {
+                $ctxConcurrencyException->setExpectedChangeVector($expectedChangeVectorNode);
+            }
+
+            $actualChangeVectorNode = array_key_exists('ActualChangeVector', $json) ? strval($json['ActualChangeVector']) : null;
+            if ($actualChangeVectorNode != null && !empty($actualChangeVectorNode)) {
+                $ctxConcurrencyException->setActualChangeVector($actualChangeVectorNode);
+            }
+
+            $concurrencyViolationsNode = array_key_exists('ConcurrencyViolations', $json) ? $json['ConcurrencyViolations'] : null;
+            if ($concurrencyViolationsNode == null || !is_array($concurrencyViolationsNode)) {
+                throw $ctxConcurrencyException;
+            }
+
+            $concurrencyViolationsJsonArray = $concurrencyViolationsNode;
+
+            $violationArray = new ConcurrencyViolationArray();
+
+            foreach ($concurrencyViolationsJsonArray as $violation) {
+                if ($violation == null) {
+                    continue;
+                }
+
+                $current = new ConcurrencyViolation();
+
+                $jsonId = array_key_exists('Id', $violation) ? strval($violation["Id"]) : null;
+                if ($jsonId != null ) {
+                    $current->setId($jsonId);
+                }
+
+                $typeText = strval($violation["Type"]);
+                switch ($typeText) {
+                    case "Document" :
+                        $current->setType(ViolationOnType::document());
+                        break;
+                    case "CompareExchange":
+                        $current->setType(ViolationOnType::compareExchange());
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Invalid type: " . $typeText);
+                }
+
+                $jsonExpected = array_key_exists('Expected', $violation) ? intval($violation['Expected']) : null;
+                if ($jsonExpected != null) {
+                    $current->setExpected($jsonExpected);
+                }
+
+                $jsonActual = array_key_exists('Actual', $violation) ? intval($violation['Actual']) : null;
+                if ($jsonActual != null) {
+                    $current->setActual($jsonActual);
+                }
+
+                $violationArray[] = $current;
+            }
+
+            $ctxConcurrencyException->setConcurrencyViolations($violationArray);
+
+            throw $ctxConcurrencyException;
+        }
+
+        $concurrencyException = new ConcurrencyException($schema->getMessage());
+        $idNode = array_key_exists('Id', $json) ? strval($json["Id"]) : null;
+        if ($idNode != null) {
+            $concurrencyException->setId($idNode);
+        }
+
+        $expectedChangeVectorNode = array_key_exists('ExpectedChangeVector', $json) ? strval($json['ExpectedChangeVector']) : null;
+        if ($expectedChangeVectorNode != null) {
+            $concurrencyException->setExpectedChangeVector($expectedChangeVectorNode);
+        }
+
+        $actualChangeVectorNode = array_key_exists('ActualChangeVector', $json) ? strval($json['ActualChangeVector']) : null;
+        if ($actualChangeVectorNode != null) {
+            $concurrencyException->setActualChangeVector($actualChangeVectorNode);
+        }
+
+        throw $concurrencyException;
     }
 
     private static function getType(?string $typeAsString): ?string

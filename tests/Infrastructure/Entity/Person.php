@@ -2,7 +2,6 @@
 
 namespace tests\RavenDB\Infrastructure\Entity;
 
-// !status: DONE
 class Person
 {
     private ?string $id = null;

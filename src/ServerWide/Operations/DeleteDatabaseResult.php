@@ -5,7 +5,6 @@ namespace RavenDB\ServerWide\Operations;
 use RavenDB\Http\ResultInterface;
 use RavenDB\Type\StringArray;
 
-// !status: DONE
 class DeleteDatabaseResult implements ResultInterface
 {
     private int $raftCommandIndex;

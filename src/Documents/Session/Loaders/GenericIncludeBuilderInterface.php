@@ -2,8 +2,6 @@
 
 namespace RavenDB\Documents\Session\Loaders;
 
-// !status: DONE
-
 /**
  * @template TBuilder
  *
@@ -11,13 +9,15 @@ namespace RavenDB\Documents\Session\Loaders;
  * @extends CounterIncludeBuilderInterface<TBuilder>
  * @extends GenericTimeSeriesIncludeBuilderInterface<TBuilder>
  * @extends CompareExchangeValueIncludeBuilderInterface<TBuilder>
+ * @extends GenericRevisionIncludeBuilderInterface<TBuilder>
  *
  */
 interface GenericIncludeBuilderInterface extends
     DocumentIncludeBuilderInterface,
     CounterIncludeBuilderInterface,
     GenericTimeSeriesIncludeBuilderInterface,
-    CompareExchangeValueIncludeBuilderInterface
+    CompareExchangeValueIncludeBuilderInterface,
+    GenericRevisionIncludeBuilderInterface
 {
 
 }

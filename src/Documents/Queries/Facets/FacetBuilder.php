@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Queries\Facets;
 
 use RavenDB\Exceptions\IllegalArgumentException;
 
-// !status: DONE
 class FacetBuilder implements FacetBuilderInterface, FacetOperationsInterface
 {
     private static array $rqlKeywords = [

@@ -10,7 +10,6 @@ use RavenDB\Http\ServerNode;
 use RavenDB\Utils\StringUtils;
 use RavenDB\Utils\UrlUtils;
 
-// !status: DONE
 class PutAttachmentCommand extends RavenCommand
 {
     private ?string $documentId = null;

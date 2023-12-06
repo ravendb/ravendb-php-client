@@ -5,6 +5,7 @@ namespace RavenDB\Documents;
 use Closure;
 use InvalidArgumentException;
 use Ramsey\Uuid\Uuid;
+use RavenDB\Documents\Identity\HiLoIdGeneratorInterface;
 use RavenDB\Documents\Operations\OperationExecutor;
 use RavenDB\Documents\Identity\MultiDatabaseHiLoIdGenerator;
 use RavenDB\Documents\Operations\MaintenanceOperationExecutor;
@@ -42,6 +43,11 @@ class DocumentStore extends DocumentStoreBase
 //    private DatabaseSmuggler _smuggler;
 
     private string $identifier = '';
+
+    public function getHiLoIdGenerator(): ?HiLoIdGeneratorInterface
+    {
+        return $this->multiDbHiLo;
+    }
 
     /**
      * @param UrlArray|Url|array|string|null $urls
@@ -352,11 +358,11 @@ class DocumentStore extends DocumentStoreBase
         return $this->operationExecutor;
     }
 
-//    public function bulkInsert(string $database = ''): BulkInsertOperation
+//    public function bulkInsert(string $database = '', ?BulkInsertOptions $options = null): BulkInsertOperation
 //    {
 //        $this->assertInitialized();
 //
-//        return new BulkInsertOperation($this->getEffectiveDatabase($database), $this);
+//        return new BulkInsertOperation($this->getEffectiveDatabase($database), $this, $options);
 //    }
 
 

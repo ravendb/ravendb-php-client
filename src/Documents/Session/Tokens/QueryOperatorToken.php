@@ -5,7 +5,6 @@ namespace RavenDB\Documents\Session\Tokens;
 use RavenDB\Documents\Queries\QueryOperator;
 use RavenDB\Utils\StringBuilder;
 
-// !status: DONE
 class QueryOperatorToken extends QueryToken
 {
   private QueryOperator $queryOperator;

@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Session\Tokens;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class WhereOperator implements ValueObjectInterface
 {
     public const EQUALS = 'equals';

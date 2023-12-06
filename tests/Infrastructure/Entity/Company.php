@@ -4,7 +4,6 @@ namespace tests\RavenDB\Infrastructure\Entity;
 
 use RavenDB\Type\StringArray;
 
-// !status: DONE
 class Company
 {
     private ?float $accountsReceivable = null;

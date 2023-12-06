@@ -4,7 +4,7 @@ namespace RavenDB\Http;
 
 use RavenDB\Type\TypedArray;
 
-class ServerNodeArray extends TypedArray
+class ServerNodeList extends TypedArray
 {
     public function __construct()
     {

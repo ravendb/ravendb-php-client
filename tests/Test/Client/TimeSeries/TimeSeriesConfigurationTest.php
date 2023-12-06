@@ -19,7 +19,7 @@ use RavenDB\Primitives\TimeValue;
 use RavenDB\ServerWide\GetDatabaseRecordOperation;
 use RavenDB\Type\Duration;
 use RavenDB\Utils\DateUtils;
-use tests\RavenDB\Infrastructure\DisableOnPullRequestCondition;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
 use Throwable;
@@ -52,7 +52,7 @@ class TimeSeriesConfigurationTest extends RemoteTestBase
 
     public function testCanConfigureTimeSeries(): void
     {
-        DisableOnPullRequestCondition::evaluateExecutionCondition($this);
+        TestRunGuard::disableTestIfLicenseNotAvailable($this);
 
         $store = $this->getDocumentStore();
         try {
@@ -188,7 +188,7 @@ class TimeSeriesConfigurationTest extends RemoteTestBase
 
     public function testCanExecuteSimpleRollup(): void
     {
-        DisableOnPullRequestCondition::evaluateExecutionCondition($this);
+        TestRunGuard::disableTestIfLicenseNotAvailable($this);
 
         $store = $this->getDocumentStore();
         try {
@@ -260,7 +260,7 @@ class TimeSeriesConfigurationTest extends RemoteTestBase
 
     public function testCanConfigureTimeSeries2(): void
     {
-        DisableOnPullRequestCondition::evaluateExecutionCondition($this);
+        TestRunGuard::disableTestIfLicenseNotAvailable($this);
 
         $store = $this->getDocumentStore();
         try  {
@@ -328,7 +328,7 @@ class TimeSeriesConfigurationTest extends RemoteTestBase
 
     public function testCanConfigureTimeSeries3(): void
     {
-        DisableOnPullRequestCondition::evaluateExecutionCondition($this);
+        TestRunGuard::disableTestIfLicenseNotAvailable($this);
         $store = $this->getDocumentStore();
         try  {
             $store->timeSeries()->setPolicy(User::class, "By15SecondsFor1Minute", TimeValue::ofSeconds(15), TimeValue::ofSeconds(60));

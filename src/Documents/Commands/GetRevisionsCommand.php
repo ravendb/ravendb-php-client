@@ -74,6 +74,21 @@ class GetRevisionsCommand extends RavenCommand
         return $command;
     }
 
+    public function getId(): ?string
+    {
+        return $this->id;
+    }
+
+    public function getBefore(): ?DateTime
+    {
+        return $this->before;
+    }
+
+    public function getChangeVector(): ?string
+    {
+        return $this->changeVector;
+    }
+
     public function getChangeVectors(): ?StringArray
     {
         return $this->changeVectors;

@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Session;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class OrderingType implements ValueObjectInterface
 {
     public const STRING = 'string';

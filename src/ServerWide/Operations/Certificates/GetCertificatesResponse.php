@@ -5,7 +5,6 @@ namespace RavenDB\ServerWide\Operations\Certificates;
 use RavenDB\Http\ResultInterface;
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
 class GetCertificatesResponse implements ResultInterface
 {
     /** @SerializedName("Results") */

@@ -11,7 +11,6 @@ use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ServerNode;
 use RavenDB\Utils\UrlUtils;
 
-// !status: DONE
 class GetIndexStatisticsCommand extends RavenCommand
 {
     private ?string $indexName = null;

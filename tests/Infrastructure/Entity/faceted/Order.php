@@ -4,7 +4,6 @@ namespace tests\RavenDB\Infrastructure\Entity\faceted;
 
 use DateTimeInterface;
 
-// !status: DONE
 class Order
 {
     private ?string $product = null;

@@ -5,7 +5,6 @@ namespace RavenDB\Documents\Session;
 use RavenDB\Http\Topology;
 use RavenDB\Primitives\EventArgs;
 
-// !status: DONE
 class TopologyUpdatedEventArgs extends EventArgs
 {
     private Topology $topology;

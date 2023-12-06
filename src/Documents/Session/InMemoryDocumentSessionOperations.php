@@ -3,6 +3,7 @@
 namespace RavenDB\Documents\Session;
 
 use Closure;
+use DateTime;
 use DateTimeInterface;
 use Ds\Map as DSMap;
 use InvalidArgumentException;
@@ -32,6 +33,7 @@ use RavenDB\Documents\Session\TimeSeries\TimeSeriesEntryArray;
 use RavenDB\Exceptions\Documents\Session\NonUniqueObjectException;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Exceptions\NotImplementedException;
 use RavenDB\Extensions\EntityMapper;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Extensions\StringExtensions;
@@ -45,6 +47,7 @@ use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Primitives\ClosureArray;
 use RavenDB\Primitives\DatesComparator;
 use RavenDB\Primitives\EventHelper;
+use RavenDB\Primitives\NetISO8601Utils;
 use RavenDB\Type\DeferredCommandsMap;
 use RavenDB\Type\ExtendedArrayObject;
 use RavenDB\Type\ObjectArray;
@@ -221,7 +224,20 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     /**
      * Translate between an ID and its associated entity
      */
-    public DocumentInfoArray $includedDocumentsById;
+    public ?DocumentInfoArray $includedDocumentsById = null;
+
+    /**
+     * Translate between an CV and its associated entity
+     */
+    public ?DocumentInfoArray $includeRevisionsByChangeVector = null;
+
+    /**
+     * Translate between an ID and its associated entity
+     *
+     * DocumentInfoDatesArray = Map<String, Map<Date, DocumentInfo>>
+     *
+     */
+    public ?DocumentInfoDatesArray $includeRevisionsIdByDateTimeBefore = null;
 
     /**
      * hold the data required to manage the data for RavenDB's Unit of Work
@@ -1494,7 +1510,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             }
         }
 
-        return !$this->deletedEntities->isEmpty();
+        return !$this->deletedEntities->isEmpty() || !empty($this->deferredCommands);
     }
 
     /**
@@ -1819,6 +1835,51 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             }
 
             $this->includedDocumentsById->offsetSet($newDocumentInfo->getId(), $newDocumentInfo);
+        }
+    }
+
+    public function registerRevisionIncludes(?array $revisionIncludes): void
+    {
+        if ($this->noTracking) {
+            return;
+        }
+
+        if ($revisionIncludes == null || empty($revisionIncludes)) {
+            return;
+        }
+
+        if ($this->includeRevisionsByChangeVector == null) {
+            $this->includeRevisionsByChangeVector = new DocumentInfoArray() ;// new TreeMap<>(String::compareToIgnoreCase);
+            $this->includeRevisionsByChangeVector->useKeysCaseInsensitive();
+        }
+
+        if ($this->includeRevisionsIdByDateTimeBefore == null) {
+            $this->includeRevisionsIdByDateTimeBefore = new DocumentInfoDatesArray()  ;// new TreeMap<>(String::compareToIgnoreCase);
+            $this->includeRevisionsIdByDateTimeBefore->useKeysCaseInsensitive();
+        }
+
+        foreach ($revisionIncludes as $json) {
+            if (!is_array($json)) {
+                continue;
+            }
+
+            $id = strval($json["Id"]);
+            $changeVector = strval($json["ChangeVector"]);
+            $beforeAsText = !empty($json["Before"]) ? strval($json["Before"]) : null;
+            $dateTime = $beforeAsText != null ? NetISO8601Utils::fromString($beforeAsText) : null;
+            $revision = $json["Revision"];
+
+            $this->includeRevisionsByChangeVector[$changeVector] = DocumentInfo::getNewDocumentInfo($revision);
+
+            if ($dateTime != null && $dateTime->getTimestamp() != 0 && StringUtils::isNotBlank($id)) {
+                $map = new DocumentInfoDates();
+
+                $documentInfo = new DocumentInfo();
+                $documentInfo->setDocument($revision);
+                $map->put($dateTime, $documentInfo);
+
+                $this->includeRevisionsIdByDateTimeBefore[$id] = $map;
+            }
         }
     }
 
@@ -2448,8 +2509,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     }
 
 
-    public
-    function hashCode(): int
+    public function hashCode(): int
     {
         return $this->hash;
     }
@@ -2457,15 +2517,13 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     /**
      * @throws ExceptionInterface
      */
-    private
-    function deserializeFromTransformer(?string $entityType, ?string $id, array $document, bool $trackEntity)
+    private function deserializeFromTransformer(?string $entityType, ?string $id, array $document, bool $trackEntity)
     {
         return $this->entityToJson->convertToEntity($entityType, $id, $document, $trackEntity);
     }
 
 
-    public
-    function checkIfIdAlreadyIncluded(?StringArray $ids, ?StringArray $includes): bool
+    public function checkIfIdAlreadyIncluded(?StringArray $ids, ?StringArray $includes): bool
     {
         foreach ($ids as $id) {
             if (in_array($id, $this->knownMissingIds)) {
@@ -2506,10 +2564,40 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         return true;
     }
 
-//    public boolean checkIfIdAlreadyIncluded(String[] ids, Map.Entry<String, Class< ? >>[] includes) {
-//        return checkIfIdAlreadyIncluded(ids, Arrays.stream(includes).map(Map.Entry::getKey).collect(Collectors.toList()));
-//    }
-//
+  public function checkIfAllChangeVectorsAreAlreadyIncluded(StringArray|array $changeVectors): bool
+  {
+        if ($this->includeRevisionsByChangeVector == null) {
+            return false;
+        }
+
+        foreach ($changeVectors as $cv) {
+            if (!$this->includeRevisionsByChangeVector->offsetExists($cv)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function checkIfRevisionByDateTimeBeforeAlreadyIncluded(string $id, DateTime $dateTime): bool
+    {
+        if ($this->includeRevisionsIdByDateTimeBefore == null) {
+            return false;
+        }
+
+        if (!$this->includeRevisionsIdByDateTimeBefore->offsetExists($id)) {
+            return false;
+        }
+        $dictionaryDateTimeToDocument = $this->includeRevisionsIdByDateTimeBefore->offsetGet($id);
+        if ($dictionaryDateTimeToDocument != null) {
+            return $dictionaryDateTimeToDocument->containsKey($dateTime);
+        }
+
+        return false;
+    }
+
+
+
 //    public boolean checkIfIdAlreadyIncluded(String[] ids, Collection<String> includes) {
 //        for (String id : ids) {
 //            if (_knownMissingIds.contains(id)) {
@@ -2558,8 +2646,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
      *
      * @throws ExceptionInterface
      */
-    protected
-    function refreshInternal($entity, RavenCommand $cmd, DocumentInfo $documentInfo): void
+    protected function refreshInternal($entity, RavenCommand $cmd, DocumentInfo $documentInfo): void
     {
         /** @var GetDocumentsResult $result */
         $result = $cmd->getResult();

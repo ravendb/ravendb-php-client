@@ -12,7 +12,6 @@ use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ServerNode;
 use RavenDB\Utils\RaftIdGenerator;
 
-// !status: DONE
 class NextIdentityForCommand extends RavenCommand implements RaftCommandInterface, BroadcastInterface
 {
     private string $id;

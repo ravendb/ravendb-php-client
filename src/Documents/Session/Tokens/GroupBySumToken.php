@@ -5,7 +5,6 @@ namespace RavenDB\Documents\Session\Tokens;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Utils\StringBuilder;
 
-// !status: DONE
 class GroupBySumToken extends QueryToken
 {
     private ?string $projectedName = null;

@@ -11,7 +11,6 @@ use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ServerNode;
 use RavenDB\Primitives\NetISO8601Utils;
 
-// !status: DONE
 class NextHiLoCommand extends RavenCommand
 {
     private ?string $tag = null;

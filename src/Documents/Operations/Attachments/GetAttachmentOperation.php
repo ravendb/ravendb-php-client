@@ -9,7 +9,6 @@ use RavenDB\Documents\Operations\OperationInterface;
 use RavenDB\Http\HttpCache;
 use RavenDB\Http\RavenCommand;
 
-// !status: DONE
 class GetAttachmentOperation implements OperationInterface
 {
     private ?string $documentId = null;

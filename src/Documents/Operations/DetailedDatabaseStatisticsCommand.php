@@ -7,7 +7,6 @@ use RavenDB\Http\HttpRequest;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Http\HttpRequestInterface;
 
-// !status: DONE
 class DetailedDatabaseStatisticsCommand extends RavenCommand
 {
     private ?string $debugTag = null;

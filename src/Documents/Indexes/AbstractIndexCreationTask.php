@@ -4,7 +4,7 @@ namespace RavenDB\Documents\Indexes;
 
 use RavenDB\Documents\Conventions\DocumentConventions;
 
-// !status: DONE
+
 abstract class AbstractIndexCreationTask extends AbstractGenericIndexCreationTask
 {
     protected ?string $map = null;

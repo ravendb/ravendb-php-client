@@ -6,7 +6,6 @@ use RavenDB\ServerWide\Commands\GetTcpInfoCommand;
 use RavenDB\ServerWide\Commands\TcpConnectionInfo;
 use tests\RavenDB\RemoteTestBase;
 
-// !status: DONE
 class GetTcpInfoTest extends RemoteTestBase
 {
     public function testCanGetTcpInfo(): void

@@ -8,7 +8,6 @@ use RavenDB\Exceptions\IllegalArgumentException;
 
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
 class ClientConfiguration
 {
     /** @SerializedName ("IdentityPartsSeparator") */

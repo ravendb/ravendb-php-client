@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Indexes;
 
 use RavenDB\Type\StringSet;
 
-// !status: DONE
 class AbstractJavaScriptIndexCreationTask extends AbstractIndexCreationTaskBase
 {
     private ?IndexDefinition $definition = null;
@@ -23,7 +22,7 @@ class AbstractJavaScriptIndexCreationTask extends AbstractIndexCreationTaskBase
     /**
      * @param StringSet|array|null $maps
      */
-    public function setMaps($maps): void
+    public function setMaps(StringSet|array|null $maps): void
     {
         if (is_array($maps)) {
             $maps = StringSet::fromArray($maps);

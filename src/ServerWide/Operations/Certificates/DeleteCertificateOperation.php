@@ -7,7 +7,6 @@ use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Http\VoidRavenCommand;
 use RavenDB\ServerWide\Operations\VoidServerOperationInterface;
 
-// !status: DONE
 class DeleteCertificateOperation implements VoidServerOperationInterface
 {
     private string $thumbprint;

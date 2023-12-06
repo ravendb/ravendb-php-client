@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Indexes;
 
 use RavenDB\Type\TypedMap;
 
-// !status: DONE
 class FieldTermVectorMap extends TypedMap
 {
     public function __construct()

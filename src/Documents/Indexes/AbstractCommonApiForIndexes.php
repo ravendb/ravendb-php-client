@@ -5,7 +5,6 @@ namespace RavenDB\Documents\Indexes;
 use RavenDB\Type\StringArray;
 use RavenDB\Utils\ClassUtils;
 
-// !status: DONE
 abstract class AbstractCommonApiForIndexes
 {
     private ?AdditionalSourcesArray $additionalSources = null;

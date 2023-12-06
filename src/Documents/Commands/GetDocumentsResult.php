@@ -5,7 +5,6 @@ namespace RavenDB\Documents\Commands;
 use RavenDB\Http\ResultInterface;
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
 class GetDocumentsResult implements ResultInterface
 {
     /** @SerializedName ("Includes") */
@@ -16,6 +15,9 @@ class GetDocumentsResult implements ResultInterface
 
     /** @SerializedName ("CounterIncludes") */
     private array $counterIncludes = [];
+
+    /** @SerializedName ("RevisionIncludes") */
+    private array $revisionIncludes = [];
 
     /** @SerializedName ("TimeSeriesIncludes") */
     private array $timeSeriesIncludes = [];
@@ -54,6 +56,16 @@ class GetDocumentsResult implements ResultInterface
     public function setCounterIncludes(array $counterIncludes): void
     {
         $this->counterIncludes = $counterIncludes;
+    }
+
+    public function getRevisionIncludes(): array
+    {
+        return $this->revisionIncludes;
+    }
+
+    public function setRevisionIncludes(array $revisionIncludes): void
+    {
+        $this->revisionIncludes = $revisionIncludes;
     }
 
     public function getTimeSeriesIncludes(): array

@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Commands;
 
+use RavenDB\Constants\Headers;
 use RavenDB\Constants\HttpStatusCode;
 use RavenDB\Http\HttpCache;
 use RavenDB\Http\HttpRequest;
@@ -38,7 +39,7 @@ class ConditionalGetDocumentsCommand extends RavenCommand
     {
         $request =  new HttpRequest($this->createUrl($serverNode), HttpRequest::GET);
 
-        $request->addHeader("If-None-Match", $this->changeVector);
+        $request->addHeader(Headers::IF_NONE_MATCH, $this->changeVector);
 
         return $request;
     }

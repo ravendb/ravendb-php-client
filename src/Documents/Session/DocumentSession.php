@@ -3,6 +3,7 @@
 namespace RavenDB\Documents\Session;
 
 use Closure;
+use DateTime;
 use RavenDB\Constants\Headers;
 use RavenDB\Constants\HttpStatusCode;
 use RavenDB\Documents\Commands\ConditionalGetDocumentsCommand;
@@ -574,7 +575,9 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
             $includeBuilder->getCountersToInclude(),
             $includeBuilder->isAllCounters(),
             $includeBuilder->getTimeSeriesToInclude(),
-            $includeBuilder->getCompareExchangeValuesToInclude()
+            $includeBuilder->getCompareExchangeValuesToInclude(),
+            $includeBuilder->getRevisionsToIncludeByChangeVector(),
+            $includeBuilder->getRevisionsToIncludeByDateTime()
         );
     }
 
@@ -585,7 +588,9 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
         ?StringArray                $counterIncludes = null,
         bool                        $includeAllCounters = false,
         ?AbstractTimeSeriesRangeSet $timeSeriesIncludes = null,
-        ?StringArray                $compareExchangeValueIncludes = null
+        ?StringArray                $compareExchangeValueIncludes = null,
+        ?StringArray                $revisionsIncludesByChangeVector = null,
+        ?DateTime                   $revisionsToIncludeByDateTime = null
     ): ObjectArray {
         if ($ids == null) {
             throw new IllegalArgumentException("Ids cannot be null");
@@ -601,6 +606,8 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
             $loadOperation->withCounters($counterIncludes);
         }
 
+        $loadOperation->withRevisionsByChangeVector($revisionsIncludesByChangeVector);
+        $loadOperation->withRevisionsByDateTimeBefore($revisionsToIncludeByDateTime);
         $loadOperation->withTimeSeries($timeSeriesIncludes);
         $loadOperation->withCompareExchange($compareExchangeValueIncludes);
 

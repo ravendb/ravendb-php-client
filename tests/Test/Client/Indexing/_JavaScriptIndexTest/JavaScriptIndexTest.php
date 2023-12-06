@@ -5,7 +5,6 @@ namespace tests\RavenDB\Test\Client\Indexing\_JavaScriptIndexTest;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
 
-// !status: DONE
 class JavaScriptIndexTest extends RemoteTestBase
 {
     public function testCanUseJavaScriptIndex(): void

@@ -26,6 +26,9 @@ class QueryResultBase
     /** @SerializedName ("CounterIncludes") */
     private array $counterIncludes = [];
 
+    /** @SerializedName ("RevisionIncludes") */
+    private array $revisionIncludes = [];
+
     /** @SerializedName ("IncludedCounterNames") */
     private array $includedCounterNames = [];
 
@@ -112,6 +115,22 @@ class QueryResultBase
      */
     public function setCounterIncludes(array $counterIncludes): void {
         $this->counterIncludes = $counterIncludes;
+    }
+
+    /**
+     * @return array  Gets the Revisions included in the result.
+     */
+    public function getRevisionIncludes(): array
+    {
+        return $this->revisionIncludes;
+    }
+
+    /**
+     * @param array $revisionIncludes Sets the Revisions included in the result.
+     */
+    public function setRevisionIncludes(array $revisionIncludes): void
+    {
+        $this->revisionIncludes = $revisionIncludes;
     }
 
     /**

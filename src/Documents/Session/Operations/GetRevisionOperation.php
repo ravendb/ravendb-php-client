@@ -62,9 +62,20 @@ class GetRevisionOperation
         return $operation;
     }
 
-    public function createRequest(): GetRevisionsCommand
+    public function createRequest(): ?GetRevisionsCommand
     {
-        $this->session->incrementRequestCount();
+        if ($this->command->getChangeVectors() != null) {
+            return $this->session->checkIfAllChangeVectorsAreAlreadyIncluded($this->command->getChangeVectors()) ? null : $this->command;
+        }
+
+        if ($this->command->getChangeVector() != null) {
+            return $this->session->checkIfAllChangeVectorsAreAlreadyIncluded([ $this->command->getChangeVector() ]) ? null : $this->command;
+        }
+
+        if ($this->command->getBefore() != null) {
+            return $this->session->checkIfRevisionByDateTimeBeforeAlreadyIncluded($this->command->getId(), $this->command->getBefore()) ? null : $this->command;
+        }
+
         return $this->command;
     }
 
@@ -86,11 +97,42 @@ class GetRevisionOperation
 
     public function getRevisionFromResult(?string $className): ?object
     {
-        if ($this->result == null) {
-            return null;
-        }
+        if (($this->result == null) ||count($this->result->getResults()) == 0) {
+            $revision = null;
 
-        if (count($this->result->getResults()) == 0) {
+            if ($this->command->getChangeVectors() != null) {
+                foreach($this->command->getChangeVectors() as $changeVector) {
+                    if ($this->session->includeRevisionsByChangeVector->offsetExists($changeVector)) {
+                        $revision = $this->session->includeRevisionsByChangeVector->offsetGet($changeVector);
+                    }
+                    if ($revision != null) {
+                        return $this->getRevision($className, $revision->getDocument());
+                    }
+                }
+            }
+
+            if ($this->command->getChangeVector() != null && $this->session->includeRevisionsByChangeVector != null) {
+                if ($this->session->includeRevisionsByChangeVector->offsetGet($this->command->getChangeVector())) {
+                    $revision = $this->session->includeRevisionsByChangeVector->offsetGet($this->command->getChangeVector());
+                }
+                if ($revision != null) {
+                    return $this->getRevision($className, $revision->getDocument());
+                }
+            }
+
+            if ($this->command->getBefore() != null && $this->session->includeRevisionsIdByDateTimeBefore != null) {
+                $dictionaryDateTimeToDocument = null;
+                if ($this->session->includeRevisionsIdByDateTimeBefore->offsetExists($this->command->getId())) {
+                    $dictionaryDateTimeToDocument = $this->session->includeRevisionsIdByDateTimeBefore->offsetGet($this->command->getId());
+                }
+                if ($dictionaryDateTimeToDocument != null) {
+                    $revision = $dictionaryDateTimeToDocument->get($this->command->getBefore());
+                    if ($revision != null) {
+                        return $this->getRevision($className, $revision->getDocument());
+                    }
+                }
+            }
+
             return null;
         }
 
@@ -167,6 +209,21 @@ class GetRevisionOperation
     {
         $results = new ExtendedArrayObject();
         $results->setKeysCaseInsensitive(true);
+
+
+        if ($this->result == null) {
+            foreach ($this->command->getChangeVectors() as $changeVector) {
+                $revision = null;
+                if ($this->session->includeRevisionsByChangeVector->offsetExists($changeVector)) {
+                    $revision = $this->session->includeRevisionsByChangeVector->offsetGet($changeVector);
+                }
+                if ($revision != null) {
+                    $results->offsetSet($changeVector, $this->getRevision($className, $revision->getDocument()));
+                }
+            }
+
+            return $results->getArrayCopy();
+        }
 
         $i = 0;
         foreach ($this->command->getChangeVectors() as $changeVector) {

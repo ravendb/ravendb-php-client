@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Operations;
 
 use RavenDB\Http\ResultInterface;
 
-// !status: DONE
 class DetailedDatabaseStatistics extends DatabaseStatistics implements ResultInterface
 {
     private ?int $countOfIdentities = null;

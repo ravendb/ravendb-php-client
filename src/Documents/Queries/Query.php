@@ -2,7 +2,6 @@
 
 namespace RavenDB\Documents\Queries;
 
-// !status: DONE
 class Query
 {
     private ?string $collection = null;

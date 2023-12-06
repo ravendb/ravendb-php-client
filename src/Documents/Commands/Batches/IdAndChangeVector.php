@@ -2,7 +2,6 @@
 
 namespace RavenDB\Documents\Commands\Batches;
 
-// !status: DONE
 class IdAndChangeVector
 {
     private ?string $id = null;

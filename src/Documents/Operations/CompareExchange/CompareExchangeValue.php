@@ -6,7 +6,7 @@ use RavenDB\Http\ResultInterface;
 use RavenDB\Json\MetadataAsDictionary;
 use RavenDB\Documents\Session\MetadataDictionaryInterface;
 
-// !status: DONE
+
 
 /**
  * @template T

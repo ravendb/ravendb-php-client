@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Indexes;
 
 use DateTimeInterface;
 
-// !status: DONE
 class RollingIndexDeployment
 {
     private RollingIndexState $state;

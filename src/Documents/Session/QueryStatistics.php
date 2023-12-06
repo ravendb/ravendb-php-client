@@ -9,7 +9,7 @@ use RavenDB\Documents\Queries\QueryResult;
  * Statistics about a raven query.
  * Such as how many records match the query
  */
-// !status: DONE
+
 class QueryStatistics
 {
     private bool $isStale = false;

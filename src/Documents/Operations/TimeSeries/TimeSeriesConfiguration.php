@@ -9,7 +9,6 @@ use RavenDB\Type\StringArray;
 
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
 class TimeSeriesConfiguration
 {
     public const TIME_SERIES_ROLLUP_SEPARATOR = '@';
@@ -29,7 +28,7 @@ class TimeSeriesConfiguration
         null|array                            $namedValues = null
     )
     {
-        $this->collections = $collections;
+        $this->collections = $collections ?? new TimeSeriesCollectionConfigurationMap();
         $this->policyCheckFrequency = $policyCheckFrequency;
         $this->namedValues = ExtendedArrayObject::ensure($namedValues);
         $this->namedValues->setKeysCaseInsensitive(true);

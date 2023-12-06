@@ -38,7 +38,10 @@ class DatabaseRecord
 
     /** @SerializedName("LockMode") */
     private DatabaseLockMode $lockMode;
+
+    /** @SerializedName("Topology") */
     private ?DatabaseTopology $topology = null;
+
     private ConflictSolver $conflictSolverConfig;
     private DocumentsCompressionConfiguration $documentsCompression;
 //    private Map<String, SorterDefinition> sorters = new HashMap<>();

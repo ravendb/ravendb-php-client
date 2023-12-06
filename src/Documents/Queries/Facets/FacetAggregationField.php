@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Queries\Facets;
 
 use RavenDB\Utils\HashUtils;
 
-// !status: DONE
 class FacetAggregationField
 {
     private ?string $name = null;

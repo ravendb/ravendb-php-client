@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Session\Loaders;
 
+use DateTime;
 use DateTimeInterface;
 use RavenDB\Constants\TimeSeries;
 use RavenDB\Documents\Conventions\DocumentConventions;
@@ -42,6 +43,10 @@ class IncludeBuilderBase
     /** @var array<AbstractTimeSeriesRangeSet>|null  */
     public ?array $timeSeriesToIncludeBySourceAlias = null;
     public ?StringSet $compareExchangeValuesToInclude = null;
+
+    public ?StringSet $revisionsToIncludeByChangeVector = null;
+    public ?DateTime $revisionsToIncludeByDateTime = null;
+
     public bool $includeTimeSeriesTags = false;
     public bool $includeTimeSeriesDocument = false;
 
@@ -66,6 +71,17 @@ class IncludeBuilderBase
 
         return $this->countersToIncludeBySourcePath[""][1];
     }
+
+    public function getRevisionsToIncludeByChangeVector(): ?StringSet
+    {
+        return $this->revisionsToIncludeByChangeVector;
+    }
+
+    public function getRevisionsToIncludeByDateTime(): ?DateTime
+    {
+        return $this->revisionsToIncludeByDateTime;
+    }
+
 
     public function isAllCounters(): bool
     {
@@ -113,6 +129,24 @@ class IncludeBuilderBase
         }
 
         $this->documentsToInclude->append($path);
+    }
+
+    protected function _includeRevisionsBefore(?DateTime $revisionsToIncludeByDateTime): void
+    {
+        $this->revisionsToIncludeByDateTime = $revisionsToIncludeByDateTime;
+    }
+
+    protected function _includeRevisionsByChangeVectors(?string $path): void
+    {
+        if (StringUtils::isBlank($path)) {
+            throw new IllegalArgumentException("Path cannot be null or whitespace");
+        }
+
+        if ($this->revisionsToIncludeByChangeVector == null) {
+            $this->revisionsToIncludeByChangeVector = new StringSet();
+        }
+
+        $this->revisionsToIncludeByChangeVector->append($path);
     }
 
     protected function _includeCounter(?string $path, ?string $name): void

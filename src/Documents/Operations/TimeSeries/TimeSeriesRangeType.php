@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Operations\TimeSeries;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class TimeSeriesRangeType implements ValueObjectInterface
 {
     public const NONE = 'None';

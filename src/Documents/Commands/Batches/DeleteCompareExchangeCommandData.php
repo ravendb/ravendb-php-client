@@ -5,7 +5,6 @@ namespace RavenDB\Documents\Commands\Batches;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 
-// !status: DONE
 class DeleteCompareExchangeCommandData implements CommandDataInterface
 {
     public ?int $index;

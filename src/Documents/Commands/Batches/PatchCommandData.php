@@ -7,7 +7,6 @@ use RavenDB\Documents\Operations\PatchRequest;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Exceptions\IllegalArgumentException;
 
-// !status: DONE
 class PatchCommandData implements CommandDataInterface
 {
     private string $id;

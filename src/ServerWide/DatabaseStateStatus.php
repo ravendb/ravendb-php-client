@@ -4,7 +4,6 @@ namespace RavenDB\ServerWide;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class DatabaseStateStatus implements ValueObjectInterface
 {
     public const NORMAL = 'Normal';

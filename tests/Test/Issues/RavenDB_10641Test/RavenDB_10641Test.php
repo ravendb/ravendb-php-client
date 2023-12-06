@@ -4,7 +4,6 @@ namespace tests\RavenDB\Test\Issues\RavenDB_10641Test;
 
 use tests\RavenDB\RemoteTestBase;
 
-// !status: DONE
 class RavenDB_10641Test extends RemoteTestBase
 {
     public function testCanEditObjectsInMetadata(): void

@@ -12,7 +12,6 @@ use RavenDB\Http\HttpRequestInterface;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Documents\Conventions\DocumentConventions;
 
-// !status: DONE
 class RemoveCompareExchangeCommand extends RavenCommand
 {
     private ?string $className = null;

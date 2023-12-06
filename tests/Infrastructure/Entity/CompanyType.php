@@ -4,7 +4,6 @@ namespace tests\RavenDB\Infrastructure\Entity;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class CompanyType implements ValueObjectInterface
 {
     private const PUBLIC = 'public';

@@ -5,7 +5,6 @@ namespace RavenDB\Documents\Operations;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Documents\Conventions\DocumentConventions;
 
-// !status: DONE
 class GetDetailedStatisticsOperation implements MaintenanceOperationInterface
 {
     private ?string $debugTag = null;

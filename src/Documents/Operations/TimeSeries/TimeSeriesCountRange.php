@@ -2,7 +2,6 @@
 
 namespace RavenDB\Documents\Operations\TimeSeries;
 
-// !status: DONE
 class TimeSeriesCountRange extends AbstractTimeSeriesRange
 {
     private int $count = 0;

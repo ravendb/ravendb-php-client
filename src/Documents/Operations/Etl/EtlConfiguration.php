@@ -7,13 +7,16 @@ use Symfony\Component\Serializer\Annotation\SerializedName;
 abstract class EtlConfiguration
 {
     #[SerializedName("TaskId")]
-    private ?int $taskId = null;
+    private int $taskId = 0;
 
     #[SerializedName("Name")]
     private ?string $name = null;
 
     #[SerializedName("MentorNode")]
     private ?string $mentorNode = null;
+
+    #[SerializedName("PinToMentorNode")]
+    private bool $pinToMentorNode = false;
 
     #[SerializedName("ConnectionStringName")]
     private ?string $connectionStringName = null;
@@ -32,12 +35,12 @@ abstract class EtlConfiguration
         $this->transforms =  new TransformationList();
     }
 
-    public function getTaskId(): ?int
+    public function getTaskId(): int
     {
         return $this->taskId;
     }
 
-    public function setTaskId(?int $taskId): void
+    public function setTaskId(int $taskId): void
     {
         $this->taskId = $taskId;
     }
@@ -60,6 +63,16 @@ abstract class EtlConfiguration
     public function setMentorNode(?string $mentorNode): void
     {
         $this->mentorNode = $mentorNode;
+    }
+
+    public function isPinToMentorNode(): bool
+    {
+        return $this->pinToMentorNode;
+    }
+
+    public function setPinToMentorNode(bool $pinToMentorNode): void
+    {
+        $this->pinToMentorNode = $pinToMentorNode;
     }
 
     public function getConnectionStringName(): ?string

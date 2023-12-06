@@ -4,7 +4,6 @@ namespace RavenDB\Http;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class ResponseDisposeHandling implements ValueObjectInterface
 {
     public const MANUALLY = 'MANUALLY';

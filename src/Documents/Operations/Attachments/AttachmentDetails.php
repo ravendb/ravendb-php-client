@@ -2,7 +2,6 @@
 
 namespace RavenDB\Documents\Operations\Attachments;
 
-// !status: DONE
 class AttachmentDetails extends AttachmentName
 {
     private ?string $changeVector = null;

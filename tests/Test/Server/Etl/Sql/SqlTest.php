@@ -15,7 +15,7 @@ use RavenDB\Documents\Operations\Etl\UpdateEtlOperation;
 use RavenDB\Documents\Operations\GetOngoingTaskInfoOperation;
 use RavenDB\Documents\Operations\OngoingTasks\OngoingTaskState;
 use RavenDB\Documents\Operations\OngoingTasks\OngoingTaskType;
-use tests\RavenDB\Infrastructure\DisableOnPullRequestCondition;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\ReplicationTestBase;
 
@@ -25,7 +25,7 @@ class SqlTest extends ReplicationTestBase
     {
         parent::setUp();
 
-        DisableOnPullRequestCondition::evaluateExecutionCondition($this);
+        TestRunGuard::disableTestIfLicenseNotAvailable($this);
     }
 
     public function testCanAddEtl(): void
@@ -44,6 +44,7 @@ class SqlTest extends ReplicationTestBase
             $transformation = new Transformation();
             $transformation->setApplyToAllDocuments(true);
             $transformation->setName("Script #1");
+            $transformation->setScript("loadToUsers(this)");
 
             $table1 = new SqlEtlTable();
             $table1->setDocumentIdColumn("Id");
@@ -191,6 +192,7 @@ class SqlTest extends ReplicationTestBase
             $transformation = new Transformation();
             $transformation->setApplyToAllDocuments(true);
             $transformation->setName("Script Q&A");
+            $transformation->setScript("loadToUsers(this)");
 
             $table1 = new SqlEtlTable();
             $table1->setDocumentIdColumn("Id");

@@ -5,7 +5,6 @@ namespace RavenDB\Documents\Operations\Attachments;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Utils\StringUtils;
 
-// !status: DONE
 class AttachmentRequest
 {
     private ?string $name = null;

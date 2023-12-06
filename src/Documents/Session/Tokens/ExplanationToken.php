@@ -2,7 +2,7 @@
 
 namespace RavenDB\Documents\Session\Tokens;
 
-// !status: DONE
+
 use RavenDB\Utils\StringBuilder;
 
 class ExplanationToken extends QueryToken

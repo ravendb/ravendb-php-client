@@ -6,7 +6,6 @@ use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Primitives\TimeValue;
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
 class TimeSeriesPolicy
 {
     #[SerializedName("Name")]

@@ -11,7 +11,7 @@ use RavenDB\Type\StringArray;
 use RavenDB\Type\StringSet;
 use RavenDB\Utils\ClassUtils;
 
-// !status: DONE
+
 abstract class AbstractIndexDefinitionBuilder
 {
     protected ?string $indexName = null;

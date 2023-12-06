@@ -2,7 +2,6 @@
 
 namespace RavenDB\Documents\Indexes\Spatial;
 
-// !status: DONE
 class SpatialOptionsFactory
 {
   public function geography(): GeographySpatialOptionsFactory

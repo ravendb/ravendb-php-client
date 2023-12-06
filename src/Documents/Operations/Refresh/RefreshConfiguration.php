@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Operations\Refresh;
 
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
 class RefreshConfiguration
 {
     /** @SerializedName ("Disabled") */

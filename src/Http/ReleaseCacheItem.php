@@ -6,7 +6,6 @@ use RavenDB\Primitives\CleanCloseable;
 use RavenDB\Type\Duration;
 use RavenDB\Utils\DateUtils;
 
-// !status: DONE
 class ReleaseCacheItem implements CleanCloseable
 {
     private ?HttpCacheItem $item = null;

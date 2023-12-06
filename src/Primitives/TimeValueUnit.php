@@ -4,7 +4,6 @@ namespace RavenDB\Primitives;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class TimeValueUnit implements ValueObjectInterface
 {
     public const NONE = 'None';

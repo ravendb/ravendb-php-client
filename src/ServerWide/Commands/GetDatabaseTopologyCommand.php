@@ -10,7 +10,6 @@ use RavenDB\Http\Topology;
 use RavenDB\Type\Duration;
 use RavenDB\Utils\UrlUtils;
 
-// !status: DONE
 class GetDatabaseTopologyCommand extends RavenCommand
 {
     private ?string $applicationIdentifier = null;
@@ -20,10 +19,9 @@ class GetDatabaseTopologyCommand extends RavenCommand
     {
         parent::__construct(Topology::class);
         $this->debugTag = $debugTag;
-        $timeout = Duration::ofSeconds(15);
         $this->applicationIdentifier = $applicationIdentifier;
 
-        $timeout = Duration::ofSeconds(15);
+        $this->timeout = Duration::ofSeconds(15);
     }
 
     public function createUrl(ServerNode $serverNode): string

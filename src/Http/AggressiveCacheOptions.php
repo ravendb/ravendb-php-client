@@ -4,7 +4,6 @@ namespace RavenDB\Http;
 
 use RavenDB\Type\Duration;
 
-// !status: DONE
 class AggressiveCacheOptions
 {
     private Duration $duration;

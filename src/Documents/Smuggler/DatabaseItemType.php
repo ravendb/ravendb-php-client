@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Smuggler;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class DatabaseItemType implements ValueObjectInterface
 {
     private const NONE = 'None';

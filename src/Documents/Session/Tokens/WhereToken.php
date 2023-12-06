@@ -6,7 +6,6 @@ use RavenDB\Constants\DocumentsIndexingSpatial;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Utils\StringBuilder;
 
-// !status: DONE
 class WhereToken extends QueryToken
 {
     private string $fieldName;

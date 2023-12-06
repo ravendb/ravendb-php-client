@@ -11,7 +11,6 @@ use RavenDB\Http\ServerNode;
 use RavenDB\Type\StringArrayResult;
 use RavenDB\Utils\UrlUtils;
 
-// !status: DONE
 class GetTermsCommand extends RavenCommand
 {
     private ?string $indexName = null;

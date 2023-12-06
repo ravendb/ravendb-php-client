@@ -5,7 +5,6 @@ namespace RavenDB\ServerWide\Operations;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Http\RavenCommand;
 
-// !status: DONE
 class GetServerWideOperationStateOperation implements ServerOperationInterface
 {
     private int $id;

@@ -6,7 +6,6 @@ use RavenDB\Documents\Indexes\Spatial\SpatialOptions;
 
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
 class IndexFieldOptions
 {
     /** @SerializedName ("Storage") */

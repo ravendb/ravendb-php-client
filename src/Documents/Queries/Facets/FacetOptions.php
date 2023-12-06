@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Queries\Facets;
 
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
 class FacetOptions
 {
     private static ?FacetOptions $defaultOptions = null;

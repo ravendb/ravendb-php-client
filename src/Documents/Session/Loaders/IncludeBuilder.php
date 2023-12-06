@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Session\Loaders;
 
+use DateTime;
 use DateTimeInterface;
 use RavenDB\Constants\TimeSeries;
 use RavenDB\Documents\Conventions\DocumentConventions;
@@ -82,4 +83,18 @@ class IncludeBuilder extends IncludeBuilderBase implements IncludeBuilderInterfa
 
         return $this;
     }
+
+     public function includeRevisionsWithPath(string $changeVectorPaths): IncludeBuilderInterface
+     {
+        $this->_withAlias();
+        $this->_includeRevisionsByChangeVectors($changeVectorPaths);
+        return $this;
+    }
+
+    public function includeRevisions(DateTime $before): IncludeBuilderInterface
+    {
+        $this->_includeRevisionsBefore($before);
+        return $this;
+    }
+
 }

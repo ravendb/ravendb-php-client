@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Indexes;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class RollingIndexState implements ValueObjectInterface
 {
     public const PENDING = 'PENDING';

@@ -2,7 +2,7 @@
 
 namespace RavenDB\Documents\Queries\Facets;
 
-// !status: DONE
+
 interface FacetBuilderInterface
 {
     public function byRanges(RangeBuilder $range, RangeBuilder ...$ranges): FacetOperationsInterface;

@@ -8,7 +8,6 @@ use RavenDB\Http\HttpRequestInterface;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ServerNode;
 
-// !status: DONE
 class GetIndexingStatusCommand extends RavenCommand
 {
     public function __construct()

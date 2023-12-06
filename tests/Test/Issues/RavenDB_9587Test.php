@@ -6,7 +6,6 @@ use RavenDB\Documents\Queries\Timings\QueryTimings;
 use tests\RavenDB\Infrastructure\Entity\Company;
 use tests\RavenDB\RemoteTestBase;
 
-// !status: DONE
 class RavenDB_9587Test extends RemoteTestBase
 {
     public function testTimingsShouldWork(): void

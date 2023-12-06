@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Operations\TimeSeries;
 
 use DateTimeInterface;
 
-// !status: DONE
 class TimeSeriesRange extends AbstractTimeSeriesRange
 {
     private ?DateTimeInterface $from;

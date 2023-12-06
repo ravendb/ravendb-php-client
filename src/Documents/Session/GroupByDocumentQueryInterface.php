@@ -2,7 +2,7 @@
 
 namespace RavenDB\Documents\Session;
 
-// !status: DONE
+
 interface GroupByDocumentQueryInterface
 {
     function selectKey(?string $fieldName = null, ?string $projectedName = null): GroupByDocumentQueryInterface;

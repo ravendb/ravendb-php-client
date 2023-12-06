@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Operations\TimeSeries;
 
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
 class TimeSeriesCollectionConfiguration
 {
     #[SerializedName("Disabled")]

@@ -2,7 +2,7 @@
 
 namespace RavenDB\Documents\Queries\Facets;
 
-// !status: DONE
+
 interface FacetOperationsInterface
 {
     public function withDisplayName(string $displayName): FacetOperationsInterface;

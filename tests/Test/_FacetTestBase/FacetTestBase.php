@@ -25,7 +25,7 @@ class FacetTestBase extends RemoteTestBase
         $store->maintenance()->send(new PutIndexesOperation($index->createIndexDefinition()));
     }
 
-    protected static function insertCameraData(DocumentStoreInterface $store, CameraList $cameras, bool $waitForIndexing): void
+    protected function insertCameraData(DocumentStoreInterface $store, CameraList $cameras, bool $waitForIndexing): void
     {
         $session = $store->openSession();
         try {

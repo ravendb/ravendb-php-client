@@ -5,7 +5,6 @@ namespace RavenDB\Documents\Session\Tokens;
 use RavenDB\Utils\StringBuilder;
 use RavenDB\Utils\StringUtils;
 
-// !status: DONE
 class WithEdgesToken extends QueryToken
 {
     private ?string $alias = null;

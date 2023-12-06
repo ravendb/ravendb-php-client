@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Indexes\Spatial;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class AutoSpatialMethodType implements ValueObjectInterface
 {
     private const POINT = 'point';

@@ -15,7 +15,7 @@ use RavenDB\Utils\StringUtils;
  * Commands that patches multiple documents using same patch script
  * CAUTION: This command does not update session state after .saveChanges() call
  */
-// !status: DONE
+
 class BatchPatchCommandData implements CommandDataInterface
 {
     private StringSet $seenIds;

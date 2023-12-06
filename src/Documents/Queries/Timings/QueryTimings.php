@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Queries\Timings;
 
 use RavenDB\Documents\Queries\QueryResult;
 
-// !status: DONE
 class QueryTimings
 {
     private int $durationInMs = 0;

@@ -5,7 +5,6 @@ namespace RavenDB\Documents\Session\Tokens;
 use RavenDB\Documents\Queries\GroupByMethod;
 use RavenDB\Utils\StringBuilder;
 
-// !status: DONE
 class GroupByToken extends QueryToken
 {
     private ?string $fieldName = null;

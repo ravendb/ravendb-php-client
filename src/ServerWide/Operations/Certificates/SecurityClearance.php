@@ -4,7 +4,6 @@ namespace RavenDB\ServerWide\Operations\Certificates;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class SecurityClearance implements ValueObjectInterface
 {
     public const UNAUTHENTICATED_CLIENTS = 'UnauthenticatedClients';

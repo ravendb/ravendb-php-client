@@ -5,7 +5,6 @@ namespace RavenDB\Exceptions;
 use RuntimeException;
 use Throwable;
 
-// !status: DONE
 class RavenException extends RuntimeException
 {
     private bool $reachedLeader = false;

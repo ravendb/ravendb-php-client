@@ -2,7 +2,6 @@
 
 namespace RavenDB\Documents\Indexes;
 
-// !status: DONE
 class PutIndexResult
 {
     private ?string $index = null;

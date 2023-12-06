@@ -5,7 +5,6 @@ namespace RavenDB\Documents\Session\Tokens;
 use RavenDB\Documents\Session\DocumentQueryHelper;
 use RavenDB\Utils\StringBuilder;
 
-// !status: DONE
 class MoreLikeThisToken extends WhereToken
 {
   public ?string $documentParameterName = null;

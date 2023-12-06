@@ -13,7 +13,6 @@ use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Exceptions\IllegalArgumentException;
 
-// !status: DONE
 class OperationExecutor
 {
     private ?DocumentStoreInterface $store = null;

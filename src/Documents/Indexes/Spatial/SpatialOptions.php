@@ -2,7 +2,7 @@
 
 namespace RavenDB\Documents\Indexes\Spatial;
 
-// !status: DONE
+
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
 class SpatialOptions

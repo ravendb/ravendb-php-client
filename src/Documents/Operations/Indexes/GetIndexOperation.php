@@ -7,7 +7,6 @@ use RavenDB\Documents\Operations\MaintenanceOperationInterface;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Http\RavenCommand;
 
-// !status: DONE
 class GetIndexOperation implements MaintenanceOperationInterface
 {
     private ?string $indexName = null;

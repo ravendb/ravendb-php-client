@@ -134,7 +134,7 @@ class RequestExecutor implements CleanCloseable
     }
 
 
-    public function getTopologyNodes(): ?ServerNodeArray
+    public function getTopologyNodes(): ?ServerNodeList
     {
         if ($this->getTopology()) {
             return $this->getTopology()->getNodes();
@@ -145,7 +145,7 @@ class RequestExecutor implements CleanCloseable
 
 //    private volatile Timer _updateTopologyTimer;
 
-    private ?NodeSelector $nodeSelector = null;
+    protected ?NodeSelector $nodeSelector = null;
 
     public function getNodeSelector(): ?NodeSelector
     {
@@ -281,8 +281,13 @@ class RequestExecutor implements CleanCloseable
 //    }
 //
 //    private void onFailedRequestInvoke(String url, Exception e) {
-//        EventHelper.invoke(_onFailedRequest, this, new FailedRequestEventArgs(_databaseName, url, e));
+//        onFailedRequestInvoke(url, e, null, null);
 //    }
+//
+//    private void onFailedRequestInvoke(String url, Exception e, HttpRequest request, HttpResponse response) {
+//        EventHelper.invoke(_onFailedRequest, this, new FailedRequestEventArgs(_databaseName, url, e, request, response));
+//    }
+
 
     private function createHttpClient(): HttpClientInterface
     {
@@ -511,7 +516,7 @@ class RequestExecutor implements CleanCloseable
                     $this->getConventions()->isSendApplicationIdentifier() ? $parameters->getApplicationIdentifier() : null
                 );
                 $options = new ExecuteOptions();
-                $options->setNodeIndex(-1);
+                $options->setNodeIndex(null);
                 $options->setChosenNode($parameters->getNode());
                 $options->setShouldRetry(false);
 
@@ -558,6 +563,12 @@ class RequestExecutor implements CleanCloseable
         if ($options) {
             $this->executeOnSpecificNode($command, $sessionInfo, $options);
             return;
+        }
+
+        if ($this->_firstTopologyUpdate !== null && !$this->disableTopologyUpdates) {
+            $topologyUpdate = $this->_firstTopologyUpdate;
+            $topologyUpdate();
+            $this->_firstTopologyUpdate = null;
         }
 
         $currentIndexAndNode = $this->chooseNodeForRequest($command, $sessionInfo);
@@ -608,6 +619,15 @@ class RequestExecutor implements CleanCloseable
         ?SessionInfo $sessionInfo,
         ExecuteOptions $options
     ): void {
+        if ($command->failoverTopologyEtag == self::$INITIAL_TOPOLOGY_ETAG) {
+            $command->failoverTopologyEtag = self::$INITIAL_TOPOLOGY_ETAG;
+            if ($this->nodeSelector != null && $this->nodeSelector->getTopology() != null) {
+                $topology = $this->nodeSelector->getTopology();
+                if ($topology->getEtag() != null) {
+                    $command->failoverTopologyEtag = $topology->getEtag();
+                }
+            }
+        }
 
         $request = $this->createRequest($options->getChosenNode(), $command);
 
@@ -800,8 +820,9 @@ class RequestExecutor implements CleanCloseable
 //        CurrentIndexAndNode currentIndexAndNode = chooseNodeForRequest(command, sessionInfo);
 //        execute(currentIndexAndNode.currentNode, currentIndexAndNode.currentIndex, command, true, sessionInfo);
 //    }
-//
-//    private void waitForTopologyUpdate(CompletableFuture<Void> topologyUpdate) {
+
+    private function waitForTopologyUpdate(?Closure $topologyUpdate = null): void
+    {
 //        try {
 //            if (topologyUpdate == null || topologyUpdate.isCompletedExceptionally()) {
 //                synchronized (this) {
@@ -827,8 +848,8 @@ class RequestExecutor implements CleanCloseable
 //
 //            throw ExceptionsUtils.unwrapException(e);
 //        }
-//    }
-//
+    }
+
 //    private void updateTopologyCallback() {
 //        Date time = new Date();
 //        if (time.getTime() - _lastReturnedResponse.getTime() <= Duration.ofMinutes(5).toMillis()) {
@@ -1106,35 +1127,29 @@ class RequestExecutor implements CleanCloseable
 //        }
 //    }
 
-    private function refreshIfNeeded(?ServerNode $chosenNode, ?HttpResponse $response): RefreshTask
+    private function refreshIfNeeded(?ServerNode $chosenNode, ?HttpResponse $response): CompletableFuture
     {
-        $refreshTask = RefreshTask::create();
+        $refreshTask = CompletableFuture::create();
+        $refreshClientConfigurationTask = CompletableFuture::create();
 
         $refreshTopology = HttpExtensions::getBooleanHeader($response, Headers::REFRESH_TOPOLOGY) ?? false;
         $refreshClientConfiguration = HttpExtensions::getBooleanHeader($response, Headers::REFRESH_CLIENT_CONFIGURATION) ?? false;
 
-        if ($refreshTopology || $refreshClientConfiguration) {
-            $serverNode = new ServerNode();
-            $serverNode->setUrl($chosenNode->getUrl());
-            $serverNode->setDatabase($this->databaseName);
-
-            $updateParameters = new UpdateTopologyParameters($serverNode);
+        if ($refreshTopology) {
+            $updateParameters = new UpdateTopologyParameters($chosenNode);
             $updateParameters->setTimeoutInMs(0);
             $updateParameters->setDebugTag("refresh-topology-header");
+                $refreshTask->add([$this, 'updateTopologyAsync'], $updateParameters);
+        }
 
-//            if ($refreshTopology) {
-//                $refreshTask->add($this->updateTopologyAsync($updateParameters));
-//            }
-
-            if ($refreshClientConfiguration) {
-                $updateClientConfigurationAsync = $this->updateClientConfigurationAsync($serverNode);
-                if ($updateClientConfigurationAsync != null) {
-                    $refreshTask->add($updateClientConfigurationAsync);
-                }
+        if ($refreshClientConfiguration) {
+            $updateClientConfigurationAsync = $this->updateClientConfigurationAsync($chosenNode);
+            if ($updateClientConfigurationAsync != null) {
+                $refreshClientConfigurationTask->add($updateClientConfigurationAsync);
             }
         }
 
-        return $refreshTask;
+        return CompletableFuture::allOf($refreshTask, $refreshClientConfigurationTask);
     }
 
     /**
@@ -1142,7 +1157,7 @@ class RequestExecutor implements CleanCloseable
      */
     private function sendRequestToServer(
         ServerNode $chosenNode,
-        int $nodeIndex,
+        ?int $nodeIndex,
         RavenCommand $command,
         bool $shouldRetry,
         ?SessionInfo $sessionInfo,
@@ -1350,7 +1365,7 @@ class RequestExecutor implements CleanCloseable
     private function setRequestHeaders(?SessionInfo $sessionInfo, ?string $cachedChangeVector, HttpRequest &$request): void
     {
         if ($cachedChangeVector != null) {
-            $request->addHeader("If-None-Match", strval($cachedChangeVector));
+            $request->addHeader(Headers::IF_NONE_MATCH, strval($cachedChangeVector));
         }
 
         if (!$this->disableClientConfigurationUpdates) {
@@ -1810,7 +1825,7 @@ class RequestExecutor implements CleanCloseable
             return false;
         }
 
-//        onFailedRequestInvoke(url, e);
+//        onFailedRequestInvoke(url, e, $request, $response);
 
         $executeOptions = new ExecuteOptions();
         $executeOptions->setNodeIndex($indexAndNodeAndEtag->currentIndex);
@@ -2014,7 +2029,7 @@ class RequestExecutor implements CleanCloseable
 //    }
 //
 //    private void spawnHealthChecks(ServerNode chosenNode, int nodeIndex) {
-//        if (_nodeSelector != null && _nodeSelector.getTopology().getNodes().size() < 1) {
+//        if (_nodeSelector != null && _nodeSelector.getTopology().getNodes().size() < 2) {
 //            return;
 //        }
 //
@@ -2136,7 +2151,7 @@ class RequestExecutor implements CleanCloseable
         return !empty($message) ? $s . ': ' . $message : $s;
     }
 
-//    protected CompletableFuture<Void> _firstTopologyUpdate;
+    protected ?Closure $_firstTopologyUpdate = null;
     protected ?UrlArray $lastKnownUrls = null;
     protected bool $disposed = false;
 

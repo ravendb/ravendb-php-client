@@ -7,7 +7,6 @@ use RavenDB\Type\StringArray;
 
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
-// !status: DONE
 class CertificateMetadata implements ResultInterface
 {
     /** @SerializedName("Name") */

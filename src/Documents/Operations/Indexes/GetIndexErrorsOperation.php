@@ -7,7 +7,6 @@ use RavenDB\Documents\Operations\MaintenanceOperationInterface;
 use RavenDB\Http\RavenCommand;
 use RavenDB\Type\StringArray;
 
-// !status: DONE
 class GetIndexErrorsOperation implements MaintenanceOperationInterface
 {
     private ?StringArray $indexNames = null;

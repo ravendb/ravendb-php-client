@@ -10,7 +10,6 @@ use tests\RavenDB\Infrastructure\Entity\faceted\Currency;
 use tests\RavenDB\Infrastructure\Entity\faceted\Order;
 use tests\RavenDB\RemoteTestBase;
 
-// !status: DONE
 class RavenDB_12748Test extends RemoteTestBase
 {
     public function testCanCorrectlyAggregate(): void

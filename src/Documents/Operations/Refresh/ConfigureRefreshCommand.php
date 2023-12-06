@@ -9,7 +9,6 @@ use RavenDB\Http\RavenCommand;
 use RavenDB\Http\ServerNode;
 use RavenDB\Utils\RaftIdGenerator;
 
-// !status: DONE
 class ConfigureRefreshCommand extends RavenCommand
 {
     private ?RefreshConfiguration $configuration = null;

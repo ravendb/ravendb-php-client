@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Session\Tokens;
 
 use RavenDB\Utils\StringBuilder;
 
-// !status: DONE
 class NegateToken extends QueryToken
 {
     private function __construct()

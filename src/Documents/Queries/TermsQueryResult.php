@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Queries;
 
 use RavenDB\Type\StringSet;
 
-// !status: DONE
 class TermsQueryResult
 {
     private ?StringSet $terms = null;

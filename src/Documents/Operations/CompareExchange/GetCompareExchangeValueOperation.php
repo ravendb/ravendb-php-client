@@ -8,7 +8,6 @@ use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Documents\Operations\OperationInterface;
 use RavenDB\Documents\Conventions\DocumentConventions;
 
-// !status: DONE
 class GetCompareExchangeValueOperation implements OperationInterface
 {
     private ?string $key = null;

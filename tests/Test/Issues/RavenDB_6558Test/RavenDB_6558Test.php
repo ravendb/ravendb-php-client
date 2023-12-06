@@ -7,7 +7,6 @@ use RavenDB\Documents\Queries\Highlighting\Highlightings;
 use RavenDB\Documents\Queries\Query;
 use tests\RavenDB\RemoteTestBase;
 
-// !status: DONE
 class RavenDB_6558Test extends RemoteTestBase
 {
     public function testCanUseDifferentPreAndPostTagsPerField(): void

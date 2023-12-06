@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Commands\MultiGet;
 
+use RavenDB\Constants\Headers;
 use RavenDB\Constants\HttpStatusCode;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Extensions\HttpExtensions;
@@ -60,42 +61,9 @@ class MultiGetCommand extends RavenCommand implements CleanCloseable
 
     public function createRequest(ServerNode $serverNode): HttpRequestInterface
     {
-
 //        if ($this->maybeReadAllFromCache($this->requestExecutor->aggressiveCaching)) {
 //            $this->aggressivelyCached = true;
 //            return null; // aggressively cached
-//        }
-
-//        $aggressiveCacheOptions = $this->requestExecutor->aggressiveCaching;
-
-//        if (aggressiveCacheOptions != null && aggressiveCacheOptions.getMode() == AggressiveCacheMode.TRACK_CHANGES) {
-//            result = new ArrayList<>();
-//
-//            for (GetRequest command : _commands) {
-//                if (!command.isCanCacheAggressively()) {
-//                    break;
-//                }
-//                String cacheKey = getCacheKey(command, new Reference<>());
-//                Reference<String> cachedRef = new Reference<>();
-//                try (HttpCache.ReleaseCacheItem cachedItem = _httpCache.get(cacheKey, new Reference<>(), cachedRef)) {
-//                    if (cachedRef.value == null
-//                            || cachedItem.getAge().compareTo(aggressiveCacheOptions.getDuration()) > 0
-//                            || cachedItem.getMightHaveBeenModified()) {
-//                        break;
-//                    }
-//                    GetResponse getResponse = new GetResponse();
-//                    getResponse.setResult(cachedRef.value);
-//                    getResponse.setStatusCode(HttpStatus.SC_NOT_MODIFIED);
-//                    result.add(getResponse);
-//                }
-//            }
-//
-//            if (result.size() == _commands.size()) {
-//                return null; // aggressively cached
-//            }
-//
-//            // not all of it is cached, might as well read it all
-//            result = null;
 //        }
 
         $data = [];
@@ -209,7 +177,7 @@ class MultiGetCommand extends RavenCommand implements CleanCloseable
             $this->result = new GetResponseList();
             foreach ($results as $getResponse) {
                 $command = $this->commands[$i];
-                $this->maybeSetCache($getResponse, $command);
+                $this->maybeSetCache($getResponse, $command, $i);
 
                 if ($this->cached != null && $getResponse->getStatusCode() == HttpStatusCode::NOT_MODIFIED) {
                     $clonedResponse = new GetResponse();
@@ -317,9 +285,13 @@ class MultiGetCommand extends RavenCommand implements CleanCloseable
 //        return getResponse;
 //    }
 
-    private function maybeSetCache(?GetResponse $getResponse, ?GetRequest $command): void
+    private function maybeSetCache(?GetResponse $getResponse, ?GetRequest $command, ?int $cachedIndex): void
     {
         if ($getResponse->getStatusCode() == HttpStatusCode::NOT_MODIFIED) {
+            // if not modified - update age
+            if ($this->cached !== null) {
+                $this->cached->values[$cachedIndex][0]->notModified();
+            }
             return;
         }
 
@@ -352,10 +324,24 @@ class MultiGetCommand extends RavenCommand implements CleanCloseable
 
     public function closeCache(): void
     {
+        // If _cached is not null - it means that the client approached with this multitask request to node and the request failed.
+        // and now client tries to send it to another node.
         if ($this->cached != null) {
             $this->cached->close();
-        }
 
-        $this->cached = null;
+            $this->cached = null;
+
+            // The client sends the commands.
+            // Some of which could be saved in cache with a response
+            // that includes the change vector that received from the old fallen node.
+            // The client can't use those responses because their URLs are different
+            // (include the IP and port of the old node), because of that the client
+            // needs to get those docs again from the new node.
+
+            /** @var GetRequest $command */
+            foreach ($this->commands as $command) {
+                $command->getHeaders()->offsetUnset(Headers::IF_NONE_MATCH);
+            }
+        }
     }
 }

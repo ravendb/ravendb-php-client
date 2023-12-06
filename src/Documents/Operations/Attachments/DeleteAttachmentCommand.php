@@ -10,7 +10,6 @@ use RavenDB\Http\VoidRavenCommand;
 use RavenDB\Utils\StringUtils;
 use RavenDB\Utils\UrlUtils;
 
-// !status: DONE
 class DeleteAttachmentCommand extends VoidRavenCommand
 {
     private ?string $documentId = null;

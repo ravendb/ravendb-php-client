@@ -7,7 +7,6 @@ use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Utils\StringUtils;
 
-// !status: DONE
 class CopyAttachmentCommandData implements CommandDataInterface
 {
     private ?string $id = null;

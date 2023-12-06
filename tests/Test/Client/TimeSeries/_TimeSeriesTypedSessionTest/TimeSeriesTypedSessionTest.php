@@ -18,7 +18,7 @@ use RavenDB\Primitives\TimeValue;
 use RavenDB\ServerWide\GetDatabaseRecordOperation;
 use RavenDB\Type\Duration;
 use RavenDB\Utils\DateUtils;
-use tests\RavenDB\Infrastructure\DisableOnPullRequestCondition;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\Infrastructure\Entity\Company;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\RemoteTestBase;
@@ -502,7 +502,7 @@ class TimeSeriesTypedSessionTest extends RemoteTestBase
 
     public function testCanWorkWithRollupTimeSeries(): void
     {
-        DisableOnPullRequestCondition::evaluateExecutionCondition($this);
+        TestRunGuard::disableTestIfLicenseNotAvailable($this);
 
         $store = $this->getDocumentStore();
         try {
@@ -621,7 +621,7 @@ class TimeSeriesTypedSessionTest extends RemoteTestBase
 
     public function testCanWorkWithRollupTimeSeries2(): void
     {
-        DisableOnPullRequestCondition::evaluateExecutionCondition($this);
+        TestRunGuard::disableTestIfLicenseNotAvailable($this);
 
         $store = $this->getDocumentStore();
         try {

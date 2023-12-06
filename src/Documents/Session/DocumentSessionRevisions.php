@@ -25,6 +25,12 @@ class DocumentSessionRevisions extends DocumentSessionRevisionsBase implements R
         $operation = GetRevisionOperation::withPagination($this->session, $id, $start, $pageSize);
 
         $command = $operation->createRequest();
+        if ($command == null) {
+            return $operation->getRevisionsFor($className);
+        }
+        if ($this->sessionInfo != null) {
+            $this->sessionInfo->incrementRequestCount();
+        }
         $this->requestExecutor->execute($command, $this->sessionInfo);
         $operation->setResult($command->getResult());
         return $operation->getRevisionsFor($className);
@@ -34,6 +40,12 @@ class DocumentSessionRevisions extends DocumentSessionRevisionsBase implements R
     {
         $operation = GetRevisionOperation::withPagination($this->session, $id, $start, $pageSize, true);
         $command = $operation->createRequest();
+        if ($command == null) {
+            return $operation->getRevisionsMetadataFor();
+        }
+        if ($this->sessionInfo != null) {
+            $this->sessionInfo->incrementRequestCount();
+        }
         $this->requestExecutor->execute($command, $this->sessionInfo);
         $operation->setResult($command->getResult());
         return $operation->getRevisionsMetadataFor();
@@ -52,6 +64,12 @@ class DocumentSessionRevisions extends DocumentSessionRevisionsBase implements R
         $operation = GetRevisionOperation::forChangeVector($this->session, $changeVector);
 
         $command = $operation->createRequest();
+        if ($command == null) {
+            return $operation->getRevision($className);
+        }
+        if ($this->sessionInfo != null) {
+            $this->sessionInfo->incrementRequestCount();
+        }
         $this->requestExecutor->execute($command, $this->sessionInfo);
         $operation->setResult($command->getResult());
         return $operation->getRevisionFromResult($className);
@@ -66,6 +84,12 @@ class DocumentSessionRevisions extends DocumentSessionRevisionsBase implements R
         $operation = GetRevisionOperation::forChangeVectors($this->session, $changeVectors);
 
         $command = $operation->createRequest();
+        if ($command == null) {
+            return $operation->getRevisions($className);
+        }
+        if ($this->sessionInfo != null) {
+            $this->sessionInfo->incrementRequestCount();
+        }
         $this->requestExecutor->execute($command, $this->sessionInfo);
         $operation->setResult($command->getResult());
         return $operation->getRevisions($className);
@@ -75,6 +99,12 @@ class DocumentSessionRevisions extends DocumentSessionRevisionsBase implements R
     {
         $operation = GetRevisionOperation::beforeDate($this->session, $id, $date);
         $command = $operation->createRequest();
+        if ($command == null) {
+            return $operation->getRevision($className);
+        }
+        if ($this->sessionInfo != null) {
+            $this->sessionInfo->incrementRequestCount();
+        }
         $this->requestExecutor->execute($command, $this->sessionInfo);
         $operation->setResult($command->getResult());
         return $operation->getRevisionFromResult($className);
@@ -84,6 +114,9 @@ class DocumentSessionRevisions extends DocumentSessionRevisionsBase implements R
     {
         $operation = new GetRevisionsCountOperation($id);
         $command = $operation->createRequest();
+        if ($this->sessionInfo != null) {
+            $this->sessionInfo->incrementRequestCount();
+        }
         $this->requestExecutor->execute($command, $this->sessionInfo);
         return $command->getResult();
     }

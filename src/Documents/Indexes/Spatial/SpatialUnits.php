@@ -4,7 +4,6 @@ namespace RavenDB\Documents\Indexes\Spatial;
 
 use RavenDB\Type\ValueObjectInterface;
 
-// !status: DONE
 class SpatialUnits implements ValueObjectInterface
 {
     private const KILOMETERS = 'Kilometers';

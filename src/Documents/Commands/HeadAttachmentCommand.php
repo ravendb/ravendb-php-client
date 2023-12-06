@@ -2,6 +2,7 @@
 
 namespace RavenDB\Documents\Commands;
 
+use RavenDB\Constants\Headers;
 use RavenDB\Constants\HttpStatusCode;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Extensions\HttpExtensions;
@@ -15,7 +16,6 @@ use RavenDB\Http\ServerNode;
 use RavenDB\Utils\StringUtils;
 use RavenDB\Utils\UrlUtils;
 
-// !status: DONE
 class HeadAttachmentCommand extends RavenCommand
 {
     private ?string $documentId = null;
@@ -56,7 +56,7 @@ class HeadAttachmentCommand extends RavenCommand
         $httpHead = new HttpRequest($this->createUrl($serverNode), HttpRequest::HEAD);
 
         if ($this->changeVector !== null) {
-            $httpHead->addHeader("If-None-Match", "\"" . $this->changeVector . "\"");
+            $httpHead->addHeader(Headers::IF_NONE_MATCH, "\"" . $this->changeVector . "\"");
         }
 
         return $httpHead;

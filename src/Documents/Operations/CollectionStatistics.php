@@ -2,7 +2,6 @@
 
 namespace RavenDB\Documents\Operations;
 
-// !status: DONE
 class CollectionStatistics
 {
     private ?int $countOfDocuments = null;

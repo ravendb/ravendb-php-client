@@ -10,7 +10,7 @@ use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Type\StringArray;
 use RavenDB\Type\StringSet;
 
-// !status: DONE
+
 abstract class AbstractGenericIndexCreationTask extends AbstractIndexCreationTaskBase
 {
     protected ?string $reduce = null;

@@ -3,6 +3,7 @@
 namespace RavenDB\Documents\Session;
 
 use Closure;
+use DateTime;
 use RavenDB\Constants\DocumentsIndexingFields;
 use RavenDB\Constants\TimeSeries;
 use RavenDB\Documents\Conventions\DocumentConventions;
@@ -65,6 +66,8 @@ use RavenDB\Documents\Session\Tokens\OrderByToken;
 use RavenDB\Documents\Session\Tokens\QueryOperatorToken;
 use RavenDB\Documents\Session\Tokens\QueryToken;
 use RavenDB\Documents\Session\Tokens\QueryTokenList;
+use RavenDB\Documents\Session\Tokens\RevisionIncludesToken;
+use RavenDB\Documents\Session\Tokens\RevisionIncludesTokenArray;
 use RavenDB\Documents\Session\Tokens\ShapeToken;
 use RavenDB\Documents\Session\Tokens\SuggestToken;
 use RavenDB\Documents\Session\Tokens\TimeSeriesIncludesToken;
@@ -566,6 +569,14 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->_includeCounters($includes->alias, $includes->countersToIncludeBySourcePath);
         if ($includes->timeSeriesToIncludeBySourceAlias != null) {
             $this->_includeTimeSeries($includes->alias, $includes->timeSeriesToIncludeBySourceAlias);
+        }
+
+        if ($includes->revisionsToIncludeByDateTime != null) {
+            $this->_includeRevisionsByDateTime($includes->revisionsToIncludeByDateTime);
+        }
+
+        if ($includes->revisionsToIncludeByChangeVector != null) {
+            $this->_includeRevisionsByChangeVector($includes->revisionsToIncludeByChangeVector);
         }
 
         if ($includes->compareExchangeValuesToInclude != null) {
@@ -1263,6 +1274,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
             $this->explanationToken == null &&
             $this->queryTimings == null &&
             $this->counterIncludesTokens == null &&
+            $this->revisionsIncludesTokens == null &&
             $this->timeSeriesIncludesTokens == null &&
             $this->compareExchangeValueIncludesTokens == null) {
             return;
@@ -1290,6 +1302,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
         $this->writeIncludeTokens($this->counterIncludesTokens, $firstRef, $queryText);
         $this->writeIncludeTokens($this->timeSeriesIncludesTokens, $firstRef, $queryText);
+        $this->writeIncludeTokens($this->revisionsIncludesTokens, $firstRef, $queryText);
         $this->writeIncludeTokens($this->compareExchangeValueIncludesTokens, $firstRef, $queryText);
         $this->writeIncludeTokens($this->highlightingTokens, $firstRef, $queryText);
 
@@ -2366,6 +2379,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     protected ?CompareExchangeValueIncludesTokenArray $compareExchangeValueIncludesTokens = null;
 
+    protected ?RevisionIncludesTokenArray $revisionsIncludesTokens = null;
+
     protected function _includeCounters(?string $alias, array $counterToIncludeByDocId): void
     {
         if ($counterToIncludeByDocId == null || empty($counterToIncludeByDocId)) {
@@ -2407,6 +2422,26 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
             foreach ($value as $range) {
                 $this->timeSeriesIncludesTokens[] = TimeSeriesIncludesToken::create($key, $range);
             }
+        }
+    }
+
+    public function _includeRevisionsByDateTime(DateTime $dateTime): void
+    {
+        if ($this->revisionsIncludesTokens == null) {
+            $this->revisionsIncludesTokens = new RevisionIncludesTokenArray();
+        }
+
+        $this->revisionsIncludesTokens[] = RevisionIncludesToken::createFromDateTime($dateTime);
+    }
+
+    public function _includeRevisionsByChangeVector(StringArray $revisionsToIncludeByChangeVector): void
+    {
+        if ($this->revisionsIncludesTokens == null) {
+            $this->revisionsIncludesTokens = new RevisionIncludesTokenArray();
+        }
+
+        foreach ($revisionsToIncludeByChangeVector as $changeVector) {
+            $this->revisionsIncludesTokens[] = RevisionIncludesToken::createFromChangeVector($changeVector);
         }
     }
 

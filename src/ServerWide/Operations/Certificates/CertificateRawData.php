@@ -5,7 +5,6 @@ namespace RavenDB\ServerWide\Operations\Certificates;
 use RavenDB\Http\ResultInterface;
 use ZipArchive;
 
-// !status: DONE
 class CertificateRawData implements ResultInterface
 {
     private $rawData = null;

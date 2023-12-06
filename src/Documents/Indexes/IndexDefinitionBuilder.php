@@ -5,7 +5,6 @@ namespace RavenDB\Documents\Indexes;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Exceptions\IllegalStateException;
 
-// !status: DONE
 class IndexDefinitionBuilder extends AbstractIndexDefinitionBuilder
 {
     private ?string $map = null;

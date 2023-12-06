@@ -4,7 +4,6 @@ namespace tests\RavenDB\Test\Client\_QueryTest\Index;
 
 use RavenDB\Documents\Indexes\AbstractIndexCreationTask;
 
-// !status: DONE
 class DogsIndex extends AbstractIndexCreationTask
 {
         public function __construct()
