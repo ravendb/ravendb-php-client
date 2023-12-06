@@ -11,6 +11,12 @@ jobs:
     build:
         runs-on: ubuntu-latest
 
+        strategy:
+            matrix:
+                php-versions: [ "8.1", "8.2" ]
+                serverVersion: [ "5.2", "5.4" ]
+            fail-fast: false
+
         env:
             RAVENDB_BUILD_TYPE: nightly
             RAVEN_License: ${{ secrets.RAVEN_LICENSE }}
@@ -21,12 +27,8 @@ jobs:
             RAVENDB_PHP_TEST_CA_PATH: "/usr/local/share/ca-certificates/ca.crt"
             RAVENDB_TEST_CLIENT_CERT_PATH: "./certs/java.pem"
 
+            SERVER_VERSION: ${{ matrix.serverVersion }}
 
-        strategy:
-            matrix:
-                php-versions: [ "8.1", "8.2" ]
-                serverVersion: [ "5.2", "5.4" ]
-            fail-fast: false
 
         steps:
             - name: Check out repository code

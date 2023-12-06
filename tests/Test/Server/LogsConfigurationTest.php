@@ -7,7 +7,7 @@ use RavenDB\ServerWide\Operations\Logs\GetLogsConfigurationResult;
 use RavenDB\ServerWide\Operations\Logs\LogMode;
 use RavenDB\ServerWide\Operations\Logs\SetLogsConfigurationOperation;
 use RavenDB\ServerWide\Operations\Logs\SetLogsConfigurationParameters;
-use tests\RavenDB\Infrastructure\DisableOnPullRequestCondition;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 
 class LogsConfigurationTest extends RemoteTestBase

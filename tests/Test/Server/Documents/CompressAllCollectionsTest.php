@@ -6,14 +6,14 @@ use RavenDB\ServerWide\DatabaseRecord;
 use RavenDB\ServerWide\DocumentsCompressionConfiguration;
 use RavenDB\ServerWide\GetDatabaseRecordOperation;
 use RavenDB\ServerWide\Operations\DocumentsCompression\UpdateDocumentsCompressionConfigurationOperation;
-use tests\RavenDB\Infrastructure\DisableOnPullRequestCondition;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 
 class CompressAllCollectionsTest extends RemoteTestBase
 {
     public function setUp(): void
     {
-        DisableOnPullRequestCondition::evaluateExecutionCondition($this);
+        TestRunGuard::disableTestIfLicenseNotAvailable($this);
 
         parent::setUp();
     }

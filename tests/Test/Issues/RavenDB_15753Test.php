@@ -7,7 +7,7 @@ use RavenDB\Documents\Indexes\AdditionalAssembly;
 use RavenDB\Documents\Indexes\AdditionalAssemblySet;
 use RavenDB\Documents\Indexes\IndexDefinition;
 use RavenDB\Documents\Operations\Indexes\PutIndexesOperation;
-use tests\RavenDB\Infrastructure\DisableOnPullRequestCondition;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 use Throwable;
 
@@ -17,7 +17,7 @@ class RavenDB_15753Test extends RemoteTestBase
     {
         parent::setUp();
 
-        DisableOnPullRequestCondition::evaluateExecutionCondition($this);
+        TestRunGuard::disableTestIfLicenseNotAvailable($this);
     }
 
     /** @doesNotPerformAssertions */
