@@ -222,7 +222,7 @@ class GetDocumentsCommand extends RavenCommand
         int $pageSize,
         bool $metadataOnly
     ): GetDocumentsCommand {
-        if (empty($startWith)) {
+        if ($startWith === null) {
             throw new IllegalArgumentException("startWith cannot be null");
         }
 
