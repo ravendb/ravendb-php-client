@@ -141,9 +141,9 @@ interface AdvancedDocumentSessionOperationsInterface
     function getDocumentId(?object $instance): ?string;
 
     /**
-     * Gets the metadata for the specified entity.
-     * If the entity is transient, it will load the metadata from the store
-     * and associate the current state of the entity with the metadata from the server.
+     * Gets the metadata for the specified instance.
+     * Throws an exception if the instance is not tracked by the session.
+     *
      * @template T class of instance
      * @param T $instance instance to get metadata from
      * @return MetadataDictionaryInterface Entity metadata
@@ -151,9 +151,8 @@ interface AdvancedDocumentSessionOperationsInterface
     function & getMetadataFor($instance): MetadataDictionaryInterface;
 
     /**
-     * Gets change vector for the specified entity.
-     * If the entity is transient, it will load the metadata from the store
-     * and associate the current state of the entity with the metadata from the server.
+     * Gets change vector for the specified instance.
+     * Throws an exception if the instance is not tracked by the session.
      *
      * @param ?object $instance Instance to get metadata from
      * @return ?string Change vector

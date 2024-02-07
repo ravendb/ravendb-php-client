@@ -6,6 +6,7 @@ use Closure;
 use InvalidArgumentException;
 use RavenDB\Constants\DocumentsIndexingFields;
 use RavenDB\Constants\DocumentsIndexingSpatial;
+use RavenDB\Constants\PhpClient;
 use RavenDB\Documents\Indexes\Spatial\SpatialRelation;
 use RavenDB\Documents\Indexes\Spatial\SpatialUnits;
 use RavenDB\Documents\Queries\Explanation\ExplanationOptions;
@@ -15,6 +16,7 @@ use RavenDB\Documents\Queries\Facets\AggregationDocumentQueryInterface;
 use RavenDB\Documents\Queries\Facets\FacetBase;
 use RavenDB\Documents\Queries\Facets\FacetBaseArray;
 use RavenDB\Documents\Queries\Facets\FacetBuilder;
+use RavenDB\Documents\Queries\FilterFactory;
 use RavenDB\Documents\Queries\GroupBy;
 use RavenDB\Documents\Queries\Highlighting\HighlightingOptions;
 use RavenDB\Documents\Queries\Highlighting\Highlightings;
@@ -42,6 +44,7 @@ use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Parameters;
 use RavenDB\Type\Collection;
 use RavenDB\Type\Duration;
+use RavenDB\Type\Stack;
 use RavenDB\Type\StringArray;
 use RavenDB\Type\StringSet;
 use ReflectionClass;
@@ -118,13 +121,14 @@ class DocumentQuery extends AbstractDocumentQuery
                 return method_exists($projectionClass, 'set' . ucfirst($item));
             });
 
-        $fields = array_filter(
-            array_map(function ($item) {
-                return $item->name;
-            }, $allProperties),
-            function ($item) use ($projectionClass) {
-                return method_exists($projectionClass, 'set' . ucfirst($item));
-            });
+        if ($this->getConventions()->getEntityMapper()->isDotNetNamingStrategyEnabled()) {
+            $projections = array_map(
+                function ($itemName) {
+                    return ucfirst($itemName);
+                }, $projections);
+        }
+
+        $fields = $projections;
 
         $queryData = new QueryData($fields, $projections);
         $queryData->setProjectInto(true);
@@ -610,7 +614,6 @@ class DocumentQuery extends AbstractDocumentQuery
         return $this;
     }
 
-    //@todo: check this method - I reversed the properties
     public function createDocumentQueryInternal(?QueryData $queryData = null, ?string $resultClass = null): DocumentQuery
     {
         /** @var ?FieldsToFetchToken $newFieldsToFetch */
@@ -658,7 +661,10 @@ class DocumentQuery extends AbstractDocumentQuery
         $query->whereTokens = new QueryTokenList($this->whereTokens);
         $query->orderByTokens = new QueryTokenList($this->orderByTokens);
         $query->groupByTokens = new QueryTokenList($this->groupByTokens);
+        $query->filterTokens = new QueryTokenList($this->filterTokens);
         $query->queryParameters = new Parameters($this->queryParameters);
+        $query->filterModeStack = new Stack();
+        $query->filterModeStack->addAll($this->filterModeStack);
         $query->start = $this->start;
         $query->timeout = $this->timeout;
         $query->queryStats = $this->queryStats;
@@ -674,17 +680,16 @@ class DocumentQuery extends AbstractDocumentQuery
         $query->afterQueryExecutedCallback = $this->afterQueryExecutedCallback;
         $query->afterStreamExecutedCallback = $this->afterStreamExecutedCallback;
         $query->highlightingTokens = $this->highlightingTokens;
-        // @todo: uncomment this
-//        $query->queryHighlightings = $this->queryHighlightings;
+        $query->queryHighlightings = $this->queryHighlightings;
         $query->disableEntitiesTracking = $this->disableEntitiesTracking;
         $query->disableCaching = $this->disableCaching;
-        $query->projectionBehavior = ($queryData != null ? $queryData->getProjectionBehavior() : null) ?? $this->projectionBehavior;
+        $query->projectionBehavior = $queryData?->getProjectionBehavior() ?? $this->projectionBehavior;
         $query->queryTimings = $this->queryTimings;
-        // @todo: uncomment this
-//        $query->explanations = $this->explanations;
+        $query->explanations = $this->explanations;
         $query->explanationToken = $this->explanationToken;
         $query->isIntersect = $this->isIntersect;
         $query->defaultOperator = $this->defaultOperator;
+        $query->filterLimit = $this->filterLimit;
 
         return $query;
     }
@@ -937,5 +942,22 @@ class DocumentQuery extends AbstractDocumentQuery
         $builder($f);
 
         return $this->suggestUsing($f->getSuggestion());
+    }
+
+    public function filter(Closure $builder, ?int $limit = null): DocumentQueryInterface
+    {
+        if ($limit === null) {
+            $limit = PhpClient::INT_MAX_VALUE;
+        }
+
+        $mode = $this->setFilterMode(true);
+        try {
+            $f = new FilterFactory($this, $limit);
+            $builder($f);
+        } finally {
+            $mode->close();
+        }
+
+        return $this;
     }
 }

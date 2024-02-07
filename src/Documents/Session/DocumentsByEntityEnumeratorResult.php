@@ -20,7 +20,7 @@ class DocumentsByEntityEnumeratorResult
         return $this->key;
     }
 
-    public function getValue(): DocumentInfo
+    public function & getValue(): DocumentInfo
     {
         return $this->value;
     }

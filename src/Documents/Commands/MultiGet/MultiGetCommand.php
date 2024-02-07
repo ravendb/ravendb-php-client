@@ -4,6 +4,7 @@ namespace RavenDB\Documents\Commands\MultiGet;
 
 use RavenDB\Constants\Headers;
 use RavenDB\Constants\HttpStatusCode;
+use RavenDB\Documents\Session\SessionInfo;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Extensions\HttpExtensions;
 use RavenDB\Extensions\JsonExtensions;
@@ -24,12 +25,14 @@ class MultiGetCommand extends RavenCommand implements CleanCloseable
     private ?HttpCache $httpCache = null;
     private ?GetRequestList $commands = null;
 
+    private ?SessionInfo $sessionInfo = null;
+
     private ?string $baseUrl = null;
     private ?Cached $cached = null;
 
     public bool $aggressivelyCached = false;
 
-    public function __construct(?RequestExecutor $requestExecutor, ?GetRequestList $commands)
+    public function __construct(?RequestExecutor $requestExecutor, ?GetRequestList $commands, ?SessionInfo $sessionInfo = null)
     {
         parent::__construct(GetResponseList::class);
 
@@ -50,6 +53,7 @@ class MultiGetCommand extends RavenCommand implements CleanCloseable
         $this->requestExecutor = $requestExecutor;
         $this->httpCache = $requestExecutor->getCache();
         $this->commands = $commands;
+        $this->sessionInfo = $sessionInfo;
         $this->responseType = RavenCommandResponseType::raw();
     }
 
@@ -61,7 +65,7 @@ class MultiGetCommand extends RavenCommand implements CleanCloseable
 
     public function createRequest(ServerNode $serverNode): HttpRequestInterface
     {
-//        if ($this->maybeReadAllFromCache($this->requestExecutor->aggressiveCaching)) {
+//        if (($this->sessionInfo == null || !$this->sessionInfo->isNoCaching()) && maybeReadAllFromCache($this->requestExecutor->aggressiveCaching))
 //            $this->aggressivelyCached = true;
 //            return null; // aggressively cached
 //        }
@@ -107,6 +111,10 @@ class MultiGetCommand extends RavenCommand implements CleanCloseable
 //
 //        for (int i = 0; i < _commands.size(); i++) {
 //            GetRequest command = _commands.get(i);
+//
+//            if (command.getHeaders().containsKey(Constants.Headers.IF_NONE_MATCH)) {
+//                continue; // command already explicitly handling setting this, let's not touch it.
+//            }
 //
 //            String cacheKey = getCacheKey(command, new Reference<>());
 //

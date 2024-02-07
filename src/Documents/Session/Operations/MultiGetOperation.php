@@ -17,7 +17,7 @@ class MultiGetOperation
 
     public function createRequest(GetRequestList $requests): MultiGetCommand
     {
-        return new MultiGetCommand($this->session->getRequestExecutor(), $requests);
+        return new MultiGetCommand($this->session->getRequestExecutor(), $requests, $this->session->getSessionInfo());
     }
 
     public function setResult(array $result): void

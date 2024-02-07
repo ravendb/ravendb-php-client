@@ -2,7 +2,7 @@
 
 namespace RavenDB\Documents\Operations;
 
-// @todo: implement this class
+use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
 use RavenDB\Extensions\EntityMapper;
 use RavenDB\Constants\CompareExchange;
 use RavenDB\Exceptions\RavenException;
@@ -103,7 +103,7 @@ class CompareExchangeSessionValue
                     }
                 }
 
-                $this->value = new CompareExchangeValue($this->key, $this->index, $entity);
+                $this->value = new CompareExchangeValue($this->key, $this->index, $entity, $this->originalValue?->getMetadata());
 
                 return $this->value;
 
@@ -150,6 +150,9 @@ class CompareExchangeSessionValue
         }
     }
 
+    /**
+     * @throws \Symfony\Component\Serializer\Exception\ExceptionInterface
+     */
     public function getCommand(DocumentConventions $conventions): ?CommandDataInterface
     {
         switch ($this->state) {
@@ -163,16 +166,33 @@ class CompareExchangeSessionValue
 
                 $entityJson = is_array($entity) ? $entity : null;
                 $metadata = null;
+                if ($this->originalValue != null) {
+                    if (array_key_exists(DocumentsMetadata::KEY, $this->originalValue->getValue())) {
+                        $metadata = $this->originalValue->getValue()[DocumentsMetadata::KEY];
+                    }
+                }
+
+                $metadataHasChanged = false;
+
                 if ($this->value->hasMetadata() && $this->value->getMetadata()->count() != 0) {
                     $metadata = $this->prepareMetadataForPut($this->key, $this->value->getMetadata(), $conventions);
+
+                    if ($metadata == null) {
+                        $metadataHasChanged = true;
+                        $metadata = $this->prepareMetadataForPut($this->key, $this->value->getMetadata(), $conventions); //create new metadata (because there wasn't any metadata before)
+                    } else {
+                        $this->validateMetadataForPut($this->key, $this->value->getMetadata());
+                        $metadataHasChanged = InMemoryDocumentSessionOperations::updateMetadataModifications($this->value->getMetadata(), $metadata); //add modifications to the existing metadata
+                    }
+
                 }
                 $entityToInsert = null;
-                if ($entityJson == null) {
+                if ($entityJson == null || $metadataHasChanged) {
                     $entityJson = $entityToInsert = $this->convertEntity($this->key, $entity, $conventions->getEntityMapper(), $metadata);
                 }
 
                 $newValue = new CompareExchangeValue($this->key, $this->index, $entityJson);
-                $hasChanged = $this->originalValue == null || $this->hasChanged($this->originalValue, $newValue);
+                $hasChanged = $this->originalValue == null || $metadataHasChanged || $this->hasChanged($this->originalValue, $newValue);
                 $this->originalValue = $newValue;
 
                 if (!$hasChanged) {
@@ -257,7 +277,12 @@ class CompareExchangeSessionValue
         ?MetadataDictionaryInterface $metadataDictionary,
         ?DocumentConventions         $conventions): array
     {
+        self::validateMetadataForPut($key, $metadataDictionary);
+        return $conventions->getEntityMapper()->normalize($metadataDictionary->toSimpleArray());
+    }
 
+    public static function validateMetadataForPut(?string $key, ?MetadataDictionaryInterface $metadataDictionary): void
+    {
         if ($metadataDictionary->containsKey(DocumentsMetadata::EXPIRES)) {
             $obj = $metadataDictionary->get(DocumentsMetadata::EXPIRES);
             if ($obj == null) {
@@ -267,8 +292,6 @@ class CompareExchangeSessionValue
                 self::throwInvalidExpiresMetadata("The class of " . DocumentsMetadata::EXPIRES . " metadata for compare exchange '" . $key . " is not valid. Use the following type: Date or string.");
             }
         }
-
-        return $conventions->getEntityMapper()->normalize($metadataDictionary->toSimpleArray());
     }
 
     private static function throwInvalidExpiresMetadata(?string $message): void

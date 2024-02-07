@@ -13,6 +13,7 @@ use RavenDB\Constants\HttpStatusCode;
 use RavenDB\Exceptions\ExecutionException;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\MalformedURLException;
+use RavenDB\Exceptions\RavenTimeoutException;
 use RavenDB\Exceptions\TimeoutException;
 use RavenDB\Extensions\HttpExtensions;
 use RavenDB\Documents\Conventions\DocumentConventions;
@@ -65,7 +66,7 @@ class RequestExecutor implements CleanCloseable
 //     */
 //    public static Consumer<HttpRequestBase> requestPostProcessor = null;
 
-    public const CLIENT_VERSION = "5.2.0";
+    public const CLIENT_VERSION = "5.4.0";
 
 //    private static final ConcurrentMap<String, CloseableHttpClient> globalHttpClientWithCompression = new ConcurrentHashMap<>();
 //    private static final ConcurrentMap<String, CloseableHttpClient> globalHttpClientWithoutCompression = new ConcurrentHashMap<>();
@@ -1765,6 +1766,9 @@ class RequestExecutor implements CleanCloseable
 //        return response.getEntity().getContent();
 //    }
 
+    /**
+     * @throws Throwable
+     */
     private function handleServerDown(
           string $url,
           ServerNode $chosenNode,
@@ -1783,7 +1787,9 @@ class RequestExecutor implements CleanCloseable
 
         $exception = self::readExceptionFromServer($request, $response, $e);
 
-        // @todo: check if exception is instance of RavenTimeoutException here (check with java code)
+        if ($exception instanceof RavenTimeoutException && $exception->isFailImmediately()) {
+            throw $exception;
+        }
 
         $failedNodes->put($chosenNode, $exception);
         $command->setFailedNodes($failedNodes);
@@ -2277,6 +2283,17 @@ class RequestExecutor implements CleanCloseable
 //
 //        return _nodeSelector.getRequestedNode(nodeTag);
 //    }
+//
+//   public CurrentIndexAndNode getRequestedNode(String nodeTag, boolean throwIfContainsFailures) {
+//        CurrentIndexAndNode currentIndexAndNode = getRequestedNode(nodeTag);
+//
+//        if (throwIfContainsFailures && !_nodeSelector.nodeIsAvailable(currentIndexAndNode.currentIndex)) {
+//            throw new RequestedNodeUnavailableException("Requested node " + nodeTag + " currently unavailable, please try again later.");
+//        }
+//
+//        return currentIndexAndNode;
+//    }
+
 
     public function getPreferredNode(): CurrentIndexAndNode
     {

@@ -33,7 +33,7 @@ class SqlEtlConfiguration extends EtlConfiguration
         $this->etlType = EtlType::sql();
     }
 
-    public function getEtlType(): ?EtlType
+    public function getEtlType(): EtlType
     {
         return $this->etlType;
     }

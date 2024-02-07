@@ -10,4 +10,7 @@ interface GroupByDocumentQueryInterface
     function selectSum(?GroupByField $field, GroupByField ...$fields): DocumentQueryInterface;
 
     function selectCount(string $projectedName = 'count'): DocumentQueryInterface;
+
+//    IGroupByDocumentQuery<T> filter(Consumer<IFilterFactory<T>> builder);
+//    IGroupByDocumentQuery<T> filter(Consumer<IFilterFactory<T>> builder, int limit);
 }

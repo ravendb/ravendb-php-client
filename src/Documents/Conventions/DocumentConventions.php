@@ -75,6 +75,8 @@ class DocumentConventions
 
     protected bool $disableAtomicDocumentWritesInClusterWideTransaction = false;
 
+    private bool $disableTcpCompression = true;
+
     private ?Closure $shouldIgnoreEntityChanges = null;
     private ?Closure $findIdentityProperty = null;
 
@@ -925,6 +927,19 @@ class DocumentConventions
         $this->assertNotFrozen();
         $this->disableAtomicDocumentWritesInClusterWideTransaction = $value;
     }
+
+    public function isDisableTcpCompression(): bool
+    {
+        return $this->disableTcpCompression;
+    }
+
+    /* TODO
+    public function setDisableTcpCompression(bool $disableTcpCompression): void
+    {
+        $this->assertNotFrozen();
+        $this->disableTcpCompression = $disableTcpCompression;
+    }
+    */
 
     // /**
     // * Clone the current conventions to a new instance

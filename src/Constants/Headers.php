@@ -18,4 +18,5 @@ class Headers
     public const CONTENT_ENCODING = "Content-Encoding";
     public const CONTENT_LENGTH = "Content-Length";
     public const DATABASE_MISSING = "Database-Missing";
+    public const INCREMENTAL_TIME_SERIES_PREFIX = "INC:";
 }

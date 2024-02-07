@@ -84,6 +84,9 @@ class IndexStats implements ResultInterface
     /** @SerializedName ("Type") */
     private ?IndexType $type = null;
 
+    /** @SerializedName ("SearchEngineType") */
+    private ?SearchEngineType $searchEngineType = null;
+
     /** @SerializedName ("Status") */
     private ?IndexRunningStatus $status = null;
 
@@ -347,6 +350,16 @@ class IndexStats implements ResultInterface
     public function setType(?IndexType $type): void
     {
         $this->type = $type;
+    }
+
+    public function getSearchEngineType(): ?SearchEngineType
+    {
+        return $this->searchEngineType;
+    }
+
+    public function setSearchEngineType(?SearchEngineType $searchEngineType): void
+    {
+        $this->searchEngineType = $searchEngineType;
     }
 
     public function getStatus(): ?IndexRunningStatus

@@ -17,6 +17,7 @@ class QueryStatistics
     private int $totalResults = 0;
     private int $longTotalResults = 0;
     private int $skippedResults = 0;
+    private ?int $scannedResults = null;
     private ?DateTimeInterface $timestamp = null;
     private ?string $indexName = null;
     private ?DateTimeInterface $indexTimestamp = null;
@@ -83,6 +84,30 @@ class QueryStatistics
         $this->skippedResults = $skippedResults;
     }
 
+    /**
+     * The number of results (filtered or matches)
+     * that were scanned by the query. This is relevant
+     * only if you are using a filter clause in the query.
+     *
+     * @return int|null
+     */
+    public function getScannedResults(): ?int
+    {
+        return $this->scannedResults;
+    }
+
+    /**
+     * The number of results (filtered or matches)
+     * that were scanned by the query. This is relevant
+     * only if you are using a filter clause in the query.
+     *
+     * @param int|null $scannedResults scanned results
+     */
+    public function setScannedResults(?int $scannedResults): void
+    {
+        $this->scannedResults = $scannedResults;
+    }
+
     public function getTimestamp(): ?DateTimeInterface
     {
         return $this->timestamp;
@@ -143,7 +168,6 @@ class QueryStatistics
         $this->nodeTag = $nodeTag;
     }
 
-
     public function updateQueryStats(QueryResult $qr)
     {
         $this->isStale = $qr->isStale();
@@ -151,6 +175,7 @@ class QueryStatistics
         $this->totalResults = $qr->getTotalResults();
         $this->longTotalResults = $qr->getLongTotalResults();
         $this->skippedResults = $qr->getSkippedResults();
+        $this->scannedResults = $qr->getScannedResults();
         $this->timestamp = $qr->getIndexTimestamp();
         $this->indexName = $qr->getIndexName();
         $this->indexTimestamp = $qr->getIndexTimestamp();

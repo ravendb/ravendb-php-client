@@ -12,7 +12,8 @@ use RavenDB\Documents\Session\TimeSeries\TypedTimeSeriesEntryArray;
 /**
  * @template T
  */
-class SessionDocumentTypedTimeSeries extends SessionTimeSeriesBase implements SessionDocumentTypedTimeSeriesInterface
+class SessionDocumentTypedTimeSeries extends SessionTimeSeriesBase
+    implements SessionDocumentTypedTimeSeriesInterface, SessionDocumentTypedIncrementalTimeSeriesInterface
 {
     private ?string $className = null;
 

@@ -29,7 +29,8 @@ class GroupByKeyToken extends QueryToken
         }
 
         $writer
-            ->append(" as ")
-            ->append($this->projectedName);
+            ->append(" as '")
+            ->append($this->projectedName)
+            ->append("'");
     }
 }

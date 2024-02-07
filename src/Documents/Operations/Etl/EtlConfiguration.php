@@ -30,6 +30,8 @@ abstract class EtlConfiguration
     #[SerializedName("AllowEtlOnNonEncryptedChannel")]
     private bool $allowEtlOnNonEncryptedChannel = false;
 
+    public abstract function getEtlType(): EtlType;
+
     public function __construct()
     {
         $this->transforms =  new TransformationList();

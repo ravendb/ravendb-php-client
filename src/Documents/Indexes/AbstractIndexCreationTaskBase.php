@@ -2,10 +2,12 @@
 
 namespace RavenDB\Documents\Indexes;
 
+use RavenDB\Constants\ConfigurationIndexes;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\DocumentStoreBase;
 use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Documents\Operations\Indexes\PutIndexesOperation;
+use RavenDB\Primitives\SharpEnum;
 
 abstract class AbstractIndexCreationTaskBase extends AbstractCommonApiForIndexes implements AbstractIndexCreationTaskInterface
 {
@@ -21,6 +23,7 @@ abstract class AbstractIndexCreationTaskBase extends AbstractCommonApiForIndexes
     protected ?IndexLockMode $lockMode = null;
 
     protected ?IndexDeploymentMode $deploymentMode = null;
+    protected ?SearchEngineType $searchEngineType = null;
     protected ?IndexState $state = null;
 
     /**
@@ -71,6 +74,16 @@ abstract class AbstractIndexCreationTaskBase extends AbstractCommonApiForIndexes
         $this->deploymentMode = $deploymentMode;
     }
 
+    public function getSearchEngineType(): ?SearchEngineType
+    {
+        return $this->searchEngineType;
+    }
+
+    public function setSearchEngineType(?SearchEngineType $searchEngineType): void
+    {
+        $this->searchEngineType = $searchEngineType;
+    }
+
     public function getState(): ?IndexState
     {
         return $this->state;
@@ -111,6 +124,10 @@ abstract class AbstractIndexCreationTaskBase extends AbstractCommonApiForIndexes
 
             if ($this->deploymentMode != null) {
                 $indexDefinition->setDeploymentMode($this->deploymentMode);
+            }
+
+            if ($this->searchEngineType != null) {
+                $indexDefinition->getConfiguration()[ConfigurationIndexes::INDEXING_STATIC_SEARCH_ENGINE_TYPE] = SharpEnum::value($this->searchEngineType);
             }
 
             $store->maintenance()

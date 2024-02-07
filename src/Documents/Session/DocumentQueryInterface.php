@@ -83,6 +83,16 @@ interface DocumentQueryInterface
     public function moreLikeThis(null|MoreLikeThisBase|Closure $moreLikeThisOrBuilder): DocumentQueryInterface;
 
     /**
+     * Filter allows querying on documents without the need for issuing indexes.
+     * It is meant for exploratory queries or post query filtering.
+     * Criteria are evaluated at query time so please use Filter wisely to avoid performance issues.
+     * @param Closure $builder Builder of a Filter query
+     * @param ?int $limit Limits the number of documents processed by Filter.
+     * @return DocumentQueryInterface Document query
+     */
+    public function filter(Closure $builder, ?int $limit = null): DocumentQueryInterface;
+
+    /**
      * @param Callable|FacetBase $builderOrFacets
      *
      * @return AggregationDocumentQueryInterface

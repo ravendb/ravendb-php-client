@@ -22,5 +22,8 @@ class DocumentsMetadata
     public const RAVEN_PHP_TYPE = "Raven-PHP-Type";
     public const CHANGE_VECTOR = "@change-vector";
     public const EXPIRES = "@expires";
+    public const REFRESH = "@refresh";
     public const ALL_DOCUMENTS_COLLECTION = "@all_docs";
+
+    public const EMPTY_COLLECTION = "@empty";
 }

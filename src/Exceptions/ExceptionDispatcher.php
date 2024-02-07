@@ -2,6 +2,7 @@
 
 namespace RavenDB\Exceptions;
 
+use Exception;
 use RavenDB\Constants\HttpStatusCode;
 use RavenDB\Exceptions\Documents\Compilation\IndexCompilationException;
 use RavenDB\Exceptions\Documents\DocumentConflictException;
@@ -76,21 +77,7 @@ class ExceptionDispatcher
                 throw new RavenException($schema->getError(), $exception);
             }
 
-            if ($exception instanceof IndexCompilationException) {
-                /** @var IndexCompilationException $indexCompilationException */
-                $indexCompilationException = $exception;
-                $indexDefinitionProperty = array_key_exists('TransformerDefinitionProperty', $json) ?  $json['TransformerDefinitionProperty'] : null;
-                if ($indexDefinitionProperty != null) {
-                    $indexCompilationException->setIndexDefinitionProperty($indexDefinitionProperty);
-                }
-
-                $problematicText = array_key_exists('ProblematicText', $json) ?  $json['ProblematicText'] : null;
-                if ($problematicText != null) {
-                    $indexCompilationException->setProblematicText($problematicText);
-                }
-
-                throw $indexCompilationException;
-            }
+            self::fillException($exception, $json);
 
             throw $exception;
 
@@ -103,6 +90,34 @@ class ExceptionDispatcher
         }
     }
 
+    private static function fillException(Exception & $exception, array & $json): void
+    {
+        if ($exception instanceof IndexCompilationException) {
+            /** @var IndexCompilationException $indexCompilationException */
+            $indexCompilationException = $exception;
+            $indexDefinitionProperty = array_key_exists('TransformerDefinitionProperty', $json) ?  $json['TransformerDefinitionProperty'] : null;
+            if ($indexDefinitionProperty != null) {
+                $indexCompilationException->setIndexDefinitionProperty($indexDefinitionProperty);
+            }
+
+            $problematicText = array_key_exists('ProblematicText', $json) ?  $json['ProblematicText'] : null;
+            if ($problematicText != null) {
+                $indexCompilationException->setProblematicText($problematicText);
+            }
+
+            throw $indexCompilationException;
+        }
+
+        if ($exception instanceof RavenTimeoutException) {
+            /** @var RavenTimeoutException $timeoutException */
+            $timeoutException = $exception;
+
+            $failImmediately = array_key_exists('FailImmediately', $json) ?  $json['FailImmediately'] : null;
+            if ($failImmediately != null) {
+                $timeoutException->setFailImmediately(boolval($failImmediately));
+            }
+        }
+    }
 
     /**
      * @throws BadResponseException

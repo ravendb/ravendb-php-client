@@ -5,6 +5,7 @@ namespace RavenDB\Documents\Session;
 use Closure;
 use DateTime;
 use RavenDB\Constants\DocumentsIndexingFields;
+use RavenDB\Constants\PhpClient;
 use RavenDB\Constants\TimeSeries;
 use RavenDB\Documents\Conventions\DocumentConventions;
 use RavenDB\Documents\Indexes\Spatial\SpatialRelation;
@@ -79,6 +80,7 @@ use RavenDB\Documents\Session\Tokens\WhereOptions;
 use RavenDB\Documents\Session\Tokens\WhereToken;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
+use RavenDB\Exceptions\InvalidQueryException;
 use RavenDB\Exceptions\UnsupportedOperationException;
 use RavenDB\Extensions\JsonExtensions;
 use RavenDB\Parameters;
@@ -87,12 +89,14 @@ use RavenDB\Primitives\ClosureArray;
 use RavenDB\Primitives\EventHelper;
 use RavenDB\Type\Collection;
 use RavenDB\Type\Duration;
+use RavenDB\Type\Stack;
 use RavenDB\Type\StringArray;
 use RavenDB\Type\StringSet;
 use RavenDB\Type\TypedList;
 use RavenDB\Utils\DefaultsUtils;
 use RavenDB\Utils\StringBuilder;
 use RavenDB\Utils\StringUtils;
+use function PHPUnit\Framework\isEmpty;
 
 abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 {
@@ -109,6 +113,11 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
      */
     protected bool $negate = false;
 
+    /**
+     *  Whether to negate the next operation in Filter
+     */
+    protected bool $negateFilter = false;
+
     private ?string $indexName = null;
     private ?string $collectionName = null;
     private int $currentClauseDepth = 0;
@@ -124,6 +133,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     {
         return $this->collectionName;
     }
+
+    protected ?Stack $filterModeStack = null;
 
     protected ?Parameters $queryParameters = null;
 
@@ -152,11 +163,15 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     protected QueryTokenList $withTokens;
 
+    protected QueryTokenList $filterTokens;
+
     protected ?QueryToken $graphRawQuery = null;
 
     protected int $start = 0;
 
     private DocumentConventions $conventions;
+
+    protected ?int $filterLimit = null;
 
     protected ?Duration $timeout = null;
 
@@ -176,6 +191,11 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
     protected ?ProjectionBehavior $projectionBehavior = null;
 
     private string $parameterPrefix = "p";
+
+    protected function isFilterActive(): bool
+    {
+        return !$this->filterModeStack->isEmpty() && $this->filterModeStack->peek();
+    }
 
     public function isDistinct(): bool
     {
@@ -247,6 +267,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         bool                               $isProjectInto = false
     )
     {
+        $this->filterModeStack = new Stack();
         $this->queryParameters = new Parameters();
         $this->aliasToGroupByFieldName = new StringArray();
 
@@ -260,6 +281,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->groupByTokens = new QueryTokenList();
         $this->orderByTokens = new QueryTokenList();
         $this->withTokens = new QueryTokenList();
+        $this->filterTokens = new QueryTokenList();
 
         $this->documentIncludes = new StringSet();
         $this->highlightingTokens = new HighlightingTokenArray();
@@ -302,7 +324,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     public function _usingDefaultOperator(QueryOperator $operator)
     {
-        if (!$this->whereTokens->isEmpty()) {
+        if (!$this->getCurrentWhereTokens()->isEmpty()) {
             throw new IllegalStateException("Default operator can only be set before any where clause is added.");
         }
 
@@ -642,7 +664,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $tokens->append(CloseSubclauseToken::create());
     }
 
-    protected function _whereEquals(string $fieldName, $value, bool $exact = false): void
+    public function _whereEquals(string $fieldName, $value, bool $exact = false): void
     {
         $whereParams = new WhereParams();
 
@@ -653,7 +675,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->_whereEqualsWithParams($whereParams);
     }
 
-    protected function _whereEqualsWithParams(WhereParams $whereParams): void
+    public function _whereEqualsWithParams(WhereParams $whereParams): void
     {
         if ($this->negate) {
             $this->negate = false;
@@ -701,7 +723,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         return false;
     }
 
-    protected function _whereNotEquals(string $fieldName, $value, bool $exact = false): void
+    public function _whereNotEquals(string $fieldName, $value, bool $exact = false): void
     {
         $whereParams = new WhereParams();
 
@@ -712,7 +734,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->_whereNotEqualsWithParams($whereParams);
     }
 
-    protected function _whereNotEqualsWithParams(WhereParams $whereParams): void
+    public function _whereNotEqualsWithParams(WhereParams $whereParams): void
     {
         if ($this->negate) {
             $this->negate = false;
@@ -749,6 +771,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
      */
     public function _whereIn(string $fieldName, Collection $values, bool $exact = false): void
     {
+        $this->assertMethodIsCurrentlySupported("whereIn");
+
         $fieldName = $this->ensureValidFieldName($fieldName, false);
 
         $tokens = $this->getCurrentWhereTokens();
@@ -761,6 +785,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     public function _whereStartsWith(string $fieldName, $value, bool $exact = false): void
     {
+        $this->assertMethodIsCurrentlySupported("whereStartsWith");
+
         $whereParams = new WhereParams();
         $whereParams->setFieldName($fieldName);
         $whereParams->setValue($value);
@@ -786,6 +812,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
      */
     public function _whereEndsWith(string $fieldName, $value, bool $exact = false): void
     {
+        $this->assertMethodIsCurrentlySupported("whereEndsWith");
+
         $whereParams = new WhereParams();
         $whereParams->setFieldName($fieldName);
         $whereParams->setValue($value);
@@ -810,8 +838,10 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
      * @param mixed $end Range end
      * @param bool $exact Use exact matcher
      */
-    public function _whereBetween(string $fieldName, $start, $end, bool $exact = false): void
+    public function _whereBetween(string $fieldName, mixed $start, mixed $end, bool $exact = false): void
     {
+        $this->assertMethodIsCurrentlySupported("whereBetween");
+
         $fieldName = $this->ensureValidFieldName($fieldName, false);
 
         $tokens = $this->getCurrentWhereTokens();
@@ -839,7 +869,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
      * @param mixed $value Value to compare
      * @param bool $exact Use exact matcher
      */
-    public function _whereGreaterThan(string $fieldName, $value, bool $exact): void
+    public function _whereGreaterThan(string $fieldName, $value, bool $exact = false): void
     {
         $fieldName = $this->ensureValidFieldName($fieldName, false);
 
@@ -896,7 +926,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $tokens->append($whereToken);
     }
 
-    public function _whereLessThanOrEqual(string $fieldName, $value, bool $exact): void
+    public function _whereLessThanOrEqual(string $fieldName, $value, bool $exact = false): void
     {
         $fieldName = $this->ensureValidFieldName($fieldName, false);
 
@@ -921,6 +951,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     public function _whereRegex(?string $fieldName, ?string $pattern): void
     {
+        $this->assertMethodIsCurrentlySupported("whereRegex");
+
         $fieldName = $this->ensureValidFieldName($fieldName, false);
 
         $tokens = $this->getCurrentWhereTokens();
@@ -974,6 +1006,11 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $tokens->append(QueryOperatorToken::or());
     }
 
+    protected function setFilterMode(bool $on): CleanCloseable
+    {
+        return new FilterModeScope($this->filterModeStack, $on);
+    }
+
     /**
      * Specifies a boost weight to the last where clause.
      * The higher the boost factor, the more relevant the term will be.
@@ -986,6 +1023,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
      */
     public function _boost(float $boost): void
     {
+        $this->assertMethodIsCurrentlySupported("boost");
+
         if ($boost == 1.0) {
             return;
         }
@@ -1034,6 +1073,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
      */
     public function _fuzzy(float $fuzzy): void
     {
+        $this->assertMethodIsCurrentlySupported("fuzzy");
+
         $tokens = $this->getCurrentWhereTokens();
         if ($tokens->isEmpty()) {
             throw new IllegalStateException('Fuzzy can only be used right after where clause');
@@ -1063,6 +1104,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
      */
     public function _proximity(int $proximity): void
     {
+        $this->assertMethodIsCurrentlySupported("proximity");
+
         $tokens = $this->getCurrentWhereTokens();
         if ($tokens->isEmpty()) {
             throw new IllegalStateException("Proximity can only be used right after search clause");
@@ -1195,6 +1238,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
      */
     public function _search(string $fieldName, string $searchTerms, ?SearchOperator $operator = null): void
     {
+        $this->assertMethodIsCurrentlySupported("search");
+
         if ($operator == null) {
             $operator = SearchOperator::or();
         }
@@ -1264,6 +1309,11 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
                 ->append($this->addQueryParameter($this->start))
                 ->append(", $")
                 ->append($this->addQueryParameter($this->pageSize));
+        }
+        if (!$this->filterTokens->isEmpty() && $this->filterLimit !== null) {
+            $queryText
+                ->append(' filter_limit $')
+                ->append($this->addQueryParameter($this->filterLimit));
         }
     }
 
@@ -1370,6 +1420,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     public function _containsAny(?string $fieldName, Collection $values): void
     {
+        $this->assertMethodIsCurrentlySupported("containsAny");
+
         $fieldName = $this->ensureValidFieldName($fieldName, false);
 
         $tokens = $this->getCurrentWhereTokens();
@@ -1383,6 +1435,8 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
 
     public function _containsAll(?string $fieldName, Collection $values): void
     {
+        $this->assertMethodIsCurrentlySupported("containsAll");
+
         $fieldName = $this->ensureValidFieldName($fieldName, false);
 
         $tokens = $this->getCurrentWhereTokens();
@@ -1530,6 +1584,25 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
             }
             $token->writeTo($writer);
             $isFirst = false;
+        }
+    }
+
+    private function buildFilter(StringBuilder $writer): void
+    {
+        if ($this->filterTokes->isEmpty()) {
+            return;
+        }
+
+        $writer
+            ->append(' filter ');
+
+        for ($i=0; $i < $this->filterTokens->count(); $i++) {
+            DocumentQueryHelper::addSpaceIfNeeded(
+                $i > 0 ? $this->filterTokens[$i-1] : null,
+                $this->filterTokens[$i],
+                $writer
+            );
+            $this->filterTokens[$i]->writeTo($writer);
         }
     }
 
@@ -1735,8 +1808,21 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         return $parameterName;
     }
 
+    private function assertMethodIsCurrentlySupported(?string $methodName): void
+    {
+        if (!$this->isFilterActive()) {
+            return;
+        }
+
+        throw new InvalidQueryException($methodName . " is currently unsupported for 'filter'. If you want to use "
+            . $methodName . " in where method you have to put it before 'filter'");
+    }
     private function getCurrentWhereTokens(): QueryTokenList
     {
+        if ($this->isFilterActive()) {
+            return $this->filterTokens;
+        }
+
         if (!$this->isInMoreLikeThis) {
             return $this->whereTokens;
         }
@@ -1755,6 +1841,11 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         } else {
             throw new IllegalStateException("Last token is not MoreLikeThisToken");
         }
+    }
+
+    private function getCurrentFilterTokens(): QueryTokenList
+    {
+        return $this->filterTokens;
     }
 
     protected function updateFieldsToFetchToken(FieldsToFetchToken $fieldsToFetch): void
@@ -1876,6 +1967,17 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $fields = [ TimeSeries::SELECT_FIELD_NAME . "(" . $builder->getQueryText() . ")" ];
         $projections = [ TimeSeries::QUERY_FUNCTION ];
         return new QueryData($fields, $projections);
+    }
+
+    public function _addFilterLimit(int $filterLimit): void
+    {
+        if ($filterLimit <= 0) {
+            throw new IllegalArgumentException("filter_limit need to be positive and bigger than 0.");
+        }
+
+        if ($filterLimit != PhpClient::INT_MAX_VALUE) {
+            $this->filterLimit = $filterLimit;
+        }
     }
 
     protected ClosureArray $beforeQueryExecutedCallback;

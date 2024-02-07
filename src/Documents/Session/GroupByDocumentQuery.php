@@ -43,4 +43,18 @@ class GroupByDocumentQuery implements GroupByDocumentQueryInterface
         $this->query->_groupByCount($projectedName);
         return $this->query;
     }
+
+//    @Override
+//    public IGroupByDocumentQuery<T> filter(Consumer<IFilterFactory<T>> builder) {
+//        return filter(builder, Integer.MAX_VALUE);
+//    }
+//    @Override
+//    public IGroupByDocumentQuery<T> filter(Consumer<IFilterFactory<T>> builder, int limit) {
+//        try (CleanCloseable mode = _query.setFilterMode(true)) {
+//            FilterFactory<T> f = new FilterFactory<>(_query, limit);
+//            builder.accept(f);
+//        }
+//
+//        return this;
+//    }
 }

@@ -26,6 +26,12 @@ class IndexTypeExtensions
         return $type->isMap() || $type->isMapReduce() || $type->isJavaScriptMap() || $type->isJavaScriptMapReduce();
     }
 
+    /**
+     * @deprecated Use isStatic
+     *
+     * @param IndexType $type
+     * @return bool
+     */
     public static function isStale(IndexType $type): bool
     {
         return self::isStatic($type);

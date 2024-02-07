@@ -22,6 +22,8 @@ class Transformation
     #[SerializedName("Script")]
     private ?string $script = null;
 
+    private ?string $documentIdPostfix = null;
+
     public function __construct()
     {
         $this->collections = new StringList();
@@ -75,5 +77,15 @@ class Transformation
     public function setScript(?string $script): void
     {
         $this->script = $script;
+    }
+
+    public function getDocumentIdPostfix(): ?string
+    {
+        return $this->documentIdPostfix;
+    }
+
+    public function setDocumentIdPostfix(?string $documentIdPostfix): void
+    {
+        $this->documentIdPostfix = $documentIdPostfix;
     }
 }

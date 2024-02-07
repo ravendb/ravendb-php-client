@@ -9,6 +9,7 @@ use Ds\Map as DSMap;
 use InvalidArgumentException;
 use Ramsey\Uuid\UuidInterface;
 use RavenDB\Constants\DocumentsMetadata;
+use RavenDB\Constants\Headers;
 use RavenDB\Documents\Operations\OperationExecutor;
 use RavenDB\Documents\Commands\Batches\BatchOptions;
 use RavenDB\Documents\Commands\Batches\IndexBatchOptions;
@@ -556,7 +557,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     }
 
     /**
-     * Gets all time series names for the specified entity.
+     * Gets all time series names for the specified instance.
+     * Throws an exception if the instance is not tracked by the session.
      * @param ?object $instance Entity
      * @return array time series names
      *
@@ -587,9 +589,8 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     }
 
     /**
-     * Gets the Change Vector for the specified entity.
-     * If the entity is transient, it will load the change vector from the store
-     * and associate the current state of the entity with the change vector from the server.
+     * Gets the Change Vector for the specified instance.
+     * Throws an exception if the instance is not tracked by the session.
      *
      * @param ?object $instance Instance to get change vector from
      * @return ?string change vector
@@ -860,9 +861,9 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
      * Gets the default value of the specified type.
      *
      * @param string $className Class
-     * @return mixed|null Default value to given class
+     * @return mixed Default value to given class
      */
-    public static function getDefaultValue(string $className)
+    public static function getDefaultValue(string $className): mixed
     {
         return null; // Defaults::defaultValue($className);
     }
@@ -870,15 +871,13 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     /**
      * Marks the specified entity for deletion. The entity will be deleted when IDocumentSession.saveChanges is called.
      *
-     * WARNING: This method when used with string entityId will not call beforeDelete listener!
-     *
      * @param string|object|null $entity
      * @param string|null $changeVector
      *
      * @throws IllegalArgumentException
      * @throws IllegalStateException
      */
-    public function delete($entity, ?string $changeVector = null): void
+    public function delete(string|object|null $entity, ?string $changeVector = null): void
     {
         if (is_object($entity)) {
             $this->deleteEntity($entity);
@@ -1015,6 +1014,9 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         $value = $this->documentsByEntity->get($entity);
 
         if ($value != null) {
+            if ($id != null && strcasecmp($value->getId(), $id)) {
+                throw new IllegalStateException("Cannot store the same entity (id: " . $value->getId() . ") with different id (" . $id . ")");
+            }
             $value->setChangeVector($changeVector ?? $value->getChangeVector());
             $value->setConcurrencyCheckMode($forceConcurrencyCheck);
 
@@ -1215,28 +1217,41 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     /**
      * @throws ExceptionInterface
      */
-    private function updateMetadataModifications(DocumentInfo $documentInfo): bool
+    public static function updateMetadataModifications(?MetadataDictionaryInterface $metadataDictionary, array & $metadata): bool
     {
         $dirty = false;
         $mapper = JsonExtensions::getDefaultMapper();
-        if ($documentInfo->getMetadataInstance() != null) {
-            if ($documentInfo->getMetadataInstance()->isDirty()) {
+        if ($metadataDictionary != null) {
+            if ($metadataDictionary->isDirty()) {
                 $dirty = true;
             }
 
-            foreach ($documentInfo->getMetadataInstance()->keySet() as $prop) {
-                $propValue = $documentInfo->getMetadataInstance()->get($prop);
-
+            foreach ($metadataDictionary->toSimpleArray() as $prop => $propValue) {
                 if (($propValue == null) || (($propValue instanceof MetadataAsDictionary) && ($propValue->isDirty()))) {
                     $dirty = true;
                 }
 
-                $documentInfo->getMetadata()[$prop] = $mapper->normalize($propValue);
+                $metadata[$prop] = $mapper->normalize($propValue);
+            }
+
+            if (count($metadata) != $metadataDictionary->count()) {
+                // looks like some props were removed
+                $toRemove = [];
+                foreach ($metadata as $fieldName => $value) {
+                    if (!$metadataDictionary->containsKey($fieldName)) {
+                        $toRemove[] = $fieldName;
+                    }
+                }
+
+                foreach ($toRemove as $s) {
+                    unset($metadata[$s]);
+                }
             }
         }
 
         return $dirty;
     }
+
 
     private function prepareForCreatingRevisionsFromIds(SaveChangesData $result): void
     {
@@ -1341,7 +1356,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
                     continue;
                 }
 
-                $dirtyMetadata = $this->updateMetadataModifications($entity->getValue());
+                $dirtyMetadata = $this->updateMetadataModifications($entity->getValue()->getMetadataInstance(), $entity->getValue()->getMetadata());
 
                 $document = $this->entityToJson->convertEntityToJson($entity->getKey(), $entity->getValue());
 
@@ -1363,7 +1378,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
 
 
                     if ($beforeStoreEventArgs->isMetadataAccessed()) {
-                        $this->updateMetadataModifications($entity->getValue());
+                        $this->updateMetadataModifications($entity->getValue()->getMetadataInstance(), $entity->getValue()->getMetadata());
                     }
 
                     if ($beforeStoreEventArgs->isMetadataAccessed() || $this->isEntityChanged($document, $entity->getValue())) {
@@ -1494,6 +1509,25 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         return $changes;
     }
 
+    public function getTrackedEntities(): EntityInfoMap
+    {
+        $tracked = $this->documentsById->getTrackedEntities($this);
+
+        foreach ($this->knownMissingIds as $id) {
+            if ($tracked->offsetExists($id)) {
+                continue;
+            }
+
+            $entityInfo = new EntityInfo();
+            $entityInfo->setId($id);
+            $entityInfo->setDeleted(true);
+
+            $tracked[$id] = $entityInfo;
+        }
+
+        return $tracked;
+    }
+
     /**
      * Gets a value indicating whether any of the entities tracked by the session has changes.
      *
@@ -1592,8 +1626,12 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         /** @var array<string, DocumentsChangesArray> $changes */
         $changes = array();
 
+        /**
+         * @var string $id
+         * @var DocumentInfo $documentInfo
+         */
         foreach ($this->documentsById as $id => $documentInfo) {
-            $this->updateMetadataModifications($documentInfo);
+            $this->updateMetadataModifications($documentInfo->getMetadataInstance(), $documentInfo->getMetadata());
             $newObj = $this->entityToJson->convertEntityToJson($documentInfo->getEntity(), $documentInfo);
             $entityChanges = $this->getEntityChanges($newObj, $documentInfo);
             if (count($entityChanges)) {
@@ -1764,6 +1802,7 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
             !$command->getType()->isAttachmentMove() &&
             !$command->getType()->isCounters() &&
             !$command->getType()->isTimeSeries() &&
+            !$command->getType()->isTimeSeriesWithIncrements() &&
             !$command->getType()->isTimeSeriesCopy()
         ) {
             $this->deferredCommandsMap->put(
@@ -2949,6 +2988,32 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
     function setTransactionMode(TransactionMode $transactionMode): void
     {
         $this->transactionMode = $transactionMode;
+    }
+
+    public static function validateTimeSeriesName(?string $name): void
+    {
+        if (StringUtils::isEmpty($name)) {
+            throw new IllegalArgumentException("Time Series name must contain at least one character");
+        }
+
+        if (StringUtils::startsWithIgnoreCase($name, Headers::INCREMENTAL_TIME_SERIES_PREFIX) && !str_contains($name, "@")) {
+            throw new IllegalArgumentException("Time Series name cannot start with " . Headers::INCREMENTAL_TIME_SERIES_PREFIX . " prefix");
+        }
+    }
+
+    public static function validateIncrementalTimeSeriesName(?string $name): void
+    {
+        if (StringUtils::isEmpty($name)) {
+            throw new IllegalArgumentException("Incremental Time Series name must contain at least one character");
+        }
+
+        if (!StringUtils::startsWithIgnoreCase($name, Headers::INCREMENTAL_TIME_SERIES_PREFIX)) {
+            throw new IllegalArgumentException("Time Series name must start with " . Headers::INCREMENTAL_TIME_SERIES_PREFIX . " prefix");
+        }
+
+        if (str_contains($name, "@")) {
+            throw new IllegalArgumentException("Time Series from type Rollup cannot be Incremental");
+        }
     }
 
 //    public static class DocumentsByEntityHolder implements Iterable<DocumentsByEntityHolder.DocumentsByEntityEnumeratorResult> {

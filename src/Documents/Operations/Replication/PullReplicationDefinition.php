@@ -19,6 +19,9 @@ class PullReplicationDefinition
     #[SerializedName("MentorNode")]
     private ?string $mentorNode = null;
 
+    #[SerializedName("PinToMentorNode")]
+    private bool $pinToMentorNode = false;
+
     #[SerializedName("Mode")]
     private ?array $mode = null;
 
@@ -82,6 +85,26 @@ class PullReplicationDefinition
         $this->mentorNode = $mentorNode;
     }
 
+    public function isPinToMentorNode(): bool
+    {
+        return $this->pinToMentorNode;
+    }
+
+    public function setPinToMentorNode(bool $pinToMentorNode): void
+    {
+        $this->pinToMentorNode = $pinToMentorNode;
+    }
+
+    public function getMode(): ?array
+    {
+        return $this->mode;
+    }
+
+    public function setMode(?array $mode): void
+    {
+        $this->mode = $mode;
+    }
+
     public function getName(): ?string
     {
         return $this->name;
@@ -121,6 +144,4 @@ class PullReplicationDefinition
     {
         $this->preventDeletionsMode = $preventDeletionsMode;
     }
-
-
 }

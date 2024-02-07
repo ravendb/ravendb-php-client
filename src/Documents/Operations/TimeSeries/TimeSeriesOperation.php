@@ -11,6 +11,8 @@ class TimeSeriesOperation
     private ?array $appends = null;
     /** @var array<DeleteOperation> */
     private ?array $deletes = null;
+    /** @var array<IncrementOperation>|null  */
+    private ?array $increments = null;
     private ?string $name = null;
 
     public function getName(): ?string
@@ -52,7 +54,26 @@ class TimeSeriesOperation
             }
         }
 
+        $data["Increments"] = null;
+        if (!empty($this->increments)) {
+            $data["Increments"] = [];
+            /** @var IncrementOperation $increment */
+            foreach ($this->increments as $increment) {
+                $data['Increments'][] = $increment->serialize($conventions);
+            }
+        }
+
         return $data;
+    }
+
+    public function increment(IncrementOperation $incrementOperation): void
+    {
+        if ($this->increments == null) {
+            $this->increments = []; // new TreeSet<>(Comparator.comparing(x -> x.getTimestamp().getTime()));
+        }
+
+        $timestamp = NetISO8601Utils::format($incrementOperation->getTimestamp());
+        $this->appends[$timestamp] = $incrementOperation;
     }
 
     public function append(AppendOperation $appendOperation): void
@@ -61,8 +82,6 @@ class TimeSeriesOperation
             $this->appends = []; //new TreeSet<>(Comparator.comparing(x -> x.getTimestamp().getTime()));
         }
 
-        // if element with given timestamp already exists - replace it
-        // todo: check with Marcing is it ok just to replace it
         $timestamp = NetISO8601Utils::format($appendOperation->getTimestamp());
         $this->appends[$timestamp] = $appendOperation;
     }

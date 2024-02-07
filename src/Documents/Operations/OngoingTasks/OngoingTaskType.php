@@ -10,6 +10,8 @@ class OngoingTaskType implements ValueObjectInterface
     public const RAVEN_ETL = 'RavenEtl';
     public const SQL_ETL = 'SqlEtl';
     public const OLAP_ETL = 'OlapEtl';
+    public const ELASTIC_SEARCH_ETL = "ElasticSearchEtl";
+    public const QUEUE_ETL = "QueueEtl";
     public const BACKUP = 'Backup';
     public const SUBSCRIPTION = 'Subscription';
     public const PULL_REPLICATION_AS_HUB = 'PullReplicationAsHub';
@@ -75,6 +77,26 @@ class OngoingTaskType implements ValueObjectInterface
     public static function olapEtl(): OngoingTaskType
     {
         return new OngoingTaskType(self::OLAP_ETL);
+    }
+
+    public function isElasticSearchEtl(): bool
+    {
+        return $this->value == self::ELASTIC_SEARCH_ETL;
+    }
+
+    public static function elasticSearchEtl(): OngoingTaskType
+    {
+        return new OngoingTaskType(self::ELASTIC_SEARCH_ETL);
+    }
+
+    public function isQueueEtl(): bool
+    {
+        return $this->value == self::QUEUE_ETL;
+    }
+
+    public static function queueEtl(): OngoingTaskType
+    {
+        return new OngoingTaskType(self::QUEUE_ETL);
     }
 
     public function isBackup(): bool

@@ -21,11 +21,13 @@ class CommandType
 
     const COUNTERS = 'Counters';
     const TIME_SERIES = 'TimeSeries';
+    const TIME_SERIES_WITH_INCREMENTS = 'TimeSeriesWithIncrements';
     const TIME_SERIES_BULK_INSERT = 'TimeSeriesBulkInsert';
     const TIME_SERIES_COPY = 'TimeSeriesCopy';
 
     const BATCH_PATCH = 'BatchPATCH';
 
+    const JSON_PATCH = 'JsonPATCH';
     const CLIENT_ANY_COMMAND = 'ClientAndCommand';
     const CLIENT_MODIFY_DOCUMENT_COMMAND = 'ClientModifyDocumentCommand';
 
@@ -43,6 +45,7 @@ class CommandType
         self::FORCE_REVISION_CREATION,
         self::COUNTERS,
         self::TIME_SERIES,
+        self::TIME_SERIES_WITH_INCREMENTS,
         self::TIME_SERIES_BULK_INSERT,
         self::TIME_SERIES_COPY,
         self::BATCH_PATCH,
@@ -147,6 +150,11 @@ class CommandType
         return $this->value == self::TIME_SERIES;
     }
 
+    public function isTimeSeriesWithIncrements(): bool
+    {
+        return $this->value == self::TIME_SERIES_WITH_INCREMENTS;
+    }
+
     public function isTimeSeriesBulkInsert(): bool
     {
         return $this->value == self::TIME_SERIES_BULK_INSERT;
@@ -229,6 +237,10 @@ class CommandType
     public static function timeSeries(): CommandType
     {
         return new CommandType(self::TIME_SERIES);
+    }
+    public static function timeSeriesWithIncrements(): CommandType
+    {
+        return new CommandType(self::TIME_SERIES_WITH_INCREMENTS);
     }
     public static function timeSeriesBulkInsert(): CommandType
     {

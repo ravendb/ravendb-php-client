@@ -59,15 +59,11 @@ class NodeSelector implements CleanCloseable
     public function getRequestedNode(string $nodeTag): CurrentIndexAndNode
     {
         $state = $this->state;
-        $stateFailures = $state->failures;
         $serverNodes = $state->nodes;
-        $len = min(count($serverNodes), count($stateFailures));
+        $len = count($serverNodes);
         for ($i = 0; $i < $len; $i++) {
             if (strcmp($serverNodes[$i]->getClusterTag(), $nodeTag) == 0) {
-                if (($stateFailures[$i]->get() == 0) && StringUtils::isNotEmpty($serverNodes[$i]->getUrl())) {
                     return new CurrentIndexAndNode($i, $serverNodes[$i]);
-                }
-                throw new RequestedNodeUnavailableException("Requested node " . $nodeTag . " is currently unavailable, please try again later.");
             }
         }
 
@@ -75,6 +71,11 @@ class NodeSelector implements CleanCloseable
             throw new DatabaseDoesNotExistException("There are no nodes in the topology at all");
         }
         throw new RequestedNodeUnavailableException("Could not find requested node " . $nodeTag);
+    }
+
+    public function nodeIsAvailable(int $index): bool
+    {
+        return $this->state->failures[$index]->get() == 0;
     }
 
     /**
@@ -95,7 +96,7 @@ class NodeSelector implements CleanCloseable
         $serverNodes = $state->nodes;
         $len = min(count($serverNodes), count($stateFailures));
         for ($i = 0; $i < $len; $i++) {
-            if ($stateFailures[$i]->get() == 0 && StringUtils::isNotEmpty($serverNodes[$i]->getUrl())) {
+            if ($stateFailures[$i]->get() == 0) {
                 return new CurrentIndexAndNode($i, $serverNodes[$i]);
             }
         }
@@ -116,13 +117,13 @@ class NodeSelector implements CleanCloseable
 
     private static function unlikelyEveryoneFaultedChoice(NodeSelectorState $state): CurrentIndexAndNode
     {
-        // if there are all marked as failed, we'll chose the first
+        // if there are all marked as failed, we'll choose the next (the one in CurrentNodeIndex)
         // one so the user will get an error (or recover :-) );
         if (count($state->nodes) == 0) {
             throw new DatabaseDoesNotExistException("There are no nodes in the topology at all");
         }
 
-        return new CurrentIndexAndNode (0, $state->nodes[0]);
+        return $state->getNodeWhenEveryoneMarkedAsFaulted();
     }
 
     public function getNodeBySessionId(int $sessionId): CurrentIndexAndNode

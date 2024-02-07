@@ -6,6 +6,7 @@ use DateTime;
 
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Primitives\NetISO8601Utils;
+use RavenDB\Utils\StringUtils;
 use Symfony\Component\Serializer\Annotation\SerializedName;
 
 class TimeSeriesEntry
@@ -22,6 +23,7 @@ class TimeSeriesEntry
     /** @SerializedName( "IsRollup" )  */
     private bool $rollup = false;
 
+    private ?array $nodeValues = null; // Map<String, Double[]>
 
     public function __construct(?array  $data = null)
     {
@@ -44,6 +46,11 @@ class TimeSeriesEntry
         if (array_key_exists('Values', $data)) {
             $this->values = $data['Values'];
         }
+    }
+
+    public function __toString(): string
+    {
+        return "[" . NetISO8601Utils::format($this->timestamp) . "] " . StringUtils::join($this->values, ',') . " " . $this->tag;
     }
 
     public function getTimestamp(): ?DateTime
@@ -84,6 +91,16 @@ class TimeSeriesEntry
     public function setRollup(bool $rollup): void
     {
         $this->rollup = $rollup;
+    }
+
+    public function getNodeValues(): ?array
+    {
+        return $this->nodeValues;
+    }
+
+    public function setNodeValues(?array $nodeValues): void
+    {
+        $this->nodeValues = $nodeValues;
     }
 
 //    @JsonIgnore

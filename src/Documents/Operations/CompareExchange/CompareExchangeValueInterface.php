@@ -22,7 +22,7 @@ interface CompareExchangeValueInterface
      */
     public function & getValue();
 
-    public function getMetadata(): ?MetadataDictionaryInterface;
+    public function & getMetadata(): ?MetadataDictionaryInterface;
 
     public function hasMetadata(): bool;
 }
