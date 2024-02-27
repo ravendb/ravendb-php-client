@@ -225,8 +225,7 @@ class DocumentConventions
         $this->maxHttpCacheSize = 128 * 1024 * 1024;
 
         $this->entityMapper = JsonExtensions::getDefaultEntityMapper();
-
-//
+        
 //        _aggressiveCache = new AggressiveCacheConventions(this);
         $this->firstBroadcastAttemptTimeout = Duration::ofSeconds(5);
         $this->secondBroadcastAttemptTimeout = Duration::ofSeconds(30);
