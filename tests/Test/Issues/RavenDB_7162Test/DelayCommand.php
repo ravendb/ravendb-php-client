@@ -24,8 +24,8 @@ class DelayCommand extends VoidRavenCommand
         $url = $serverNode->getUrl();
 
         $url .= TestRunGuard::isServerVersion52()
-            ? "/admin/test/delay?value="
-            : "/test/delay?value=";
+            ? "/test/delay?value="
+            : "/admin/test/delay?value=";
 
         $url .= $this->value->toMillis();
 
