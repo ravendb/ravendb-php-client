@@ -19,9 +19,14 @@ class TestRunGuard
 
     public static function disableTestForRaven52(TestCase $testCase): void
     {
-        $serverVersion = getenv(self::$SERVER_VERSION);
-        if ($serverVersion == '5.2') {
+        if (self::isServerVersion52()) {
             $testCase->markTestSkipped("Test disabled for RavenDB version 5.2.");
         }
+    }
+
+    public static function isServerVersion52(): bool
+    {
+        $serverVersion = getenv(self::$SERVER_VERSION);
+        return $serverVersion == '5.2';
     }
 }
