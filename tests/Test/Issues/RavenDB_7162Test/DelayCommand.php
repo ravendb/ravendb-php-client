@@ -7,6 +7,7 @@ use RavenDB\Http\HttpRequestInterface;
 use RavenDB\Http\ServerNode;
 use RavenDB\Http\VoidRavenCommand;
 use RavenDB\Type\Duration;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 
 class DelayCommand extends VoidRavenCommand
 {
@@ -20,7 +21,15 @@ class DelayCommand extends VoidRavenCommand
 
     public function createUrl(ServerNode $serverNode): string
     {
-        return $serverNode->getUrl() . "/test/delay?value=" . $this->value->toMillis();
+        $url = $serverNode->getUrl();
+
+        $url .= TestRunGuard::isServerVersion52()
+            ? "/test/delay?value="
+            : "/admin/test/delay?value=";
+
+        $url .= $this->value->toMillis();
+
+        return $url;
     }
 
     public function createRequest(ServerNode $serverNode): HttpRequestInterface
