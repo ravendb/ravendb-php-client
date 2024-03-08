@@ -3,6 +3,7 @@
 namespace tests\RavenDB;
 
 use DateInterval;
+use RavenDB\Constants\Indexes;
 use RavenDB\Documents\DocumentStore;
 use RavenDB\Documents\DocumentStoreArray;
 use RavenDB\Documents\DocumentStoreInterface;
@@ -206,6 +207,12 @@ class RemoteTestBase extends RavenTestDriver implements CleanCloseable
         $documentStore = self::getGlobalServer($secured);
         $databaseRecord = new DatabaseRecord();
         $databaseRecord->setDatabaseName($name);
+
+        // force lucene on database level
+//        $settings = $databaseRecord->getSettings();
+//        $settings[Indexes::INDEXING_STATIC_SEARCH_ENGINE_TYPE] = "Lucene";
+//        $settings[Indexes::INDEXING_AUTO_SEARCH_ENGINE_TYPE] = "Lucene";
+//        $databaseRecord->setSettings($settings);
 
         $this->customizeDbRecord($databaseRecord);
 
