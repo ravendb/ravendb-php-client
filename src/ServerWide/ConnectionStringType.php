@@ -10,6 +10,8 @@ class ConnectionStringType implements ValueObjectInterface
     private const RAVEN = 'Raven';
     private const SQL = 'Sql';
     private const OLAP = 'Olap';
+    private const ELASTIC_SEARCH = "ElasticSearch";
+    private const QUEUE = "Queue";
 
     private string $value;
 
@@ -71,5 +73,25 @@ class ConnectionStringType implements ValueObjectInterface
     public static function olap(): ConnectionStringType
     {
         return new ConnectionStringType(self::OLAP);
+    }
+
+    public function isElasticSearch(): bool
+    {
+        return $this->value == self::ELASTIC_SEARCH;
+    }
+
+    public static function elasticSearch(): ConnectionStringType
+    {
+        return new ConnectionStringType(self::ELASTIC_SEARCH);
+    }
+
+    public function isQueue(): bool
+    {
+        return $this->value == self::QUEUE;
+    }
+
+    public static function queue(): ConnectionStringType
+    {
+        return new ConnectionStringType(self::QUEUE);
     }
 }

@@ -28,10 +28,14 @@ class StringUtils
         return !self::isEmpty($value);
     }
 
-    public static function startsWith(string $needle, string $value): bool
+    public static function startsWith(string $haystack, string $needle): bool
     {
-        // @todo: implement this metod
-        return false;
+        return str_starts_with($haystack, $needle);
+    }
+
+    public static function startsWithIgnoreCase($haystack, string $needle): bool
+    {
+        return stripos($haystack, $needle) === 0;
     }
 
     public static function endsWith(string $needle, string $value): bool
@@ -126,5 +130,10 @@ class StringUtils
         }
 
         return strcasecmp($first, $second) == 0;
+    }
+
+    public static function join(array $values, string $separator): string
+    {
+        return implode($separator, $values);
     }
 }

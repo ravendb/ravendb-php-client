@@ -76,93 +76,29 @@ interface AbstractDocumentQueryInterface
      */
     function _skip(int $count): void;
 
-//    /**
-//     * Matches value
-//     * @param fieldName Field name
-//     * @param value Value to match
-//     */
-//    void _whereEquals(String fieldName, Object value);
-//
-//    /**
-//     * Matches value
-//     * @param fieldName Field name
-//     * @param value Value to match
-//     * @param exact Use exact matcher
-//     */
-//    void _whereEquals(String fieldName, Object value, boolean exact);
-//
-//    /**
-//     * Matches value
-//     * @param fieldName Field name
-//     * @param method Method call to use
-//     */
-//    void _whereEquals(String fieldName, MethodCall method);
-//
-//    /**
-//     * Matches value
-//     * @param fieldName Field name
-//     * @param method Method call to use
-//     * @param exact Use exact matcher
-//     */
-//    void _whereEquals(String fieldName, MethodCall method, boolean exact);
-//
-//    /**
-//     * Matches value
-//     * @param whereParams Where parameters
-//     */
-//    void _whereEquals(WhereParams whereParams);
-//
-//    /**
-//     * Not matches value
-//     * @param fieldName Field name
-//     * @param value Value to match
-//     */
-//    void _whereNotEquals(String fieldName, Object value);
-//
-//    /**
-//     * Not matches value
-//     * @param fieldName Field name
-//     * @param value Value to match
-//     * @param exact Use exact matcher
-//     */
-//    void _whereNotEquals(String fieldName, Object value, boolean exact);
-//
-//    /**
-//     * Not matches value
-//     * @param fieldName Field name
-//     * @param method Method call to use
-//     */
-//    void _whereNotEquals(String fieldName, MethodCall method);
-//
-//    /**
-//     * Not matches value
-//     * @param fieldName Field name
-//     * @param method Method call to use
-//     * @param exact Use exact matcher
-//     */
-//    void _whereNotEquals(String fieldName, MethodCall method, boolean exact);
-//
-//    /**
-//     * Not matches value
-//     * @param whereParams Where parameters
-//     */
-//    void _whereNotEquals(WhereParams whereParams);
-//
-//    /**
-//     * Simplified method for opening a new clause within the query
-//     */
-//    void _openSubclause();
-//
-//    /**
-//     * Simplified method for closing a clause within the query
-//     */
-//    void _closeSubclause();
-//
-//    /**
-//     * Negate the next operation
-//     */
-//    void _negateNext();
-//
+    function _whereEquals(string $fieldName, $value, bool $exact = false): void;
+
+    function _whereEqualsWithParams(WhereParams $whereParams): void;
+
+    public function _whereNotEquals(string $fieldName, $value, bool $exact = false): void;
+
+    public function _whereNotEqualsWithParams(WhereParams $whereParams): void;
+
+    /**
+     * Simplified method for opening a new clause within the query
+     */
+    public function _openSubclause(): void;
+
+    /**
+     * Simplified method for closing a clause within the query
+     */
+    public function _closeSubclause(): void;
+
+    /**
+     * Negate the next operation
+     */
+    public function _negateNext(): void;
+
 //    /**
 //     * Check that the field has one of the specified value
 //     * @param fieldName Field name
@@ -201,68 +137,27 @@ interface AbstractDocumentQueryInterface
      * @param mixed $end Range end
      * @param bool $exact Use exact matcher
      */
-    function _whereBetween(string $fieldName, $start, $end, bool $exact = false): void;
+    function _whereBetween(string $fieldName, mixed $start, mixed $end, bool $exact = false): void;
 
-//    /**
-//     * Matches fields where the value is greater than the specified value
-//     * @param fieldName Field name
-//     * @param value Value to match
-//     */
-//    void _whereGreaterThan(String fieldName, Object value);
-//
-//    /**
-//     * Matches fields where the value is greater than the specified value
-//     * @param fieldName Field name
-//     * @param value Value to match
-//     * @param exact Use exact matcher
-//     */
-//    void _whereGreaterThan(String fieldName, Object value, boolean exact);
-//
-//    /**
-//     * Matches fields where the value is greater than or equal to the specified value
-//     * @param fieldName Field name
-//     * @param value Value to match
-//     */
-//    void _whereGreaterThanOrEqual(String fieldName, Object value);
-//
-//    /**
-//     * Matches fields where the value is greater than or equal to the specified value
-//     * @param fieldName Field name
-//     * @param value Value to match
-//     * @param exact Use exact matcher
-//     */
-//    void _whereGreaterThanOrEqual(String fieldName, Object value, boolean exact);
-//
-//    /**
-//     * Matches fields where the value is less than the specified value
-//     * @param fieldName Field name
-//     * @param value Value to match
-//     */
-//    void _whereLessThan(String fieldName, Object value);
-//
-//    /**
-//     * Matches fields where the value is less than the specified value
-//     * @param fieldName Field name
-//     * @param value Value to match
-//     * @param exact Use exact matcher
-//     */
-//    void _whereLessThan(String fieldName, Object value, boolean exact);
-//
-//    /**
-//     * Matches fields where the value is less than or equal to the specified value
-//     * @param fieldName Field name
-//     * @param value Value to match
-//     */
-//    void _whereLessThanOrEqual(String fieldName, Object value);
-//
-//    /**
-//     * Matches fields where the value is less than or equal to the specified value
-//     * @param fieldName Field name
-//     * @param value Value to match
-//     * @param exact Use exact matcher
-//     */
-//    void _whereLessThanOrEqual(String fieldName, Object value, boolean exact);
-//
+    /**
+     * Matches fields where the value is greater than the specified value
+     */
+    public function _whereGreaterThan(string $fieldName, $value, bool $exact = false): void;
+
+    /**
+     * Matches fields where the value is greater than or equal to the specified value
+     */
+    public function _whereGreaterThanOrEqual(string $fieldName, $value, bool $exact = false): void;
+
+    /**
+     * Matches fields where the value is less than the specified value
+     */
+    public function _whereLessThan(string $fieldName, $value, bool $exact = false): void;
+
+    /**
+     * Matches fields where the value is less than or equal to the specified value
+     */
+    public function _whereLessThanOrEqual(string $fieldName, $value, bool $exact = false): void;
 //    void _whereExists(String fieldName);
 //
 //    void _whereRegex(String fieldName, String pattern);
@@ -272,10 +167,10 @@ interface AbstractDocumentQueryInterface
      */
     public function _andAlso(bool $wrapPreviousQueryClauses = false): void;
 
-//    /**
-//     * Add an OR to the query
-//     */
-//    void _orElse();
+    /**
+     * Add an OR to the query
+     */
+    public function _orElse(): void;
 //
 //    /**
 //     * Specifies a boost weight to the last where clause.

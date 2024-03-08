@@ -91,6 +91,40 @@ class CrudTest extends RemoteTestBase
             } finally {
                 $newSession->close();
             }
+
+            $newSession = $store->openSession();
+            try {
+                /** @var array<User> $users */
+                $users = $newSession
+                        ->query(User::class)
+                        ->whereEquals("LastName", "user1")
+                        ->toList();
+
+                $this->assertCount(1, $users);
+                $this->assertNotNull($users[0]);
+                $this->assertNotNull($users[0]->getLastName());
+            } finally {
+                $newSession->close();
+            }
+
+            // RDBC-619 - can use selectFields w/o explicit field enumaration
+
+            $newSession = $store->openSession();
+            try {
+                /** @var array<User> $users */
+                $users = $newSession
+                    ->query(User::class)
+                    ->whereEquals("LastName", "user1")
+                    ->selectFields(User::class)
+                    ->toList();
+
+                $this->assertCount(1, $users);
+                $this->assertNotNull($users[0]);
+                $this->assertNotNull($users[0]->getLastName());
+            }   finally {
+                $newSession->close();
+            }
+
         } finally {
             $store->close();
         }

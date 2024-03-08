@@ -27,6 +27,16 @@ class EntityMapper extends Serializer
         }
     }
 
+    public function isDotNetNamingStrategyEnabled(): bool
+    {
+        if ($this->dotNetNamingConvertor == null) {
+            return false;
+        }
+
+        return $this->dotNetNamingConvertor->isEnabled();
+    }
+
+
     public function setDotNetNamingConvertor(DotNetNamingConverter $dotNetNamingConvertor)
     {
         $this->dotNetNamingConvertor = $dotNetNamingConvertor;

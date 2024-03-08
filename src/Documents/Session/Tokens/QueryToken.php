@@ -16,7 +16,8 @@ abstract class QueryToken
         "load",
         "group",
         "order",
-        "include"
+        "include",
+        "filter"
     ];
 
     public static function writeField(StringBuilder &$writer, string $field): void

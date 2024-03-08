@@ -5,7 +5,6 @@ namespace RavenDB\Documents\Queries;
 use RavenDB\Extensions\EntityMapper;
 use RuntimeException;
 
-//! status: DONE
 class IndexQuery extends IndexQueryWithParameters
 {
     public function __construct(string $query = '')

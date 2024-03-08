@@ -9,6 +9,8 @@ class EtlType implements ValueObjectInterface
     private const RAVEN = 'Raven';
     private const SQL = 'Sql';
     private const OLAP = 'Olap';
+    private const ELASTIC_SEARCH = "ElasticSearch";
+    private const QUEUE = "Queue";
 
     private string $value;
 
@@ -60,5 +62,25 @@ class EtlType implements ValueObjectInterface
     public static function olap(): EtlType
     {
         return new EtlType(self::OLAP);
+    }
+
+    public function isElasticSearch(): bool
+    {
+        return $this->value == self::ELASTIC_SEARCH;
+    }
+
+    public static function elasticSearch(): EtlType
+    {
+        return new EtlType(self::ELASTIC_SEARCH);
+    }
+
+    public function isQueue(): bool
+    {
+        return $this->value == self::QUEUE;
+    }
+
+    public static function queue(): EtlType
+    {
+        return new EtlType(self::QUEUE);
     }
 }

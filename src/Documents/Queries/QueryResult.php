@@ -20,6 +20,7 @@ class QueryResult extends GenericQueryResult implements ResultInterface
         $queryResult->setIncludedPaths($this->getIncludedPaths());
         $queryResult->setStale($this->isStale());
         $queryResult->setSkippedResults($this->getSkippedResults());
+        $queryResult->setScannedResults($this->getScannedResults());
         $queryResult->setTotalResults($this->getTotalResults());
         $queryResult->setLongTotalResults($this->getLongTotalResults());
         $queryResult->setHighlightings($this->getHighlightings());

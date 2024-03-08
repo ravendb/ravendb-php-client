@@ -31,6 +31,9 @@ class OngoingTask
     #[SerializedName("MentorNode")]
     private ?string $mentorNode = null;
 
+    #[SerializedName("PinToMentorNode")]
+    private bool $pinToMentorNode = false;
+
     public function getTaskId(): ?int
     {
         return $this->taskId;
@@ -109,5 +112,15 @@ class OngoingTask
     public function setMentorNode(?string $mentorNode): void
     {
         $this->mentorNode = $mentorNode;
+    }
+
+    public function isPinToMentorNode(): bool
+    {
+        return $this->pinToMentorNode;
+    }
+
+    public function setPinToMentorNode(bool $pinToMentorNode): void
+    {
+        $this->pinToMentorNode = $pinToMentorNode;
     }
 }

@@ -3,9 +3,9 @@ on:
     schedule:
         -   cron: "0 10 * * 6"
     push:
-        branches: [ v5.2 ]
+        branches: [ v5.4 ]
     pull_request:
-        branches: [ v5.2 ]
+        branches: [ v5.4 ]
 
 jobs:
     build:
@@ -13,8 +13,8 @@ jobs:
 
         strategy:
             matrix:
-                php-versions: [ "8.1", "8.2" ]
-                serverVersion: [ "5.2", "5.4" ]
+                php-versions: [ "8.1", "8.2", "8.3"]
+                serverVersion: [ "5.4" ]
             fail-fast: false
 
         env:
@@ -32,7 +32,7 @@ jobs:
 
         steps:
             - name: Check out repository code
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
 
             - name: Install PHP
               uses: shivammathur/setup-php@v2

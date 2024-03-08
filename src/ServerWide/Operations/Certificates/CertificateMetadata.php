@@ -21,6 +21,9 @@ class CertificateMetadata implements ResultInterface
     /** @SerializedName("NotAfter") */
     private ?\DateTimeInterface $notAfter = null;
 
+    /** @SerializedName("NotBefore") */
+    private ?\DateTimeInterface $notBefore = null;
+
     /** @SerializedName("Permissions") */
     protected ?DatabaseAccessArray $permissions = null;
 
@@ -77,6 +80,16 @@ class CertificateMetadata implements ResultInterface
     public function setNotAfter(?\DateTimeInterface $notAfter): void
     {
         $this->notAfter = $notAfter;
+    }
+
+    public function getNotBefore(): ?\DateTimeInterface
+    {
+        return $this->notBefore;
+    }
+
+    public function setNotBefore(?\DateTimeInterface $notBefore): void
+    {
+        $this->notBefore = $notBefore;
     }
 
     public function getPermissions(): ?DatabaseAccessArray

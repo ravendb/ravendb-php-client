@@ -3,8 +3,9 @@
 namespace RavenDB\Http;
 
 use RavenDB\Exceptions\InvalidValueException;
+use RavenDB\Type\ValueObjectInterface;
 
-class LoadBalanceBehavior
+class LoadBalanceBehavior implements ValueObjectInterface
 {
     const NONE = 'NONE';
     const USE_SESSION_CONTEXT = 'USE_SESSION_CONTEXT';
@@ -16,9 +17,18 @@ class LoadBalanceBehavior
     /**
      * @throws InvalidValueException
      */
-    public function __construct(string $value)
+    public function __construct(?string $value = null)
     {
+        if ($value === null) {
+            $value = self::NONE;
+        }
+
         $this->setValue($value);
+    }
+
+    public function __toString(): string
+    {
+        return $this->value;
     }
 
     public function getValue(): string

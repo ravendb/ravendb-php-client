@@ -2,6 +2,7 @@
 
 namespace RavenDB\Json;
 
+use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Documents\Session\MetadataDictionaryInterface;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\NotImplementedException;
@@ -9,13 +10,21 @@ use RavenDB\Type\StringSet;
 
 class MetadataAsDictionary implements MetadataDictionaryInterface
 {
+    const RESERVED_METADATA_PROPERTIES = [
+        DocumentsMetadata::COLLECTION,
+        DocumentsMetadata::ID,
+        DocumentsMetadata::CHANGE_VECTOR,
+        DocumentsMetadata::LAST_MODIFIED,
+        DocumentsMetadata::RAVEN_JAVA_TYPE
+    ];
+
     private ?MetadataDictionaryInterface $parent = null;
     private ?string $parentKey = null;
 
     private ?array $metadata = null;
     private ?array $source = null;
 
-    private bool $dirty = false;
+    private bool $hasChanges = false;
 
     public function __construct(?array $metadata = null)
     {
@@ -50,12 +59,12 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
 
     public function isDirty(): bool
     {
-        return $this->dirty;
+        return $this->metadata !== null && $this->hasChanges;
     }
 
     private function initialize(?array $metadata): void
     {
-        $this->dirty = true;
+        $this->hasChanges = true;
         $this->metadata = [];
         $fields = $metadata ? array_keys($metadata) : [];
         foreach ($fields as $fieldName) {
@@ -119,16 +128,21 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
     /**
      * @param string|null $key
      * @param null|mixed $value
-     * @return mixed
      */
-    public function put(?string $key, $value)
+    public function put(?string $key, $value): void
     {
         if ($this->metadata == null) {
             $this->initialize($this->source);
         }
-        $this->dirty = true;
 
-        return $this->metadata[$key] = $value;
+        if (array_key_exists($key, $this->metadata)) {
+            if ($this->metadata[$key] == $value) {
+                return;
+            }
+        }
+
+        $this->metadata[$key] = $value;
+        $this->hasChanges = true;
     }
 
     public function get($key)
@@ -174,7 +188,7 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
 //        if (_metadata == null) {
 //            initialize(_source);
 //        }
-//        dirty = true;
+//        hasChanges = true;
 //
 //        _metadata.putAll(m);
 //    }
@@ -184,9 +198,23 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
 //        if (_metadata == null) {
 //            initialize(_source);
 //        }
-//        dirty = true;
 //
-//        _metadata.clear();
+//        Set<String> keysToRemove = new HashSet<>();
+//
+//        for (Entry<String, Object> item : _metadata.entrySet()) {
+//            if (RESERVED_METADATA_PROPERTIES.contains(item.getKey())) {
+//                continue;
+//            }
+//            keysToRemove.add(item.getKey());
+//        }
+//
+//        if (!keysToRemove.isEmpty()) {
+//            for (String s : keysToRemove) {
+//                _metadata.remove(s);
+//            }
+//
+//            _hasChanges = true;
+//        }
 //    }
 
     public function containsKey($key): bool
@@ -228,9 +256,12 @@ class MetadataAsDictionary implements MetadataDictionaryInterface
 //        if (_metadata == null) {
 //            initialize(_source);
 //        }
-//        dirty = true;
 //
-//        return _metadata.remove(key);
+//        Object oldValue = _metadata.remove(key);
+//
+//        _hasChanges |= oldValue != null;
+//
+//        return oldValue;
 //    }
 //
 //    @Override

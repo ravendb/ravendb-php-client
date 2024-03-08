@@ -58,6 +58,7 @@ interface AdvancedSessionOperationsInterface extends
     public function rawQuery(?string $className, string $query): RawDocumentQueryInterface;
 
 //    /**
+//     * @deprecated  Graph API will be removed in next major version of the product.
 //     * Issue a graph query based on the raw match query provided
 //     * @param clazz result class
 //     * @param query Graph Query

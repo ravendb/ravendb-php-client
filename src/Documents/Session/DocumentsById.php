@@ -40,4 +40,19 @@ class DocumentsById extends TypedMap
     {
         $this->exchangeArray([]);
     }
+
+    public function getTrackedEntities(?InMemoryDocumentSessionOperations $session): EntityInfoMap
+    {
+        $result = new EntityInfoMap();
+
+        foreach ($this as $key => $value) {
+            $entityInfo = new EntityInfo();
+            $entityInfo->setId($key);
+            $entityInfo->setEntity($value->getEntity());
+            $entityInfo->setDeleted($session->isDeleted($key));
+            $result[$key] = $entityInfo;
+        }
+
+        return $result;
+    }
 }

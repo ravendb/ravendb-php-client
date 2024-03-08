@@ -179,6 +179,7 @@ class BatchOperation
                     $this->handleCounters($batchResult);
                     break;
                 case CommandType::TIME_SERIES:
+                case CommandType::TIME_SERIES_WITH_INCREMENTS:
 //                    //TODO: RavenDB-13474 add to time series cache
                     break;
                 case CommandType::TIME_SERIES_COPY:
@@ -602,6 +603,10 @@ class BatchOperation
 //        return jsonNode.asBoolean();
 //    }
 
+    private static function throwInvalidValue(?string $arg, ?string $fieldName): void
+    {
+        throw new IllegalArgumentException("'" . $arg . "' is not a valid value for field " . $fieldName);
+    }
 
     private static function throwMissingField(CommandType $type, string $fieldName): void
     {

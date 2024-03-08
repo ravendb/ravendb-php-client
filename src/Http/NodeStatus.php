@@ -3,15 +3,39 @@
 namespace RavenDB\Http;
 
 use DateTime;
+use RavenDB\Primitives\NetISO8601Utils;
 
 class NodeStatus
 {
+    private ?string $name = null;
     private bool $connected = false;
     private ?string $errorDetails = null;
     private ?DateTime $lastSend = null;
     private ?DateTime $lastReply = null;
     private ?string $lastSentMessage = null;
     private int $lastMatchingIndex = 0;
+
+    public function __toString(): string
+    {
+        return "NodeStatus{" .
+            "name='" . $this->name . '\'' .
+            ", connected=" . $this->connected .
+            ", errorDetails='" . $this->errorDetails . '\'' .
+            ", lastSend=" . NetISO8601Utils::format($this->lastSend) .
+            ", lastReply=" . NetISO8601Utils::format($this->lastReply) .
+            ", lastSentMessage='" . $this->lastSentMessage . '\'' .
+            '}';
+    }
+
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
+
+    public function setName(?string $name): void
+    {
+        $this->name = $name;
+    }
 
     public function isConnected(): bool
     {

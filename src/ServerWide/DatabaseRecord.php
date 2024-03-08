@@ -57,6 +57,7 @@ class DatabaseRecord
     private RevisionsCollectionConfiguration $revisionsForConflicts;
 //    private ExpirationConfiguration expiration;
 //    private RefreshConfiguration refresh;
+//    private IntegrationConfigurations integrations;
 //    private List<PeriodicBackupConfiguration> periodicBackups = new ArrayList<>();
 //    private List<ExternalReplication> externalReplications = new ArrayList<>();
 //    private List<PullReplicationAsSink> sinkPullReplications = new ArrayList<>();
@@ -64,9 +65,14 @@ class DatabaseRecord
 //    private Map<String, RavenConnectionString> ravenConnectionStrings = new HashMap<>();
 //    private Map<String, SqlConnectionString> sqlConnectionStrings = new HashMap<>();
 //    private Map<String, OlapConnectionString> olapConnectionStrings = new HashMap<>();
+
+//    private Map<String, ElasticSearchConnectionString> elasticSearchConnectionStrings = new HashMap<>();
+//    private Map<String, QueueConnectionString> queueConnectionStrings = new HashMap<>();
 //    private List<RavenEtlConfiguration> ravenEtls = new ArrayList<>();
 //    private List<SqlEtlConfiguration> sqlEtls = new ArrayList<>();
+//    private List<ElasticSearchEtlConfiguration> elasticSearchEtls = new ArrayList<>();
 //    private List<OlapEtlConfiguration> olapEtls = new ArrayList<>();
+//    private List<QueueEtlConfiguration> queueEtls = new ArrayList<>();
 //    private ClientConfiguration client;
 //    private StudioConfiguration studio;
 //    private long truncatedClusterTransactionCommandsCount;
@@ -413,12 +419,51 @@ class DatabaseRecord
 //        this.refresh = refresh;
 //    }
 //
+//    public IntegrationConfigurations getIntegrations() {
+//        return integrations;
+//    }
+//
+//    public void setIntegrations(IntegrationConfigurations integrations) {
+//        this.integrations = integrations;
+//    }
+//
 //    public Set<String> getUnusedDatabaseIds() {
 //        return unusedDatabaseIds;
 //    }
 //
 //    public void setUnusedDatabaseIds(Set<String> unusedDatabaseIds) {
 //        this.unusedDatabaseIds = unusedDatabaseIds;
+//    }
+//    public Map<String, ElasticSearchConnectionString> getElasticSearchConnectionStrings() {
+//        return elasticSearchConnectionStrings;
+//    }
+//
+//    public void setElasticSearchConnectionStrings(Map<String, ElasticSearchConnectionString> elasticSearchConnectionStrings) {
+//        this.elasticSearchConnectionStrings = elasticSearchConnectionStrings;
+//    }
+//
+//    public Map<String, QueueConnectionString> getQueueConnectionStrings() {
+//        return queueConnectionStrings;
+//    }
+//
+//    public void setQueueConnectionStrings(Map<String, QueueConnectionString> queueConnectionStrings) {
+//        this.queueConnectionStrings = queueConnectionStrings;
+//    }
+//
+//    public List<ElasticSearchEtlConfiguration> getElasticSearchEtls() {
+//        return elasticSearchEtls;
+//    }
+//
+//    public void setElasticSearchEtls(List<ElasticSearchEtlConfiguration> elasticSearchEtls) {
+//        this.elasticSearchEtls = elasticSearchEtls;
+//    }
+//
+//    public List<QueueEtlConfiguration> getQueueEtls() {
+//        return queueEtls;
+//    }
+//
+//    public void setQueueEtls(List<QueueEtlConfiguration> queueEtls) {
+//        this.queueEtls = queueEtls;
 //    }
 //
 //    public static class IndexHistoryEntry {

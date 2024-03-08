@@ -20,7 +20,6 @@ use RavenDB\Type\UrlArray;
 use RavenDB\Http\RequestExecutor;
 use RavenDB\Documents\Conventions\DocumentConventions;
 
-// !status: IN PROGRESS
 interface DocumentStoreInterface
 {
     public function getAuthOptions(): ?AuthOptions;

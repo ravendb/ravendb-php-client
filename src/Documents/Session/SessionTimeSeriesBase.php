@@ -3,14 +3,17 @@
 namespace RavenDB\Documents\Session;
 
 use Closure;
+use DateTime;
 use DateTimeInterface;
 use RavenDB\Constants\DocumentsMetadata;
 use RavenDB\Documents\Commands\Batches\CommandType;
+use RavenDB\Documents\Commands\Batches\IncrementalTimeSeriesBatchCommandData;
 use RavenDB\Documents\Commands\Batches\TimeSeriesBatchCommandData;
 use RavenDB\Documents\Operations\TimeSeries\AppendOperation;
 use RavenDB\Documents\Operations\TimeSeries\DeleteOperation;
 use RavenDB\Documents\Operations\TimeSeries\GetMultipleTimeSeriesOperation;
 use RavenDB\Documents\Operations\TimeSeries\GetTimeSeriesOperation;
+use RavenDB\Documents\Operations\TimeSeries\IncrementOperation;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesDetails;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRange;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeList;
@@ -18,7 +21,6 @@ use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeResult;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeResultList;
 use RavenDB\Documents\Session\TimeSeries\TimeSeriesEntry;
 use RavenDB\Documents\Session\TimeSeries\TimeSeriesEntryArray;
-use RavenDB\Documents\Session\TimeSeries\TimeSeriesEntryList;
 use RavenDB\Exceptions\IllegalArgumentException;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Primitives\DatesComparator;
@@ -129,6 +131,38 @@ class SessionTimeSeriesBase
             $this->session->defer(new TimeSeriesBatchCommandData($this->docId, $this->name, null, $deletes));
         }
     }
+
+    public function increment(?DateTime $timestamp = null, array|float $values): void
+    {
+        if ($timestamp == null) {
+            $timestamp = new DateTime();
+        }
+
+        if (!is_array($values)) {
+            $values = [ $values ];
+        }
+
+        $documentInfo = $this->session->documentsById->getValue($this->docId);
+        if ($documentInfo != null && $this->session->deletedEntities->contains($documentInfo->getEntity())) {
+            $this->throwDocumentAlreadyDeletedInSession($this->docId, $this->name);
+        }
+
+        $op = new IncrementOperation();
+        $op->setTimestamp($timestamp);
+        $op->setValues($values);
+
+        $index = $this->session->deferredCommandsMap->getIndexFor($this->docId, CommandType::timeSeriesWithIncrements(), $this->name);
+        if ($index != null) {
+            /** @var IncrementalTimeSeriesBatchCommandData $tsCmd */
+            $tsCmd = $this->session->deferredCommandsMap->get($index);
+
+            $tsCmd->getTimeSeries()->increment($op);
+        } else {
+            $list = [$op];
+            $this->session->defer(new IncrementalTimeSeriesBatchCommandData($this->docId, $this->name, $list));
+        }
+    }
+
 
     private static function throwDocumentAlreadyDeletedInSession(?string $documentId, ?string $timeSeries): void
     {

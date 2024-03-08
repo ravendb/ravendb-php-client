@@ -22,12 +22,10 @@ interface DocumentSessionInterface
     /**
      * Marks the specified entity for deletion. The entity will be deleted when IDocumentSession.saveChanges is called.
      *
-     * WARNING: This method when used with string entityId will not call beforeDelete listener!
-     *
      * @param string|object|null $entity instance of entity to delete
      * @param ?string $expectedChangeVector Expected change vector of a document to delete.
      */
-    public function delete($entity, ?string $expectedChangeVector = null): void;
+    public function delete(string|object|null $entity, ?string $expectedChangeVector = null): void;
 
     /**
      * Saves all the pending changes to the server.
@@ -96,6 +94,10 @@ interface DocumentSessionInterface
     public function typedTimeSeriesFor(string $className, string|object|null $idOrEntity, ?string $name = null): SessionDocumentTypedTimeSeriesInterface;
 
     public function timeSeriesRollupFor(string $className, string|object|null $idOrEntity, ?string $policy, ?string $raw = null): SessionDocumentRollupTypedTimeSeriesInterface;
+
+    public function incrementalTimeSeriesFor(string|object|null $idOrEntity, ?string $name): SessionDocumentTimeSeriesInterface;
+
+    public function incrementalTypedTimeSeriesFor(string $className, string|object|null $idOrEntity, ?string $name = null): SessionDocumentTypedTimeSeriesInterface;
 
     public function close(): void;
 }

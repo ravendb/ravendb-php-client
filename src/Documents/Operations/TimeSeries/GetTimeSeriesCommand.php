@@ -22,7 +22,9 @@ class GetTimeSeriesCommand extends RavenCommand
     private ?DateTimeInterface $to = null;
     private ?\Closure $includes = null;
 
-    public function __construct(?string $docId, ?string $timeseries, ?DateTimeInterface $from = null, ?DateTimeInterface $to = null, int $start = 0, int $pageSize = PHP_INT_MAX, ?Closure $includes = null)
+    private bool $returnFullResults = false;
+
+    public function __construct(?string $docId, ?string $timeseries, ?DateTimeInterface $from = null, ?DateTimeInterface $to = null, int $start = 0, int $pageSize = PHP_INT_MAX, ?Closure $includes = null, bool $returnFullResults = false)
     {
         parent::__construct(TimeSeriesRangeResult::class);
 
@@ -33,6 +35,7 @@ class GetTimeSeriesCommand extends RavenCommand
         $this->from = $from;
         $this->to = $to;
         $this->includes = $includes;
+        $this->returnFullResults = $returnFullResults;
     }
 
     public function createUrl(ServerNode $serverNode): string
@@ -70,6 +73,10 @@ class GetTimeSeriesCommand extends RavenCommand
 
         if ($this->includes != null) {
             $path .= self::addIncludesToRequest($this->includes);
+        }
+
+        if ($this->returnFullResults) {
+            $path .= '&full=' . (string) $this->returnFullResults;
         }
 
         return $path;

@@ -22,7 +22,9 @@ class GetTimeSeriesOperation implements OperationInterface
     private ?DateTimeInterface $to = null;
     private ?\Closure $includes = null;
 
-     public function __construct(?string $docId, ?string $timeseries, ?DateTimeInterface $from = null, ?DateTimeInterface $to = null, int $start = 0, int $pageSize = PHP_INT_MAX, ?Closure $includes = null)
+    private bool $returnFullResults = false;
+
+     public function __construct(?string $docId, ?string $timeseries, ?DateTimeInterface $from = null, ?DateTimeInterface $to = null, int $start = 0, int $pageSize = PHP_INT_MAX, ?Closure $includes = null, bool $returnFullResults = false)
      {
         if (StringUtils::isEmpty($docId)) {
             throw new IllegalArgumentException("DocId cannot be null or empty");
@@ -38,10 +40,11 @@ class GetTimeSeriesOperation implements OperationInterface
         $this->from = $from;
         $this->to = $to;
         $this->includes = $includes;
+        $this->returnFullResults = $returnFullResults;
     }
 
     public function getCommand(?DocumentStoreInterface $store, ?DocumentConventions $conventions, ?HttpCache $cache, bool $returnDebugInformation = false, bool $test = false): RavenCommand
     {
-        return new GetTimeSeriesCommand($this->docId, $this->name, $this->from, $this->to, $this->start, $this->pageSize, $this->includes);
+        return new GetTimeSeriesCommand($this->docId, $this->name, $this->from, $this->to, $this->start, $this->pageSize, $this->includes, $this->returnFullResults);
     }
 }

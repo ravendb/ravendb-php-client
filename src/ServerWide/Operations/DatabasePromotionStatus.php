@@ -15,6 +15,7 @@ class DatabasePromotionStatus implements ValueObjectInterface
     private const OUT_OF_CPU_CREDITS = 'OutOfCpuCredits';
     private const EARLY_OUT_OF_MEMORY = 'EarlyOutOfMemory';
     private const HIGH_DIRTY_MEMORY = 'HighDirtyMemory';
+    private const RAFT_INDEX_NOT_UP_TO_DATE = 'RaftIndexNotUpToDate';
 
     private string $value;
 
@@ -126,5 +127,15 @@ class DatabasePromotionStatus implements ValueObjectInterface
     public static function highDirtyMemory(): DatabasePromotionStatus
     {
         return new DatabasePromotionStatus(self::HIGH_DIRTY_MEMORY);
+    }
+
+    public function isRaftIndexNotUpToDate(): bool
+    {
+        return $this->value == self::RAFT_INDEX_NOT_UP_TO_DATE;
+    }
+
+    public static function raftIndexNotUpToDate(): DatabasePromotionStatus
+    {
+        return new DatabasePromotionStatus(self::RAFT_INDEX_NOT_UP_TO_DATE);
     }
 }

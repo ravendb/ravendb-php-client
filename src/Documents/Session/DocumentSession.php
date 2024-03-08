@@ -1316,6 +1316,8 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
     }
 
 //    @Override
+//    @deprecated Graph API will be removed next major version of the product
+//
 //    public <T> IGraphDocumentQuery<T> graphQuery(Class<T> clazz, String query) {
 //        GraphDocumentQuery<T> graphQuery = new GraphDocumentQuery<T>(clazz, this, query);
 //        return graphQuery;
@@ -1329,6 +1331,7 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
     public function typedTimeSeriesFor(string $className, string|object|null $idOrEntity, ?string $name = null): SessionDocumentTypedTimeSeriesInterface
     {
         $tsName = $name ?? TimeSeriesOperations::getTimeSeriesName($className, $this->getConventions());
+        self::validateTimeSeriesName($tsName);
         return new SessionDocumentTypedTimeSeries($className, $this, $idOrEntity, $tsName);
     }
 
@@ -1336,6 +1339,20 @@ class DocumentSession extends InMemoryDocumentSessionOperations implements
     {
         $tsName = $raw ?? TimeSeriesOperations::getTimeSeriesName($className, $this->getConventions());
         return new SessionDocumentRollupTypedTimeSeries($className, $this, $idOrEntity, $tsName . TimeSeriesConfiguration::TIME_SERIES_ROLLUP_SEPARATOR . $policy);
+    }
+
+    public function incrementalTimeSeriesFor(string|object|null $idOrEntity, ?string $name): SessionDocumentTimeSeriesInterface
+    {
+        self::validateIncrementalTimeSeriesName($name);
+
+        return new SessionDocumentTimeSeries($this, $idOrEntity, $name);
+    }
+
+    public function incrementalTypedTimeSeriesFor(string $className, string|object|null $idOrEntity, ?string $name = null): SessionDocumentTypedTimeSeriesInterface
+    {
+        $tsName = $name ?? TimeSeriesOperations::getTimeSeriesName($className, $this->getConventions());
+        self::validateIncrementalTimeSeriesName($tsName);
+        return new SessionDocumentTypedTimeSeries($className, $this, $idOrEntity, $tsName);
     }
 
     function conditionalLoad(?string $className, ?string $id, ?string $changeVector): ConditionalLoadResult

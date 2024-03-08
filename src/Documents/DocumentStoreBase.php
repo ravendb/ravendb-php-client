@@ -18,12 +18,10 @@ use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Exceptions\MalformedURLException;
 use RavenDB\Http\RequestExecutor;
 use RavenDB\Primitives\ClosureArray;
-use RavenDB\Primitives\EventHelper;
 use RavenDB\Type\Url;
 use RavenDB\Type\UrlArray;
 use RavenDB\Utils\StringUtils;
 
-// !status: LOGIC COPIED - IN PROGRESS
 abstract class DocumentStoreBase implements DocumentStoreInterface
 {
     private ?ClosureArray $onBeforeStore = null;

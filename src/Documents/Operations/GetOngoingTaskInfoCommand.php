@@ -4,7 +4,10 @@ namespace RavenDB\Documents\Operations;
 
 use RavenDB\Documents\Operations\OngoingTasks\OngoingTask;
 use RavenDB\Documents\Operations\OngoingTasks\OngoingTaskBackup;
+use RavenDB\Documents\Operations\OngoingTasks\OngoingTaskElasticSearchEtlDetails;
+use RavenDB\Documents\Operations\OngoingTasks\OngoingTaskOlapEtlDetails;
 use RavenDB\Documents\Operations\OngoingTasks\OngoingTaskPullReplicationAsSink;
+use RavenDB\Documents\Operations\OngoingTasks\OngoingTaskQueueEtlDetails;
 use RavenDB\Documents\Operations\OngoingTasks\OngoingTaskRavenEtlDetails;
 use RavenDB\Documents\Operations\OngoingTasks\OngoingTaskReplication;
 use RavenDB\Documents\Operations\OngoingTasks\OngoingTaskSqlEtlDetails;
@@ -76,6 +79,15 @@ class GetOngoingTaskInfoCommand extends RavenCommand
                         break;
                     case OngoingTaskType::SUBSCRIPTION:
                         $this->result = $this->getMapper()->deserialize($response, OngoingTaskSubscription::class, 'json');
+                        break;
+                    case OngoingTaskType::OLAP_ETL:
+                        $this->result = $this->getMapper()->deserialize($response, OngoingTaskOlapEtlDetails::class, 'json');
+                        break;
+                    case OngoingTaskType::ELASTIC_SEARCH_ETL:
+                        $this->result = $this->getMapper()->deserialize($response, OngoingTaskElasticSearchEtlDetails::class, 'json');
+                        break;
+                    case OngoingTaskType::QUEUE_ETL:
+                        $this->result = $this->getMapper()->deserialize($response, OngoingTaskQueueEtlDetails::class, 'json');
                         break;
                     case OngoingTaskType::PULL_REPLICATION_AS_SINK:
                         $this->result = $this->getMapper()->deserialize($response, OngoingTaskPullReplicationAsSink::class, 'json');

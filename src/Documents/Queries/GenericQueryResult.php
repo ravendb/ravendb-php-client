@@ -17,10 +17,14 @@ class GenericQueryResult extends QueryResultBase
     /** @SerializedName("LongTotalResults"); */
     private int $longTotalResults = 0;
 
-    private int $cappedMaxResults;
+    /** @SerializedName("CappedMaxResults"); */
+    private int $cappedMaxResults = 0;
 
     /** @SerializedName("SkippedResults"); */
     private int $skippedResults = 0;
+
+    /** @SerializedName("ScannedResults"); */
+    private int $scannedResults = 0;
 
     /** @var array<array<array<string>>>|null  */
     private ?array $highlightings = null;
@@ -70,23 +74,25 @@ class GenericQueryResult extends QueryResultBase
         $this->longTotalResults = $longTotalResults;
     }
 
-//    /**
-//     * Gets the total results for the query, taking into account the
-//     * offset / limit clauses for this query
-//     * @return Total results
-//     */
-//    public Integer getCappedMaxResults() {
-//        return cappedMaxResults;
-//    }
-//
-//    /**
-//     * Sets the total results for the query, taking into account the
-//     * offset / limit clauses for this query
-//     * @param cappedMaxResults total results
-//     */
-//    public void setCappedMaxResults(Integer cappedMaxResults) {
-//        this.cappedMaxResults = cappedMaxResults;
-//    }
+    /**
+     * Gets the total results for the query, taking into account the
+     * offset / limit clauses for this query
+     * @return int Total results
+     */
+    public function getCappedMaxResults(): int
+    {
+        return $this->cappedMaxResults;
+    }
+
+    /**
+     * Sets the total results for the query, taking into account the
+     * offset / limit clauses for this query
+     * @param int $cappedMaxResults total results
+     */
+    public function setCappedMaxResults(int $cappedMaxResults): void
+    {
+        $this->cappedMaxResults = $cappedMaxResults;
+    }
 
     /**
      * Gets the skipped results
@@ -104,6 +110,16 @@ class GenericQueryResult extends QueryResultBase
     public function setSkippedResults(int $skippedResults): void
     {
         $this->skippedResults = $skippedResults;
+    }
+
+    public function getScannedResults(): int
+    {
+        return $this->scannedResults;
+    }
+
+    public function setScannedResults(int $scannedResults): void
+    {
+        $this->scannedResults = $scannedResults;
     }
 
     /**

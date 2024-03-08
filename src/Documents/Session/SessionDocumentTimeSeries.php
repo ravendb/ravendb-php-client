@@ -6,7 +6,8 @@ use Closure;
 use DateTimeInterface;
 use RavenDB\Documents\Session\TimeSeries\TimeSeriesEntryArray;
 
-class SessionDocumentTimeSeries extends SessionTimeSeriesBase implements SessionDocumentTimeSeriesInterface
+class SessionDocumentTimeSeries extends SessionTimeSeriesBase
+    implements SessionDocumentTimeSeriesInterface, SessionDocumentIncrementalTimeSeriesInterface
 {
     public function __construct(?InMemoryDocumentSessionOperations $session, $idOrEntity, ?string $name)
     {
