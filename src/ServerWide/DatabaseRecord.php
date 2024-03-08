@@ -51,7 +51,7 @@ class DatabaseRecord
 
     /** @SerializedName("AutoIndexes") */
     private ?AutoIndexDefinitionMap $autoIndexes =  null;
-//    private Map<String, String> settings = new HashMap<>();
+    private array $settings = [];
     private RevisionsConfiguration $revisions;
     private TimeSeriesConfiguration $timeSeries;
     private RevisionsCollectionConfiguration $revisionsForConflicts;
@@ -110,14 +110,15 @@ class DatabaseRecord
         $this->disabled = $disabled;
     }
 
-//    public Map<String, String> getSettings() {
-//        return settings;
-//    }
-//
-//    public void setSettings(Map<String, String> settings) {
-//        this.settings = settings;
-//    }
-//
+    public function & getSettings(): array {
+        return $this->settings;
+    }
+
+    public function setSettings(array $settings): void
+    {
+        $this->settings = $settings;
+    }
+
     public function getConflictSolverConfig(): ConflictSolver
     {
         return $this->conflictSolverConfig;

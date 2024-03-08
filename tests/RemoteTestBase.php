@@ -209,10 +209,10 @@ class RemoteTestBase extends RavenTestDriver implements CleanCloseable
         $databaseRecord->setDatabaseName($name);
 
         // force lucene on database level
-//        $settings = $databaseRecord->getSettings();
-//        $settings[Indexes::INDEXING_STATIC_SEARCH_ENGINE_TYPE] = "Lucene";
-//        $settings[Indexes::INDEXING_AUTO_SEARCH_ENGINE_TYPE] = "Lucene";
-//        $databaseRecord->setSettings($settings);
+        $settings = $databaseRecord->getSettings();
+        $settings[Indexes::INDEXING_STATIC_SEARCH_ENGINE_TYPE] = "Lucene";
+        $settings[Indexes::INDEXING_AUTO_SEARCH_ENGINE_TYPE] = "Lucene";
+        $databaseRecord->setSettings($settings);
 
         $this->customizeDbRecord($databaseRecord);
 
