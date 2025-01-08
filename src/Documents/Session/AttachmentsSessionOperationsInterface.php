@@ -30,13 +30,14 @@ interface AttachmentsSessionOperationsInterface extends AttachmentsSessionOperat
 //     * @return attachments
 //     */
 //    CloseableAttachmentsResult get(List<AttachmentRequest> attachments);
-//
-//    /**
-//     * Returns the revision attachment by the document id and attachment name.
-//     * @param documentId Document Id
-//     * @param name Name of attachment
-//     * @param changeVector Change vector
-//     * @return Attachment
-//     */
-//    CloseableAttachmentResult getRevision(String documentId, String name, String changeVector);
+
+    /**
+     * Returns the revision attachment by the document id and attachment name.
+     *
+     * @param ?string $documentId Document Id
+     * @param ?string $name Name of attachment
+     * @param ?string $changeVector Change vector
+     * @return CloseableAttachmentResult;
+     */
+    public function getRevision(?string $documentId, ?string $name, ?string $changeVector): CloseableAttachmentResult;
 }

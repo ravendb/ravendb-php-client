@@ -30,8 +30,11 @@ class DeleteDatabaseCommandParameters
             return $this->databaseNames;
         }
 
-        public function setDatabaseNames(StringArray $databaseNames): void
+        public function setDatabaseNames(StringArray|array $databaseNames): void
         {
+            if (is_array($databaseNames)) {
+                $databaseNames = StringArray::fromArray($databaseNames);
+            }
             $this->databaseNames = $databaseNames;
         }
 

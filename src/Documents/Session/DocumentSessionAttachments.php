@@ -74,16 +74,15 @@ class DocumentSessionAttachments extends DocumentSessionAttachmentsBase implemen
         return $this->session->getOperations()->send($operation, $this->sessionInfo);
     }
 
-//    @Override
 //    public CloseableAttachmentsResult get(List<AttachmentRequest> attachments) {
 //        GetAttachmentsOperation operation = new GetAttachmentsOperation(attachments, AttachmentType.DOCUMENT);
 //        return session.getOperations().send(operation, sessionInfo);
 //    }
-//
-//    @Override
-//    public CloseableAttachmentResult getRevision(String documentId, String name, String changeVector) {
-//        GetAttachmentOperation operation = new GetAttachmentOperation(documentId, name, AttachmentType.REVISION, changeVector);
-//        session.incrementRequestCount();
-//        return session.getOperations().send(operation, sessionInfo);
-//    }
+
+    public function getRevision(?string $documentId, ?string $name, ?string $changeVector): CloseableAttachmentResult
+    {
+        $operation = new GetAttachmentOperation($documentId, $name, AttachmentType::revision(), $changeVector);
+        $this->session->incrementRequestCount();
+        return $this->session->getOperations()->send($operation, $this->sessionInfo);
+    }
 }
