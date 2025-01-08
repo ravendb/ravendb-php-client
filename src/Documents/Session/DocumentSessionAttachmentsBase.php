@@ -50,23 +50,12 @@ class DocumentSessionAttachmentsBase extends AdvancedSessionExtensionBase
         return $results;
     }
 
-    /**
-     * @param object|string|null $idOrEntity
-     * @param string|null $name
-     * @param string $filePath
-     */
-    public function storeFile($idOrEntity, ?string $name, string $filePath): void
+    public function storeFile(object|string|null $idOrEntity, ?string $name, string $filePath): void
     {
         $this->store($idOrEntity, $name, DataPart::fromPath($filePath), mime_content_type($filePath));
     }
 
-    /**
-     * @param object|string|null $idOrEntity
-     * @param string|null $name
-     * @param mixed $stream
-     * @param string|null $contentType
-     */
-    public function store($idOrEntity, ?string $name, $stream, ?string $contentType = null): void
+    public function store(object|string|null $idOrEntity, ?string $name, mixed $stream, ?string $contentType = null): void
     {
         if (is_object($idOrEntity)) {
             $this->storeByEntity($idOrEntity, $name, $stream, $contentType);
@@ -79,13 +68,7 @@ class DocumentSessionAttachmentsBase extends AdvancedSessionExtensionBase
         throw new IllegalArgumentException('Wrong argument type');
     }
 
-    /**
-     * @param object|null $entity
-     * @param string|null $name
-     * @param mixed $stream
-     * @param string|null $contentType
-     */
-    protected function storeByEntity(?object $entity, ?string $name, $stream, ?string $contentType = null): void
+    protected function storeByEntity(?object $entity, ?string $name, mixed $stream, ?string $contentType = null): void
     {
         $document = $this->session->documentsByEntity->get($entity);
         if ($document == null) {
@@ -94,13 +77,7 @@ class DocumentSessionAttachmentsBase extends AdvancedSessionExtensionBase
         $this->storeById($document->getId(), $name, $stream, $contentType);
     }
 
-    /**
-     * @param string|null $documentId
-     * @param string|null $name
-     * @param mixed $stream
-     * @param string|null $contentType
-     */
-    protected function storeById(?string $documentId, ?string $name, $stream, ?string $contentType = null): void
+    protected function storeById(?string $documentId, ?string $name, mixed $stream, ?string $contentType = null): void
     {
         if (StringUtils::isBlank($documentId)) {
             throw new IllegalArgumentException("DocumentId cannot be null");
@@ -148,12 +125,7 @@ class DocumentSessionAttachmentsBase extends AdvancedSessionExtensionBase
         throw new IllegalArgumentException($entity . " is not associated with the session. You need to track the entity in the session.");
     }
 
-
-    /**
-     * @param object|string|null $idOrEntity
-     * @param string|null $name
-     */
-    public function delete($idOrEntity, ?string $name): void
+    public function delete(object|string|null $idOrEntity, ?string $name): void
     {
         if (is_object($idOrEntity)) {
             $this->deleteByEntity($idOrEntity, $name);
@@ -168,10 +140,6 @@ class DocumentSessionAttachmentsBase extends AdvancedSessionExtensionBase
         throw new IllegalArgumentException('Wrong argument type');
     }
 
-    /**
-     * @param object|null $entity
-     * @param string|null $name
-     */
     protected function deleteByEntity(?object $entity, ?string $name): void
     {
         $document = $this->session->documentsByEntity->get($entity);
@@ -182,10 +150,6 @@ class DocumentSessionAttachmentsBase extends AdvancedSessionExtensionBase
         $this->deleteById($document->getId(), $name);
     }
 
-    /**
-     * @param string|null $documentId
-     * @param string|null $name
-     */
     private function deleteById(?string $documentId, ?string $name): void
     {
         if (StringUtils::isBlank($documentId)) {
@@ -217,24 +181,13 @@ class DocumentSessionAttachmentsBase extends AdvancedSessionExtensionBase
         $this->defer(new DeleteAttachmentCommandData($documentId, $name, null));
     }
 
-    /**
-     * @param string|object|null $idOrEntity
-     * @param string|null $name
-     * @param string|null $newName
-     */
-    public function rename($idOrEntity, ?string $name, ?string $newName): void
+    public function rename(string|object|null $idOrEntity, ?string $name, ?string $newName): void
     {
         $id = is_object($idOrEntity) ? $this->getEntityId($idOrEntity) : $idOrEntity;
         $this->move($id, $name, $id, $newName);
     }
 
-    /**
-     * @param object|string|null $sourceIdOrEntity
-     * @param string|null $sourceName
-     * @param object|string|null $destinationIdOrEntity
-     * @param string|null $destinationName
-     */
-    public function move($sourceIdOrEntity, ?string $sourceName, $destinationIdOrEntity, ?string $destinationName): void
+    public function move(object|string|null $sourceIdOrEntity, ?string $sourceName, object|string|null $destinationIdOrEntity, ?string $destinationName): void
     {
         $sourceId = is_object($sourceIdOrEntity) ? $this->getEntityId($sourceIdOrEntity) : $sourceIdOrEntity;
         $destinationId = is_object($destinationIdOrEntity) ? $this->getEntityId($destinationIdOrEntity) : $destinationIdOrEntity;
@@ -297,13 +250,7 @@ class DocumentSessionAttachmentsBase extends AdvancedSessionExtensionBase
         $this->defer(new MoveAttachmentCommandData($sourceDocumentId, $sourceName, $destinationDocumentId, $destinationName, null));
     }
 
-    /**
-     * @param object|string|null $sourceIdOrEntity
-     * @param string|null $sourceName
-     * @param object|string|null $destinationIdOrEntity
-     * @param string|null $destinationName
-     */
-    public function copy($sourceIdOrEntity, ?string $sourceName, $destinationIdOrEntity, ?string $destinationName): void
+    public function copy(object|string|null $sourceIdOrEntity, ?string $sourceName, object|string|null $destinationIdOrEntity, ?string $destinationName): void
     {
         $sourceId = is_object($sourceIdOrEntity) ? $this->getEntityId($sourceIdOrEntity) : $sourceIdOrEntity;
         $destinationId = is_object($destinationIdOrEntity) ? $this->getEntityId($destinationIdOrEntity) : $destinationIdOrEntity;

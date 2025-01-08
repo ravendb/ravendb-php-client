@@ -40,29 +40,29 @@ interface AttachmentsSessionOperationsBaseInterface
 
     /**
      * Marks the specified document's attachment for rename. The attachment will be renamed when saveChanges is called.
-     * @param string|object|null $idOrEntity document which holds the attachment
+     * @param string|object $idOrEntity document which holds the attachment
      * @param string|null $name the attachment name
      * @param string|null $newName the attachment new name
      */
-    public function rename($idOrEntity, ?string $name, ?string $newName): void;
+    public function rename(string|object $idOrEntity, ?string $name, ?string $newName): void;
 
     /**
      * Copies specified source document attachment to destination document. The operation will be executed when saveChanges is called.
      *
-     * @param object|string|null $sourceIdOrEntity the document which holds the attachment
+     * @param object|string $sourceIdOrEntity the document which holds the attachment
      * @param string|null $sourceName the attachment name
-     * @param object|string|null $destinationIdOrEntity the document to which the attachment will be copied
+     * @param object|string $destinationIdOrEntity the document to which the attachment will be copied
      * @param string|null $destinationName the attachment name
      */
-    public function copy($sourceIdOrEntity, ?string $sourceName, $destinationIdOrEntity, ?string $destinationName): void;
+    public function copy(object|string $sourceIdOrEntity, ?string $sourceName, object|string $destinationIdOrEntity, ?string $destinationName): void;
 
     /**
      * Moves specified source document attachment to destination document. The operation will be executed when saveChanges is called.
      *
-     * @param object|string|null $sourceIdOrEntity the document which holds the attachment
+     * @param object|string $sourceIdOrEntity the document which holds the attachment
      * @param string|null $sourceName the attachment name
-     * @param object|string|null $destinationIdOrEntity the document to which the attachment will be moved
+     * @param object|string $destinationIdOrEntity the document to which the attachment will be moved
      * @param string|null $destinationName the attachment name
      */
-    public function move($sourceIdOrEntity, ?string $sourceName, $destinationIdOrEntity, ?string $destinationName): void;
+    public function move(object|string $sourceIdOrEntity, ?string $sourceName, object|string $destinationIdOrEntity, ?string $destinationName): void;
 }
