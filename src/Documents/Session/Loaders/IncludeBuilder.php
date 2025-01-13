@@ -84,14 +84,22 @@ class IncludeBuilder extends IncludeBuilderBase implements IncludeBuilderInterfa
         return $this;
     }
 
-     public function includeRevisionsWithPath(string $changeVectorPaths): IncludeBuilderInterface
-     {
+    /**
+     * @obsolete
+     */
+    public function includeRevisionsWithPath(string $changeVectorPaths): IncludeBuilderInterface
+    {
+        return $this->includeRevisions($changeVectorPaths);
+    }
+
+    public function includeRevisions(string $changeVectorPaths): IncludeBuilderInterface
+    {
         $this->_withAlias();
         $this->_includeRevisionsByChangeVectors($changeVectorPaths);
         return $this;
     }
 
-    public function includeRevisions(DateTime $before): IncludeBuilderInterface
+    public function includeRevisionsBefore(DateTime $before): IncludeBuilderInterface
     {
         $this->_includeRevisionsBefore($before);
         return $this;

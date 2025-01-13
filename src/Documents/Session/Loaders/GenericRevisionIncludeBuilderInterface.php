@@ -9,17 +9,7 @@ use DateTime;
  */
 interface GenericRevisionIncludeBuilderInterface
 {
-//    /**
-//     * @param string $path
-//     *
-//     * @return TBuilder
-//     */
-//    function includeRevisionsByPath(string $changeVectorPaths): mixed;
-//
-//    /**
-//     * @param DateTime $before
-//     *
-//     * @return TBuilder
-//     */
-//    function includeRevisionsByDateTimeBefore(DateTime $before): mixed;
+    public function includeRevisions(string $changeVectorPaths): IncludeBuilderInterface;
+    public function includeRevisionsBefore(DateTime $before): IncludeBuilderInterface;
+
 }
