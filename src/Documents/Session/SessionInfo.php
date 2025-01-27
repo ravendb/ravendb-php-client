@@ -4,10 +4,12 @@ namespace RavenDB\Documents\Session;
 
 use InvalidArgumentException;
 use RavenDB\Documents\DocumentStoreBase;
+use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Http\CurrentIndexAndNode;
 use RavenDB\Http\ReadBalanceBehavior;
 use RavenDB\Http\RequestExecutor;
 use RavenDB\Http\ServerNode;
+use RavenDB\Utils\StringUtils;
 
 class SessionInfo
 {
@@ -49,39 +51,40 @@ class SessionInfo
         $this->session->incrementRequestCount();
     }
 
-    //    public void setContext(String sessionKey) {
-//        if (StringUtils.isBlank(sessionKey)) {
-//            throw new InvalidArgumentException("Session key cannot be null or whitespace.");
-//        }
-//
-//      setContextInternal(sessionKey);
-//
-//      _canUseLoadBalanceBehavior =
-//          _canUseLoadBalanceBehavior ||
-//          _session.getConventions().getLoadBalanceBehavior() == LoadBalanceBehavior.USE_SESSION_CONTEXT;
-//  }
-//
-    private function setContextInternal(string $sessionKey):  void
+    public function setContext(?string $sessionKey): void
     {
-//    if (_sessionIdUsed) {
-//        throw new IllegalStateException(
-//              "Unable to set the session context after it has already been used. " .
-//              "The session context can only be modified before it is utilized."
-//        );
-//    }
-//
-//    if (sessionKey == null) {
+        if (StringUtils::isBlank($sessionKey)) {
+            throw new InvalidArgumentException("Session key cannot be null or whitespace.");
+        }
+
+        $this->setContextInternal($sessionKey);
+
+        $this->canUseLoadBalanceBehavior =
+            $this->canUseLoadBalanceBehavior
+            || $this->session->getConventions()->getLoadBalanceBehavior()->isUseSessionContext();
+    }
+
+    private function setContextInternal(?string $sessionKey):  void
+    {
+        if ($this->sessionIdUsed) {
+            throw new IllegalStateException(
+                "Unable to set the session context after it has already been used. " .
+                "The session context can only be modified before it is utilized."
+            );
+        }
+
+//        if (sessionKey == null) {
 //        Integer v = _clientSessionIdCounter.get();
 //            _sessionId = ++v;
 //            _clientSessionIdCounter.set(v);
 //        } else {
 //
-//        byte[] sessionKeyBytes = sessionKey.getBytes();
+//            byte[] sessionKeyBytes = sessionKey.getBytes();
 //            byte[] bytesToHash = ByteBuffer
-//            .allocate(sessionKeyBytes.length + 4)
-//            .put(sessionKeyBytes)
-//            .putInt(_loadBalancerContextSeed)
-//            .array();
+//              .allocate(sessionKeyBytes.length + 4)
+//              .put(sessionKeyBytes)
+//              .putInt(_loadBalancerContextSeed)
+//              .array();
 //            byte[] md5Bytes = DigestUtils.md5(bytesToHash);
 //            _sessionId = ByteBuffer.wrap(md5Bytes)
 //                .getInt();
