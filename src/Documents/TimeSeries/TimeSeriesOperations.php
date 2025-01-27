@@ -17,7 +17,8 @@ use RavenDB\Documents\Session\TimeSeries\TimeSeriesValuesHelper;
 use RavenDB\Primitives\TimeValue;
 use RavenDB\Type\StringArray;
 
-class TimeSeriesOperations
+class
+TimeSeriesOperations
 {
     private ?DocumentStoreInterface $store = null;
     private ?string $database = null;
@@ -167,8 +168,8 @@ class TimeSeriesOperations
     public function setPolicy(
         string    $collectionClassOrCollection,
         string    $name,
-        TimeValue $aggregation = null,
-        TimeValue $retention = null
+        ?TimeValue $aggregation = null,
+        ?TimeValue $retention = null
     ): void
     {
         $collection = $collectionClassOrCollection;
@@ -186,7 +187,7 @@ class TimeSeriesOperations
      */
     public function setRawPolicy(
         string    $collectionClassOrCollection,
-        TimeValue $retention = null
+        ?TimeValue $retention = null
     ): void {
         $collection = $collectionClassOrCollection;
         if (class_exists($collectionClassOrCollection)) {

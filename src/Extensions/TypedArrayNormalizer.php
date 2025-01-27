@@ -39,7 +39,9 @@ class TypedArrayNormalizer implements
                 if (method_exists($type, 'createNewItemObjectFromValue')) {
                     $itemObject = $type::createNewItemObjectFromValue($item);
                 } else {
-                    $itemObject = $this->denormalizer->denormalize($item, $object->getType(), $format, $context);
+                    if ($item != null) {
+                        $itemObject = $this->denormalizer->denormalize($item, $object->getType(), $format, $context);
+                    }
                 }
 
                 $object->offsetSet($key, $itemObject);

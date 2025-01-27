@@ -17,7 +17,7 @@ class TimeSeriesPolicy
     #[SerializedName("AggregationTime")]
     protected ?TimeValue $aggregationTime = null;
 
-    public function __construct(string $name, TimeValue $aggregationTime = null, ?TimeValue $retentionTime = null)
+    public function __construct(string $name, ?TimeValue $aggregationTime = null, ?TimeValue $retentionTime = null)
     {
         if ($retentionTime == null) {
             $retentionTime = TimeValue::maxValue();

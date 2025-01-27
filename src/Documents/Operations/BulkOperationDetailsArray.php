@@ -23,7 +23,7 @@ class BulkOperationDetailsArray extends TypedArray
 
         $type = $value['$type'];
 
-        print_r($type);
+//        print_r($type);
 
         switch ($type) {
             case 'Raven.Client.Documents.Operations.BulkOperationResult+DeleteDetails, Raven.Client':

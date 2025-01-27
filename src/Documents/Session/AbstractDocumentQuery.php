@@ -427,7 +427,7 @@ abstract class AbstractDocumentQuery implements AbstractDocumentQueryInterface
         $this->projectionBehavior = $projectionBehavior;
     }
 
-    protected function addGroupByAlias(string $fieldName, string $projectedName = null): void
+    protected function addGroupByAlias(string $fieldName, ?string $projectedName = null): void
     {
         $this->aliasToGroupByFieldName[$projectedName] = $fieldName;
     }
