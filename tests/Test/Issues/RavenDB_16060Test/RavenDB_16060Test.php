@@ -11,12 +11,10 @@ use RavenDB\Documents\Operations\TimeSeries\TimeSeriesConfiguration;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesPolicy;
 use RavenDB\Documents\Operations\TimeSeries\TimeSeriesRangeType;
 use RavenDB\Documents\Session\InMemoryDocumentSessionOperations;
-use RavenDB\Documents\Session\SessionDocumentTypedTimeSeriesInterface;
 use RavenDB\Documents\Session\TimeSeries\TypedTimeSeriesEntryArray;
 use RavenDB\Documents\Session\TimeSeries\TypedTimeSeriesRollupEntryArray;
 use RavenDB\Primitives\TimeValue;
 use RavenDB\Type\Duration;
-use RavenDB\Type\ExtendedArrayObject;
 use RavenDB\Utils\DateUtils;
 use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\Infrastructure\Entity\User;
@@ -150,7 +148,7 @@ class RavenDB_16060Test extends RemoteTestBase
 
                 for ($i = 0; $i < 360; $i++) {
                     $typedMeasure = HeartRateMeasure::create(6);
-                    $tsf->append(DateUtils::addSeconds($baseLine, $i * 10), $typedMeasure, "watches/fitibt");
+                    $tsf->append(DateUtils::addSeconds($baseLine, $i * 10), $typedMeasure, "watches/fitbit");
                 }
 
                 $session->saveChanges();
@@ -478,7 +476,7 @@ class RavenDB_16060Test extends RemoteTestBase
                 $this->assertCount(14, $vals);
 
                 $this->assertEquals(DateUtils::addMinutes($baseLine, 3), $vals[0]->getTimestamp());
-                /** @var DateTime $dt */
+
                 $dt = DateUtils::addMinutes($baseLine, 3);
                 $this->assertEquals(DateUtils::addSeconds($dt, 3), $vals[1]->getTimestamp());
                 $this->assertEquals(DateUtils::addMinutes($baseLine, 5), $vals[13]->getTimestamp());
@@ -530,7 +528,7 @@ class RavenDB_16060Test extends RemoteTestBase
                     $entry->setHigh($i + 200_000);
                     $entry->setLow($i + 300_000);
                     $entry->setVolume($i + 400_000);
-                    $ts->append(DateUtils::addMinutes($baseLine, $i), $entry, "watches/fibit");
+                    $ts->append(DateUtils::addMinutes($baseLine, $i), $entry, "watches/fitbit");
                 }
                 $session->saveChanges();
             } finally {
@@ -598,7 +596,7 @@ class RavenDB_16060Test extends RemoteTestBase
                     $entry->setHigh($i + 200_000);
                     $entry->setLow($i + 300_000);
                     $entry->setVolume($i + 400_000);
-                    $ts->append(DateUtils::addMinutes($baseLine, $i), $entry, "watches/fibit");
+                    $ts->append(DateUtils::addMinutes($baseLine, $i), $entry, "watches/fitbit");
                 }
                 $session->saveChanges();
             } finally {
