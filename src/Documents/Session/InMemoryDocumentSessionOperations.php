@@ -1519,6 +1519,40 @@ abstract class InMemoryDocumentSessionOperations implements CleanCloseable
         return $changes;
     }
 
+    /**
+     * Returns all changes for the specified entity. Including name of the field/property that changed, its old and new value and change type.
+     * @param object $entity
+     * @return DocumentsChangesArray list of changes
+     */
+    public function whatChangedFor(object $entity): DocumentsChangesArray
+    {
+        $documentInfo = $this->documentsByEntity->get($entity);
+        if ($documentInfo == null) {
+            return new DocumentsChangesArray();
+        }
+
+        if ($this->deletedEntities->contains($entity)) {
+            $change = new DocumentsChanges();
+            $change->setFieldNewValue("");
+            $change->setFieldOldValue("");
+            $change->setChange(ChangeType::documentDeleted());
+
+            return DocumentsChangesArray::fromArray([$change]);
+        }
+
+        $this->updateMetadataModifications($documentInfo->getMetadataInstance(), $documentInfo->getMetadata());
+        $document = $this->entityToJson->convertEntityToJson($documentInfo->getEntity(), $documentInfo);
+
+        $changes = [];
+
+        $changes = $this->getEntityChanges($document, $documentInfo);
+        if (empty($changes)) {
+            return new DocumentsChangesArray();
+        }
+
+        return $changes[$documentInfo->getId()];
+    }
+
     public function getTrackedEntities(): EntityInfoMap
     {
         $tracked = $this->documentsById->getTrackedEntities($this);
