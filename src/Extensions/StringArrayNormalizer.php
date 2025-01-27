@@ -17,7 +17,7 @@ class StringArrayNormalizer implements
 
     private ?NormalizerInterface $normalizer = null;
 
-    public function denormalize($data, string $type, string $format = null, array $context = [])
+    public function denormalize($data, string $type, ?string $format = null, array $context = [])
     {
         $object = new $type();
 
@@ -30,7 +30,7 @@ class StringArrayNormalizer implements
         return $object;
     }
 
-    public function supportsDenormalization($data, string $type, string $format = null): bool
+    public function supportsDenormalization($data, string $type, ?string $format = null): bool
     {
         return is_a($type, StringArray::class, true);
     }
@@ -40,7 +40,7 @@ class StringArrayNormalizer implements
         $this->normalizer = $normalizer;
     }
 
-    public function normalize($object, string $format = null, array $context = [])
+    public function normalize($object, ?string $format = null, array $context = [])
     {
         if (count($object) == 0) {
             return null;
@@ -53,7 +53,7 @@ class StringArrayNormalizer implements
         return $result;
     }
 
-    public function supportsNormalization($data, string $format = null)
+    public function supportsNormalization($data, ?string $format = null)
     {
         return $data instanceof StringArray;
     }

@@ -15,22 +15,22 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 class DurationNormalizer implements NormalizerInterface, DenormalizerInterface
 {
-    public function normalize($object, string $format = null, array $context = [])
+    public function normalize($object, ?string $format = null, array $context = [])
     {
         return $object->toString();
     }
 
-    public function supportsNormalization($data, string $format = null): bool
+    public function supportsNormalization($data, ?string $format = null): bool
     {
         return is_a($data, Duration::class);
     }
 
-    public function denormalize(mixed $data, string $type, string $format = null, array $context = [])
+    public function denormalize(mixed $data, string $type, ?string $format = null, array $context = [])
     {
         return Duration::fromString($data);
     }
 
-    public function supportsDenormalization(mixed $data, string $type, string $format = null)
+    public function supportsDenormalization(mixed $data, string $type, ?string $format = null)
     {
         return is_a($type, Duration::class, true);
     }

@@ -20,7 +20,7 @@ interface AttachmentsSessionOperationsBaseInterface
      * @param mixed $stream Attachment stream
      * @param string|null $contentType Content type
      */
-    public function store($idOrEntity, ?string $name, $stream, ?string $contentType = null): void;
+    public function store(object|string|null $idOrEntity, ?string $name, mixed $stream, ?string $contentType = null): void;
 
     /**
      * Stores attachment to be sent in the session.
@@ -28,7 +28,7 @@ interface AttachmentsSessionOperationsBaseInterface
      * @param string|null $name
      * @param string $filePath
      */
-    public function storeFile($idOrEntity, ?string $name, string $filePath): void;
+    public function storeFile(object|string|null $idOrEntity, ?string $name, string $filePath): void;
 
     /**
      * Marks the specified document's attachment for deletion. The attachment will be deleted when
@@ -36,7 +36,7 @@ interface AttachmentsSessionOperationsBaseInterface
      * @param object|string|null $idOrEntity
      * @param string|null $name
      */
-    public function delete($idOrEntity, ?string $name): void;
+    public function delete(object|string|null $idOrEntity, ?string $name): void;
 
     /**
      * Marks the specified document's attachment for rename. The attachment will be renamed when saveChanges is called.

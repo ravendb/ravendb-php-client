@@ -28,7 +28,7 @@ class TypedArrayNormalizer implements
         $this->denormalizer = $denormalizer;
     }
 
-    public function denormalize($data, string $type, string $format = null, array $context = [])
+    public function denormalize($data, string $type, ?string $format = null, array $context = [])
     {
         $object = new $type();
 
@@ -49,7 +49,7 @@ class TypedArrayNormalizer implements
         return $object;
     }
 
-    public function supportsDenormalization($data, string $type, string $format = null): bool
+    public function supportsDenormalization($data, string $type, ?string $format = null): bool
     {
         return is_subclass_of($type, TypedArray::class) || is_subclass_of($type, TypedMap::class);
     }
@@ -59,7 +59,7 @@ class TypedArrayNormalizer implements
         $this->normalizer = $normalizer;
     }
 
-    public function normalize($object, string $format = null, array $context = [])
+    public function normalize($object, ?string $format = null, array $context = [])
     {
         if (count($object) == 0) {
             return null;
@@ -72,7 +72,7 @@ class TypedArrayNormalizer implements
         return $result;
     }
 
-    public function supportsNormalization($data, string $format = null)
+    public function supportsNormalization($data, ?string $format = null)
     {
         return
             is_a($data, TypedArray::class) ||

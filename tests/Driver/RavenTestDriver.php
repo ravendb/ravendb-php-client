@@ -108,7 +108,7 @@ abstract class RavenTestDriver extends TestCase
         // empty by design
     }
 
-    protected function runServerInternal(RavenServerLocator $locator, Callable $configureStore = null): DocumentStoreInterface
+    protected function runServerInternal(RavenServerLocator $locator, ?Callable $configureStore = null): DocumentStoreInterface
     {
         $this->reportInfo('Starting global server');
 

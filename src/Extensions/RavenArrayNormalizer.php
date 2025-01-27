@@ -20,7 +20,7 @@ class RavenArrayNormalizer implements
         $this->normalizer = $normalizer;
     }
 
-    public function normalize($object, string $format = null, array $context = [])
+    public function normalize($object, ?string $format = null, array $context = [])
     {
         if ($object instanceof AdditionalAssemblySet) {
             if (count($object) == 0) {
@@ -43,7 +43,7 @@ class RavenArrayNormalizer implements
         return $result;
     }
 
-    public function supportsNormalization($data, string $format = null)
+    public function supportsNormalization($data, ?string $format = null)
     {
         return
             ($data instanceof AdditionalAssemblySet) ||
