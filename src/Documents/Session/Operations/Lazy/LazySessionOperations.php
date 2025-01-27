@@ -4,10 +4,13 @@ namespace RavenDB\Documents\Session\Operations\Lazy;
 
 use Closure;
 use RavenDB\Documents\Lazy;
+use RavenDB\Documents\Session\ConditionalLoadResult;
 use RavenDB\Documents\Session\DocumentSession;
 use RavenDB\Documents\Session\Loaders\LazyLoaderWithIncludeInterface;
 use RavenDB\Documents\Session\Loaders\LazyMultiLoaderWithInclude;
 use RavenDB\Documents\Session\Operations\LoadOperation;
+use RavenDB\Exceptions\IllegalArgumentException;
+use RavenDB\Utils\StringUtils;
 
 class LazySessionOperations implements LazySessionOperationsInterface
 {
@@ -66,30 +69,31 @@ class LazySessionOperations implements LazySessionOperationsInterface
 
     public function conditionalLoad(?string $className, ?string $id, ?string $changeVector): Lazy // Lazy <ConditionalLoadResult <TResult>>
     {
-        // if (StringUtils.isEmpty(id)) {
-        //      throw new IllegalArgumentException("Id cannot be null");
-        // }
-        //
-        // if (delegate.isLoaded(id)) {
-        // return new Lazy<>(() -> {
-        // TResult entity = delegate.load(clazz, id);
-        // if (entity == null) {
-        // return ConditionalLoadResult.create((TResult) null, null);
-        // }
-        // String cv = delegate.advanced().getChangeVectorFor(entity);
-        // return ConditionalLoadResult.create(entity, cv);
-        // });
-        // }
-        //
-        // if (StringUtils.isEmpty(changeVector)) {
-        //      throw new IllegalArgumentException("The requested document with id '"
-        //      + id + "' is not loaded into the session and could not conditional load when changeVector is null or empty.");
-        // }
-//                                        <TResult> lazyLoadOperation = new LazyConditionalLoadOperation<>(clazz, id,
-//                                            changeVector, delegate);
-                                            // return delegate.addLazyOperation((Class
-//                                            <ConditionalLoadResult
-//                                            <TResult>>)(Class< ? >)ConditionalLoadResult.class, lazyLoadOperation, null);
+        if (StringUtils::isEmpty($id)) {
+            throw new IllegalArgumentException("Id cannot be null");
+        }
+
+        if ($this->delegate->isLoaded($id)) {
+            return new Lazy(function() use ($className, $id) {
+                $entity = $this->delegate->load($className, $id);
+                if ($entity == null) {
+                    return ConditionalLoadResult::create(null, null);
+                }
+                $cv = $this->delegate->advanced()->getChangeVectorFor($entity);
+                return ConditionalLoadResult::create($entity,$cv);
+            });
+        }
+
+        if (StringUtils::isEmpty($changeVector)) {
+            throw new IllegalArgumentException("The requested document with id '"
+              . $id . "' is not loaded into the session and could not conditional load when changeVector is null or empty.");
+        }
+
+        $lazyLoadOperation = new LazyConditionalLoadOperation($className, $id, $changeVector, $this->delegate);
+
+        //?string $className, LazyOperationInterface $operation, ?Closure $onEval = null): Lazy
+        return $this->delegate->addLazyOperation(ConditionalLoadResult::class, $lazyLoadOperation);
+
     }
 
     //TBD expr ILazyLoaderWithInclude<T> ILazySessionOperations.Include<T>(Expression<Func<T, string>> path)
