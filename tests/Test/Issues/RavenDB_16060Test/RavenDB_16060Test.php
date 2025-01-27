@@ -537,7 +537,7 @@ class RavenDB_16060Test extends RemoteTestBase
                 $session->close();
             }
 
-            usleep(1200000); // wait for rollups
+            usleep(3200000); // wait for rollups
 
             $session = $store->openSession();
             try  {
@@ -605,7 +605,7 @@ class RavenDB_16060Test extends RemoteTestBase
                 $session->close();
             }
 
-            usleep(1200000); // wait for rollups 1.2 second
+            usleep(3200000); // wait for rollups 1.2 second
 
             $session = $store->openSession();
             try {
