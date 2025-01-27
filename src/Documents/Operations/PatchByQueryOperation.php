@@ -28,7 +28,7 @@ class PatchByQueryOperation implements OperationInterface
      * @param null|IndexQuery|string $queryToUpdate
      * @param QueryOperationOptions|null $options
      */
-    public function __construct($queryToUpdate, ?QueryOperationOptions $options = null)
+    public function __construct(null|IndexQuery|string $queryToUpdate, ?QueryOperationOptions $options = null)
     {
         if ($queryToUpdate == null) {
             throw new IllegalArgumentException("QueryToUpdate cannot be null");

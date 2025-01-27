@@ -6,7 +6,7 @@ class TimeSeriesDetails
 {
     private ?string $id = null;
 
-    private TimeSeriesRangeResultListArray $values;
+    private ?TimeSeriesRangeResultListArray $values = null;
 
     public function getId(): ?string
     {
@@ -18,12 +18,12 @@ class TimeSeriesDetails
         $this->id = $id;
     }
 
-    public function getValues(): TimeSeriesRangeResultListArray
+    public function getValues(): ?TimeSeriesRangeResultListArray
     {
         return $this->values;
     }
 
-    public function setValues(TimeSeriesRangeResultListArray|array $values): void
+    public function setValues(null|TimeSeriesRangeResultListArray|array $values): void
     {
         if (is_array($values)) {
             $values = TimeSeriesRangeResultListArray::fromArray($values);

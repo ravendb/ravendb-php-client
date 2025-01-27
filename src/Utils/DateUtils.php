@@ -151,6 +151,16 @@ class DateUtils
     /**
      * @throws Exception
      */
+    public static function today(): DateTime
+    {
+        $today = self::now();
+        $today->setTime(0,0);
+        return $today;
+    }
+
+    /**
+     * @throws Exception
+     */
     public static function now(): DateTime
     {
         return new DateTime('now', new DateTimeZone('Z'));
