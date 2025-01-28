@@ -16,8 +16,6 @@ class RavenDB_11440Test extends RemoteTestBase
 {
     public function testCanGetLogsConfigurationAndChangeMode(): void
     {
-        TestRunGuard::disableTestForRaven7AndLater($this);
-
         $store = $this->getDocumentStore();
         try {
             /** @var GetLogsConfigurationResult $configuration */

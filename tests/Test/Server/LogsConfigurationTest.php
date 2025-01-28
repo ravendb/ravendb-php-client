@@ -14,6 +14,8 @@ class LogsConfigurationTest extends RemoteTestBase
 {
     public function testCanGetAndSetLogging(): void
     {
+        TestRunGuard::disableTestForRaven7AndLater($this);
+
         $store = $this->getDocumentStore();
         try {
             try {
