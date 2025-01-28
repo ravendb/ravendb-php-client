@@ -11,6 +11,7 @@ use RavenDB\Exceptions\Documents\Compilation\SorterCompilationException;
 use RavenDB\Exceptions\Documents\Sorters\SorterDoesNotExistException;
 use RavenDB\Exceptions\RavenException;
 use tests\RavenDB\Infrastructure\Entity\Company;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 use Throwable;
 
@@ -64,6 +65,8 @@ class RavenDB_8355Test extends RemoteTestBase
 
     public function testCanUseCustomSorter(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $sorterDefinition = new SorterDefinition();
         $sorterDefinition->setName("MySorter");
         $sorterDefinition->setCode(self::$sorterCode);
@@ -97,6 +100,8 @@ class RavenDB_8355Test extends RemoteTestBase
 
     public function testCanUseCustomSorterWithOperations(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $store = $this->getDocumentStore();
         try {
             $session = $store->openSession();

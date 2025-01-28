@@ -2,6 +2,7 @@
 
 namespace tests\RavenDB\Test\Issues\RavenDB_12030Test;
 
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 use tests\RavenDB\Infrastructure\Entity\Company;
 
@@ -9,6 +10,8 @@ class RavenDB_12030Test extends RemoteTestBase
 {
     public function testSimpleFuzzy(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $store = $this->getDocumentStore();
         try {
 
@@ -68,6 +71,8 @@ class RavenDB_12030Test extends RemoteTestBase
 
     public function testSimpleProximity(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $store = $this->getDocumentStore();
         try {
             (new Fox_Search())->execute($store);

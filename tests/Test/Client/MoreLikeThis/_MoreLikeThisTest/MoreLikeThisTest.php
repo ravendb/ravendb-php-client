@@ -5,6 +5,7 @@ namespace tests\RavenDB\Test\Client\MoreLikeThis\_MoreLikeThisTest;
 use RavenDB\Documents\DocumentStoreInterface;
 use RavenDB\Documents\Queries\MoreLikeThis\MoreLikeThisOptions;
 use RavenDB\Documents\Queries\MoreLikeThis\MoreLikeThisStopWords;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 
 class MoreLikeThisTest extends RemoteTestBase
@@ -384,6 +385,8 @@ class MoreLikeThisTest extends RemoteTestBase
 
     public function test_can_Use_Boost_Param(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $store = $this->getDocumentStore();
         try {
             $key = "data/1-A";
@@ -535,6 +538,8 @@ class MoreLikeThisTest extends RemoteTestBase
 
     public function testCanMakeDynamicDocumentQueriesWithComplexProperties(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $store = $this->getDocumentStore();
         try {
             (new ComplexDataIndex())->execute($store);

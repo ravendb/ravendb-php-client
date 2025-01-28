@@ -92,6 +92,7 @@ class RevisionsTest extends RemoteTestBase
     public function testCanListRevisionsBin(): void
     {
         TestRunGuard::disableTestForRaven52($this);
+        TestRunGuard::disableTestForRaven6AndLater($this);
 
         $store = $this->getDocumentStore();
         try {

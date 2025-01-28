@@ -4,6 +4,7 @@ namespace tests\RavenDB\Test\Client\Issues\RavenDB903Test;
 
 use RavenDB\Documents\Session\DocumentQueryInterface;
 use RavenDB\Documents\Session\DocumentSessionInterface;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 use tests\RavenDB\Test\Client\Issues\RavenDB903Test\Entity\Product;
 use tests\RavenDB\Test\Client\Issues\RavenDB903Test\Entity\TestIndex;
@@ -12,6 +13,8 @@ class RavenDB903Test extends RemoteTestBase
 {
     public function test1(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $this->doTest(
             function (DocumentSessionInterface $session): DocumentQueryInterface {
                 return $session->advanced()->documentQuery(Product::class, TestIndex::class)
@@ -24,6 +27,8 @@ class RavenDB903Test extends RemoteTestBase
 
     public function test2(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $this->doTest(
             function (DocumentSessionInterface $session): DocumentQueryInterface {
                 return $session->advanced()->documentQuery(Product::class, TestIndex::class)

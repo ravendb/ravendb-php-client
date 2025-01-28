@@ -9,6 +9,7 @@ use RavenDB\Documents\Smuggler\DatabaseItemType;
 use RavenDB\Documents\Smuggler\DatabaseItemTypeSet;
 use tests\RavenDB\Infrastructure\CreateSampleDataOperation;
 use tests\RavenDB\Infrastructure\Entity\Order;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 
 class RavenDB_13682Test extends RemoteTestBase
@@ -108,6 +109,8 @@ class RavenDB_13682Test extends RemoteTestBase
 
     public function testCanUseDynamicQueryOrderBySpatial_WithAlias(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $store = $this->getDocumentStore();
         try {
 
@@ -141,6 +144,8 @@ class RavenDB_13682Test extends RemoteTestBase
 
     public function testCanGetDistanceFromSpatialQuery(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $store = $this->getDocumentStore();
         try {
             $set = new DatabaseItemTypeSet();

@@ -10,6 +10,7 @@ use RavenDB\Documents\Queries\Query;
 use RavenDB\Documents\Queries\Suggestions\StringDistanceTypes;
 use RavenDB\Documents\Queries\Suggestions\SuggestionOptions;
 use RavenDB\Documents\Queries\Suggestions\SuggestionSortMode;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 use tests\RavenDB\Test\Client\Indexing\_IndexesFromClientTest\Users_ByName;
 
@@ -52,6 +53,8 @@ class SuggestionsTest extends RemoteTestBase
 
     public function testExactMatch(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $store = $this->getDocumentStore();
         try {
             $this->setupStore($store);
@@ -153,6 +156,8 @@ class SuggestionsTest extends RemoteTestBase
 
     public function testWithTypo(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $store = $this->getDocumentStore();
         try {
             $this->setupStore($store);
@@ -182,6 +187,8 @@ class SuggestionsTest extends RemoteTestBase
 
     public function testCanGetSuggestions(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $store = $this->getDocumentStore();
         try {
             (new Users_ByName())->execute($store);

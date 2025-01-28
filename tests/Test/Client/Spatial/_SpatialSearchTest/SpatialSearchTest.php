@@ -6,6 +6,7 @@ use DateTime;
 use RavenDB\Documents\Queries\Query;
 use RavenDB\Documents\Session\QueryStatistics;
 use RavenDB\Utils\DateUtils;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 
 class SpatialSearchTest extends RemoteTestBase
@@ -78,6 +79,8 @@ class SpatialSearchTest extends RemoteTestBase
 
     public function test_can_do_spatial_search_with_client_api_within_given_capacity(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $store = $this->getDocumentStore();
         try {
             (new SpatialIdx())->execute($store);

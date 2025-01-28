@@ -5,12 +5,15 @@ namespace tests\RavenDB\Test\Querying\_HighlightesTest;
 use RavenDB\Documents\Queries\Highlighting\HighlightingOptions;
 use RavenDB\Documents\Queries\Highlighting\Highlightings;
 use RavenDB\Documents\Queries\Query;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 
 class HighlightesTest extends RemoteTestBase
 {
     public function testSearchWithHighlights(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $q = "session";
 
         $store = $this->getDocumentStore();

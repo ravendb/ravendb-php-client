@@ -3,12 +3,15 @@
 namespace tests\RavenDB\Test\Client\Spatial\_SimonBartlettTest;
 
 use RavenDB\Documents\Indexes\Spatial\SpatialRelation;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 
 class SimonBartlettTest extends RemoteTestBase
 {
     public function testLineStringsShouldIntersect(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $store = $this->getDocumentStore();
         try {
             $store->executeIndex(new GeoIndex());
@@ -50,6 +53,8 @@ class SimonBartlettTest extends RemoteTestBase
 
     public function testCirclesShouldNotIntersect(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $store = $this->getDocumentStore();
         try {
             $store->executeIndex(new GeoIndex());

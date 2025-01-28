@@ -5,12 +5,15 @@ namespace tests\RavenDB\Test\Issues\RavenDB_9745Test;
 use RavenDB\Documents\Queries\Explanation\ExplanationOptions;
 use RavenDB\Documents\Queries\Explanation\Explanations;
 use tests\RavenDB\Infrastructure\Entity\Company;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 
 class RavenDB_9745Test extends RemoteTestBase
 {
     public function testExplain(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $store = $this->getDocumentStore();
         try {
 

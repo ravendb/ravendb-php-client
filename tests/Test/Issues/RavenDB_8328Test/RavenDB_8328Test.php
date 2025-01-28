@@ -5,12 +5,15 @@ namespace tests\RavenDB\Test\Issues\RavenDB_8328Test;
 use RavenDB\Documents\Queries\Spatial\PointField;
 use RavenDB\Documents\Queries\Spatial\WktField;
 use RavenDB\Documents\Session\QueryStatistics;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 
 class RavenDB_8328Test extends RemoteTestBase
 {
     public function testSpatialOnAutoIndex(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $store = $this->getDocumentStore();
         try {
             $session = $store->openSession();

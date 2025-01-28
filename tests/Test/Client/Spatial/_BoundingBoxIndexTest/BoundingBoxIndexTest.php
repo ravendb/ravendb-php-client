@@ -2,12 +2,15 @@
 
 namespace tests\RavenDB\Test\Client\Spatial\_BoundingBoxIndexTest;
 
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 
 class BoundingBoxIndexTest extends RemoteTestBase
 {
     public function testBoundingBoxTest(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $polygon = "POLYGON ((0 0, 0 5, 1 5, 1 1, 5 1, 5 5, 6 5, 6 0, 0 0))";
         $rectangle1 = "2 2 4 4";
         $rectangle2 = "6 6 10 10";

@@ -20,6 +20,7 @@ use RavenDB\Utils\DateUtils;
 use RavenDB\Utils\StringUtils;
 use tests\RavenDB\Infrastructure\Entity\User;
 use tests\RavenDB\Infrastructure\Entity\Order;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 use tests\RavenDB\Test\Client\_QueryTest\Entity\Article;
 use tests\RavenDB\Test\Client\_QueryTest\Entity\Dog;
@@ -764,6 +765,8 @@ class QueryTest extends RemoteTestBase
 
     public function testQueryLucene(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $store = $this->getDocumentStore();
         try {
             $this->addUsers($store);
@@ -1031,6 +1034,8 @@ class QueryTest extends RemoteTestBase
 
     public function testQueryWithBoost(): void
     {
+        TestRunGuard::disableTestForRaven6AndLater($this);
+
         $store = $this->getDocumentStore();
         try {
             $this->addUsers($store);
