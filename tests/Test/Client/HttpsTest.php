@@ -232,7 +232,7 @@ class HttpsTest extends RemoteTestBase
                 $session = $storeWithOutCert->openSession();
                 try {
                     $this->expectException(AuthorizationException::class);
-                    $this->expectErrorMessage('Forbidden access to ');
+                    $this->expectExceptionMessage('Forbidden access to ');
 
                     $user1 = $session->load(User::class, "users/1");
 

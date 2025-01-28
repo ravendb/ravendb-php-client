@@ -8,6 +8,7 @@ use RavenDB\Exceptions\Documents\Compilation\SorterCompilationException;
 use RavenDB\ServerWide\Sorters\DeleteServerWideSorterOperation;
 use RavenDB\ServerWide\Sorters\PutServerWideSortersOperation;
 use tests\RavenDB\Infrastructure\Entity\Company;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 use Throwable;
 
@@ -15,6 +16,8 @@ class RavenDB_16328Test extends RemoteTestBase
 {
     public function testCanUseCustomSorter(): void
     {
+        TestRunGuard::disableTestIfLicenseNotAvailableForV6($this);
+
         $store = $this->getDocumentStore();
         try {
             $session = $store->openSession();

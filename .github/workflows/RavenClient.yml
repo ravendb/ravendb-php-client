@@ -3,9 +3,9 @@ on:
     schedule:
         -   cron: "0 10 * * 6"
     push:
-        branches: [ v6.0 ]
+        branches: [ v5.4, v6.0 ]
     pull_request:
-        branches: [ v6.0 ]
+        branches: [ v5.4, v6.0 ]
 
 jobs:
     build:
@@ -14,7 +14,7 @@ jobs:
         strategy:
             matrix:
                 php-versions: [ "8.2", "8.3", "8.4"]
-                serverVersion: [ "6.2", "7.0" ]
+                serverVersion: [ "5.4", "6.2", "7.0" ]
             fail-fast: false
 
         env:

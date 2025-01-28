@@ -11,6 +11,7 @@ use RavenDB\Primitives\NetISO8601Utils;
 use RavenDB\Utils\DateUtils;
 use RavenDB\Utils\Stopwatch;
 use tests\RavenDB\Infrastructure\Entity\User;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 
 class RavenDB_13735Test extends RemoteTestBase
@@ -26,6 +27,8 @@ class RavenDB_13735Test extends RemoteTestBase
 
     public function testRefreshWillUpdateDocumentChangeVector(): void
     {
+        TestRunGuard::disableTestIfLicenseNotAvailableForV6($this);
+
         $store = $this->getDocumentStore();
         try {
             $this->setupRefresh($store);

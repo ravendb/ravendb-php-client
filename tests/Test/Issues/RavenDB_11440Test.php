@@ -9,12 +9,15 @@ use RavenDB\ServerWide\Operations\Logs\LogMode;
 use RavenDB\ServerWide\Operations\Logs\SetLogsConfigurationOperation;
 use RavenDB\ServerWide\Operations\Logs\SetLogsConfigurationParameters;
 use RavenDB\Type\Duration;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 
 class RavenDB_11440Test extends RemoteTestBase
 {
     public function testCanGetLogsConfigurationAndChangeMode(): void
     {
+        TestRunGuard::disableTestForRaven7AndLater($this);
+
         $store = $this->getDocumentStore();
         try {
             /** @var GetLogsConfigurationResult $configuration */

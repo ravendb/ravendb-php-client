@@ -10,6 +10,7 @@ use RavenDB\Documents\Session\ForceRevisionStrategy;
 use RavenDB\Exceptions\IllegalStateException;
 use RavenDB\Exceptions\RavenException;
 use tests\RavenDB\Infrastructure\Entity\Company;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 use Throwable;
 
@@ -167,7 +168,7 @@ class ForceRevisionCreationTest extends RemoteTestBase
                     $this->assertInstanceOf(RavenException::class, $exception);
                     $this->assertStringContainsString("Can't force revision creation - the document was not saved on the server yet", $exception->getMessage());
                 };
-                
+
                 $revisionsCount = count($session->advanced()->revisions()->getFor(Company::class, $company->getId()));
                 $this->assertEquals(0, $revisionsCount);
             } finally {
@@ -459,6 +460,8 @@ class ForceRevisionCreationTest extends RemoteTestBase
 
     public function testForceRevisionCreationWhenRevisionConfigurationIsSet(): void
     {
+        TestRunGuard::disableTestIfLicenseNotAvailableForV6($this);
+
         $store = $this->getDocumentStore();
         try {
             // Define revisions settings

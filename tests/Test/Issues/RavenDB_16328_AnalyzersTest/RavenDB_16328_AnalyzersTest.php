@@ -9,6 +9,7 @@ use RavenDB\Documents\Operations\Indexes\ResetIndexOperation;
 use RavenDB\ServerWide\Operations\Analyzers\DeleteServerWideAnalyzerOperation;
 use RavenDB\ServerWide\Operations\Analyzers\PutServerWideAnalyzersOperation;
 use RavenDB\Type\Duration;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use tests\RavenDB\RemoteTestBase;
 use Throwable;
 
@@ -36,6 +37,8 @@ class RavenDB_16328_AnalyzersTest extends RemoteTestBase
 
     public function testCanUseCustomAnalyzer(): void
     {
+        TestRunGuard::disableTestIfLicenseNotAvailableForV6($this);
+
         $store = $this->getDocumentStore();
         try {
             $analyzerName = "MyAnalyzer";

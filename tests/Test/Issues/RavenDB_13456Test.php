@@ -3,6 +3,7 @@
 namespace tests\RavenDB\Test\Issues;
 
 use Exception;
+use tests\RavenDB\Infrastructure\TestRunGuard;
 use Throwable;
 use tests\RavenDB\RemoteTestBase;
 use RavenDB\Exceptions\RavenException;
@@ -17,6 +18,8 @@ class RavenDB_13456Test extends RemoteTestBase
 {
     public function testCanChangeIdentityPartsSeparator(): void
     {
+        TestRunGuard::disableTestIfLicenseNotAvailableForV6($this);
+
         $store = $this->getDocumentStore();
         try {
             $session = $store->openSession();
