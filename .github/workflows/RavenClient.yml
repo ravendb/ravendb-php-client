@@ -3,9 +3,9 @@ on:
     schedule:
         -   cron: "0 10 * * 6"
     push:
-        branches: [ v5.4, v6.0 ]
+        branches: [ v5.4, v6.0, v7.0 ]
     pull_request:
-        branches: [ v5.4, v6.0 ]
+        branches: [ v5.4, v6.0, v7.0 ]
 
 jobs:
     build:
