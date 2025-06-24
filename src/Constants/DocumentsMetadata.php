@@ -17,6 +17,7 @@ class DocumentsMetadata
     public const REVISION_COUNTERS = "@counters-snapshot";
     public const REVISION_TIME_SERIES = "@timeseries-snapshot";
     public const INDEX_SCORE = "@index-score";
+    public const SPATIAL_RESULT = "@spatial";
     public const LAST_MODIFIED = "@last-modified";
     public const RAVEN_JAVA_TYPE = "Raven-Java-Type";
     public const RAVEN_PHP_TYPE = "Raven-PHP-Type";
